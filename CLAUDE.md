@@ -1629,7 +1629,7 @@ interface ReportSection {
 │ │                                                          │ │
 │ │ 設定:                                                    │ │
 │ │ 認証: IAM Role (自動)                                   │ │
-│ │ Model ID: [anthropic.claude-3-5-sonnet-20241022-v2:0]  │ │
+│ │ Model ID: [us.anthropic.claude-sonnet-4-6]  │ │
 │ │ Region:  [us-east-1 ▼]                                  │ │
 │ │ Max Tokens: [2000    ]                                  │ │
 │ │                                              [接続テスト] │ │

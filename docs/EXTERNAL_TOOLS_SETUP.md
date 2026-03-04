@@ -39,7 +39,7 @@
    1. 「Manage model access」をクリック
    2. Anthropic セクションを展開
    3. 以下のモデルにチェック:
-      ☑ Claude 3.5 Sonnet (推奨)
+      ☑ Claude Sonnet 4.6 (推奨)
       ☑ Claude 3 Opus (必要に応じて)
    4. 「Request model access」をクリック
    5. 承認完了（通常は即座、初回は数分かかる場合あり）
@@ -84,7 +84,7 @@ Lambda実行ロールに上記権限を自動付与（CDKで設定予定）
 | モデル | Input | Output | コンテキスト |
 |--------|-------|--------|-------------|
 | Claude 3 Opus | $15/1M tokens | $75/1M tokens | 200K tokens |
-| Claude 3.5 Sonnet | $3/1M tokens | $15/1M tokens | 200K tokens |
+| Claude Sonnet 4.6 | $3/1M tokens | $15/1M tokens | 200K tokens |
 | Claude 3 Haiku | $0.25/1M tokens | $1.25/1M tokens | 200K tokens |
 
 **推奨**: Alpha版では Sonnet 3.5、品質重視の場面でOpus 3
@@ -102,7 +102,7 @@ Lambda実行ロールに上記権限を自動付与（CDKで設定予定）
 # AWS認証情報（aws configureで設定済みの場合は不要）
 AWS_REGION=us-east-1
 BEDROCK_REGION=us-east-1
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-6
 BEDROCK_MAX_TOKENS=2000
 ```
 
@@ -123,7 +123,7 @@ const bedrockClient = new BedrockRuntimeClient({
 
 async function invokeClaude(systemPrompt: string, userMessage: string) {
   const command = new InvokeModelCommand({
-    modelId: process.env.BEDROCK_MODEL_ID || "anthropic.claude-3-5-sonnet-20241022-v2:0",
+    modelId: process.env.BEDROCK_MODEL_ID || "us.anthropic.claude-sonnet-4-6",
     contentType: "application/json",
     accept: "application/json",
     body: JSON.stringify({
@@ -159,7 +159,7 @@ import { BedrockRuntimeClient, InvokeModelWithResponseStreamCommand } from "@aws
 
 async function invokeClaudeStream(systemPrompt: string, userMessage: string) {
   const command = new InvokeModelWithResponseStreamCommand({
-    modelId: "anthropic.claude-3-5-sonnet-20241022-v2:0",
+    modelId: "us.anthropic.claude-sonnet-4-6",
     contentType: "application/json",
     accept: "application/json",
     body: JSON.stringify({
@@ -224,7 +224,7 @@ AWS Bedrockのレート制限はリージョン・アカウント単位で管理
 **問題**: `ValidationException: Model not found`
 - **原因**: モデルIDが正しくない、またはリージョンで未対応
 - **解決策**:
-  1. モデルIDを確認: `anthropic.claude-3-5-sonnet-20241022-v2:0`
+  1. モデルIDを確認: `us.anthropic.claude-sonnet-4-6`
   2. リージョンを確認（us-east-1推奨）
   3. Bedrock Console → Model access で有効化確認
 

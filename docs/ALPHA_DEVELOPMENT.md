@@ -110,7 +110,7 @@ aws configure
 3. 利用リージョン選択（推奨: us-east-1）
 4. Model access → Manage model access
 5. Anthropic Claude モデルを有効化
-   - Claude 3.5 Sonnet
+   - Claude Sonnet 4.6
    - Claude 3 Opus（必要に応じて）
 
 **必要な設定**:
@@ -124,7 +124,7 @@ AWS_REGION=us-east-1
 ```
 
 **コスト見積もり**:
-- Claude 3.5 Sonnet: $3/1M input tokens, $15/1M output tokens
+- Claude Sonnet 4.6: $3/1M input tokens, $15/1M output tokens
 - Claude 3 Opus: $15/1M input tokens, $75/1M output tokens
 - Alpha版開発期間: 約$10-30（AWSの統合請求）
 
@@ -269,7 +269,7 @@ AWS_ACCOUNT_ID=123456789012  # 実際のアカウントIDに置き換え
 #############################################
 # Bedrockは AWS SDK が自動的にIAM認証を使用します
 BEDROCK_REGION=us-east-1
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-6
 
 #############################################
 # ElevenLabs (TTS)

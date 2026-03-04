@@ -86,7 +86,7 @@ AWS_ACCOUNT_ID=<YOUR_AWS_ACCOUNT_ID>
 # Bedrockは AWS SDK が自動的にIAM認証を使用するため、
 # 個別のAPIキーは不要です。AWS認証情報（aws configure）を使用します。
 BEDROCK_REGION=us-east-1
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-6
 
 # ElevenLabs
 ELEVENLABS_API_KEY=<YOUR_ELEVENLABS_KEY>
