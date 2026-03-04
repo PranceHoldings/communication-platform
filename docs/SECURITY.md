@@ -65,12 +65,12 @@ CISO（最高情報セキュリティ責任者）
 
 ### データ分類
 
-| レベル | 説明 | 例 | 保護要件 |
-|--------|------|-----|---------|
-| **Public** | 公開情報 | プレスリリース、ドキュメント | 整合性保護 |
-| **Internal** | 社内情報 | 社内ドキュメント、設計書 | アクセス制御 |
-| **Confidential** | 機密情報 | 顧客データ、セッションデータ | 暗号化、アクセス制御、監査ログ |
-| **Restricted** | 極秘情報 | APIキー、認証情報、PII | 強暗号化、厳格なアクセス制御、完全監査 |
+| レベル           | 説明     | 例                           | 保護要件                               |
+| ---------------- | -------- | ---------------------------- | -------------------------------------- |
+| **Public**       | 公開情報 | プレスリリース、ドキュメント | 整合性保護                             |
+| **Internal**     | 社内情報 | 社内ドキュメント、設計書     | アクセス制御                           |
+| **Confidential** | 機密情報 | 顧客データ、セッションデータ | 暗号化、アクセス制御、監査ログ         |
+| **Restricted**   | 極秘情報 | APIキー、認証情報、PII       | 強暗号化、厳格なアクセス制御、完全監査 |
 
 ### 暗号化
 
@@ -145,7 +145,7 @@ AuroraCluster:
 
   # 自動バックアップも暗号化
   BackupRetentionPeriod: 35
-  PreferredBackupWindow: "03:00-04:00"
+  PreferredBackupWindow: '03:00-04:00'
 ```
 
 **DynamoDB:**
@@ -167,7 +167,7 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 // マスターキー（組織ごと）
 const masterKey = new kms.Key(this, 'MasterKey', {
   description: 'Master encryption key for org data',
-  enableKeyRotation: true,  // 自動ローテーション（年次）
+  enableKeyRotation: true, // 自動ローテーション（年次）
   removalPolicy: RemovalPolicy.RETAIN,
   policy: new iam.PolicyDocument({
     statements: [
@@ -205,13 +205,13 @@ const apiKeyEncryptionKey = new kms.Key(this, 'ApiKeyEncryptionKey', {
 
 #### 保持期間ポリシー
 
-| データタイプ | 保持期間 | 削除方法 |
-|-------------|---------|---------|
-| **録画データ** | プランによる（7日-無制限） | S3 Lifecycle Policy |
-| **セッションデータ** | 永続（削除リクエストまで） | 論理削除 |
-| **監査ログ** | 7年 | 自動削除 |
-| **APIログ** | 90日 | 自動削除 |
-| **一時データ** | 24時間 | TTL自動削除 |
+| データタイプ         | 保持期間                   | 削除方法            |
+| -------------------- | -------------------------- | ------------------- |
+| **録画データ**       | プランによる（7日-無制限） | S3 Lifecycle Policy |
+| **セッションデータ** | 永続（削除リクエストまで） | 論理削除            |
+| **監査ログ**         | 7年                        | 自動削除            |
+| **APIログ**          | 90日                       | 自動削除            |
+| **一時データ**       | 24時間                     | TTL自動削除         |
 
 #### GDPRデータ削除
 
@@ -278,7 +278,7 @@ async function processDataDeletionRequest(userId: string): Promise<void> {
 ```typescript
 // Cognito User Pool設定
 const userPool = new cognito.UserPool(this, 'UserPool', {
-  selfSignUpEnabled: false,  // 管理者招待のみ
+  selfSignUpEnabled: false, // 管理者招待のみ
   signInAliases: {
     email: true,
   },
@@ -353,13 +353,7 @@ enum Role {
 
 // 権限マッピング
 const permissions: Record<Role, string[]> = {
-  super_admin: [
-    'platform:*',
-    'tenant:*',
-    'user:*',
-    'session:*',
-    'report:*',
-  ],
+  super_admin: ['platform:*', 'tenant:*', 'user:*', 'session:*', 'report:*'],
   client_admin: [
     'org:manage',
     'user:invite',
@@ -396,11 +390,7 @@ function requirePermission(permission: string) {
 }
 
 // 使用例
-router.get('/admin/users',
-  authenticate,
-  requirePermission('user:manage'),
-  listUsers
-);
+router.get('/admin/users', authenticate, requirePermission('user:manage'), listUsers);
 ```
 
 #### Row Level Security（RLS）
@@ -447,19 +437,13 @@ function generateApiKey(environment: 'live' | 'test'): string {
 
 // ハッシュ化（保存用）
 function hashApiKey(apiKey: string): string {
-  return crypto
-    .createHash('sha256')
-    .update(apiKey)
-    .digest('hex');
+  return crypto.createHash('sha256').update(apiKey).digest('hex');
 }
 
 // 検証
 function verifyApiKey(providedKey: string, storedHash: string): boolean {
   const providedHash = hashApiKey(providedKey);
-  return crypto.timingSafeEqual(
-    Buffer.from(providedHash),
-    Buffer.from(storedHash)
-  );
+  return crypto.timingSafeEqual(Buffer.from(providedHash), Buffer.from(storedHash));
 }
 ```
 
@@ -547,11 +531,7 @@ const auroraSG = new ec2.SecurityGroup(this, 'AuroraSG', {
 });
 
 // Lambda → Aurora接続のみ許可
-auroraSG.addIngressRule(
-  lambdaSG,
-  ec2.Port.tcp(5432),
-  'Allow Lambda to access Aurora'
-);
+auroraSG.addIngressRule(lambdaSG, ec2.Port.tcp(5432), 'Allow Lambda to access Aurora');
 
 // ElastiCache Security Group
 const redisSG = new ec2.SecurityGroup(this, 'RedisSG', {
@@ -560,11 +540,7 @@ const redisSG = new ec2.SecurityGroup(this, 'RedisSG', {
   allowAllOutbound: false,
 });
 
-redisSG.addIngressRule(
-  lambdaSG,
-  ec2.Port.tcp(6379),
-  'Allow Lambda to access Redis'
-);
+redisSG.addIngressRule(lambdaSG, ec2.Port.tcp(6379), 'Allow Lambda to access Redis');
 ```
 
 ### AWS WAF
@@ -654,18 +630,18 @@ const webAcl = new wafv2.CfnWebACL(this, 'WebAcl', {
 
 ### OWASP Top 10対策
 
-| リスク | 対策 |
-|--------|------|
-| **A01: Broken Access Control** | RBAC, RLS, セッション検証 |
-| **A02: Cryptographic Failures** | TLS 1.3, KMS暗号化 |
-| **A03: Injection** | パラメータ化クエリ、入力検証 |
-| **A04: Insecure Design** | 脅威モデリング、セキュアコーディング |
-| **A05: Security Misconfiguration** | IaC、自動セキュリティチェック |
-| **A06: Vulnerable Components** | Dependabot、Snyk、定期更新 |
-| **A07: Auth Failures** | MFA、セッション管理、パスワードポリシー |
-| **A08: Software and Data Integrity** | コード署名、SRI、SBOM |
-| **A09: Logging Failures** | CloudWatch、監査ログ、アラート |
-| **A10: Server-Side Request Forgery** | URLホワイトリスト、ネットワーク分離 |
+| リスク                               | 対策                                    |
+| ------------------------------------ | --------------------------------------- |
+| **A01: Broken Access Control**       | RBAC, RLS, セッション検証               |
+| **A02: Cryptographic Failures**      | TLS 1.3, KMS暗号化                      |
+| **A03: Injection**                   | パラメータ化クエリ、入力検証            |
+| **A04: Insecure Design**             | 脅威モデリング、セキュアコーディング    |
+| **A05: Security Misconfiguration**   | IaC、自動セキュリティチェック           |
+| **A06: Vulnerable Components**       | Dependabot、Snyk、定期更新              |
+| **A07: Auth Failures**               | MFA、セッション管理、パスワードポリシー |
+| **A08: Software and Data Integrity** | コード署名、SRI、SBOM                   |
+| **A09: Logging Failures**            | CloudWatch、監査ログ、アラート          |
+| **A10: Server-Side Request Forgery** | URLホワイトリスト、ネットワーク分離     |
 
 ### 入力検証
 
@@ -711,7 +687,7 @@ app.post('/sessions', async (req, res) => {
 // Prisma（パラメータ化クエリ）
 const users = await prisma.user.findMany({
   where: {
-    email: userInput,  // 安全: 自動エスケープ
+    email: userInput, // 安全: 自動エスケープ
   },
 });
 
@@ -719,11 +695,11 @@ const users = await prisma.user.findMany({
 const result = await prisma.$queryRaw`
   SELECT * FROM users
   WHERE email = ${userInput}
-`;  // 安全: パラメータ化
+`; // 安全: パラメータ化
 
 // ❌ 危険: 文字列結合
 const query = `SELECT * FROM users WHERE email = '${userInput}'`;
-await prisma.$executeRawUnsafe(query);  // 使用禁止
+await prisma.$executeRawUnsafe(query); // 使用禁止
 ```
 
 ### XSS（クロスサイトスクリプティング）防止
@@ -782,7 +758,7 @@ on:
     branches: [main, develop]
   pull_request:
   schedule:
-    - cron: '0 0 * * 0'  # 毎週日曜
+    - cron: '0 0 * * 0' # 毎週日曜
 
 jobs:
   dependency-scan:
@@ -833,12 +809,12 @@ jobs:
 
 ### インシデント分類
 
-| レベル | 定義 | 対応時間 | 例 |
-|--------|------|---------|-----|
+| レベル            | 定義                       | 対応時間         | 例               |
+| ----------------- | -------------------------- | ---------------- | ---------------- |
 | **P0 - Critical** | サービス全停止、データ漏洩 | 即座（15分以内） | データベース侵害 |
-| **P1 - High** | 主要機能停止 | 1時間以内 | 認証システム障害 |
-| **P2 - Medium** | 一部機能影響 | 4時間以内 | 特定機能のバグ |
-| **P3 - Low** | 軽微な影響 | 24時間以内 | UI表示の問題 |
+| **P1 - High**     | 主要機能停止               | 1時間以内        | 認証システム障害 |
+| **P2 - Medium**   | 一部機能影響               | 4時間以内        | 特定機能のバグ   |
+| **P3 - Low**      | 軽微な影響                 | 24時間以内       | UI表示の問題     |
 
 ### インシデント対応フロー
 
@@ -906,26 +882,26 @@ P2-P3:
 
 **対応状況:**
 
-| 要件 | 対策 | ステータス |
-|------|------|-----------|
-| **データ最小化** | 必要最小限のデータのみ収集 | ✓ 対応済み |
-| **同意管理** | オプトイン方式、明示的同意 | ✓ 対応済み |
-| **アクセス権** | ユーザーは自分のデータにアクセス可能 | ✓ 対応済み |
-| **削除権** | データ削除リクエスト対応（30日以内） | ✓ 対応済み |
-| **データポータビリティ** | JSON/CSVエクスポート機能 | ✓ 対応済み |
-| **侵害通知** | 72時間以内にDPA通知 | ✓ 手順整備済み |
-| **DPO** | データ保護責任者の任命 | △ Year 2予定 |
+| 要件                     | 対策                                 | ステータス     |
+| ------------------------ | ------------------------------------ | -------------- |
+| **データ最小化**         | 必要最小限のデータのみ収集           | ✓ 対応済み     |
+| **同意管理**             | オプトイン方式、明示的同意           | ✓ 対応済み     |
+| **アクセス権**           | ユーザーは自分のデータにアクセス可能 | ✓ 対応済み     |
+| **削除権**               | データ削除リクエスト対応（30日以内） | ✓ 対応済み     |
+| **データポータビリティ** | JSON/CSVエクスポート機能             | ✓ 対応済み     |
+| **侵害通知**             | 72時間以内にDPA通知                  | ✓ 手順整備済み |
+| **DPO**                  | データ保護責任者の任命               | △ Year 2予定   |
 
 ### 個人情報保護法（日本）
 
 **対応状況:**
 
-| 要件 | 対策 | ステータス |
-|------|------|-----------|
-| **利用目的の明示** | プライバシーポリシーに明記 | ✓ 対応済み |
-| **安全管理措置** | 暗号化、アクセス制御 | ✓ 対応済み |
-| **第三者提供の制限** | 同意取得、記録保存 | ✓ 対応済み |
-| **漏えい等報告** | 個人情報保護委員会への報告手順 | ✓ 手順整備済み |
+| 要件                 | 対策                           | ステータス     |
+| -------------------- | ------------------------------ | -------------- |
+| **利用目的の明示**   | プライバシーポリシーに明記     | ✓ 対応済み     |
+| **安全管理措置**     | 暗号化、アクセス制御           | ✓ 対応済み     |
+| **第三者提供の制限** | 同意取得、記録保存             | ✓ 対応済み     |
+| **漏えい等報告**     | 個人情報保護委員会への報告手順 | ✓ 手順整備済み |
 
 ### SOC 2 Type II
 
@@ -960,7 +936,7 @@ interface AuditLog {
   timestamp: Date;
   user_id: string;
   org_id: string;
-  event_type: string;  // 'LOGIN', 'DATA_ACCESS', 'DATA_MODIFICATION', etc.
+  event_type: string; // 'LOGIN', 'DATA_ACCESS', 'DATA_MODIFICATION', etc.
   resource_type: string;
   resource_id: string;
   action: string;

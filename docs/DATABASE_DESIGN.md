@@ -1688,8 +1688,8 @@ $$ LANGUAGE plpgsql;
 # CDK設定例
 AuroraCluster:
   ServerlessV2ScalingConfiguration:
-    MinCapacity: 0.5 ACU  # アイドル時
-    MaxCapacity: 16 ACU   # ピーク時
+    MinCapacity: 0.5 ACU # アイドル時
+    MaxCapacity: 16 ACU # ピーク時
 ```
 
 ### 2. 読み取りレプリカ
@@ -1774,7 +1774,7 @@ npx prisma migrate resolve --rolled-back <migration_name>
 Aurora Serverless v2:
   AutomatedBackups:
     RetentionPeriod: 35 days
-    PreferredBackupWindow: "03:00-04:00"
+    PreferredBackupWindow: '03:00-04:00'
 
   PITR (Point-in-Time Recovery):
     Enabled: true

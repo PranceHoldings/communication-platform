@@ -119,12 +119,12 @@ Content-Type: application/json
 
 ### 権限レベル
 
-| ロール | 説明 | アクセス範囲 |
-|--------|------|-------------|
-| `super_admin` | スーパー管理者 | 全テナント・全機能 |
-| `client_admin` | クライアント管理者 | 自組織内・管理機能 |
-| `client_user` | 一般ユーザー | 自分のデータ・基本機能 |
-| `api_key` | API認証 | スコープで制限 |
+| ロール         | 説明               | アクセス範囲           |
+| -------------- | ------------------ | ---------------------- |
+| `super_admin`  | スーパー管理者     | 全テナント・全機能     |
+| `client_admin` | クライアント管理者 | 自組織内・管理機能     |
+| `client_user`  | 一般ユーザー       | 自分のデータ・基本機能 |
+| `api_key`      | API認証            | スコープで制限         |
 
 ---
 
@@ -206,13 +206,13 @@ Content-Type: application/json
 
 **クエリパラメータ:**
 
-| パラメータ | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| `type` | string | No | フィルタ: `2d`, `3d` |
-| `style` | string | No | フィルタ: `anime`, `real` |
-| `visibility` | string | No | フィルタ: `private`, `org`, `public` |
-| `page` | integer | No | ページ番号（デフォルト: 1） |
-| `per_page` | integer | No | 1ページあたり件数（デフォルト: 20） |
+| パラメータ   | 型      | 必須 | 説明                                 |
+| ------------ | ------- | ---- | ------------------------------------ |
+| `type`       | string  | No   | フィルタ: `2d`, `3d`                 |
+| `style`      | string  | No   | フィルタ: `anime`, `real`            |
+| `visibility` | string  | No   | フィルタ: `private`, `org`, `public` |
+| `page`       | integer | No   | ページ番号（デフォルト: 1）          |
+| `per_page`   | integer | No   | 1ページあたり件数（デフォルト: 20）  |
 
 **レスポンス: 200 OK**
 
@@ -312,11 +312,11 @@ Content-Type: application/json
 
 **クエリパラメータ:**
 
-| パラメータ | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| `category` | string | No | カテゴリフィルタ |
-| `language` | string | No | 言語フィルタ |
-| `visibility` | string | No | 公開範囲フィルタ |
+| パラメータ   | 型     | 必須 | 説明             |
+| ------------ | ------ | ---- | ---------------- |
+| `category`   | string | No   | カテゴリフィルタ |
+| `language`   | string | No   | 言語フィルタ     |
+| `visibility` | string | No   | 公開範囲フィルタ |
 
 **レスポンス: 200 OK**
 
@@ -365,17 +365,12 @@ Content-Type: application/json
     },
     "conversation_flow": {
       "opening": "先日購入した商品に不具合がありまして...",
-      "required_topics": [
-        "問題のヒアリング",
-        "謝罪と共感",
-        "解決策の提案",
-        "今後の対応"
-      ]
+      "required_topics": ["問題のヒアリング", "謝罪と共感", "解決策の提案", "今後の対応"]
     },
     "evaluation_criteria": [
       {
         "metric": "共感力",
-        "weight": 0.30,
+        "weight": 0.3,
         "rubric": "顧客の気持ちに寄り添った対応ができているか"
       }
     ]
@@ -435,11 +430,11 @@ Content-Type: application/json
 
 **クエリパラメータ:**
 
-| パラメータ | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| `status` | string | No | ステータスフィルタ |
-| `from_date` | string | No | 開始日フィルタ (ISO 8601) |
-| `to_date` | string | No | 終了日フィルタ (ISO 8601) |
+| パラメータ  | 型     | 必須 | 説明                      |
+| ----------- | ------ | ---- | ------------------------- |
+| `status`    | string | No   | ステータスフィルタ        |
+| `from_date` | string | No   | 開始日フィルタ (ISO 8601) |
+| `to_date`   | string | No   | 終了日フィルタ (ISO 8601) |
 
 **レスポンス: 200 OK**
 
@@ -619,9 +614,9 @@ Content-Type: application/json
 
 **クエリパラメータ:**
 
-| パラメータ | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| `timeframe` | string | No | `month`, `quarter`, `year` (デフォルト: `quarter`) |
+| パラメータ  | 型     | 必須 | 説明                                               |
+| ----------- | ------ | ---- | -------------------------------------------------- |
+| `timeframe` | string | No   | `month`, `quarter`, `year` (デフォルト: `quarter`) |
 
 **レスポンス: 200 OK**
 
@@ -696,10 +691,10 @@ Content-Type: application/json
 
 **クエリパラメータ:**
 
-| パラメータ | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| `role` | string | No | ロールフィルタ |
-| `search` | string | No | 名前・メール検索 |
+| パラメータ | 型     | 必須 | 説明             |
+| ---------- | ------ | ---- | ---------------- |
+| `role`     | string | No   | ロールフィルタ   |
+| `search`   | string | No   | 名前・メール検索 |
 
 **レスポンス: 200 OK**
 
@@ -950,20 +945,20 @@ interface Report {
 
 ### HTTPステータスコード
 
-| コード | 意味 | 使用例 |
-|--------|------|--------|
-| 200 | OK | 成功 |
-| 201 | Created | リソース作成成功 |
-| 204 | No Content | 削除成功（レスポンスボディなし） |
-| 400 | Bad Request | リクエストパラメータエラー |
-| 401 | Unauthorized | 認証エラー |
-| 403 | Forbidden | 権限不足 |
-| 404 | Not Found | リソースが見つからない |
-| 409 | Conflict | リソース競合 |
-| 422 | Unprocessable Entity | バリデーションエラー |
-| 429 | Too Many Requests | レート制限超過 |
-| 500 | Internal Server Error | サーバーエラー |
-| 503 | Service Unavailable | サービス停止中 |
+| コード | 意味                  | 使用例                           |
+| ------ | --------------------- | -------------------------------- |
+| 200    | OK                    | 成功                             |
+| 201    | Created               | リソース作成成功                 |
+| 204    | No Content            | 削除成功（レスポンスボディなし） |
+| 400    | Bad Request           | リクエストパラメータエラー       |
+| 401    | Unauthorized          | 認証エラー                       |
+| 403    | Forbidden             | 権限不足                         |
+| 404    | Not Found             | リソースが見つからない           |
+| 409    | Conflict              | リソース競合                     |
+| 422    | Unprocessable Entity  | バリデーションエラー             |
+| 429    | Too Many Requests     | レート制限超過                   |
+| 500    | Internal Server Error | サーバーエラー                   |
+| 503    | Service Unavailable   | サービス停止中                   |
 
 ### エラーコード
 
@@ -1063,11 +1058,11 @@ enum ErrorCode {
 
 ### 制限タイプ
 
-| プラン | 時間あたり | 日次 | 月次 |
-|--------|-----------|------|------|
-| Free | 10 | 100 | 1,000 |
-| Pro | 100 | 1,000 | 10,000 |
-| Enterprise | 1,000 | 10,000 | カスタム |
+| プラン     | 時間あたり | 日次   | 月次     |
+| ---------- | ---------- | ------ | -------- |
+| Free       | 10         | 100    | 1,000    |
+| Pro        | 100        | 1,000  | 10,000   |
+| Enterprise | 1,000      | 10,000 | カスタム |
 
 ### レスポンスヘッダー
 
@@ -1109,11 +1104,13 @@ const ws = new WebSocket('wss://iot.prance-platform.com');
 
 // 接続時
 ws.onopen = () => {
-  ws.send(JSON.stringify({
-    type: 'authenticate',
-    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    session_id: 'session_abc123'
-  }));
+  ws.send(
+    JSON.stringify({
+      type: 'authenticate',
+      token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      session_id: 'session_abc123',
+    })
+  );
 };
 ```
 
@@ -1155,7 +1152,7 @@ ws.onopen = () => {
 
 ```javascript
 {
-  type: 'session_end'
+  type: 'session_end';
 }
 ```
 
@@ -1295,12 +1292,12 @@ APIキー作成時にWebhook URLを設定可能。
 
 ### イベントタイプ
 
-| イベント | 説明 |
-|---------|------|
-| `session.created` | セッション作成 |
-| `session.completed` | セッション完了 |
-| `report.generated` | レポート生成完了 |
-| `user.created` | ユーザー作成 |
+| イベント            | 説明             |
+| ------------------- | ---------------- |
+| `session.created`   | セッション作成   |
+| `session.completed` | セッション完了   |
+| `report.generated`  | レポート生成完了 |
+| `user.created`      | ユーザー作成     |
 
 ### ペイロード例
 
@@ -1329,15 +1326,10 @@ X-Prance-Event: session.completed
 const crypto = require('crypto');
 
 function verifyWebhookSignature(payload, signature, secret) {
-  const expectedSignature = 'sha256=' + crypto
-    .createHmac('sha256', secret)
-    .update(JSON.stringify(payload))
-    .digest('hex');
+  const expectedSignature =
+    'sha256=' + crypto.createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
 }
 ```
 
@@ -1356,14 +1348,14 @@ import { PranceClient } from '@prance/sdk';
 
 const client = new PranceClient({
   apiKey: 'sk_live_[YOUR_API_KEY]',
-  environment: 'production'
+  environment: 'production',
 });
 
 // セッション作成
 const session = await client.sessions.create({
   scenario_id: 'scenario_12345',
   avatar_id: 'avatar_preset_001',
-  voice_id: 'voice_ja_female_01'
+  voice_id: 'voice_ja_female_01',
 });
 
 console.log('Session ID:', session.session_id);

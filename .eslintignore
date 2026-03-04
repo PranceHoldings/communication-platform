@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+cdk.out/
+
+# Prisma generated
+packages/database/node_modules/
+packages/database/.prisma/
+*.prisma
+
+# Configuration files
+*.config.js
+*.config.mjs
+
+# Environment files
+.env*
+
+# Logs
+*.log

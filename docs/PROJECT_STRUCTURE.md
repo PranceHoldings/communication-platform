@@ -188,29 +188,25 @@ prance-communication-platform/
 
 ```typescript
 // コンポーネント構造
-components/
-  avatar/
-    - AvatarSelector.tsx      // 選択UI
-    - ThreeAvatar.tsx          // 3Dアバター
-    - Live2DAvatar.tsx         // 2Dアバター
-    - AvatarPreview.tsx        // プレビュー
+components / avatar / -AvatarSelector.tsx - // 選択UI
+  ThreeAvatar.tsx - // 3Dアバター
+  Live2DAvatar.tsx - // 2Dアバター
+  AvatarPreview.tsx; // プレビュー
 
-  session/
-    - SessionView.tsx          // セッションメイン画面
-    - AudioController.tsx      // 音声制御
-    - RecordingManager.tsx     // 録画管理
+session / -SessionView.tsx - // セッションメイン画面
+  AudioController.tsx - // 音声制御
+  RecordingManager.tsx; // 録画管理
 
-  player/
-    - VideoPlayer.tsx          // 動画プレイヤー
-    - SyncedTranscript.tsx     // 同期トランスクリプト
+player / -VideoPlayer.tsx - // 動画プレイヤー
+  SyncedTranscript.tsx; // 同期トランスクリプト
 
-  admin/
-    - PromptEditor.tsx         // プロンプト編集
-    - ProviderConfig.tsx       // プロバイダ設定
-    - ApiKeyManager.tsx        // APIキー管理
+admin / -PromptEditor.tsx - // プロンプト編集
+  ProviderConfig.tsx - // プロバイダ設定
+  ApiKeyManager.tsx; // APIキー管理
 ```
 
 **並行開発例**:
+
 - Engineer A: `avatar/` 担当
 - Engineer B: `session/` 担当
 - 依存: 両者とも `lib/api/` を使用（インターフェースのみ依存）
@@ -228,17 +224,19 @@ components/
   imports: [PrismaModule],
   controllers: [AvatarsController],
   providers: [AvatarsService],
-  exports: [AvatarsService]
+  exports: [AvatarsService],
 })
 export class AvatarsModule {}
 ```
 
 **モジュール間通信**:
+
 - **直接依存**: サービスインジェクション
 - **イベント**: EventEmitterによる疎結合
 - **共有**: `@prance/shared` パッケージ
 
 **並行開発例**:
+
 - Engineer C: `avatars/`, `scenarios/` 担当
 - Engineer D: `voice/`, `conversation/` 担当
 - 依存: 両者とも `common/`, `@prance/shared` を使用
@@ -270,6 +268,7 @@ export class ClaudeAdapter implements AIProvider {
 ```
 
 **使用例**:
+
 ```typescript
 // apps/api/src/conversation/conversation.service.ts
 import { AIProvider, ClaudeAdapter } from '@prance/shared';
@@ -308,7 +307,7 @@ export class UserRepository {
 import { Handler } from 'aws-lambda';
 import { AzureFaceService } from '../services/azure-face';
 
-export const handler: Handler = async (event) => {
+export const handler: Handler = async event => {
   const service = new AzureFaceService();
   const result = await service.analyzeEmotion(event.videoUrl);
   return result;
@@ -316,6 +315,7 @@ export const handler: Handler = async (event) => {
 ```
 
 **並行開発**:
+
 - 各関数は完全に独立
 - 共通サービスは `src/services/` で共有
 - テストは関数ごとに実行可能
@@ -337,6 +337,7 @@ nest generate controller feedback
 ```
 
 **Claude Codeプロンプト**:
+
 ```
 NestJSでfeedbackモジュールを作成してください。
 - FeedbackModule, FeedbackService, FeedbackController
@@ -361,6 +362,7 @@ export interface Feedback {
 ```
 
 **Claude Codeプロンプト**:
+
 ```
 packages/shared/src/types/にfeedback.tsを作成してください。
 Feedback型を定義（id, sessionId, rating, comment, createdAt）。
@@ -379,13 +381,14 @@ export async function submitFeedback(data: Omit<Feedback, 'id' | 'createdAt'>) {
   const response = await fetch('/api/feedback', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   return response.json();
 }
 ```
 
 **Claude Codeプロンプト**:
+
 ```
 apps/web/lib/api/にfeedback-api.tsを作成してください。
 submitFeedback関数を実装。
@@ -497,7 +500,7 @@ describe('AvatarsService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [AvatarsService, { provide: PrismaService, useValue: mockPrisma }]
+      providers: [AvatarsService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<AvatarsService>(AvatarsService);

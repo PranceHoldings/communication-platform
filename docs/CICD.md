@@ -478,7 +478,7 @@ Production:
 ```typescript
 // infrastructure/lib/monitoring-stack.ts
 const alarmTopic = new sns.Topic(this, 'AlarmTopic', {
-  displayName: 'Prance Platform Alarms'
+  displayName: 'Prance Platform Alarms',
 });
 
 // Slack連携（Lambda + SNS Subscription）
@@ -521,14 +521,14 @@ const slackNotifier = new lambda.Function(this, 'SlackNotifier', {
     };
   `),
   environment: {
-    SLACK_WEBHOOK_PATH: process.env.SLACK_WEBHOOK_PATH!
-  }
+    SLACK_WEBHOOK_PATH: process.env.SLACK_WEBHOOK_PATH!,
+  },
 });
 
 new sns.Subscription(this, 'SlackSubscription', {
   topic: alarmTopic,
   protocol: sns.SubscriptionProtocol.LAMBDA,
-  endpoint: slackNotifier.functionArn
+  endpoint: slackNotifier.functionArn,
 });
 ```
 
@@ -567,23 +567,23 @@ jobs:
   test-frontend:
     runs-on: ubuntu-latest
     steps:
-      - # ... test frontend
+      -  # ... test frontend
 
   test-backend:
     runs-on: ubuntu-latest
     steps:
-      - # ... test backend
+      -  # ... test backend
 
   test-workers:
     runs-on: ubuntu-latest
     steps:
-      - # ... test workers
+      -  # ... test workers
 
   deploy:
     needs: [test-frontend, test-backend, test-workers]
     runs-on: ubuntu-latest
     steps:
-      - # ... deploy
+      -  # ... deploy
 ```
 
 ---

@@ -22,17 +22,17 @@
 
 ✅ **Phase 1: MVP - コア会話機能**
 
-| 機能カテゴリ | 含む機能 | 含まない機能 |
-|------------|---------|------------|
-| **認証** | ・Cognito認証（Email/Password）<br>・JWT認証 | ・SSO/SAML<br>・MFA |
-| **アバター** | ・3Dプリセットアバター（Ready Player Me）<br>・リップシンク | ・2Dアバター<br>・カスタムアバター生成 |
-| **音声** | ・Azure STT（リアルタイム）<br>・ElevenLabs TTS<br>・プリセット音声 | ・音声クローニング<br>・カスタム音声 |
-| **会話AI** | ・Claude API統合<br>・基本シナリオ | ・マルチプロバイダ<br>・プロンプト管理UI |
-| **セッション** | ・リアルタイム会話<br>・WebSocket通信<br>・3要素統合UI | ・高度な分岐シナリオ |
-| **録画** | ・ブラウザ録画（ユーザー+アバター）<br>・S3保存 | ・動画合成<br>・サムネイル生成 |
-| **再生** | ・基本動画プレイヤー<br>・トランスクリプト表示 | ・同期プレイヤー<br>・ハイライト |
-| **解析** | なし | ・感情解析<br>・音声解析 |
-| **レポート** | なし | ・自動レポート生成<br>・PDF出力 |
+| 機能カテゴリ   | 含む機能                                                            | 含まない機能                             |
+| -------------- | ------------------------------------------------------------------- | ---------------------------------------- |
+| **認証**       | ・Cognito認証（Email/Password）<br>・JWT認証                        | ・SSO/SAML<br>・MFA                      |
+| **アバター**   | ・3Dプリセットアバター（Ready Player Me）<br>・リップシンク         | ・2Dアバター<br>・カスタムアバター生成   |
+| **音声**       | ・Azure STT（リアルタイム）<br>・ElevenLabs TTS<br>・プリセット音声 | ・音声クローニング<br>・カスタム音声     |
+| **会話AI**     | ・Claude API統合<br>・基本シナリオ                                  | ・マルチプロバイダ<br>・プロンプト管理UI |
+| **セッション** | ・リアルタイム会話<br>・WebSocket通信<br>・3要素統合UI              | ・高度な分岐シナリオ                     |
+| **録画**       | ・ブラウザ録画（ユーザー+アバター）<br>・S3保存                     | ・動画合成<br>・サムネイル生成           |
+| **再生**       | ・基本動画プレイヤー<br>・トランスクリプト表示                      | ・同期プレイヤー<br>・ハイライト         |
+| **解析**       | なし                                                                | ・感情解析<br>・音声解析                 |
+| **レポート**   | なし                                                                | ・自動レポート生成<br>・PDF出力          |
 
 ### 技術スタック（Alpha版）
 
@@ -80,11 +80,13 @@ External APIs:
 **用途**: メインインフラ（Lambda、Aurora、S3、Cognito等）
 
 **取得手順**:
+
 1. https://aws.amazon.com/ にアクセス
 2. 「無料でアカウント作成」
 3. クレジットカード登録必要（12ヶ月無料枠あり）
 
 **必要な設定**:
+
 ```bash
 # AWS CLI設定（ローカル開発用）
 aws configure
@@ -95,6 +97,7 @@ aws configure
 ```
 
 **コスト見積もり（Alpha版開発期間）**:
+
 - 無料枠内: $0
 - 超過時: 月額$50-100程度
 
@@ -105,6 +108,7 @@ aws configure
 **用途**: AI会話エンジン（Claude API）
 
 **取得手順**:
+
 1. AWSアカウントでログイン（上記のAWSアカウントを使用）
 2. AWS Console → Amazon Bedrock
 3. 利用リージョン選択（推奨: us-east-1）
@@ -114,6 +118,7 @@ aws configure
    - Claude 3 Opus（必要に応じて）
 
 **必要な設定**:
+
 ```bash
 # AWS認証情報（すでに設定済みの場合は不要）
 # Bedrockは AWS SDK が自動的にIAM認証を使用
@@ -124,11 +129,13 @@ AWS_REGION=us-east-1
 ```
 
 **コスト見積もり**:
+
 - Claude Sonnet 4.6: $3/1M input tokens, $15/1M output tokens
 - Claude 3 Opus: $15/1M input tokens, $75/1M output tokens
 - Alpha版開発期間: 約$10-30（AWSの統合請求）
 
 **利点**:
+
 - AWS課金の一本化
 - IAM認証（APIキー管理不要）
 - VPC内からの低レイテンシアクセス
@@ -140,16 +147,19 @@ AWS_REGION=us-east-1
 **用途**: 音声合成（AIアバターの声）
 
 **取得手順**:
+
 1. https://elevenlabs.io/ にアクセス
 2. Sign Up
 3. Profile → API Keys
 
 **必要な情報**:
+
 ```bash
 ELEVENLABS_API_KEY=xxxxx...
 ```
 
 **コスト見積もり**:
+
 - Free Tier: 10,000文字/月
 - Creator Plan: $22/月（100,000文字）
 - Alpha版開発期間: Free Tierで十分（開発・テスト用）
@@ -161,18 +171,21 @@ ELEVENLABS_API_KEY=xxxxx...
 **用途**: 音声認識（STT）
 
 **取得手順**:
+
 1. https://portal.azure.com/ にアクセス
 2. Azure アカウント作成（Microsoft アカウント必要）
 3. 「リソースの作成」→ "Speech Services" を検索
 4. リージョン: East US, 価格レベル: Free F0
 
 **必要な情報**:
+
 ```bash
 AZURE_SPEECH_KEY=xxxxx...
 AZURE_SPEECH_REGION=eastus
 ```
 
 **コスト見積もり**:
+
 - Free Tier: 5時間/月（音声認識）
 - Alpha版開発期間: $0（Free Tier内）
 
@@ -183,16 +196,19 @@ AZURE_SPEECH_REGION=eastus
 **用途**: 3Dアバターモデル
 
 **取得手順**:
+
 1. https://readyplayer.me/developers にアクセス
 2. Sign Up
 3. アプリケーション作成
 
 **必要な情報**:
+
 ```bash
 READY_PLAYER_ME_APP_ID=xxxxx...
 ```
 
 **コスト**:
+
 - 開発用: 無料
 - 商用: 要問い合わせ（Alpha版は開発用で可）
 
@@ -203,10 +219,12 @@ READY_PLAYER_ME_APP_ID=xxxxx...
 **用途**: ソースコード管理
 
 **取得手順**:
+
 1. https://github.com/ でアカウント作成済み
 2. リポジトリ: https://github.com/PranceHoldings/communication-platform
 
 **必要な設定**:
+
 ```bash
 # Git設定（既存）
 git config --global user.name "Your Name"
@@ -222,6 +240,7 @@ git config --global user.email "your.email@example.com"
 **用途**: エラー監視
 
 **取得手順**:
+
 1. https://sentry.io/ にアクセス
 2. Sign Up（GitHub連携可）
 3. プロジェクト作成
@@ -354,6 +373,7 @@ npx prisma generate
 ### Week 1: インフラ基盤 + 認証（完了目標: 3/11）
 
 **インフラ（AWS CDK）**:
+
 - [x] プロジェクト構造作成
 - [ ] AWS CDK初期化
 - [ ] VPC・ネットワークスタック
@@ -363,6 +383,7 @@ npx prisma generate
 - [ ] CloudFront設定
 
 **認証**:
+
 - [ ] Cognitoログイン/サインアップAPI
 - [ ] Next.js認証UI
 - [ ] JWT検証ミドルウェア
@@ -374,12 +395,14 @@ npx prisma generate
 ### Week 2: アバター表示 + 基本UI（完了目標: 3/18）
 
 **3Dアバター**:
+
 - [ ] Three.js + React Three Fiberセットアップ
 - [ ] Ready Player Meモデル読み込み
 - [ ] 基本アニメーション（待機状態）
 - [ ] リップシンク実装（Viseme対応）
 
 **UI**:
+
 - [ ] ダッシュボード画面
 - [ ] アバター選択画面
 - [ ] セッション画面レイアウト
@@ -391,11 +414,13 @@ npx prisma generate
 ### Week 3: 会話エンジン（完了目標: 3/25）
 
 **AWS Bedrock (Claude) 統合**:
+
 - [ ] Bedrock Lambdaラッパー (@aws-sdk/client-bedrock-runtime)
 - [ ] システムプロンプト管理
 - [ ] 会話コンテキスト管理（DynamoDB）
 
 **シナリオ**:
+
 - [ ] シナリオデータモデル
 - [ ] 基本シナリオ3種類作成（面接・語学・接客）
 - [ ] シナリオ選択UI
@@ -407,11 +432,13 @@ npx prisma generate
 ### Week 4: 音声処理（完了目標: 4/1）
 
 **TTS (ElevenLabs)**:
+
 - [ ] ElevenLabs API統合
 - [ ] 音声ストリーミング再生
 - [ ] Visemeデータ取得・パース
 
 **STT (Azure)**:
+
 - [ ] Azure Speech SDKセットアップ
 - [ ] リアルタイムストリーミング認識
 - [ ] 認識中/確定テキスト処理
@@ -423,16 +450,19 @@ npx prisma generate
 ### Week 5: セッション実行・録画（完了目標: 4/8）
 
 **WebSocket通信**:
+
 - [ ] IoT Core WebSocketセットアップ
 - [ ] Lambda WebSocketハンドラー
 - [ ] 接続管理（DynamoDB）
 
 **リアルタイムUI（3要素統合）**:
+
 - [ ] ユーザーカメラ表示
 - [ ] アバター映像表示
 - [ ] リアルタイム文字起こし表示
 
 **録画**:
+
 - [ ] MediaRecorder統合（ユーザー+アバター）
 - [ ] S3アップロード
 
@@ -443,15 +473,18 @@ npx prisma generate
 ### Week 6: トランスクリプト・再生・最終調整（完了目標: 4/15）
 
 **トランスクリプト**:
+
 - [ ] トランスクリプトCRUD API
 - [ ] トランスクリプト表示UI
 
 **動画再生**:
+
 - [ ] Video.js統合
 - [ ] サイドバイサイド表示
 - [ ] 基本トランスクリプト同期
 
 **最終調整**:
+
 - [ ] バグフィックス
 - [ ] パフォーマンス最適化
 - [ ] ドキュメント更新
@@ -487,6 +520,7 @@ npx prisma generate
 ### 📝 開発ログ
 
 #### 2026-03-04
+
 - [x] Alpha版開発ワークスペースドキュメント作成
 - [x] 必要アカウント・APIキーリスト整理
 - [ ] プロジェクト構造セットアップ開始

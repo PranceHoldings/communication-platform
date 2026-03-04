@@ -43,19 +43,15 @@ export class DatabaseStack extends cdk.Stack {
       serverlessV2MinCapacity: 0.5, // 最小0.5 ACU (コスト削減)
       serverlessV2MaxCapacity: 2, // Alpha版は2 ACUで十分
       writer: rds.ClusterInstance.serverlessV2('Writer'),
-      readers: props.environment === 'production'
-        ? [rds.ClusterInstance.serverlessV2('Reader')]
-        : [], // Dev環境はReaderなし
+      readers:
+        props.environment === 'production' ? [rds.ClusterInstance.serverlessV2('Reader')] : [], // Dev環境はReaderなし
       backup: {
-        retention: props.environment === 'production'
-          ? cdk.Duration.days(7)
-          : cdk.Duration.days(1),
+        retention: props.environment === 'production' ? cdk.Duration.days(7) : cdk.Duration.days(1),
         preferredWindow: '03:00-04:00', // JST 12:00-13:00
       },
       deletionProtection: props.environment === 'production',
-      removalPolicy: props.environment === 'production'
-        ? cdk.RemovalPolicy.SNAPSHOT
-        : cdk.RemovalPolicy.DESTROY,
+      removalPolicy:
+        props.environment === 'production' ? cdk.RemovalPolicy.SNAPSHOT : cdk.RemovalPolicy.DESTROY,
     });
 
     // Outputs

@@ -25,12 +25,14 @@ Pranceは、AIアバターとのリアルタイム会話を通じて面接練習
 ### 🚀 開発を始める前に
 
 **必読ドキュメント**:
+
 1. **[外部ツールセットアップ](docs/EXTERNAL_TOOLS_SETUP.md)** ⭐ - API登録・キー取得の完全ガイド
 2. **[リリースプラン](docs/RELEASE_PLAN.md)** - どの機能をいつリリースするか
 3. **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各機能の詳細仕様（ユーザーストーリー、UI、API、受け入れ基準）
 4. **[実装プラン](docs/IMPLEMENTATION_PLAN.md)** - 技術的な実装手順
 
 **開発開始の流れ**:
+
 1. **外部サービス登録**（1-2日）
    - Claude API、ElevenLabs、Azure等のアカウント作成
    - APIキー取得・Secrets Manager設定
@@ -45,6 +47,7 @@ Pranceは、AIアバターとのリアルタイム会話を通じて面接練習
    - 👉 [機能ロードマップ](docs/FEATURE_ROADMAP.md)
 
 **開発スケジュール**:
+
 - **Alpha版（2ヶ月）**: コア会話機能
 - **Beta版（1.5ヶ月）**: カスタマイズ機能
 - **v1.0（2ヶ月）**: 一般公開（解析・レポート・課金）
@@ -113,6 +116,7 @@ npm run deploy:production
 ## ドキュメント
 
 ### 🔧 セットアップ
+
 - **[外部ツールセットアップ](docs/EXTERNAL_TOOLS_SETUP.md)** ⭐ - API登録・キー取得の完全ガイド（1,492行）
   - AI・会話サービス（Claude、OpenAI、Gemini）
   - 音声サービス（ElevenLabs、Azure Speech）
@@ -122,12 +126,14 @@ npm run deploy:production
   - チェックリスト・コスト試算
 
 ### 📋 プロジェクト管理
+
 - **[リリースプラン](docs/RELEASE_PLAN.md)** - 段階的リリース戦略（Alpha → Beta → v1.0 → v2.0）
 - **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各リリース段階の詳細機能仕様（2,117行）
 - [実装プラン](docs/IMPLEMENTATION_PLAN.md) - 技術的実装計画（フェーズ分け）
 - [プロジェクト構造](docs/PROJECT_STRUCTURE.md) - コードベース構成
 
 ### 🏗️ 技術ドキュメント
+
 - [アーキテクチャ](docs/ARCHITECTURE.md) - AWSサーバーレスアーキテクチャ
 - [データベース設計](docs/DATABASE_DESIGN.md) - Aurora/DynamoDBスキーマ
 - [API仕様](docs/API_SPECIFICATION.md) - RESTful API + WebSocket仕様
@@ -135,10 +141,12 @@ npm run deploy:production
 - [CI/CDガイド](docs/CICD.md) - GitHub Actions + AWS CDK
 
 ### 💼 ビジネスドキュメント
+
 - [ビジネス概要](docs/BUSINESS_OVERVIEW.md) - ビジネスモデル・市場分析
 - [CLAUDE.md](CLAUDE.md) - 完全プロジェクト仕様書（240KB）
 
 ### 🔐 運用・セキュリティ
+
 - [デプロイメントガイド](docs/DEPLOYMENT.md) - 環境別デプロイ手順
 - [運用ガイド](docs/OPERATIONS_GUIDE.md) - 監視・トラブルシューティング
 - [セキュリティ](docs/SECURITY.md) - セキュリティポリシー・コンプライアンス
@@ -181,14 +189,14 @@ GitHub ActionsとAWS CDKによる自動化されたCI/CDパイプライン。
 
 ## チーム構成
 
-| ロール | 人数 | 主な担当 |
-|--------|------|----------|
-| フロントエンド | 2名 | Next.js, UI/UX |
-| バックエンド | 2名 | Lambda, API設計 |
-| インフラ/DevOps | 1名 | AWS CDK, CI/CD |
-| AI/MLエンジニア | 1名 | プロンプト最適化 |
-| PM | 1名 | 要件定義、調整 |
-| QA | 1名 | テスト自動化 |
+| ロール          | 人数 | 主な担当         |
+| --------------- | ---- | ---------------- |
+| フロントエンド  | 2名  | Next.js, UI/UX   |
+| バックエンド    | 2名  | Lambda, API設計  |
+| インフラ/DevOps | 1名  | AWS CDK, CI/CD   |
+| AI/MLエンジニア | 1名  | プロンプト最適化 |
+| PM              | 1名  | 要件定義、調整   |
+| QA              | 1名  | テスト自動化     |
 
 ## ライセンス
 

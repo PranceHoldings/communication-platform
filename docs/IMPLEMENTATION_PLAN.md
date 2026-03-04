@@ -39,6 +39,7 @@
 ```
 
 **成果物**:
+
 - `package.json` (root)
 - `turbo.json`
 - `.eslintrc.js`
@@ -46,6 +47,7 @@
 - `.husky/`
 
 **Claude Codeプロンプト例**:
+
 ```
 MonorepoをTurborepoでセットアップしてください。
 apps/web（Next.js 15）、apps/api（NestJS）、packages/shared を作成。
@@ -74,6 +76,7 @@ TypeScript strict mode、ESLint、Prettierを設定。
 ```
 
 **成果物**:
+
 - `infrastructure/lib/network-stack.ts`
 - `infrastructure/lib/database-stack.ts`
 - `infrastructure/lib/storage-stack.ts`
@@ -81,6 +84,7 @@ TypeScript strict mode、ESLint、Prettierを設定。
 - `infrastructure/lib/auth-stack.ts`
 
 **Claude Codeプロンプト例**:
+
 ```
 AWS CDKでNetworkStackを実装してください。
 - VPC（2 AZ、public/privateサブネット）
@@ -107,11 +111,13 @@ TypeScriptで、環境変数で設定変更可能に。
 ```
 
 **成果物**:
+
 - `packages/database/prisma/schema.prisma`
 - `packages/database/prisma/migrations/`
 - `packages/database/prisma/seed.ts`
 
 **Claude Codeプロンプト例**:
+
 ```
 Prismaスキーマを作成してください。
 以下のテーブルを含む:
@@ -140,12 +146,14 @@ CLAUDE.mdのデータベース設計を参照。
 ```
 
 **成果物**:
+
 - `.github/workflows/ci.yml`
 - `.github/workflows/deploy-staging.yml`
 - `.github/workflows/deploy-production.yml`
 - `scripts/deploy.sh`
 
 **Claude Codeプロンプト例**:
+
 ```
 GitHub Actions CIワークフローを作成してください。
 PR時: Lint、TypeScriptチェック、テスト実行
@@ -177,12 +185,14 @@ AWS CDK deployを使用。
 ```
 
 **ファイル**:
+
 - `apps/api/src/auth/auth.module.ts`
 - `apps/api/src/auth/auth.service.ts`
 - `apps/api/src/auth/jwt.strategy.ts`
 - `apps/api/src/users/users.module.ts`
 
 **Claude Codeプロンプト例**:
+
 ```
 NestJSでCognito認証モジュールを実装してください。
 - PassportJSでJWT戦略
@@ -209,12 +219,14 @@ NestJSでCognito認証モジュールを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/web/app/[locale]/(auth)/login/page.tsx`
 - `apps/web/app/[locale]/(auth)/signup/page.tsx`
 - `apps/web/lib/auth/auth-store.ts`
 - `apps/web/lib/auth/auth-api.ts`
 
 **Claude Codeプロンプト例**:
+
 ```
 Next.js 15でログインページを作成してください。
 - shadcn/ui使用
@@ -243,11 +255,13 @@ Next.js 15でログインページを作成してください。
 ```
 
 **ファイル**:
+
 - `apps/web/components/avatar/ThreeAvatar.tsx`
 - `apps/web/lib/avatar/rpm-loader.ts`
 - `apps/web/lib/avatar/lipsync.ts`
 
 **Claude Codeプロンプト例**:
+
 ```
 React Three FiberでReady Player Meアバターを表示してください。
 - GLBローダー
@@ -273,6 +287,7 @@ React Three FiberでReady Player Meアバターを表示してください。
 ```
 
 **ファイル**:
+
 - `apps/api/src/avatars/avatars.module.ts`
 - `apps/api/src/avatars/avatars.service.ts`
 - `apps/api/src/avatars/avatars.controller.ts`
@@ -297,11 +312,13 @@ React Three FiberでReady Player Meアバターを表示してください。
 ```
 
 **ファイル**:
+
 - `apps/api/src/voice/tts/elevenlabs.service.ts`
 - `apps/api/src/voice/tts/tts.interface.ts`
 - `apps/workers/src/functions/tts-worker.ts`
 
 **Claude Codeプロンプト例**:
+
 ```
 ElevenLabsのTTSサービスクラスを実装してください。
 - text-to-speechエンドポイント呼び出し
@@ -327,6 +344,7 @@ ElevenLabsのTTSサービスクラスを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/api/src/voice/stt/azure-speech.service.ts`
 - `apps/api/src/websocket/audio-handler.ts`
 
@@ -349,6 +367,7 @@ ElevenLabsのTTSサービスクラスを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/api/src/scenarios/scenarios.module.ts`
 - `apps/api/src/scenarios/scenarios.service.ts`
 - `apps/api/src/scenarios/dto/create-scenario.dto.ts`
@@ -370,11 +389,13 @@ ElevenLabsのTTSサービスクラスを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/api/src/conversation/claude.service.ts`
 - `apps/api/src/conversation/conversation.service.ts`
 - `apps/api/src/conversation/conversation-context.ts`
 
 **Claude Codeプロンプト例**:
+
 ```
 Claude APIの会話サービスを実装してください。
 - Anthropic SDK使用
@@ -402,6 +423,7 @@ Claude APIの会話サービスを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/api/src/websocket/websocket.gateway.ts`
 - `apps/api/src/websocket/connection.service.ts`
 - `apps/api/src/websocket/message-handler.ts`
@@ -424,6 +446,7 @@ Claude APIの会話サービスを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/web/components/session/RecordingManager.tsx`
 - `apps/web/lib/recording/media-recorder.ts`
 - `apps/web/lib/recording/upload.ts`
@@ -474,6 +497,7 @@ Claude APIの会話サービスを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/web/app/[locale]/session/[id]/page.tsx`
 - `apps/web/components/session/SessionPlayer.tsx`
 - `apps/web/components/session/UserCameraView.tsx`
@@ -485,6 +509,7 @@ Claude APIの会話サービスを実装してください。
 - `apps/web/styles/transcript.css`
 
 **Claude Codeプロンプト例**:
+
 ```
 セッション実行画面を実装してください。3要素統合UI:
 1. ユーザーカメラ映像（getUserMedia、右側表示）
@@ -517,6 +542,7 @@ Claude APIの会話サービスを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/api/src/transcripts/transcripts.module.ts`
 - `apps/api/src/transcripts/transcripts.service.ts`
 
@@ -537,6 +563,7 @@ Claude APIの会話サービスを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/web/components/player/VideoPlayer.tsx`
 - `apps/web/components/player/TranscriptPanel.tsx`
 
@@ -563,6 +590,7 @@ Claude APIの会話サービスを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/api/src/prompts/prompt-templates.module.ts`
 - `apps/api/src/prompts/prompt-templates.service.ts`
 - `apps/api/src/prompts/version.service.ts`
@@ -586,6 +614,7 @@ Claude APIの会話サービスを実装してください。
 ```
 
 **ファイル**:
+
 - `apps/web/app/[locale]/admin/prompts/page.tsx`
 - `apps/web/components/admin/PromptEditor.tsx`
 - `apps/web/components/admin/VariableMapper.tsx`
@@ -610,12 +639,14 @@ Claude APIの会話サービスを実装してください。
 ```
 
 **ファイル**:
+
 - `packages/shared/src/providers/ai-provider.interface.ts`
 - `packages/shared/src/providers/claude-adapter.ts`
 - `packages/shared/src/providers/openai-adapter.ts`
 - `apps/api/src/providers/provider-manager.service.ts`
 
 **Claude Codeプロンプト例**:
+
 ```
 AIプロバイダの抽象化レイヤーを実装してください。
 AIProviderインターフェース定義:
@@ -644,6 +675,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/web/app/[locale]/admin/providers/page.tsx`
 - `apps/web/components/admin/ProviderConfig.tsx`
 - `apps/web/components/admin/UsageDashboard.tsx`
@@ -667,6 +699,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/web/components/avatar/Live2DAvatar.tsx`
 - `apps/web/lib/avatar/live2d-loader.ts`
 
@@ -688,6 +721,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/workers/src/functions/avatar-generator.ts`
 - `apps/api/src/avatars/generation.service.ts`
 
@@ -708,6 +742,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/web/components/avatar/AvatarSelector.tsx`
 - `apps/web/components/avatar/AvatarPreview.tsx`
 - `apps/web/components/avatar/CustomAvatarWizard.tsx`
@@ -733,6 +768,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `infrastructure/lib/workflow-stack.ts`
 - `apps/workers/src/workflows/session-processing.asl.json`
 
@@ -752,6 +788,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/workers/src/functions/video-composer.ts`
 - `apps/api/src/media/mediaconvert.service.ts`
 
@@ -774,6 +811,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/workers/src/functions/emotion-analyzer.ts`
 - `apps/api/src/analysis/azure-face.service.ts`
 
@@ -794,6 +832,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/workers/src/functions/audio-analyzer.ts`
 - `apps/api/src/analysis/audio-analysis.service.ts`
 
@@ -816,6 +855,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/workers/src/functions/report-generator.ts`
 - `apps/api/src/reports/reports.service.ts`
 - `apps/api/src/reports/scoring.service.ts`
@@ -837,6 +877,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/workers/src/functions/pdf-generator.ts`
 - `apps/api/src/reports/templates/default-template.html`
 
@@ -857,6 +898,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/web/app/[locale]/reports/[id]/page.tsx`
 - `apps/web/components/reports/ReportView.tsx`
 - `apps/web/components/reports/EmotionChart.tsx`
@@ -878,6 +920,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/web/components/player/SyncedTranscript.tsx`
 - `apps/web/lib/player/sync-manager.ts`
 
@@ -903,6 +946,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/api/src/billing/plans.module.ts`
 - `apps/api/src/billing/plans.service.ts`
 - `apps/api/src/billing/subscriptions.service.ts`
@@ -925,6 +969,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/web/app/[locale]/super-admin/plans/page.tsx`
 - `apps/web/components/super-admin/PlanEditor.tsx`
 
@@ -945,6 +990,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/web/app/[locale]/admin/dashboard/page.tsx`
 - `apps/web/components/admin/Analytics.tsx`
 
@@ -968,6 +1014,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/workers/src/functions/benchmark-aggregator.ts`
 - `apps/api/src/benchmark/benchmark.service.ts`
 - `apps/api/src/benchmark/clustering.service.ts`
@@ -989,6 +1036,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/web/app/[locale]/profile/benchmark/page.tsx`
 - `apps/web/components/profile/BenchmarkView.tsx`
 - `apps/web/components/profile/GrowthChart.tsx`
@@ -1013,6 +1061,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/api/src/api-keys/api-keys.module.ts`
 - `apps/api/src/api-keys/api-keys.service.ts`
 - `apps/api/src/api-keys/rate-limiter.service.ts`
@@ -1034,6 +1083,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/web/app/[locale]/admin/api-keys/page.tsx`
 - `apps/web/components/admin/ApiKeyManager.tsx`
 
@@ -1055,6 +1105,7 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `infrastructure/lib/auth-stack.ts` (更新)
 - `apps/api/src/auth/saml.service.ts`
 
@@ -1080,12 +1131,14 @@ ClaudeAdapter, OpenAIAdapter実装。
 ```
 
 **ファイル**:
+
 - `apps/web/i18n.ts`
 - `apps/web/locales/ja/*.json`
 - `apps/web/locales/en/*.json`
 - `apps/api/src/i18n/i18n.module.ts`
 
 **Claude Codeプロンプト例**:
+
 ```
 Next.js 15でnext-intlをセットアップしてください。
 - App Router対応
@@ -1130,12 +1183,14 @@ Next.js 15でnext-intlをセットアップしてください。
 ```
 
 **ファイル**:
+
 - `packages/shared/src/ats/ats-adapter.interface.ts`
 - `packages/shared/src/ats/greenhouse-adapter.ts`
 - `packages/shared/src/ats/lever-adapter.ts`
 - `apps/api/src/ats/ats-manager.service.ts`
 
 **Claude Codeプロンプト例**:
+
 ```
 ATSAdapterインターフェースを定義してください。
 - getCandidates()
@@ -1164,6 +1219,7 @@ Greenhouseアダプターを実装。OAuth2認証、API呼び出し。
 ```
 
 **ファイル**:
+
 - `apps/web/app/[locale]/admin/ats/page.tsx`
 - `apps/web/components/admin/AtsConfig.tsx`
 
@@ -1187,6 +1243,7 @@ Greenhouseアダプターを実装。OAuth2認証、API呼び出し。
 ```
 
 **ファイル**:
+
 - `packages/plugins/src/plugin.interface.ts`
 - `packages/plugins/src/plugin-context.ts`
 - `apps/api/src/plugins/plugin-manager.service.ts`
@@ -1208,6 +1265,7 @@ Greenhouseアダプターを実装。OAuth2認証、API呼び出し。
 ```
 
 **ファイル**:
+
 - `plugins/greenhouse/plugin.yaml`
 - `plugins/greenhouse/src/index.ts`
 
@@ -1238,6 +1296,7 @@ AI/ML Engineer (1名):
 ### 並行開発可能なタスク
 
 **Phase 1 並行開発例**:
+
 - Frontend A: 認証UI (1.1.2)
 - Frontend B: アバター表示 (1.2.1)
 - Backend C: 認証API (1.1.1)
@@ -1312,12 +1371,14 @@ AI/ML Engineer (1名):
 ### 進捗報告
 
 **週次**:
+
 - 完了タスク
 - 進行中タスク
 - ブロッカー
 - 次週計画
 
 **マイルストーン**:
+
 - Phase完了時にデモ
 - ステークホルダーレビュー
 - Go/No-Go判断

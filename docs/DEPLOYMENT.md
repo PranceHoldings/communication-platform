@@ -17,11 +17,11 @@
 
 ### 環境構成
 
-| 環境 | 用途 | デプロイトリガー | URL |
-|------|------|------------------|-----|
-| **Development** | ローカル開発 | 手動 | http://localhost:3000 |
-| **Staging** | 統合テスト・QA | `main` ブランチマージ | https://staging.prance.com |
-| **Production** | 本番環境 | `v*.*.*` タグプッシュ | https://prance.com |
+| 環境            | 用途           | デプロイトリガー      | URL                        |
+| --------------- | -------------- | --------------------- | -------------------------- |
+| **Development** | ローカル開発   | 手動                  | http://localhost:3000      |
+| **Staging**     | 統合テスト・QA | `main` ブランチマージ | https://staging.prance.com |
+| **Production**  | 本番環境       | `v*.*.*` タグプッシュ | https://prance.com         |
 
 ### AWS アカウント構成
 
@@ -407,19 +407,15 @@ aws secretsmanager get-secret-value \
 
 ```typescript
 // infrastructure/lib/api-stack.ts
-const secret = secretsmanager.Secret.fromSecretNameV2(
-  this,
-  'EnvSecret',
-  'prance/staging/env'
-);
+const secret = secretsmanager.Secret.fromSecretNameV2(this, 'EnvSecret', 'prance/staging/env');
 
 const lambdaFunction = new lambda.Function(this, 'ApiFunction', {
   // ...
   environment: {
     NODE_ENV: 'production',
     DATABASE_URL: secret.secretValueFromJson('DATABASE_URL').toString(),
-    ANTHROPIC_API_KEY: secret.secretValueFromJson('ANTHROPIC_API_KEY').toString()
-  }
+    ANTHROPIC_API_KEY: secret.secretValueFromJson('ANTHROPIC_API_KEY').toString(),
+  },
 });
 
 secret.grantRead(lambdaFunction);
@@ -457,7 +453,7 @@ import * as codedeploy from 'aws-cdk-lib/aws-codedeploy';
 
 new codedeploy.LambdaDeploymentGroup(this, 'DeploymentGroup', {
   alias: alias,
-  deploymentConfig: codedeploy.LambdaDeploymentConfig.CANARY_10PERCENT_5MINUTES
+  deploymentConfig: codedeploy.LambdaDeploymentConfig.CANARY_10PERCENT_5MINUTES,
 });
 ```
 
@@ -501,7 +497,7 @@ const errorAlarm = new cloudwatch.Alarm(this, 'ApiErrorAlarm', {
   threshold: 10,
   evaluationPeriods: 2,
   datapointsToAlarm: 2,
-  treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING
+  treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
 });
 
 const snsAction = new cloudwatch_actions.SnsAction(alarmTopic);

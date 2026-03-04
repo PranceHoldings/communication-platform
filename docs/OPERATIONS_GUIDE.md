@@ -44,11 +44,11 @@ Pranceプラットフォームの運用手順とベストプラクティス
 
 ### オンコールローテーション
 
-| 時間帯 | 担当 | 対応レベル |
-|--------|------|-----------|
-| **平日 9:00-18:00** | 全SREチーム | P0-P3 |
-| **平日 18:00-9:00** | オンコール（1名） | P0-P1 |
-| **週末・祝日** | オンコール（1名） | P0-P1 |
+| 時間帯              | 担当              | 対応レベル |
+| ------------------- | ----------------- | ---------- |
+| **平日 9:00-18:00** | 全SREチーム       | P0-P3      |
+| **平日 18:00-9:00** | オンコール（1名） | P0-P1      |
+| **週末・祝日**      | オンコール（1名） | P0-P1      |
 
 **エスカレーションパス:**
 
@@ -64,12 +64,12 @@ CEO + 全役員
 
 ### SLA（Service Level Agreement）
 
-| メトリクス | 目標 | 測定方法 |
-|-----------|------|---------|
-| **稼働率** | 99.9% | CloudWatch Synthetics |
-| **APIレスポンスタイム** | p95 < 500ms | CloudWatch Metrics |
-| **エラー率** | < 0.1% | CloudWatch Logs Insights |
-| **データ損失** | 0件 | バックアップ検証 |
+| メトリクス              | 目標        | 測定方法                 |
+| ----------------------- | ----------- | ------------------------ |
+| **稼働率**              | 99.9%       | CloudWatch Synthetics    |
+| **APIレスポンスタイム** | p95 < 500ms | CloudWatch Metrics       |
+| **エラー率**            | < 0.1%      | CloudWatch Logs Insights |
+| **データ損失**          | 0件         | バックアップ検証         |
 
 **ダウンタイム許容:**
 
@@ -196,9 +196,7 @@ echo "\n=== Health Check Complete ==="
       "type": "metric",
       "properties": {
         "title": "API Request Count",
-        "metrics": [
-          ["AWS/ApiGateway", "Count", { "stat": "Sum" }]
-        ],
+        "metrics": [["AWS/ApiGateway", "Count", { "stat": "Sum" }]],
         "period": 300,
         "region": "us-east-1"
       }
@@ -207,9 +205,7 @@ echo "\n=== Health Check Complete ==="
       "type": "metric",
       "properties": {
         "title": "API Latency (p95)",
-        "metrics": [
-          ["AWS/ApiGateway", "Latency", { "stat": "p95" }]
-        ],
+        "metrics": [["AWS/ApiGateway", "Latency", { "stat": "p95" }]],
         "period": 300,
         "yAxis": { "left": { "max": 1000 } }
       }
@@ -218,9 +214,7 @@ echo "\n=== Health Check Complete ==="
       "type": "metric",
       "properties": {
         "title": "Lambda Errors",
-        "metrics": [
-          ["AWS/Lambda", "Errors", { "stat": "Sum" }]
-        ],
+        "metrics": [["AWS/Lambda", "Errors", { "stat": "Sum" }]],
         "period": 300
       }
     },
@@ -229,9 +223,13 @@ echo "\n=== Health Check Complete ==="
       "properties": {
         "title": "Aurora CPU Utilization",
         "metrics": [
-          ["AWS/RDS", "CPUUtilization", {
-            "dimensions": { "DBClusterIdentifier": "prance-production-cluster" }
-          }]
+          [
+            "AWS/RDS",
+            "CPUUtilization",
+            {
+              "dimensions": { "DBClusterIdentifier": "prance-production-cluster" }
+            }
+          ]
         ],
         "period": 300,
         "yAxis": { "left": { "min": 0, "max": 100 } }
@@ -299,7 +297,7 @@ new cloudwatch.Alarm(this, 'ApiLatencyAlarm', {
     statistic: 'p95',
     period: Duration.minutes(5),
   }),
-  threshold: 1000,  // 1秒
+  threshold: 1000, // 1秒
   evaluationPeriods: 3,
   alarmDescription: 'API latency p95 exceeded 1 second',
   alarmActions: [snsTopicHigh],
@@ -481,12 +479,12 @@ aws cloudwatch get-metric-statistics \
 
 **一般的な原因と対処:**
 
-| 原因 | 診断 | 対処 |
-|------|------|------|
-| **Lambda タイムアウト** | CloudWatch Logs: "Task timed out" | タイムアウト値を増加、またはコード最適化 |
-| **データベース接続エラー** | "ECONNREFUSED 5432" | Aurora 接続数確認、コネクションプール調整 |
-| **メモリ不足** | "JavaScript heap out of memory" | Lambda メモリを増加 |
-| **外部API障害** | "ETIMEDOUT", "ENOTFOUND" | フォールバック処理確認、タイムアウト調整 |
+| 原因                       | 診断                              | 対処                                      |
+| -------------------------- | --------------------------------- | ----------------------------------------- |
+| **Lambda タイムアウト**    | CloudWatch Logs: "Task timed out" | タイムアウト値を増加、またはコード最適化  |
+| **データベース接続エラー** | "ECONNREFUSED 5432"               | Aurora 接続数確認、コネクションプール調整 |
+| **メモリ不足**             | "JavaScript heap out of memory"   | Lambda メモリを増加                       |
+| **外部API障害**            | "ETIMEDOUT", "ENOTFOUND"          | フォールバック処理確認、タイムアウト調整  |
 
 ### 問題: データベース接続枯渇
 
@@ -626,13 +624,13 @@ aws secretsmanager get-secret-value \
 
 **一般的な原因と対処:**
 
-| 原因 | 診断 | 対処 |
-|------|------|------|
-| **Azure STT クォータ超過** | Azure Portal: クォータ使用状況確認 | クォータ増加申請、またはレート制限実装 |
-| **マイクアクセス拒否** | ブラウザログ: "NotAllowedError" | ユーザーにマイク権限付与を依頼 |
-| **ネットワークレイテンシ高** | CloudWatch: WebSocket latency > 500ms | リージョン変更、ネットワーク品質確認 |
-| **API Key 期限切れ** | Azure API: "401 Unauthorized" | Secrets Manager で API Key 更新 |
-| **WebSocket 切断** | Lambda ログ: "Connection closed" | 自動再接続ロジック確認、IoT Core 設定確認 |
+| 原因                         | 診断                                  | 対処                                      |
+| ---------------------------- | ------------------------------------- | ----------------------------------------- |
+| **Azure STT クォータ超過**   | Azure Portal: クォータ使用状況確認    | クォータ増加申請、またはレート制限実装    |
+| **マイクアクセス拒否**       | ブラウザログ: "NotAllowedError"       | ユーザーにマイク権限付与を依頼            |
+| **ネットワークレイテンシ高** | CloudWatch: WebSocket latency > 500ms | リージョン変更、ネットワーク品質確認      |
+| **API Key 期限切れ**         | Azure API: "401 Unauthorized"         | Secrets Manager で API Key 更新           |
+| **WebSocket 切断**           | Lambda ログ: "Connection closed"      | 自動再接続ロジック確認、IoT Core 設定確認 |
 
 **対処（短期）:**
 
@@ -666,7 +664,7 @@ recognizer.canceled = (s, e) => {
       setTranscriptionMode('manual');
       showNotification({
         type: 'error',
-        message: '音声認識に問題が発生しました。手動入力に切り替えてください。'
+        message: '音声認識に問題が発生しました。手動入力に切り替えてください。',
       });
     }
   }
@@ -711,13 +709,13 @@ aws cloudwatch get-metric-statistics \
 
 **一般的な原因と対処:**
 
-| 原因 | 診断 | 対処 |
-|------|------|------|
-| **Lambda タイムアウト** | CloudWatch Logs: "Task timed out after 60.00 seconds" | Lambda タイムアウトを 300秒に増加 |
-| **IoT Core ポリシー不足** | IoT Core ログ: "Forbidden" | IoT ポリシーに `iot:Publish`, `iot:Subscribe` 追加 |
-| **DynamoDB スロットリング** | CloudWatch: UserErrors > 0 | DynamoDB オンデマンドモードに変更 |
-| **クライアント側ネットワーク** | ブラウザコンソール: "WebSocket connection failed" | ユーザーにネットワーク確認を依頼 |
-| **Lambda 同時実行制限** | CloudWatch: Throttles > 0 | 予約済み同時実行数を増加 |
+| 原因                           | 診断                                                  | 対処                                               |
+| ------------------------------ | ----------------------------------------------------- | -------------------------------------------------- |
+| **Lambda タイムアウト**        | CloudWatch Logs: "Task timed out after 60.00 seconds" | Lambda タイムアウトを 300秒に増加                  |
+| **IoT Core ポリシー不足**      | IoT Core ログ: "Forbidden"                            | IoT ポリシーに `iot:Publish`, `iot:Subscribe` 追加 |
+| **DynamoDB スロットリング**    | CloudWatch: UserErrors > 0                            | DynamoDB オンデマンドモードに変更                  |
+| **クライアント側ネットワーク** | ブラウザコンソール: "WebSocket connection failed"     | ユーザーにネットワーク確認を依頼                   |
+| **Lambda 同時実行制限**        | CloudWatch: Throttles > 0                             | 予約済み同時実行数を増加                           |
 
 **対処（即座）:**
 
@@ -757,7 +755,7 @@ wsClient.onDisconnect(() => {
     // 再接続失敗 → ユーザーに通知
     showNotification({
       type: 'error',
-      message: '接続が切断されました。セッションを再開してください。'
+      message: '接続が切断されました。セッションを再開してください。',
     });
 
     // 録画データをローカルに保存
@@ -807,13 +805,13 @@ aws iam get-role-policy \
 
 **一般的な原因と対処:**
 
-| 原因 | 診断 | 対処 |
-|------|------|------|
-| **ファイルサイズ超過** | ブラウザログ: "413 Payload Too Large" | プラン別サイズ制限を調整、圧縮率向上 |
-| **S3バケット権限不足** | S3 ログ: "AccessDenied" | IAM ロールに `s3:PutObject` 権限追加 |
-| **署名付きURL 期限切れ** | ブラウザログ: "403 Forbidden" | URL有効期限を延長（15分 → 30分） |
-| **ネットワークタイムアウト** | ブラウザログ: "Network request failed" | アップロードタイムアウトを延長 |
-| **S3 CORS設定不足** | ブラウザログ: "CORS error" | S3バケット CORS設定を追加 |
+| 原因                         | 診断                                   | 対処                                 |
+| ---------------------------- | -------------------------------------- | ------------------------------------ |
+| **ファイルサイズ超過**       | ブラウザログ: "413 Payload Too Large"  | プラン別サイズ制限を調整、圧縮率向上 |
+| **S3バケット権限不足**       | S3 ログ: "AccessDenied"                | IAM ロールに `s3:PutObject` 権限追加 |
+| **署名付きURL 期限切れ**     | ブラウザログ: "403 Forbidden"          | URL有効期限を延長（15分 → 30分）     |
+| **ネットワークタイムアウト** | ブラウザログ: "Network request failed" | アップロードタイムアウトを延長       |
+| **S3 CORS設定不足**          | ブラウザログ: "CORS error"             | S3バケット CORS設定を追加            |
 
 **対処（即座）:**
 
@@ -854,8 +852,8 @@ async function uploadToS3WithRetry(
         method: 'PUT',
         body: blob,
         headers: {
-          'Content-Type': blob.type
-        }
+          'Content-Type': blob.type,
+        },
       });
 
       if (response.ok) {
@@ -873,7 +871,7 @@ async function uploadToS3WithRetry(
 
         showNotification({
           type: 'error',
-          message: 'アップロードに失敗しました。録画データはローカルに保存されました。'
+          message: 'アップロードに失敗しました。録画データはローカルに保存されました。',
         });
 
         throw error;
@@ -907,10 +905,11 @@ function saveRecordingLocally(blob: Blob): void {
 ```yaml
 # 自動バックアップ設定
 Aurora:
-  BackupRetentionPeriod: 35  # 35日間保持
-  PreferredBackupWindow: "03:00-04:00"  # JST 12:00-13:00
-  EnableBacktrackで: false  # Aurora PostgreSQLは非対応
-  EnablePITR: true  # Point-in-Time Recovery
+  BackupRetentionPeriod: 35 # 35日間保持
+  PreferredBackupWindow: '03:00-04:00' # JST 12:00-13:00
+  EnableBacktrackで: false # Aurora PostgreSQLは非対応
+  EnablePITR: true # Point-in-Time Recovery
+
 
 # スナップショット（手動）
 # デプロイ前、月次
@@ -1030,7 +1029,7 @@ const target = new appscaling.ScalableTarget(this, 'ScalableTarget', {
 });
 
 target.scaleToTrackMetric('PceTracking', {
-  targetValue: 0.70,
+  targetValue: 0.7,
   predefinedMetric: appscaling.PredefinedMetric.LAMBDA_PROVISIONED_CONCURRENCY_UTILIZATION,
 });
 ```
@@ -1039,8 +1038,9 @@ target.scaleToTrackMetric('PceTracking', {
 
 ```yaml
 # Aurora Serverless v2
-MinCapacity: 0.5 ACU  # 最小
-MaxCapacity: 16 ACU   # 最大
+MinCapacity: 0.5 ACU # 最小
+MaxCapacity: 16 ACU # 最大
+
 
 # スケールアップトリガー:
 # - CPU使用率 > 70%
@@ -1079,13 +1079,13 @@ aws rds modify-db-cluster \
 
 ### 定期メンテナンス
 
-| 頻度 | タスク | 担当 |
-|------|--------|------|
-| **日次** | ヘルスチェック、ログ確認 | オンコール |
-| **週次** | パフォーマンスレビュー、コスト分析 | SRE |
-| **月次** | バックアップ検証、セキュリティパッチ | SRE |
-| **四半期** | DR訓練、キャパシティプランニング | SRE + Dev |
-| **年次** | ペネトレーションテスト、監査対応 | Security + SRE |
+| 頻度       | タスク                               | 担当           |
+| ---------- | ------------------------------------ | -------------- |
+| **日次**   | ヘルスチェック、ログ確認             | オンコール     |
+| **週次**   | パフォーマンスレビュー、コスト分析   | SRE            |
+| **月次**   | バックアップ検証、セキュリティパッチ | SRE            |
+| **四半期** | DR訓練、キャパシティプランニング     | SRE + Dev      |
+| **年次**   | ペネトレーションテスト、監査対応     | Security + SRE |
 
 ### メンテナンスウィンドウ
 
@@ -1155,20 +1155,24 @@ docs/runbooks/
 ## Date: 2026-03-04
 
 ### Ongoing Issues
+
 - [ ] Issue #123: Intermittent API latency spike (P2)
   - Root cause: Under investigation
   - Next step: Profile Lambda function
 
 ### Scheduled Tasks
+
 - [ ] Deploy v1.2.4 to production (tomorrow 10:00)
 - [ ] Monthly backup validation (March 5)
 
 ### Monitoring
+
 - Aurora CPU: Normal (30-40%)
 - Lambda errors: Below threshold
 - Cost: Trending slightly high (investigate S3)
 
 ### Notes
+
 - New customer onboarding scheduled for tomorrow
 - Keep an eye on #customer-feedback channel
 

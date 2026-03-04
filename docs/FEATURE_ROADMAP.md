@@ -25,6 +25,7 @@
 #### 1.1 ユーザー登録・ログイン ⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want メールアドレスとパスワードでアカウントを作成できる
@@ -32,6 +33,7 @@ So that プラットフォームを利用開始できる
 ```
 
 **機能詳細**:
+
 - メールアドレス + パスワードでの新規登録
 - メール確認（認証コード送信）
 - ログイン（JWT発行）
@@ -39,12 +41,14 @@ So that プラットフォームを利用開始できる
 - プロフィール編集（名前、アバター画像）
 
 **技術要件**:
+
 - Amazon Cognito User Pools
 - JWT認証（Access Token + Refresh Token）
 - トークン有効期限: Access Token 1時間、Refresh Token 30日
 - パスワードポリシー: 8文字以上、大小英数字記号混在
 
 **UI画面**:
+
 ```
 ┌─────────────────────────────────────┐
 │  新規登録                            │
@@ -70,33 +74,59 @@ So that プラットフォームを利用開始できる
 ```
 
 **API**:
+
 ```typescript
-POST /api/auth/register
-  Body: { email, password, name }
-  Response: { message: "Verification email sent" }
+POST / api / auth / register;
+Body: {
+  (email, password, name);
+}
+Response: {
+  message: 'Verification email sent';
+}
 
-POST /api/auth/verify
-  Body: { email, code }
-  Response: { accessToken, refreshToken, user }
+POST / api / auth / verify;
+Body: {
+  (email, code);
+}
+Response: {
+  (accessToken, refreshToken, user);
+}
 
-POST /api/auth/login
-  Body: { email, password }
-  Response: { accessToken, refreshToken, user }
+POST / api / auth / login;
+Body: {
+  (email, password);
+}
+Response: {
+  (accessToken, refreshToken, user);
+}
 
-POST /api/auth/refresh
-  Body: { refreshToken }
-  Response: { accessToken }
+POST / api / auth / refresh;
+Body: {
+  refreshToken;
+}
+Response: {
+  accessToken;
+}
 
-POST /api/auth/forgot-password
-  Body: { email }
-  Response: { message: "Reset email sent" }
+POST / api / auth / forgot - password;
+Body: {
+  email;
+}
+Response: {
+  message: 'Reset email sent';
+}
 
-POST /api/auth/reset-password
-  Body: { email, code, newPassword }
-  Response: { message: "Password reset successful" }
+POST / api / auth / reset - password;
+Body: {
+  (email, code, newPassword);
+}
+Response: {
+  message: 'Password reset successful';
+}
 ```
 
 **受け入れ基準**:
+
 - [ ] メールアドレス形式検証が動作する
 - [ ] 重複メールアドレス登録を拒否する
 - [ ] 認証コードが5分以内に到着する
@@ -111,6 +141,7 @@ POST /api/auth/reset-password
 #### 1.2 組織管理（基本） ⭐
 
 **ユーザーストーリー**:
+
 ```
 As a 管理者
 I want 組織を作成してメンバーを招待できる
@@ -118,16 +149,19 @@ So that チームで利用できる
 ```
 
 **機能詳細**:
+
 - 組織作成（名前、ドメイン）
 - ユーザー招待（メール送信）
 - メンバー一覧表示
 - ロール設定（管理者 / 一般ユーザー）
 
 **技術要件**:
+
 - Auroraテーブル: organizations, users, organization_members
 - Row Level Security（組織IDによるデータ分離）
 
 **UI画面**:
+
 ```
 ┌─────────────────────────────────────┐
 │  組織設定                            │
@@ -145,6 +179,7 @@ So that チームで利用できる
 ```
 
 **API**:
+
 ```typescript
 POST /api/organizations
   Body: { name }
@@ -163,6 +198,7 @@ PUT /api/organizations/:id/members/:userId
 ```
 
 **受け入れ基準**:
+
 - [ ] 組織作成後に管理者として自動登録される
 - [ ] 招待メールが送信される
 - [ ] 招待URLから新規登録できる
@@ -177,6 +213,7 @@ PUT /api/organizations/:id/members/:userId
 #### 2.1 プリセット3Dアバター表示 ⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want プリセットアバターから選択できる
@@ -184,17 +221,20 @@ So that すぐに会話を始められる
 ```
 
 **機能詳細**:
+
 - プリセット3Dアバター 3種類（ビジネス男性、ビジネス女性、カジュアル）
 - Ready Player Me GLBモデル
 - Three.jsでブラウザレンダリング
 - 基本アニメーション（アイドル、話す）
 
 **技術要件**:
+
 - Three.js + React Three Fiber
 - Ready Player Me GLBモデル（事前ダウンロード）
 - S3保存（avatars/presets/）
 
 **UI画面**:
+
 ```
 ┌─────────────────────────────────────┐
 │  アバター選択                        │
@@ -216,6 +256,7 @@ So that すぐに会話を始められる
 ```
 
 **実装**:
+
 ```typescript
 // components/AvatarViewer.tsx
 import { Canvas } from '@react-three/fiber';
@@ -240,6 +281,7 @@ export function AvatarViewer({ avatarId }) {
 ```
 
 **API**:
+
 ```typescript
 GET /api/avatars/presets
   Response: {
@@ -255,6 +297,7 @@ GET /api/avatars/:id
 ```
 
 **受け入れ基準**:
+
 - [ ] 3種類のアバターがプレビュー表示される
 - [ ] 3Dモデルが5秒以内にロードされる
 - [ ] マウスドラッグでカメラ回転できる
@@ -267,6 +310,7 @@ GET /api/avatars/:id
 #### 2.2 リップシンク ⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want アバターが音声に合わせて口を動かす
@@ -274,41 +318,40 @@ So that 自然な会話体験ができる
 ```
 
 **機能詳細**:
+
 - ElevenLabs TTS Visemeデータ → ARKit Blendshapes変換
 - リアルタイム口パクアニメーション
 - 52種類のBlendshapes対応
 
 **技術要件**:
+
 - ElevenLabs `/v1/text-to-speech` API
 - Viseme → Blendshapes マッピング
 - Three.js morphTargets
 
 **実装**:
+
 ```typescript
 // services/lipSync.ts
 const VISEME_TO_BLENDSHAPE: Record<string, string> = {
-  'sil': 'mouthClose',      // 無音
-  'PP': 'mouthPucker',      // p, b, m
-  'FF': 'mouthLowerDownRight', // f, v
-  'TH': 'tongueOut',        // th
-  'DD': 'jawOpen',          // d, t, n
-  'kk': 'jawLeft',          // k, g
-  'CH': 'mouthSmileLeft',   // ch, j
-  'SS': 'mouthFrownLeft',   // s, z
-  'nn': 'mouthClose',       // n, ng
-  'RR': 'mouthShrugUpper',  // r
-  'aa': 'jawOpen',          // a
-  'E': 'mouthSmileRight',   // e
-  'I': 'mouthSmileLeft',    // i
-  'O': 'mouthFunnel',       // o
-  'U': 'mouthPucker',       // u
+  sil: 'mouthClose', // 無音
+  PP: 'mouthPucker', // p, b, m
+  FF: 'mouthLowerDownRight', // f, v
+  TH: 'tongueOut', // th
+  DD: 'jawOpen', // d, t, n
+  kk: 'jawLeft', // k, g
+  CH: 'mouthSmileLeft', // ch, j
+  SS: 'mouthFrownLeft', // s, z
+  nn: 'mouthClose', // n, ng
+  RR: 'mouthShrugUpper', // r
+  aa: 'jawOpen', // a
+  E: 'mouthSmileRight', // e
+  I: 'mouthSmileLeft', // i
+  O: 'mouthFunnel', // o
+  U: 'mouthPucker', // u
 };
 
-export function applyVisemeToAvatar(
-  avatar: THREE.SkinnedMesh,
-  viseme: string,
-  weight: number
-) {
+export function applyVisemeToAvatar(avatar: THREE.SkinnedMesh, viseme: string, weight: number) {
   const blendshapeName = VISEME_TO_BLENDSHAPE[viseme];
   const morphIndex = avatar.morphTargetDictionary?.[blendshapeName];
 
@@ -319,6 +362,7 @@ export function applyVisemeToAvatar(
 ```
 
 **受け入れ基準**:
+
 - [ ] 音声再生と同期して口が動く
 - [ ] Viseme切り替えが滑らか（補間処理）
 - [ ] 無音時に口が閉じる
@@ -333,6 +377,7 @@ export function applyVisemeToAvatar(
 #### 3.1 TTS（音声合成） ⭐
 
 **ユーザーストーリー**:
+
 ```
 As a システム
 I want AIアバターの応答テキストを音声に変換できる
@@ -340,42 +385,42 @@ So that ユーザーと音声会話できる
 ```
 
 **機能詳細**:
+
 - ElevenLabs API統合
 - プリセット音声（英語1種、日本語1種）
 - ストリーミング再生
 - Visemeデータ取得
 
 **技術要件**:
+
 - ElevenLabs API Key（Lambdaで管理）
 - 音声形式: MP3 44.1kHz
 - ブラウザ: Web Audio API
 
 **実装**:
+
 ```typescript
 // services/tts.ts
 export async function synthesizeSpeech(
   text: string,
   voiceId: string
 ): Promise<{ audio: ArrayBuffer; visemes: Viseme[] }> {
-  const response = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-    {
-      method: 'POST',
-      headers: {
-        'Accept': 'audio/mpeg',
-        'xi-api-key': process.env.ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json',
+  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'audio/mpeg',
+      'xi-api-key': process.env.ELEVENLABS_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      text,
+      model_id: 'eleven_multilingual_v2',
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.75,
       },
-      body: JSON.stringify({
-        text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-        },
-      }),
-    }
-  );
+    }),
+  });
 
   const audio = await response.arrayBuffer();
 
@@ -387,6 +432,7 @@ export async function synthesizeSpeech(
 ```
 
 **API**:
+
 ```typescript
 POST /api/tts/synthesize
   Body: { text, voiceId }
@@ -394,6 +440,7 @@ POST /api/tts/synthesize
 ```
 
 **受け入れ基準**:
+
 - [ ] テキスト送信後3秒以内に音声再生開始
 - [ ] 日本語・英語で自然な発音
 - [ ] Visemeデータが正確に取得できる
@@ -406,6 +453,7 @@ POST /api/tts/synthesize
 #### 3.2 STT（音声認識） ⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want マイクで話した内容がリアルタイムでテキスト化される
@@ -413,18 +461,21 @@ So that AIアバターに伝えられる
 ```
 
 **機能詳細**:
+
 - Azure Speech Services統合
 - リアルタイムストリーミング認識
 - 逐次字幕表示
 - 日本語・英語対応
 
 **技術要件**:
+
 - Azure Speech SDK
 - WebSocket接続
 - マイク入力（MediaRecorder API）
 - 音声形式: PCM 16kHz mono
 
 **実装**:
+
 ```typescript
 // hooks/useSpeechRecognition.ts
 import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
@@ -463,6 +514,7 @@ export function useSpeechRecognition(language: 'ja-JP' | 'en-US') {
 ```
 
 **UI**:
+
 ```
 ┌─────────────────────────────────────┐
 │  セッション中                        │
@@ -478,6 +530,7 @@ export function useSpeechRecognition(language: 'ja-JP' | 'en-US') {
 ```
 
 **受け入れ基準**:
+
 - [ ] マイク権限を正しく要求する
 - [ ] 発話開始後1秒以内に字幕が表示される
 - [ ] 認識精度 > 90%（標準的な発音）
@@ -492,6 +545,7 @@ export function useSpeechRecognition(language: 'ja-JP' | 'en-US') {
 #### 4.1 プリセットシナリオ（面接練習） ⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want 面接練習シナリオを選択して開始できる
@@ -499,12 +553,14 @@ So that 面接対策ができる
 ```
 
 **機能詳細**:
+
 - プリセットシナリオ: 「エンジニア採用面接（中級）」
 - 固定システムプロンプト
 - 必須トピック: 自己紹介、技術スキル、志望動機
 - 制限時間: 30分
 
 **システムプロンプト**:
+
 ```
 あなたはIT企業の採用担当者です。
 経験10年のHR Managerとして、技術職採用を専門としています。
@@ -529,6 +585,7 @@ So that 面接対策ができる
 ```
 
 **UI**:
+
 ```
 ┌─────────────────────────────────────┐
 │  シナリオ選択                        │
@@ -551,6 +608,7 @@ So that 面接対策ができる
 ```
 
 **データベース**:
+
 ```sql
 INSERT INTO scenarios (id, title, category, language, config_json)
 VALUES (
@@ -581,6 +639,7 @@ VALUES (
 ```
 
 **受け入れ基準**:
+
 - [ ] シナリオ詳細が表示される
 - [ ] 開始ボタンでセッションが作成される
 - [ ] システムプロンプトが正しく適用される
@@ -595,6 +654,7 @@ VALUES (
 #### 5.1 リアルタイム会話 ⭐⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want AIアバターとリアルタイムで会話できる
@@ -602,6 +662,7 @@ So that 面接練習ができる
 ```
 
 **機能詳細**:
+
 - **ユーザーカメラ映像**: getUserMedia APIでリアルタイム取得・表示
 - **AIアバター映像**: Three.js/Live2Dでリアルタイムレンダリング（60fps）
 - **リアルタイム文字起こし**: Azure STTストリーミング認識、話者別表示
@@ -611,6 +672,7 @@ So that 面接練習ができる
 - **TTS音声配信**: ElevenLabs → サーバー → ユーザー、Visemeデータ含む
 
 **UI構成（3要素統合）**:
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ セッション実行中     [⚙️設定] [録画中 ●] [終了]            │
@@ -653,6 +715,7 @@ So that 面接練習ができる
 ```
 
 **技術アーキテクチャ**:
+
 ```
 ブラウザ                  IoT Core + Lambda            外部API
   │                            │                          │
@@ -691,6 +754,7 @@ So that 面接練習ができる
 ```
 
 **WebSocketメッセージ仕様**:
+
 ```typescript
 // クライアント → サーバー
 type ClientMessage =
@@ -710,6 +774,7 @@ type ServerMessage =
 ```
 
 **実装**:
+
 ```typescript
 // hooks/useSession.ts
 export function useSession() {
@@ -723,15 +788,17 @@ export function useSession() {
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-      socket.send(JSON.stringify({
-        type: 'session_start',
-        scenarioId,
-        avatarId,
-        voiceId,
-      }));
+      socket.send(
+        JSON.stringify({
+          type: 'session_start',
+          scenarioId,
+          avatarId,
+          voiceId,
+        })
+      );
     };
 
-    socket.onmessage = (event) => {
+    socket.onmessage = event => {
       const message = JSON.parse(event.data);
 
       switch (message.type) {
@@ -757,14 +824,19 @@ export function useSession() {
     setWs(socket);
   }, []);
 
-  const sendAudio = useCallback((audioData: ArrayBuffer) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: 'audio_chunk',
-        data: Array.from(new Uint8Array(audioData)),
-      }));
-    }
-  }, [ws]);
+  const sendAudio = useCallback(
+    (audioData: ArrayBuffer) => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(
+          JSON.stringify({
+            type: 'audio_chunk',
+            data: Array.from(new Uint8Array(audioData)),
+          })
+        );
+      }
+    },
+    [ws]
+  );
 
   const endSpeech = useCallback(() => {
     if (ws) {
@@ -777,6 +849,7 @@ export function useSession() {
 ```
 
 **Lambda関数**:
+
 ```typescript
 // lambda/websocket/sessionStart.ts
 export const handler = async (event: APIGatewayWebSocketEvent) => {
@@ -846,6 +919,7 @@ export const handler = async (event: APIGatewayWebSocketEvent) => {
 **受け入れ基準**:
 
 **映像表示:**
+
 - [ ] ユーザーカメラ映像がリアルタイムで表示される（getUserMedia API）
 - [ ] AIアバター映像がリアルタイムでレンダリングされる（Three.js/Live2D、60fps）
 - [ ] 両映像がサイドバイサイドで同時に表示される
@@ -853,6 +927,7 @@ export const handler = async (event: APIGatewayWebSocketEvent) => {
 - [ ] カメラOFF時はプレースホルダーが表示される
 
 **リアルタイム文字起こし:**
+
 - [ ] ユーザー発話がリアルタイムで字幕表示される（Azure STT）
 - [ ] 認識中の暫定テキストが表示される（グレー、💭認識中）
 - [ ] 確定テキストが会話履歴に追加される（通常色）
@@ -863,6 +938,7 @@ export const handler = async (event: APIGatewayWebSocketEvent) => {
 - [ ] 過去の会話を手動スクロールで確認できる
 
 **通信・会話:**
+
 - [ ] WebSocket接続が確立する（AWS IoT Core）
 - [ ] 冒頭発話が自動再生される
 - [ ] AIアバターの応答が自然（会話のコンテキストを理解）
@@ -871,6 +947,7 @@ export const handler = async (event: APIGatewayWebSocketEvent) => {
 - [ ] レイテンシが許容範囲内（< 500ms）
 
 **UI制御:**
+
 - [ ] マイク・カメラ・スピーカーの制御が機能する
 - [ ] 経過時間とトピック進捗が表示される
 - [ ] 録画状態インジケーターが表示される
@@ -883,6 +960,7 @@ export const handler = async (event: APIGatewayWebSocketEvent) => {
 #### 5.2 ブラウザ録画 ⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want セッションの様子が自動的に録画される
@@ -890,6 +968,7 @@ So that 後で振り返りができる
 ```
 
 **機能詳細**:
+
 - **ユーザーカメラ映像録画**（MediaRecorder API）
   - リアルタイムでブラウザUI上に表示
   - 解像度: 640x480 (Free) / 1280x720 (Pro) / 1920x1080 (Enterprise)
@@ -921,6 +1000,7 @@ So that 後で振り返りができる
   - 録画後: いつでも削除可能
 
 **実装**:
+
 ```typescript
 // hooks/useRecording.ts
 export function useRecording(sessionId: string) {
@@ -941,7 +1021,7 @@ export function useRecording(sessionId: string) {
     });
 
     const userChunks: Blob[] = [];
-    userRecorderRef.current.ondataavailable = (e) => {
+    userRecorderRef.current.ondataavailable = e => {
       userChunks.push(e.data);
     };
 
@@ -961,7 +1041,7 @@ export function useRecording(sessionId: string) {
     });
 
     const avatarChunks: Blob[] = [];
-    avatarRecorderRef.current.ondataavailable = (e) => {
+    avatarRecorderRef.current.ondataavailable = e => {
       avatarChunks.push(e.data);
     };
 
@@ -988,7 +1068,7 @@ async function uploadToS3(blob: Blob, key: string) {
   const { uploadUrl } = await fetch('/api/recordings/upload-url', {
     method: 'POST',
     body: JSON.stringify({ key }),
-  }).then((r) => r.json());
+  }).then(r => r.json());
 
   // S3アップロード
   await fetch(uploadUrl, {
@@ -1000,6 +1080,7 @@ async function uploadToS3(blob: Blob, key: string) {
 ```
 
 **API**:
+
 ```typescript
 POST /api/recordings/upload-url
   Body: { key: "session_xxx/user.webm" }
@@ -1011,6 +1092,7 @@ POST /api/recordings
 ```
 
 **受け入れ基準**:
+
 - [ ] セッション開始前にカメラON/OFFを選択できる
 - [ ] セッション実行中、ユーザーとアバターがサイドバイサイドで表示される
 - [ ] セッション開始と同時に録画開始（両方同時）
@@ -1032,6 +1114,7 @@ POST /api/recordings
 #### 6.1 基本動画プレイヤー ⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want セッション終了後に録画を再生できる
@@ -1039,7 +1122,8 @@ So that 自分のパフォーマンスを確認できる
 ```
 
 **機能詳細**:
-- **合成動画再生**（combined_{session_id}.mp4）
+
+- **合成動画再生**（combined\_{session_id}.mp4）
   - サイドバイサイド表示（左: AIアバター、右: ユーザー）
   - MediaConvertで合成済み、H.264/MP4形式
   - CloudFront CDN経由で配信（署名付きURL、低レイテンシ）
@@ -1061,6 +1145,7 @@ So that 自分のパフォーマンスを確認できる
   - 限定共有リンク生成（有効期限付き）
 
 **UI**:
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  セッション録画 - 2026/03/04 14:30            [共有] [DL]   │
@@ -1093,6 +1178,7 @@ So that 自分のパフォーマンスを確認できる
 ```
 
 **実装**:
+
 ```typescript
 // components/SessionPlayer.tsx
 export function SessionPlayer({ sessionId }: { sessionId: string }) {
@@ -1189,6 +1275,7 @@ export function SessionPlayer({ sessionId }: { sessionId: string }) {
 ```
 
 **API**:
+
 ```typescript
 GET /api/sessions/:id
   Response: {
@@ -1237,6 +1324,7 @@ GET /api/sessions/:id/transcript
 ```
 
 **受け入れ基準**:
+
 - [ ] 合成動画（combined.mp4）が正常に再生される（サイドバイサイド表示）
 - [ ] ユーザーとアバターの映像が同期して再生される
 - [ ] CloudFront CDN経由で低レイテンシ配信される（署名付きURL）
@@ -1258,6 +1346,7 @@ GET /api/sessions/:id/transcript
 ## Alpha版 技術スタック
 
 ### フロントエンド
+
 - **フレームワーク**: Next.js 15 (App Router)
 - **UI**: Tailwind CSS + shadcn/ui
 - **3D**: Three.js + React Three Fiber
@@ -1265,6 +1354,7 @@ GET /api/sessions/:id/transcript
 - **API通信**: TanStack Query
 
 ### バックエンド
+
 - **API**: AWS API Gateway (REST/WebSocket)
 - **コンピュート**: AWS Lambda (Node.js 20)
 - **認証**: Amazon Cognito
@@ -1274,11 +1364,13 @@ GET /api/sessions/:id/transcript
 - **CDN**: CloudFront
 
 ### 外部API
+
 - **会話AI**: Claude API (Anthropic)
 - **TTS**: ElevenLabs API
 - **STT**: Azure Speech Services
 
 ### インフラ
+
 - **IaC**: AWS CDK (TypeScript)
 - **CI/CD**: GitHub Actions
 
@@ -1330,13 +1422,13 @@ Week 13-14: テスト・バグ修正
 
 ## Alpha版 リスクと対策
 
-| リスク | 影響度 | 発生確率 | 対策 |
-|--------|--------|---------|------|
-| WebSocket不安定 | 高 | 中 | 自動再接続、エラーハンドリング強化 |
-| TTS/STT遅延 | 中 | 中 | キャッシング、プリロード |
-| Claude API コスト超過 | 高 | 低 | 使用量監視、アラート設定 |
-| リップシンク精度不足 | 中 | 中 | Visemeマッピング調整、フォールバック |
-| 録画ファイル巨大化 | 中 | 中 | ビットレート制限、圧縮設定最適化 |
+| リスク                | 影響度 | 発生確率 | 対策                                 |
+| --------------------- | ------ | -------- | ------------------------------------ |
+| WebSocket不安定       | 高     | 中       | 自動再接続、エラーハンドリング強化   |
+| TTS/STT遅延           | 中     | 中       | キャッシング、プリロード             |
+| Claude API コスト超過 | 高     | 低       | 使用量監視、アラート設定             |
+| リップシンク精度不足  | 中     | 中       | Visemeマッピング調整、フォールバック |
+| 録画ファイル巨大化    | 中     | 中       | ビットレート制限、圧縮設定最適化     |
 
 ---
 
@@ -1348,24 +1440,25 @@ Week 13-14: テスト・バグ修正
 
 ## 機能一覧サマリー
 
-| # | 機能 | 実装容易度 | 優先度 | 期間 |
-|---|------|-----------|-------|------|
-| 1 | アバター拡充（プリセット追加） | ⭐ | 高 | 3日 |
-| 2 | アバター選択UI | ⭐⭐ | 高 | 5日 |
-| 3 | カスタムアバター作成（3D） | ⭐⭐⭐ | 中 | 7日 |
-| 4 | カスタムアバター作成（2D） | ⭐⭐⭐ | 中 | 7日 |
-| 5 | 音声プリセット追加 | ⭐ | 高 | 2日 |
-| 6 | 音声クローニング | ⭐⭐ | 中 | 5日 |
-| 7 | シナリオ拡充（5種類） | ⭐⭐ | 高 | 5日 |
-| 8 | シナリオビルダーUI | ⭐⭐⭐ | 高 | 10日 |
-| 9 | AIプロンプト管理UI | ⭐⭐⭐ | 高 | 10日 |
-| 10 | AIプロバイダ管理UI | ⭐⭐⭐ | 中 | 10日 |
+| #   | 機能                           | 実装容易度 | 優先度 | 期間 |
+| --- | ------------------------------ | ---------- | ------ | ---- |
+| 1   | アバター拡充（プリセット追加） | ⭐         | 高     | 3日  |
+| 2   | アバター選択UI                 | ⭐⭐       | 高     | 5日  |
+| 3   | カスタムアバター作成（3D）     | ⭐⭐⭐     | 中     | 7日  |
+| 4   | カスタムアバター作成（2D）     | ⭐⭐⭐     | 中     | 7日  |
+| 5   | 音声プリセット追加             | ⭐         | 高     | 2日  |
+| 6   | 音声クローニング               | ⭐⭐       | 中     | 5日  |
+| 7   | シナリオ拡充（5種類）          | ⭐⭐       | 高     | 5日  |
+| 8   | シナリオビルダーUI             | ⭐⭐⭐     | 高     | 10日 |
+| 9   | AIプロンプト管理UI             | ⭐⭐⭐     | 高     | 10日 |
+| 10  | AIプロバイダ管理UI             | ⭐⭐⭐     | 中     | 10日 |
 
 ## 主要機能詳細
 
 ### 1. アバター選択UI ⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want カテゴリやスタイルでアバターをフィルタリングして選択できる
@@ -1373,6 +1466,7 @@ So that 自分に合ったアバターを簡単に見つけられる
 ```
 
 **機能詳細**:
+
 - プリセットアバター20種類（3D）、10種類（2D）
 - カテゴリフィルタ: ビジネス、カジュアル、フレンドリー、フォーマル
 - タイプフィルタ: 2D / 3D
@@ -1380,6 +1474,7 @@ So that 自分に合ったアバターを簡単に見つけられる
 - サンプル音声でのテスト再生
 
 **UI画面**:
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ アバター選択                                    [マイアバター] │
@@ -1411,6 +1506,7 @@ So that 自分に合ったアバターを簡単に見つけられる
 ```
 
 **API**:
+
 ```typescript
 GET /api/avatars/presets?type=3d&style=business
   Response: {
@@ -1432,6 +1528,7 @@ GET /api/avatars/presets?type=3d&style=business
 ```
 
 **受け入れ基準**:
+
 - [ ] フィルタ変更でアバター一覧が更新される
 - [ ] プレビューが3秒以内にロードされる
 - [ ] サンプル音声が再生できる
@@ -1444,6 +1541,7 @@ GET /api/avatars/presets?type=3d&style=business
 ### 2. カスタムアバター作成（3D） ⭐⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a Proユーザー
 I want 自分の写真から3Dアバターを作成できる
@@ -1451,6 +1549,7 @@ So that よりパーソナライズされた体験ができる
 ```
 
 **機能詳細**:
+
 - 画像アップロード（顔写真）
 - Ready Player Me Photo Capture API統合
 - 自動3Dモデル生成（1-2分）
@@ -1458,6 +1557,7 @@ So that よりパーソナライズされた体験ができる
 - 個人ライブラリに保存
 
 **フロー**:
+
 ```
 1. 画像選択
    └─ ファイルアップロード or カメラ撮影
@@ -1484,6 +1584,7 @@ So that よりパーソナライズされた体験ができる
 ```
 
 **UI**:
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ カスタムアバター作成（3D）                            [閉じる] │
@@ -1534,12 +1635,10 @@ So that よりパーソナライズされた体験ができる
 ```
 
 **実装**:
+
 ```typescript
 // services/avatarGeneration.ts
-export async function generate3DAvatarFromPhoto(
-  imageFile: File,
-  userId: string
-): Promise<Avatar> {
+export async function generate3DAvatarFromPhoto(imageFile: File, userId: string): Promise<Avatar> {
   // 1. 画像アップロード
   const imageUrl = await uploadToS3(imageFile, `temp/${userId}/photo.jpg`);
 
@@ -1547,7 +1646,7 @@ export async function generate3DAvatarFromPhoto(
   const jobResponse = await fetch('https://api.readyplayer.me/v1/avatars/photo', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.RPM_API_KEY}`,
+      Authorization: `Bearer ${process.env.RPM_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -1564,14 +1663,11 @@ export async function generate3DAvatarFromPhoto(
   while (!glbUrl) {
     await sleep(5000); // 5秒待機
 
-    const statusResponse = await fetch(
-      `https://api.readyplayer.me/v1/avatars/${jobId}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.RPM_API_KEY}`,
-        },
-      }
-    );
+    const statusResponse = await fetch(`https://api.readyplayer.me/v1/avatars/${jobId}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.RPM_API_KEY}`,
+      },
+    });
 
     const status = await statusResponse.json();
 
@@ -1605,6 +1701,7 @@ export async function generate3DAvatarFromPhoto(
 ```
 
 **受け入れ基準**:
+
 - [ ] 写真アップロード後2分以内に3Dモデル生成完了
 - [ ] 生成進捗がリアルタイム表示される
 - [ ] 生成失敗時にエラーメッセージ表示
@@ -1617,6 +1714,7 @@ export async function generate3DAvatarFromPhoto(
 ### 3. シナリオビルダーUI ⭐⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want 自分専用のシナリオを作成できる
@@ -1624,6 +1722,7 @@ So that 特定の状況の練習ができる
 ```
 
 **機能詳細**:
+
 - シナリオ基本情報設定（タイトル、カテゴリ、言語、制限時間）
 - アバターキャラクター設定（役割、性格、圧力レベル）
 - 会話フロー設定（開始の一言、必須トピック）
@@ -1631,6 +1730,7 @@ So that 特定の状況の練習ができる
 - プレビュー & テスト実行
 
 **UI画面**:
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ シナリオビルダー                      [プレビュー] [保存]     │
@@ -1688,6 +1788,7 @@ So that 特定の状況の練習ができる
 ```
 
 **データ構造**:
+
 ```typescript
 interface ScenarioConfig {
   id: string;
@@ -1727,6 +1828,7 @@ interface ScenarioConfig {
 ```
 
 **API**:
+
 ```typescript
 POST /api/scenarios
   Body: ScenarioConfig
@@ -1748,6 +1850,7 @@ POST /api/scenarios/:id/test
 ```
 
 **受け入れ基準**:
+
 - [ ] シナリオ作成後に一覧に表示される
 - [ ] 作成したシナリオでセッション実行できる
 - [ ] トピックの並び順がAIアバターの会話順序に反映される
@@ -1760,6 +1863,7 @@ POST /api/scenarios/:id/test
 ### 4. AIプロンプト管理UI（管理者） ⭐⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a 管理者
 I want システムプロンプトを編集してAIアバターの振る舞いをカスタマイズできる
@@ -1767,6 +1871,7 @@ So that 組織固有のニーズに対応できる
 ```
 
 **機能詳細**:
+
 - プロンプトテンプレート一覧・作成・編集
 - 変数システム（動的変数注入）
 - バージョン管理（変更履歴、ロールバック）
@@ -1774,6 +1879,7 @@ So that 組織固有のニーズに対応できる
 - エクスポート/インポート（JSON/YAML）
 
 **UI画面**:
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ AIプロンプト管理 (管理者専用)              [+ 新規テンプレート] │
@@ -1829,6 +1935,7 @@ So that 組織固有のニーズに対応できる
 ```
 
 **受け入れ基準**:
+
 - [ ] プロンプト編集後、新規セッションで反映される
 - [ ] 変数が正しく置換される
 - [ ] テスト実行でAI応答を確認できる
@@ -1842,6 +1949,7 @@ So that 組織固有のニーズに対応できる
 ### 5. AIプロバイダ管理UI（管理者） ⭐⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a 管理者
 I want AIプロバイダ（Claude/GPT-4等）を切り替えられる
@@ -1849,6 +1957,7 @@ So that コストと品質のバランスを最適化できる
 ```
 
 **機能詳細**:
+
 - プロバイダ一覧・追加・編集
 - プロバイダごとの設定（APIキー、モデル、リージョン）
 - アクティブプロバイダ切り替え
@@ -1856,6 +1965,7 @@ So that コストと品質のバランスを最適化できる
 - コストダッシュボード
 
 **UI画面**:
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ AIプロバイダ管理 (管理者専用)                    [設定保存]  │
@@ -1892,6 +2002,7 @@ So that コストと品質のバランスを最適化できる
 ```
 
 **受け入れ基準**:
+
 - [ ] プロバイダ切り替え後、新規セッションで反映される
 - [ ] 接続テストで正常性を確認できる
 - [ ] 使用量が正確にトラッキングされる
@@ -1904,29 +2015,35 @@ So that コストと品質のバランスを最適化できる
 ## Beta版 技術的マイルストーン
 
 **Week 1-2: アバター拡充**
+
 - [ ] プリセットアバター30種類準備
 - [ ] アバター選択UI実装
 - [ ] リアルタイムプレビュー
 
 **Week 3-4: カスタムアバター**
+
 - [ ] Ready Player Me統合
 - [ ] AnimeGAN統合（2D）
 - [ ] 生成ワークフロー
 
 **Week 5: 音声拡充**
+
 - [ ] 音声プリセット10種類
 - [ ] 音声クローニング機能
 
 **Week 6-7: シナリオ**
+
 - [ ] プリセットシナリオ5種類
 - [ ] シナリオビルダーUI
 
 **Week 8-10: AI管理**
+
 - [ ] プロンプト管理UI
 - [ ] プロバイダ管理UI
 - [ ] 使用量トラッキング
 
 **Week 11-12: テスト・改善**
+
 - [ ] Beta顧客フィードバック収集
 - [ ] バグ修正・UX改善
 
@@ -1935,6 +2052,7 @@ So that コストと品質のバランスを最適化できる
 ## Beta版 成功基準
 
 **定量指標**:
+
 - [ ] 30組織以上登録
 - [ ] 月間アクティブ率 > 60%
 - [ ] セッション完了率 > 80%
@@ -1942,11 +2060,13 @@ So that コストと品質のバランスを最適化できる
 - [ ] NPS > 30
 
 **定性指標**:
+
 - [ ] 顧客インタビュー 20件以上
 - [ ] 「代替手段がない」 > 50%
 - [ ] 有料化意向 > 30%
 
 **技術指標**:
+
 - [ ] システム稼働率 > 99%
 - [ ] P95 APIレスポンスタイム < 500ms
 - [ ] エラー率 < 1%
@@ -1961,24 +2081,25 @@ So that コストと品質のバランスを最適化できる
 
 ## 機能一覧サマリー
 
-| # | 機能 | 実装容易度 | 優先度 | 期間 |
-|---|------|-----------|-------|------|
-| 1 | 感情解析（Azure Face API） | ⭐⭐⭐ | 高 | 7日 |
-| 2 | 音声特徴解析（Azure Speech） | ⭐⭐ | 高 | 5日 |
-| 3 | AIレポート自動生成 | ⭐⭐⭐ | 高 | 10日 |
-| 4 | レポートPDFエクスポート | ⭐⭐ | 高 | 5日 |
-| 5 | 感情タイムライングラフ | ⭐⭐ | 中 | 5日 |
-| 6 | ハイライトシーン抽出 | ⭐⭐⭐ | 中 | 7日 |
-| 7 | トランスクリプト同期プレイヤー | ⭐⭐ | 高 | 7日 |
-| 8 | プラン・課金システム | ⭐⭐⭐ | 高 | 10日 |
-| 9 | 使用量制限・クォータ管理 | ⭐⭐ | 高 | 5日 |
-| 10 | 管理者ダッシュボード | ⭐⭐ | 中 | 7日 |
+| #   | 機能                           | 実装容易度 | 優先度 | 期間 |
+| --- | ------------------------------ | ---------- | ------ | ---- |
+| 1   | 感情解析（Azure Face API）     | ⭐⭐⭐     | 高     | 7日  |
+| 2   | 音声特徴解析（Azure Speech）   | ⭐⭐       | 高     | 5日  |
+| 3   | AIレポート自動生成             | ⭐⭐⭐     | 高     | 10日 |
+| 4   | レポートPDFエクスポート        | ⭐⭐       | 高     | 5日  |
+| 5   | 感情タイムライングラフ         | ⭐⭐       | 中     | 5日  |
+| 6   | ハイライトシーン抽出           | ⭐⭐⭐     | 中     | 7日  |
+| 7   | トランスクリプト同期プレイヤー | ⭐⭐       | 高     | 7日  |
+| 8   | プラン・課金システム           | ⭐⭐⭐     | 高     | 10日 |
+| 9   | 使用量制限・クォータ管理       | ⭐⭐       | 高     | 5日  |
+| 10  | 管理者ダッシュボード           | ⭐⭐       | 中     | 7日  |
 
 ## 主要機能詳細
 
 ### 1. AIレポート自動生成 ⭐⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a ユーザー
 I want セッション終了後に自動的に詳細なフィードバックレポートが生成される
@@ -1986,6 +2107,7 @@ So that 客観的な評価と改善点を知ることができる
 ```
 
 **機能詳細**:
+
 - Claude APIによる会話内容評価
 - 評価基準ごとのスコア算出（0-100点）
 - 強み・改善点の自動抽出
@@ -1993,6 +2115,7 @@ So that 客観的な評価と改善点を知ることができる
 - パーソナライズド改善提案
 
 **レポート構成**:
+
 ```markdown
 # 面接評価レポート
 
@@ -2007,18 +2130,22 @@ So that 客観的な評価と改善点を知ることができる
 ## 項目別評価
 
 ### 論理的説明力: 78/100 (良好)
+
 技術的な説明が具体的で、例を交えて説明できていました。
 特に、パフォーマンス最適化の事例（08:23）は優れています。
 
 ### アイコンタクト: 61/100 (要改善)
+
 前半は良好でしたが、14分頃から視線が外れる傾向が見られました。
 緊張が高まった場面でアイコンタクトを意識しましょう。
 
 ### 話速・間合い: 85/100 (優秀)
+
 一貫して適切な話速（平均 142 WPM）を維持できています。
 間の取り方も自然で、聞き手に配慮した話し方です。
 
 ### 語彙・表現力: 65/100 (普通)
+
 業界用語は適切に使用できていますが、表現のバリエーションが
 やや限定的です。より多様な表現を身につけましょう。
 
@@ -2065,6 +2192,7 @@ So that 客観的な評価と改善点を知ることができる
 ```
 
 **実装**:
+
 ```typescript
 // services/reportGeneration.ts
 export async function generateReport(sessionId: string): Promise<Report> {
@@ -2076,12 +2204,7 @@ export async function generateReport(sessionId: string): Promise<Report> {
   const scenario = await db.scenarios.findById(session.scenarioId);
 
   // 2. Claude APIでレポート生成
-  const reportPrompt = buildReportPrompt(
-    scenario,
-    transcript,
-    emotionData,
-    audioAnalysis
-  );
+  const reportPrompt = buildReportPrompt(scenario, transcript, emotionData, audioAnalysis);
 
   const response = await claude.messages.create({
     model: 'claude-opus-4',
@@ -2133,6 +2256,7 @@ const REPORT_GENERATION_SYSTEM_PROMPT = `
 ```
 
 **受け入れ基準**:
+
 - [ ] セッション終了後10分以内にレポート生成完了
 - [ ] スコアが評価基準と整合している
 - [ ] ハイライトシーンのタイムスタンプが正確
@@ -2145,6 +2269,7 @@ const REPORT_GENERATION_SYSTEM_PROMPT = `
 ### 2. プラン・課金システム ⭐⭐⭐
 
 **ユーザーストーリー**:
+
 ```
 As a 組織管理者
 I want 有料プランにアップグレードできる
@@ -2152,6 +2277,7 @@ So that より多くのセッション数と高度な機能を利用できる
 ```
 
 **機能詳細**:
+
 - Freeプラン（5セッション/月）
 - Proプラン（$99/月、50セッション/月）
 - Enterpriseプラン（カスタム見積もり）
@@ -2160,6 +2286,7 @@ So that より多くのセッション数と高度な機能を利用できる
 - 使用量・クォータ監視
 
 **プラン比較ページ**:
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ プラン選択                                                    │
@@ -2185,6 +2312,7 @@ So that より多くのセッション数と高度な機能を利用できる
 ```
 
 **使用状況ダッシュボード**:
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ 使用状況                                          2026-03-04  │
@@ -2206,6 +2334,7 @@ So that より多くのセッション数と高度な機能を利用できる
 ```
 
 **データベース**:
+
 ```sql
 CREATE TABLE subscriptions (
   id UUID PRIMARY KEY,
@@ -2235,6 +2364,7 @@ CREATE TABLE usage_quotas (
 ```
 
 **受け入れ基準**:
+
 - [ ] プラン比較ページが表示される
 - [ ] アップグレード後に機能が有効化される
 - [ ] 使用量がリアルタイムで更新される
@@ -2248,6 +2378,7 @@ CREATE TABLE usage_quotas (
 ## v1.0 リリース判断基準
 
 ### Go判断（v1.x移行）
+
 - [ ] ローンチ後1ヶ月で200組織以上登録
 - [ ] 有料プラン契約 > 20組織
 - [ ] P0/P1バグ解決済み
@@ -2255,6 +2386,7 @@ CREATE TABLE usage_quotas (
 - [ ] システム稼働率 > 99.5%
 
 ### Delay判断（リリース延期）
+
 - [ ] セキュリティ脆弱性（高・重大）の発見
 - [ ] データ損失リスクのある不具合
 - [ ] 法務・コンプライアンス問題
@@ -2270,28 +2402,33 @@ CREATE TABLE usage_quotas (
 ## リリース計画
 
 ### v1.1 - ベンチマーク機能（1ヶ月）⭐⭐⭐⭐
+
 - ユーザープロファイル自動算出
 - 組織内ベンチマーク比較
 - 成長トラッキング
 - パーソナライズド改善提案
 
 ### v1.2 - 外部API連携（1ヶ月）⭐⭐⭐
+
 - APIキー発行・管理
 - RESTful API
 - レート制限
 - Webhook通知
 
 ### v1.3 - Stripe決済統合（1週間）⭐⭐
+
 - クレジットカード決済
 - サブスクリプション自動更新
 - プラン変更
 
 ### v1.4 - セキュリティ・SSO（2週間）⭐⭐⭐
+
 - SAML 2.0 SSO
 - MFA強制オプション
 - IP制限
 
 ### v1.5 - カスタムレポート（3週間）⭐⭐⭐
+
 - レポートテンプレートビルダー
 - カスタム評価基準
 - ブランディング
@@ -2307,17 +2444,20 @@ CREATE TABLE usage_quotas (
 ## 機能一覧
 
 ### 1. 多言語対応（4週間）⭐⭐⭐
+
 - UI多言語化（日英中仏独）
 - シナリオ多言語対応
 - 多言語TTS/STT
 
 ### 2. ATS連携（6週間）⭐⭐⭐⭐
+
 - 国内ATS 3社統合
 - 海外ATS 3社統合
 - 候補者データ同期
 - 結果自動送信
 
 ### 3. プラグインシステム（6週間）⭐⭐⭐⭐
+
 - プラグインSDK
 - プラグイン管理UI
 - サンドボックス実行

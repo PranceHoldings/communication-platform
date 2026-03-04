@@ -50,16 +50,14 @@
 Bedrockを使用するには、以下のIAM権限が必要です：
 
 **開発環境（ローカル）**:
+
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": [
-        "bedrock:InvokeModel",
-        "bedrock:InvokeModelWithResponseStream"
-      ],
+      "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
       "Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-*"
     }
   ]
@@ -67,6 +65,7 @@ Bedrockを使用するには、以下のIAM権限が必要です：
 ```
 
 **適用方法**:
+
 ```bash
 # aws configure で設定したIAMユーザーにポリシーをアタッチ
 aws iam attach-user-policy \
@@ -81,15 +80,16 @@ Lambda実行ロールに上記権限を自動付与（CDKで設定予定）
 
 #### 料金プラン（AWS Bedrock価格）
 
-| モデル | Input | Output | コンテキスト |
-|--------|-------|--------|-------------|
-| Claude 3 Opus | $15/1M tokens | $75/1M tokens | 200K tokens |
-| Claude Sonnet 4.6 | $3/1M tokens | $15/1M tokens | 200K tokens |
-| Claude 3 Haiku | $0.25/1M tokens | $1.25/1M tokens | 200K tokens |
+| モデル            | Input           | Output          | コンテキスト |
+| ----------------- | --------------- | --------------- | ------------ |
+| Claude 3 Opus     | $15/1M tokens   | $75/1M tokens   | 200K tokens  |
+| Claude Sonnet 4.6 | $3/1M tokens    | $15/1M tokens   | 200K tokens  |
+| Claude 3 Haiku    | $0.25/1M tokens | $1.25/1M tokens | 200K tokens  |
 
 **推奨**: Alpha版では Sonnet 3.5、品質重視の場面でOpus 3
 
 **利点**:
+
 - ✅ AWS統合請求（他のAWSサービスと同じ請求書）
 - ✅ 個別のAPIキー管理不要（IAM認証）
 - ✅ VPC内からの低レイテンシアクセス
@@ -115,28 +115,28 @@ npm install @aws-sdk/client-bedrock-runtime
 #### サンプルコード
 
 ```typescript
-import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 
 const bedrockClient = new BedrockRuntimeClient({
-  region: process.env.BEDROCK_REGION || "us-east-1"
+  region: process.env.BEDROCK_REGION || 'us-east-1',
 });
 
 async function invokeClaude(systemPrompt: string, userMessage: string) {
   const command = new InvokeModelCommand({
-    modelId: process.env.BEDROCK_MODEL_ID || "us.anthropic.claude-sonnet-4-6",
-    contentType: "application/json",
-    accept: "application/json",
+    modelId: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6',
+    contentType: 'application/json',
+    accept: 'application/json',
     body: JSON.stringify({
-      anthropic_version: "bedrock-2023-05-31",
-      max_tokens: parseInt(process.env.BEDROCK_MAX_TOKENS || "2000"),
+      anthropic_version: 'bedrock-2023-05-31',
+      max_tokens: parseInt(process.env.BEDROCK_MAX_TOKENS || '2000'),
       system: systemPrompt,
       messages: [
         {
-          role: "user",
-          content: userMessage
-        }
-      ]
-    })
+          role: 'user',
+          content: userMessage,
+        },
+      ],
+    }),
   });
 
   const response = await bedrockClient.send(command);
@@ -145,29 +145,29 @@ async function invokeClaude(systemPrompt: string, userMessage: string) {
 }
 
 // 使用例
-const result = await invokeClaude(
-  "あなたは採用担当者です。",
-  "自己紹介をお願いします。"
-);
+const result = await invokeClaude('あなたは採用担当者です。', '自己紹介をお願いします。');
 console.log(result);
 ```
 
 #### ストリーミングレスポンス（リアルタイム会話用）
 
 ```typescript
-import { BedrockRuntimeClient, InvokeModelWithResponseStreamCommand } from "@aws-sdk/client-bedrock-runtime";
+import {
+  BedrockRuntimeClient,
+  InvokeModelWithResponseStreamCommand,
+} from '@aws-sdk/client-bedrock-runtime';
 
 async function invokeClaudeStream(systemPrompt: string, userMessage: string) {
   const command = new InvokeModelWithResponseStreamCommand({
-    modelId: "us.anthropic.claude-sonnet-4-6",
-    contentType: "application/json",
-    accept: "application/json",
+    modelId: 'us.anthropic.claude-sonnet-4-6',
+    contentType: 'application/json',
+    accept: 'application/json',
     body: JSON.stringify({
-      anthropic_version: "bedrock-2023-05-31",
+      anthropic_version: 'bedrock-2023-05-31',
       max_tokens: 2000,
       system: systemPrompt,
-      messages: [{ role: "user", content: userMessage }]
-    })
+      messages: [{ role: 'user', content: userMessage }],
+    }),
   });
 
   const response = await bedrockClient.send(command);
@@ -188,14 +188,15 @@ async function invokeClaudeStream(systemPrompt: string, userMessage: string) {
 
 AWS Bedrockのレート制限はリージョン・アカウント単位で管理されます：
 
-| デフォルト制限 | 値 |
-|--------------|-----|
-| リクエスト/分 (RPM) | 10,000 |
-| トークン/分 (TPM) | 4,000,000 |
+| デフォルト制限      | 値        |
+| ------------------- | --------- |
+| リクエスト/分 (RPM) | 10,000    |
+| トークン/分 (TPM)   | 4,000,000 |
 
 **注**: 制限値は AWS Service Quotas で確認・引き上げ申請可能
 
 **対策**:
+
 - AWS Service Quotas コンソールで現在の制限を確認
 - 必要に応じて引き上げリクエスト（通常24時間以内に承認）
 - リトライロジック実装（指数バックオフ）
@@ -210,11 +211,13 @@ AWS Bedrockのレート制限はリージョン・アカウント単位で管理
 #### トラブルシューティング
 
 **問題**: `AccessDeniedException`
+
 - **原因**: IAM権限が不足
 - **解決策**: 上記のポリシーをIAMユーザー/ロールにアタッチ
 - **確認**: `aws sts get-caller-identity` でIAMユーザーを確認
 
 **問題**: `ThrottlingException`
+
 - **原因**: レート制限超過
 - **解決策**:
   1. リトライロジック実装（指数バックオフ）
@@ -222,6 +225,7 @@ AWS Bedrockのレート制限はリージョン・アカウント単位で管理
   3. リクエストを分散（複数Lambda関数等）
 
 **問題**: `ValidationException: Model not found`
+
 - **原因**: モデルIDが正しくない、またはリージョンで未対応
 - **解決策**:
   1. モデルIDを確認: `us.anthropic.claude-sonnet-4-6`
@@ -229,6 +233,7 @@ AWS Bedrockのレート制限はリージョン・アカウント単位で管理
   3. Bedrock Console → Model access で有効化確認
 
 **問題**: `ResourceNotFoundException: Could not find foundation model`
+
 - **原因**: モデルアクセスが未承認
 - **解決策**: Bedrock Console → Model access → Manage model access で承認
 
