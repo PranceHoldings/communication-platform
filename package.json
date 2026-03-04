@@ -1,0 +1,38 @@
+{
+  "name": "prance-communication-platform",
+  "version": "0.1.0-alpha",
+  "private": true,
+  "description": "AI Avatar Communication Platform - Monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "infrastructure"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "setup:dev": "npm install && npm run db:generate",
+    "db:generate": "cd packages/database && npx prisma generate",
+    "db:migrate": "cd packages/database && npx prisma migrate dev",
+    "db:studio": "cd packages/database && npx prisma studio",
+    "cdk:bootstrap": "cd infrastructure && npx cdk bootstrap",
+    "cdk:deploy": "cd infrastructure && npx cdk deploy --all",
+    "cdk:destroy": "cd infrastructure && npx cdk destroy --all",
+    "deploy:staging": "npm run build && npm run cdk:deploy -- -c environment=staging",
+    "deploy:production": "npm run build && npm run cdk:deploy -- -c environment=production"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "prettier": "^3.2.4",
+    "turbo": "^1.12.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

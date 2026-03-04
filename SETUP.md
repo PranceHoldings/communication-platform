@@ -1,0 +1,290 @@
+# Prance Platform - セットアップガイド
+
+このガイドでは、Pranceプラットフォームの開発環境をゼロからセットアップする手順を説明します。
+
+## 📋 前提条件
+
+以下がインストールされていることを確認してください：
+
+```bash
+# Node.js 20.x
+node --version  # v20.x.x
+
+# npm 10.x
+npm --version   # 10.x.x
+
+# Git
+git --version   # 2.x.x
+
+# AWS CLI v2
+aws --version   # aws-cli/2.x.x
+
+# Docker (オプション - ローカルPostgreSQL用)
+docker --version
+```
+
+## 🔑 ステップ1: 外部サービスアカウント作成
+
+詳細は [docs/ALPHA_DEVELOPMENT.md](docs/ALPHA_DEVELOPMENT.md#必要なアカウントapiキー) を参照してください。
+
+### 必須サービス
+
+1. **AWS** - https://aws.amazon.com/
+2. **Anthropic (Claude API)** - https://console.anthropic.com/
+3. **ElevenLabs** - https://elevenlabs.io/
+4. **Azure (Speech Services)** - https://portal.azure.com/
+5. **Ready Player Me** - https://readyplayer.me/developers
+
+## 🚀 ステップ2: プロジェクトセットアップ
+
+### 2.1 リポジトリクローン
+
+```bash
+git clone https://github.com/PranceHoldings/communication-platform.git
+cd communication-platform
+```
+
+### 2.2 依存関係インストール
+
+```bash
+# ルートの依存関係 + 全ワークスペース
+npm install
+
+# CDK CLI (グローバル)
+npm install -g aws-cdk
+
+# Prisma CLI (グローバル)
+npm install -g prisma
+```
+
+### 2.3 環境変数設定
+
+```bash
+# .env.localファイル作成（ルート）
+cp .env.example .env.local
+
+# エディタで編集
+vim .env.local  # または code .env.local
+```
+
+`.env.local` に以下を設定：
+
+```bash
+# AWS
+AWS_REGION=us-east-1
+AWS_ACCOUNT_ID=<YOUR_AWS_ACCOUNT_ID>
+
+# Anthropic
+ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_KEY>
+
+# ElevenLabs
+ELEVENLABS_API_KEY=<YOUR_ELEVENLABS_KEY>
+
+# Azure Speech
+AZURE_SPEECH_KEY=<YOUR_AZURE_KEY>
+AZURE_SPEECH_REGION=eastus
+
+# Ready Player Me
+READY_PLAYER_ME_APP_ID=<YOUR_RPM_APP_ID>
+
+# Database (ローカル開発)
+DATABASE_URL="postgresql://postgres:password@localhost:5432/prance_dev"
+```
+
+## 🗄️ ステップ3: データベースセットアップ
+
+### オプションA: Docker PostgreSQL (推奨)
+
+```bash
+# PostgreSQLコンテナ起動
+docker run --name prance-postgres \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=prance_dev \
+  -p 5432:5432 \
+  -d postgres:15
+
+# 起動確認
+docker ps | grep prance-postgres
+```
+
+### オプションB: ローカルPostgreSQL
+
+PostgreSQLをローカルにインストールして、`prance_dev` データベースを作成してください。
+
+### Prismaマイグレーション実行
+
+```bash
+cd packages/database
+
+# Prisma Clientを生成
+npx prisma generate
+
+# マイグレーション実行
+npx prisma migrate dev --name init
+
+# 確認 (Prisma Studio起動)
+npx prisma studio
+```
+
+## ☁️ ステップ4: AWS CDKセットアップ
+
+### 4.1 AWS認証情報設定
+
+```bash
+# AWS CLIの設定
+aws configure
+
+# 入力:
+# AWS Access Key ID: <YOUR_ACCESS_KEY>
+# AWS Secret Access Key: <YOUR_SECRET_KEY>
+# Default region name: us-east-1
+# Default output format: json
+
+# 確認
+aws sts get-caller-identity
+```
+
+### 4.2 CDK Bootstrap
+
+```bash
+cd infrastructure
+
+# 初回のみ: CDK Bootstrap実行
+npx cdk bootstrap
+
+# 出力例:
+# ✅  Bootstrapping environment aws://123456789012/us-east-1...
+```
+
+### 4.3 CDKスタックデプロイ
+
+```bash
+# すべてのスタックをデプロイ
+npx cdk deploy --all
+
+# または個別にデプロイ
+npx cdk deploy Prance-dev-Network
+npx cdk deploy Prance-dev-Cognito
+npx cdk deploy Prance-dev-Database
+npx cdk deploy Prance-dev-Storage
+```
+
+デプロイ完了まで10-15分かかります。
+
+### 4.4 デプロイ後の設定
+
+デプロイが完了したら、CDKのOutputsをメモしてください：
+
+```bash
+# Outputs確認
+npx cdk list
+```
+
+以下の値を `.env.local` に追加：
+
+```bash
+# Cognito
+NEXT_PUBLIC_USER_POOL_ID=<UserPoolId>
+NEXT_PUBLIC_USER_POOL_CLIENT_ID=<UserPoolClientId>
+NEXT_PUBLIC_IDENTITY_POOL_ID=<IdentityPoolId>
+
+# Aurora
+DATABASE_URL="postgresql://pranceadmin:<PASSWORD>@<ClusterEndpoint>:5432/prance"
+
+# S3
+RECORDINGS_BUCKET_NAME=<RecordingsBucketName>
+AVATARS_BUCKET_NAME=<AvatarsBucketName>
+
+# CloudFront
+NEXT_PUBLIC_CDN_URL=https://<CDNDomainName>
+```
+
+**注意**: Aurora パスワードはSecrets Managerから取得：
+
+```bash
+aws secretsmanager get-secret-value \
+  --secret-id prance/aurora/dev \
+  --query SecretString \
+  --output text | jq -r .password
+```
+
+## 🎨 ステップ5: フロントエンド開発サーバー起動
+
+```bash
+# ルートディレクトリで
+npm run dev
+
+# または apps/web で直接
+cd apps/web
+npm run dev
+```
+
+ブラウザで http://localhost:3000 にアクセス
+
+## ✅ セットアップ完了チェックリスト
+
+- [ ] Node.js 20.x インストール確認
+- [ ] 外部サービスアカウント作成（5サービス）
+- [ ] `.env.local` ファイル作成・設定
+- [ ] `npm install` 完了
+- [ ] PostgreSQL起動確認
+- [ ] Prismaマイグレーション実行
+- [ ] AWS CLI設定完了
+- [ ] CDK Bootstrap完了
+- [ ] CDKスタック全デプロイ完了
+- [ ] CDK Outputsを `.env.local` に反映
+- [ ] フロントエンド開発サーバー起動確認
+
+## 🐛 トラブルシューティング
+
+### エラー: "Module not found"
+
+```bash
+# node_modulesを削除して再インストール
+rm -rf node_modules
+npm install
+```
+
+### エラー: "CDK bootstrap required"
+
+```bash
+cd infrastructure
+npx cdk bootstrap aws://ACCOUNT-ID/REGION
+```
+
+### エラー: Prisma migration failed
+
+```bash
+# マイグレーションリセット
+cd packages/database
+npx prisma migrate reset
+npx prisma migrate dev --name init
+```
+
+### エラー: AWS credentials not found
+
+```bash
+# AWS認証情報を再設定
+aws configure
+
+# または環境変数で設定
+export AWS_ACCESS_KEY_ID=xxxxx
+export AWS_SECRET_ACCESS_KEY=xxxxx
+```
+
+## 📚 次のステップ
+
+1. [docs/ALPHA_DEVELOPMENT.md](docs/ALPHA_DEVELOPMENT.md) - Alpha版開発ガイド
+2. [docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md) - 開発ガイドライン
+3. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - アーキテクチャ詳細
+
+## 🆘 サポート
+
+質問・問題がある場合：
+
+- GitHub Issues: https://github.com/PranceHoldings/communication-platform/issues
+- ドキュメント: [docs/](docs/)
+
+---
+
+**Happy Coding! 🚀**
