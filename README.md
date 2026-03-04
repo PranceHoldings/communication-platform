@@ -19,6 +19,22 @@ Pranceは、AIアバターとのリアルタイム会話を通じて面接練習
 - 🌍 **多言語対応** - 日本語・英語（将来的に8言語以上）
 - 🔧 **プラグインシステム** - 拡張可能なアーキテクチャ
 
+### 🚀 開発を始める前に
+
+**必読ドキュメント**:
+1. **[リリースプラン](docs/RELEASE_PLAN.md)** - どの機能をいつリリースするか
+2. **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各機能の詳細仕様（ユーザーストーリー、UI、API、受け入れ基準）
+3. **[実装プラン](docs/IMPLEMENTATION_PLAN.md)** - 技術的な実装手順
+
+**開発スケジュール**:
+- **Alpha版（2ヶ月）**: コア会話機能
+- **Beta版（1.5ヶ月）**: カスタマイズ機能
+- **v1.0（2ヶ月）**: 一般公開（解析・レポート・課金）
+- **v1.x（4ヶ月）**: エンタープライズ機能
+- **v2.0（4ヶ月）**: グローバル展開
+
+詳細は [リリースプラン](docs/RELEASE_PLAN.md) を参照してください。
+
 ## クイックスタート
 
 ### 前提条件
@@ -78,24 +94,27 @@ npm run deploy:production
 
 ## ドキュメント
 
-### プロジェクト管理
-- [実装プラン](docs/IMPLEMENTATION_PLAN.md) - フェーズ分け実装計画
+### 📋 プロジェクト管理
+- **[リリースプラン](docs/RELEASE_PLAN.md)** - 段階的リリース戦略（Alpha → Beta → v1.0 → v2.0）
+- **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各リリース段階の詳細機能仕様
+- [実装プラン](docs/IMPLEMENTATION_PLAN.md) - 技術的実装計画（フェーズ分け）
 - [プロジェクト構造](docs/PROJECT_STRUCTURE.md) - コードベース構成
 
-### 技術ドキュメント
-- [アーキテクチャ](docs/ARCHITECTURE.md) - システムアーキテクチャ
-- [データベース設計](docs/DATABASE_DESIGN.md) - スキーマ設計
-- [API仕様](docs/API_SPECIFICATION.md) - RESTful API仕様
+### 🏗️ 技術ドキュメント
+- [アーキテクチャ](docs/ARCHITECTURE.md) - AWSサーバーレスアーキテクチャ
+- [データベース設計](docs/DATABASE_DESIGN.md) - Aurora/DynamoDBスキーマ
+- [API仕様](docs/API_SPECIFICATION.md) - RESTful API + WebSocket仕様
 - [開発ガイド](docs/DEVELOPMENT_GUIDE.md) - Claude Code開発ガイド
+- [CI/CDガイド](docs/CICD.md) - GitHub Actions + AWS CDK
 
-### ビジネスドキュメント
+### 💼 ビジネスドキュメント
 - [ビジネス概要](docs/BUSINESS_OVERVIEW.md) - ビジネスモデル・市場分析
-- [製品要件](docs/PRODUCT_REQUIREMENTS.md) - 機能要件・仕様
-- [ユーザーストーリー](docs/USER_STORIES.md) - ユースケース
+- [CLAUDE.md](CLAUDE.md) - 完全プロジェクト仕様書（240KB）
 
-### 運用ドキュメント
+### 🔐 運用・セキュリティ
+- [デプロイメントガイド](docs/DEPLOYMENT.md) - 環境別デプロイ手順
 - [運用ガイド](docs/OPERATIONS_GUIDE.md) - 監視・トラブルシューティング
-- [セキュリティ](docs/SECURITY.md) - セキュリティポリシー
+- [セキュリティ](docs/SECURITY.md) - セキュリティポリシー・コンプライアンス
 
 ## 開発ワークフロー
 
