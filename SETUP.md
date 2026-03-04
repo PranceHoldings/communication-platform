@@ -32,11 +32,16 @@ docker --version
 1. **AWS** - https://aws.amazon.com/
    - メインインフラ（Lambda、Aurora、S3、Cognito等）
    - **AWS Bedrock** でClaudeモデルを有効化（AI会話エンジン）
+   - **AWS Rekognition** 感情解析（顔ランドマーク100点）
+   - **AWS Polly** 音声合成フォールバック（Neural TTS）
 2. **ElevenLabs** - https://elevenlabs.io/
+   - 音声合成（プライマリ、高品質）
 3. **Azure (Speech Services)** - https://portal.azure.com/
+   - 音声認識（低レイテンシ）
 4. **Ready Player Me** - https://readyplayer.me/developers
+   - 3Dアバター生成
 
-**注**: Claude APIはAWS Bedrock経由で利用するため、AWS課金に一本化されます。
+**AWS統合度**: 約70%（Bedrock, Rekognition, Polly, Lambda, Aurora, S3等がAWS）
 
 ## 🚀 ステップ2: プロジェクトセットアップ
 

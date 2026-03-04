@@ -61,8 +61,10 @@ Storage:
   - CloudFront (CDN)
 
 External APIs:
-  - AWS Bedrock (Claude on Bedrock)
-  - ElevenLabs API (TTS)
+  - AWS Bedrock (Claude - 会話AI)
+  - AWS Rekognition (感情解析)
+  - AWS Polly (TTS フォールバック)
+  - ElevenLabs API (TTS プライマリ)
   - Azure Speech Services (STT)
   - Ready Player Me (3Dアバター)
 ```

@@ -4181,9 +4181,9 @@ type ServerMessage =
 | 用途 | プライマリ | フォールバック | 統合方法 |
 |------|----------|--------------|---------|
 | 会話AI | AWS Bedrock (Claude 3.5 Sonnet) | - | Lambda統合、IAM認証、AWS SDK v3 |
-| TTS | ElevenLabs API | Amazon Polly | Lambda統合、ストリーミング対応 |
-| STT | Azure Speech Services | AWS Transcribe | WebSocket → Lambda処理 |
-| 感情解析 | Azure Face API | AWS Rekognition | Lambda非同期処理 |
+| TTS | ElevenLabs API | Amazon Polly | Lambda統合、ストリーミング対応、品質優先 |
+| STT | Azure Speech Services | AWS Transcribe | WebSocket → Lambda処理、レイテンシ優位 |
+| 感情解析 | AWS Rekognition | - | Lambda統合、S3統合、顔ランドマーク100点 |
 | アニメ化 | AnimeGANv2 (Lambda Container) | - | Lambda Container (GPU不要版) |
 | 3Dアバター | Ready Player Me API | - | Lambda統合 |
 | PDF生成 | AWS Lambda (Puppeteer Layer) | - | Lambda Layer (Chrome Headless) |
@@ -4196,10 +4196,11 @@ type ServerMessage =
 |---------|--------|------|------|
 | **ユーザー映像取得** | getUserMedia API | カメラ取得 | ブラウザ標準API、ユーザー映像のリアルタイム取得 |
 | | MediaPipe Face Mesh | 顔ランドマーク検出 | 468点の顔ランドマーク、リアルタイム表情解析 |
-| | Azure Face API | 感情解析 | 7種類の感情スコア、視線方向（アイコンタクト判定） |
+| | AWS Rekognition | 感情解析 | 8種類の感情スコア、視線方向、顔ランドマーク100点 |
 | **音声処理** | getUserMedia API | マイク取得 | ブラウザ標準API、エコーキャンセル・ノイズ抑制対応 |
-| | Azure Speech Services | 音声認識（STT） | リアルタイムストリーミング認識、40言語以上対応 |
-| | ElevenLabs API | 音声合成（TTS） | 高品質音声生成 + Visemeデータ出力（リップシンク用） |
+| | Azure Speech Services | 音声認識（STT） | リアルタイムストリーミング認識、低レイテンシ（100-200ms） |
+| | ElevenLabs API | 音声合成（TTS） | 超高品質音声生成 + Visemeデータ（品質最優先） |
+| | Amazon Polly | 音声合成（フォールバック） | AWS統合、コスト効率、Neural TTS品質 |
 | **アバターレンダリング** | Three.js + React Three Fiber | 3Dレンダリング | WebGL、60fpsリアルタイムレンダリング |
 | | Ready Player Me | 3Dアバターモデル | .glb形式、ARKit 52 Blendshapes対応 |
 | | Live2D Cubism SDK 5 | 2Dアニメアバター | Canvas 2D、高品質アニメーション、口パク対応 |
@@ -4962,9 +4963,10 @@ Phase 6: 運用・継続改善                [継続]   ∞
 |----------|------|---------------------|
 | **AI・音声** | | |
 | AWS Bedrock (Claude) | 会話AI | AWS課金統合、IAM認証、商用利用可 |
-| ElevenLabs | TTS・音声クローニング | 商用プランで音声クローニング可 |
-| Azure Speech Services | STT・音声解析 | 商用利用可、従量課金 |
-| Azure Face API | 感情解析 | EU等一部地域で制限あり要確認 |
+| ElevenLabs | TTS（プライマリ）・音声クローニング | 商用プランで音声クローニング可、品質最優先 |
+| Amazon Polly | TTS（フォールバック） | AWS課金統合、Neural TTS、商用利用可 |
+| Azure Speech Services | STT | 商用利用可、従量課金、低レイテンシ |
+| AWS Rekognition | 感情解析 | AWS課金統合、顔ランドマーク100点、商用利用可 |
 | **アバター** | | |
 | Ready Player Me | 3Dアバター生成 | 商用利用は Enterprise プラン |
 | Live2D Cubism SDK | 2Dアバターレンダリング | 商用利用は Publishing License 必要 |
