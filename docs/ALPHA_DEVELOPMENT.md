@@ -61,7 +61,7 @@ Storage:
   - CloudFront (CDN)
 
 External APIs:
-  - Claude API (Anthropic)
+  - AWS Bedrock (Claude on Bedrock)
   - ElevenLabs API (TTS)
   - Azure Speech Services (STT)
   - Ready Player Me (3Dアバター)
@@ -98,26 +98,38 @@ aws configure
 
 ---
 
-#### 2. Anthropic (Claude API)
+#### 2. AWS Bedrock (Claude on Bedrock)
 
-**用途**: AI会話エンジン
+**用途**: AI会話エンジン（Claude API）
 
 **取得手順**:
-1. https://console.anthropic.com/ にアクセス
-2. アカウント作成
-3. API Keys → Create Key
+1. AWSアカウントでログイン（上記のAWSアカウントを使用）
+2. AWS Console → Amazon Bedrock
+3. 利用リージョン選択（推奨: us-east-1）
+4. Model access → Manage model access
+5. Anthropic Claude モデルを有効化
+   - Claude 3.5 Sonnet
+   - Claude 3 Opus（必要に応じて）
 
-**必要な情報**:
+**必要な設定**:
 ```bash
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxx...
+# AWS認証情報（すでに設定済みの場合は不要）
+# Bedrockは AWS SDK が自動的にIAM認証を使用
+AWS_REGION=us-east-1
+
+# IAM権限確認（Lambda実行ロール等）
+# bedrock:InvokeModel 権限が必要
 ```
 
 **コスト見積もり**:
-- 初回クレジット: $5（無料）
-- Claude Opus 4: $15/1M input tokens, $75/1M output tokens
-- Alpha版開発期間: 約$20-50
+- Claude 3.5 Sonnet: $3/1M input tokens, $15/1M output tokens
+- Claude 3 Opus: $15/1M input tokens, $75/1M output tokens
+- Alpha版開発期間: 約$10-30（AWSの統合請求）
 
-**プラン**: Pay-as-you-go（従量課金）
+**利点**:
+- AWS課金の一本化
+- IAM認証（APIキー管理不要）
+- VPC内からの低レイテンシアクセス
 
 ---
 

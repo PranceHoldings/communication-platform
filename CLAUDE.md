@@ -4181,7 +4181,7 @@ type ServerMessage =
 
 | 用途 | プライマリ | フォールバック | 統合方法 |
 |------|----------|--------------|---------|
-| 会話AI | Anthropic Claude (Opus 4) | AWS Bedrock (Claude) | Lambda統合、プロバイダ抽象化レイヤー |
+| 会話AI | AWS Bedrock (Claude 3.5 Sonnet) | - | Lambda統合、IAM認証、AWS SDK v3 |
 | TTS | ElevenLabs API | Amazon Polly | Lambda統合、ストリーミング対応 |
 | STT | Azure Speech Services | AWS Transcribe | WebSocket → Lambda処理 |
 | 感情解析 | Azure Face API | AWS Rekognition | Lambda非同期処理 |
@@ -4208,8 +4208,7 @@ type ServerMessage =
 | | ARKit Blendshapes | 3D表情制御 | 52種類の表情パラメータ（jawOpen, mouthFunnel等） |
 | **リアルタイム通信** | AWS IoT Core | WebSocket通信 | 100万同時接続対応、低レイテンシ（50-200ms） |
 | | MediaRecorder API | ブラウザ録画 | ユーザー映像 + アバター映像の同時録画（WebM形式） |
-| **会話AI** | Anthropic Claude (Opus 4) | 自然言語処理 | システムプロンプトベースの会話生成 |
-| | AWS Bedrock (Claude) | フォールバック | プライマリ障害時のバックアップ |
+| **会話AI** | AWS Bedrock (Claude 3.5 Sonnet) | 自然言語処理 | システムプロンプトベースの会話生成、IAM認証 |
 | **動画処理** | AWS MediaConvert | 動画合成 | ユーザー映像 + アバター映像のサイドバイサイド合成 |
 | | FFmpeg (Lambda Layer) | カスタム処理 | サムネイル生成、フレーム抽出 |
 
@@ -4963,7 +4962,7 @@ Phase 6: 運用・継続改善                [継続]   ∞
 | サービス | 用途 | ライセンス・注意事項 |
 |----------|------|---------------------|
 | **AI・音声** | | |
-| Claude API (Anthropic) | 会話AI | 商用利用可、レート制限あり |
+| AWS Bedrock (Claude) | 会話AI | AWS課金統合、IAM認証、商用利用可 |
 | ElevenLabs | TTS・音声クローニング | 商用プランで音声クローニング可 |
 | Azure Speech Services | STT・音声解析 | 商用利用可、従量課金 |
 | Azure Face API | 感情解析 | EU等一部地域で制限あり要確認 |

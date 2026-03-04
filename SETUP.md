@@ -30,10 +30,13 @@ docker --version
 ### 必須サービス
 
 1. **AWS** - https://aws.amazon.com/
-2. **Anthropic (Claude API)** - https://console.anthropic.com/
-3. **ElevenLabs** - https://elevenlabs.io/
-4. **Azure (Speech Services)** - https://portal.azure.com/
-5. **Ready Player Me** - https://readyplayer.me/developers
+   - メインインフラ（Lambda、Aurora、S3、Cognito等）
+   - **AWS Bedrock** でClaudeモデルを有効化（AI会話エンジン）
+2. **ElevenLabs** - https://elevenlabs.io/
+3. **Azure (Speech Services)** - https://portal.azure.com/
+4. **Ready Player Me** - https://readyplayer.me/developers
+
+**注**: Claude APIはAWS Bedrock経由で利用するため、AWS課金に一本化されます。
 
 ## 🚀 ステップ2: プロジェクトセットアップ
 
@@ -74,8 +77,11 @@ vim .env.local  # または code .env.local
 AWS_REGION=us-east-1
 AWS_ACCOUNT_ID=<YOUR_AWS_ACCOUNT_ID>
 
-# Anthropic
-ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_KEY>
+# AWS Bedrock (Claude API)
+# Bedrockは AWS SDK が自動的にIAM認証を使用するため、
+# 個別のAPIキーは不要です。AWS認証情報（aws configure）を使用します。
+BEDROCK_REGION=us-east-1
+BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
 
 # ElevenLabs
 ELEVENLABS_API_KEY=<YOUR_ELEVENLABS_KEY>
