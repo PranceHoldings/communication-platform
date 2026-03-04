@@ -590,6 +590,559 @@ export class WebRTCManager {
 }
 ```
 
+---
+
+## リアルタイムセッションUI構成
+
+### 概要
+
+Pranceプラットフォームでは、セッション実行中に以下の3要素をブラウザUI上にリアルタイム表示します:
+
+1. **ユーザーカメラ映像**: getUserMedia APIによるリアルタイム取得
+2. **AIアバター映像**: Three.js/Live2Dによる60fpsレンダリング
+3. **リアルタイム文字起こし**: Azure STT + AIアバター発話のタイムスタンプ付きテキスト
+
+### アーキテクチャ図
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                      ブラウザ（React）                          │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌───────────────────┐  ┌───────────────────┐                 │
+│  │ ユーザーカメラ映像│  │ AIアバター映像     │                 │
+│  │ (右側表示)        │  │ (左側表示)        │                 │
+│  │                   │  │                   │                 │
+│  │ getUserMedia API  │  │ Three.js/Live2D   │                 │
+│  │ 30-60fps          │  │ 60fps             │                 │
+│  │ 1280x720 (Pro)    │  │ 1280x720 (Pro)    │                 │
+│  └─────────┬─────────┘  └─────────┬─────────┘                 │
+│            │                       │                            │
+│            ├───────────────────────┤                            │
+│            │  MediaRecorder API    │                            │
+│            │  (同時録画)           │                            │
+│            └───────────┬───────────┘                            │
+│                        │                                        │
+│  ┌─────────────────────┴────────────────────────────────────┐  │
+│  │       リアルタイム文字起こし（会話履歴）                 │  │
+│  │  ┌──────────────────────────────────────────────────┐   │  │
+│  │  │ 00:12 AI: よろしくお願いします。                 │   │  │
+│  │  │ 00:18 YOU: よろしくお願いします。私は...       │   │  │
+│  │  │ 00:34 AI: ありがとうございます。技術スタック... │   │  │
+│  │  │ 00:41 YOU: ReactとNode.jsを... (認識中💭)       │   │  │
+│  │  │          ↑ 暫定テキスト（グレー表示）           │   │  │
+│  │  └──────────────────────────────────────────────────┘   │  │
+│  │  自動スクロール、話者別色分け（AI: 青、USER: 緑）    │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  データフロー:                                                  │
+│  1. ユーザー発話 → Azure STT (WebSocket) → 暫定/確定テキスト  │
+│  2. AI応答 → Claude API → ElevenLabs TTS → 音声 + Viseme      │
+│  3. Viseme → アバター口パク (リップシンク)                     │
+│  4. 両方のテキスト → トランスクリプト表示 (タイムスタンプ付き)│
+└────────────────────────────────────────────────────────────────┘
+         │                          │
+         │ WebSocket (IoT Core)     │ HTTPS (API Gateway)
+         ▼                          ▼
+┌──────────────────────┐  ┌──────────────────────┐
+│  Lambda (WebSocket)  │  │  Lambda (REST API)   │
+│  - 音声ストリーム中継│  │  - セッション管理    │
+│  - STT結果配信       │  │  - トランスクリプト  │
+│  - AI応答配信        │  │    保存              │
+└──────────────────────┘  └──────────────────────┘
+         │                          │
+         ▼                          ▼
+┌─────────────────────────────────────────┐
+│  外部サービス                            │
+│  - Azure Speech Services (STT)          │
+│  - Claude API (会話生成)                │
+│  - ElevenLabs (TTS + Viseme)            │
+└─────────────────────────────────────────┘
+```
+
+### コンポーネント構成
+
+#### 1. セッション実行画面コンポーネント
+
+```typescript
+// components/SessionPlayer.tsx
+import { useRealtimeSession } from '@/hooks/useRealtimeSession';
+import { UserCameraView } from './UserCameraView';
+import { AvatarView } from './AvatarView';
+import { RealtimeTranscript } from './RealtimeTranscript';
+
+export function SessionPlayer({ sessionId }: { sessionId: string }) {
+  const {
+    userStream,
+    avatarRenderer,
+    transcriptEntries,
+    currentRecognizing,
+    sessionState,
+    controls
+  } = useRealtimeSession(sessionId);
+
+  return (
+    <div className="session-player">
+      {/* 映像表示エリア */}
+      <div className="video-container">
+        <AvatarView
+          renderer={avatarRenderer}
+          isRecording={sessionState.isRecording}
+        />
+        <UserCameraView
+          stream={userStream}
+          isRecording={sessionState.isRecording}
+        />
+      </div>
+
+      {/* デバイス制御 */}
+      <div className="device-controls">
+        <MicrophoneControl
+          onToggle={controls.toggleMicrophone}
+          isActive={sessionState.microphoneActive}
+        />
+        <CameraControl
+          onToggle={controls.toggleCamera}
+          isActive={sessionState.cameraActive}
+        />
+        <SpeakerControl
+          volume={sessionState.volume}
+          onVolumeChange={controls.setVolume}
+        />
+      </div>
+
+      {/* リアルタイム文字起こし */}
+      <RealtimeTranscript
+        entries={transcriptEntries}
+        currentRecognizing={currentRecognizing}
+      />
+
+      {/* セッション情報 */}
+      <SessionInfo
+        elapsedTime={sessionState.elapsedTime}
+        maxDuration={sessionState.maxDuration}
+        topicProgress={sessionState.topicProgress}
+        recordingSize={sessionState.recordingSize}
+      />
+    </div>
+  );
+}
+```
+
+#### 2. リアルタイム文字起こしフック
+
+```typescript
+// hooks/useRealtimeTranscription.ts
+import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
+import { useEffect, useState } from 'react';
+import { useWebSocket } from './useWebSocket';
+
+interface TranscriptEntry {
+  id: string;
+  speaker: 'AI' | 'USER';
+  text: string;
+  timestampStart: number;
+  timestampEnd: number;
+  confidence: number;
+  isConfirmed: boolean;
+}
+
+export function useRealtimeTranscription(sessionId: string) {
+  const [transcriptEntries, setTranscriptEntries] = useState<TranscriptEntry[]>([]);
+  const [currentRecognizing, setCurrentRecognizing] = useState<string>('');
+  const wsClient = useWebSocket(sessionId);
+
+  useEffect(() => {
+    // Azure STT設定
+    const speechConfig = sdk.SpeechConfig.fromSubscription(
+      process.env.NEXT_PUBLIC_AZURE_SPEECH_KEY!,
+      process.env.NEXT_PUBLIC_AZURE_SPEECH_REGION!
+    );
+    speechConfig.speechRecognitionLanguage = 'ja-JP';
+
+    const audioConfig = sdk.AudioConfig.fromDefaultMicrophone();
+    const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
+
+    // 認識中（暫定テキスト）
+    recognizer.recognizing = (s, e) => {
+      if (e.result.reason === sdk.ResultReason.RecognizingSpeech) {
+        setCurrentRecognizing(e.result.text);
+      }
+    };
+
+    // 認識完了（確定テキスト）
+    recognizer.recognized = (s, e) => {
+      if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
+        const entry: TranscriptEntry = {
+          id: generateId(),
+          speaker: 'USER',
+          text: e.result.text,
+          timestampStart: Date.now() / 1000,
+          timestampEnd: Date.now() / 1000,
+          confidence: 0.95,
+          isConfirmed: true
+        };
+
+        setTranscriptEntries(prev => [...prev, entry]);
+        setCurrentRecognizing('');
+
+        // WebSocket経由でバックエンドに送信
+        wsClient.send({
+          type: 'user_speech',
+          text: e.result.text,
+          timestamp: entry.timestampStart
+        });
+      }
+    };
+
+    // 認識開始
+    recognizer.startContinuousRecognitionAsync();
+
+    return () => {
+      recognizer.stopContinuousRecognitionAsync();
+    };
+  }, [sessionId]);
+
+  // AI発話の受信
+  useEffect(() => {
+    if (!wsClient) return;
+
+    wsClient.onMessage((message) => {
+      if (message.type === 'avatar_response') {
+        const aiEntry: TranscriptEntry = {
+          id: generateId(),
+          speaker: 'AI',
+          text: message.text,
+          timestampStart: Date.now() / 1000,
+          timestampEnd: Date.now() / 1000 + estimateDuration(message.text),
+          confidence: 1.0,
+          isConfirmed: true
+        };
+
+        setTranscriptEntries(prev => [...prev, aiEntry]);
+      }
+    });
+  }, [wsClient]);
+
+  return { transcriptEntries, currentRecognizing };
+}
+
+function estimateDuration(text: string): number {
+  const charCount = text.length;
+  const wpm = 140; // 日本語の平均話速（文字/分）
+  return (charCount / wpm) * 60;
+}
+
+function generateId(): string {
+  return `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+```
+
+#### 3. リアルタイム文字起こし表示コンポーネント
+
+```typescript
+// components/RealtimeTranscript.tsx
+import { useEffect, useRef } from 'react';
+import { formatTime } from '@/utils/time';
+
+interface TranscriptEntry {
+  id: string;
+  speaker: 'AI' | 'USER';
+  text: string;
+  timestampStart: number;
+  isConfirmed: boolean;
+}
+
+export function RealtimeTranscript({
+  entries,
+  currentRecognizing
+}: {
+  entries: TranscriptEntry[];
+  currentRecognizing: string;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 新しい発話時に自動スクロール
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [entries, currentRecognizing]);
+
+  return (
+    <div className="transcript-container" ref={scrollRef}>
+      <h3>リアルタイム文字起こし（会話履歴）</h3>
+
+      {/* 確定した会話履歴 */}
+      {entries.map(entry => (
+        <div key={entry.id} className={`transcript-entry ${entry.speaker}`}>
+          <span className="timestamp">
+            {formatTime(entry.timestampStart)}
+          </span>
+          <span className="speaker">
+            {entry.speaker === 'AI' ? 'AI' : 'YOU'}:
+          </span>
+          <span className="text">{entry.text}</span>
+        </div>
+      ))}
+
+      {/* 認識中の暫定テキスト */}
+      {currentRecognizing && (
+        <div className="transcript-entry USER recognizing">
+          <span className="timestamp">
+            {formatTime(Date.now() / 1000)}
+          </span>
+          <span className="speaker">YOU:</span>
+          <span className="text provisional">
+            {currentRecognizing}
+            <span className="indicator"> 💭 (認識中)</span>
+          </span>
+        </div>
+      )}
+
+      {/* 空状態 */}
+      {entries.length === 0 && !currentRecognizing && (
+        <div className="empty-state">
+          会話を開始してください...
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+#### 4. スタイリング
+
+```css
+/* styles/transcript.css */
+.transcript-container {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+}
+
+.transcript-entry {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* AI発話: 青系背景 */
+.transcript-entry.AI {
+  background: #e3f2fd;
+  border-left: 3px solid #2196f3;
+}
+
+/* ユーザー発話: 緑系背景 */
+.transcript-entry.USER {
+  background: #e8f5e9;
+  border-left: 3px solid #4caf50;
+}
+
+/* 認識中（暫定テキスト）: グレー、イタリック */
+.transcript-entry.recognizing {
+  background: #f5f5f5;
+  border-left: 3px dashed #9e9e9e;
+}
+
+.transcript-entry .text.provisional {
+  color: #757575;
+  font-style: italic;
+}
+
+.transcript-entry .indicator {
+  color: #9e9e9e;
+  font-size: 0.875rem;
+}
+
+.transcript-entry .timestamp {
+  color: #616161;
+  font-size: 0.75rem;
+  margin-right: 0.5rem;
+  font-weight: 500;
+}
+
+.transcript-entry .speaker {
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.transcript-entry.AI .speaker {
+  color: #1976d2;
+}
+
+.transcript-entry.USER .speaker {
+  color: #388e3c;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.empty-state {
+  text-align: center;
+  color: #9e9e9e;
+  padding: 2rem;
+  font-style: italic;
+}
+```
+
+### データフロー詳細
+
+#### ユーザー発話フロー
+
+```
+1. ユーザーがマイクで発話
+   ↓
+2. getUserMedia → Azure STT（ストリーミング）
+   ↓
+3. recognizing イベント（0.1秒ごと）
+   ↓
+4. UI: 暫定テキスト表示（グレー、💭認識中）
+   ↓
+5. recognized イベント（発話終了時）
+   ↓
+6. UI: 確定テキスト表示（通常色）
+   ↓
+7. WebSocket → Lambda → DynamoDB (セッション状態更新)
+   ↓
+8. Lambda → Claude API（AI応答生成）
+```
+
+#### AI発話フロー
+
+```
+1. Claude API応答テキスト
+   ↓
+2. Lambda → ElevenLabs TTS生成
+   ↓
+3. WebSocket → ブラウザ
+   ├─ 音声データ（ArrayBuffer）
+   └─ Visemeデータ（口形状）
+   ↓
+4. UI: AI発話として表示（青背景）
+   ↓
+5. 音声再生 + アバター口パク（Three.js/Live2D）
+   ↓
+6. DynamoDB: トランスクリプトエントリ保存
+```
+
+#### 録画フロー
+
+```
+1. セッション開始時
+   ├─ MediaRecorder (ユーザーカメラ) 開始
+   └─ MediaRecorder (アバターCanvas) 開始
+   ↓
+2. セッション中（1秒ごと）
+   ├─ ユーザー映像チャンク生成
+   └─ アバター映像チャンク生成
+   ↓
+3. セッション終了時
+   ├─ 両方のBlobを生成
+   ├─ S3署名付きURL取得
+   └─ 並列アップロード
+   ↓
+4. EventBridge → Step Functions
+   ├─ MediaConvert: サイドバイサイド合成
+   ├─ サムネイル生成
+   └─ トランスクリプトファイル生成（WebVTT）
+```
+
+### パフォーマンス最適化
+
+#### 1. リアルタイム文字起こし
+
+- **Azure STT WebSocket**: 低レイテンシストリーミング認識（< 100ms）
+- **デバウンス処理**: 暫定テキストの頻繁な更新を抑制
+- **仮想スクロール**: 大量のトランスクリプトエントリでもスムーズ表示
+
+#### 2. アバターレンダリング
+
+- **Three.js最適化**: LOD（Level of Detail）、フラストラムカリング
+- **Live2D最適化**: テクスチャ圧縮、描画領域制限
+- **60fps維持**: requestAnimationFrame、Web Workersでの負荷分散
+
+#### 3. 録画
+
+- **ビットレート制御**: プラン別に自動調整（Free: 1.5Mbps, Pro: 2.5Mbps）
+- **チャンク処理**: メモリ消費抑制（1秒ごとにチャンク生成）
+- **並列アップロード**: ユーザー/アバター映像を同時アップロード
+
+### エラーハンドリング
+
+#### Azure STT エラー
+
+```typescript
+recognizer.canceled = (s, e) => {
+  if (e.reason === sdk.CancellationReason.Error) {
+    console.error('STT Error:', e.errorDetails);
+
+    // ユーザーに通知
+    showNotification({
+      type: 'error',
+      message: '音声認識エラーが発生しました。マイクを確認してください。'
+    });
+
+    // フォールバック: マニュアル入力
+    setTranscriptionMode('manual');
+  }
+};
+```
+
+#### WebSocket 切断
+
+```typescript
+wsClient.onDisconnect(() => {
+  // 自動再接続（3回まで）
+  if (reconnectAttempts < 3) {
+    setTimeout(() => {
+      wsClient.reconnect();
+      reconnectAttempts++;
+    }, 1000 * reconnectAttempts);
+  } else {
+    // 再接続失敗 → セッション中断
+    showNotification({
+      type: 'error',
+      message: '接続が切断されました。セッションを再開してください。'
+    });
+
+    // 録画データを保存
+    saveRecordingLocally();
+  }
+});
+```
+
+#### 録画失敗
+
+```typescript
+userRecorder.onerror = (event) => {
+  console.error('Recording error:', event);
+
+  // ユーザーに通知
+  showNotification({
+    type: 'warning',
+    message: '録画中にエラーが発生しました。音声のみ保存されます。'
+  });
+
+  // 音声のみ録画に切り替え
+  fallbackToAudioOnlyRecording();
+};
+```
+
+---
+
 ### バックエンド (NestJS)
 
 **モジュール構成**

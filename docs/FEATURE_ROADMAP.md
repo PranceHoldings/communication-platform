@@ -602,11 +602,55 @@ So that 面接練習ができる
 ```
 
 **機能詳細**:
-- WebSocket通信（AWS IoT Core）
-- 音声ストリーミング（ユーザー → サーバー）
-- リアルタイム字幕表示
-- Claude API統合（会話AI）
-- TTS音声配信（サーバー → ユーザー）
+- **ユーザーカメラ映像**: getUserMedia APIでリアルタイム取得・表示
+- **AIアバター映像**: Three.js/Live2Dでリアルタイムレンダリング（60fps）
+- **リアルタイム文字起こし**: Azure STTストリーミング認識、話者別表示
+- **WebSocket通信**: AWS IoT Core、低レイテンシ（50-200ms）
+- **音声ストリーミング**: ユーザー → サーバー → Azure STT
+- **Claude API統合**: 会話AI、コンテキスト保持
+- **TTS音声配信**: ElevenLabs → サーバー → ユーザー、Visemeデータ含む
+
+**UI構成（3要素統合）**:
+```
+┌─────────────────────────────────────────────────────────────┐
+│ セッション実行中     [⚙️設定] [録画中 ●] [終了]            │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  【映像表示エリア】                                          │
+│  ┌─────────────────────┐  ┌──────────────────────────┐     │
+│  │ AIアバター（面接官） │  │ あなた（カメラ映像）      │     │
+│  │ Three.js/Live2D     │  │ getUserMedia API        │     │
+│  │                     │  │                         │     │
+│  │      👤             │  │      📹                 │     │
+│  │  リアルタイム        │  │  リアルタイムカメラ     │     │
+│  │  レンダリング 60fps  │  │  30fps (Pro)            │     │
+│  │  💬 話しています     │  │  🎤 聞いています        │     │
+│  │                     │  │                         │     │
+│  │  1280x720 (Pro)     │  │  1280x720 (Pro)         │     │
+│  └─────────────────────┘  └──────────────────────────┘     │
+│                                                              │
+│  【デバイス制御】                                            │
+│  🎤 マイク: ON  📹 カメラ: ON  🔊 音量: 80%                │
+│                                                              │
+│  【リアルタイム文字起こし（会話履歴）】                      │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ 00:12 AI:  本日はよろしくお願いします。              │  │
+│  │           まず自己紹介をお願いできますか？            │  │
+│  │                                                      │  │
+│  │ 00:18 YOU: よろしくお願いします。私は山田太郎です。  │  │
+│  │           Web開発を5年経験しています。               │  │
+│  │                                                      │  │
+│  │ 00:34 AI:  ありがとうございます。技術スタックは？    │  │
+│  │                                                      │  │
+│  │ 00:41 YOU: ReactとNode.jsを使って... (認識中💭)     │  │
+│  │           ↑ 暫定テキスト（グレー、リアルタイム更新）  │  │
+│  │                                                      │  │
+│  │ [自動スクロール：最新の発話を常に表示]               │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ⏱️ 経過: 08:34/30:00  📋 進捗: ██████░░░░ 3/5             │
+└─────────────────────────────────────────────────────────────┘
+```
 
 **技術アーキテクチャ**:
 ```
@@ -800,14 +844,39 @@ export const handler = async (event: APIGatewayWebSocketEvent) => {
 ```
 
 **受け入れ基準**:
-- [ ] WebSocket接続が確立する
-- [ ] 冒頭発話が自動再生される
-- [ ] ユーザー発話がリアルタイムで字幕表示される
-- [ ] AIアバターの応答が自然（会話のコンテキストを理解）
-- [ ] 音声とリップシンクが同期している
-- [ ] WebSocket切断時に自動再接続する
 
-**実装容易度**: ⭐⭐⭐ (10日)
+**映像表示:**
+- [ ] ユーザーカメラ映像がリアルタイムで表示される（getUserMedia API）
+- [ ] AIアバター映像がリアルタイムでレンダリングされる（Three.js/Live2D、60fps）
+- [ ] 両映像がサイドバイサイドで同時に表示される
+- [ ] カメラON/OFF切り替えが機能する
+- [ ] カメラOFF時はプレースホルダーが表示される
+
+**リアルタイム文字起こし:**
+- [ ] ユーザー発話がリアルタイムで字幕表示される（Azure STT）
+- [ ] 認識中の暫定テキストが表示される（グレー、💭認識中）
+- [ ] 確定テキストが会話履歴に追加される（通常色）
+- [ ] AI発話が文字起こしとして表示される（青背景）
+- [ ] ユーザー発話とAI発話が明確に区別される（色分け）
+- [ ] タイムスタンプが各発話に付与される（00:12, 00:18等）
+- [ ] 最新の発話が自動スクロールで常に表示される
+- [ ] 過去の会話を手動スクロールで確認できる
+
+**通信・会話:**
+- [ ] WebSocket接続が確立する（AWS IoT Core）
+- [ ] 冒頭発話が自動再生される
+- [ ] AIアバターの応答が自然（会話のコンテキストを理解）
+- [ ] 音声とリップシンクが同期している（Visemeデータ使用）
+- [ ] WebSocket切断時に自動再接続する
+- [ ] レイテンシが許容範囲内（< 500ms）
+
+**UI制御:**
+- [ ] マイク・カメラ・スピーカーの制御が機能する
+- [ ] 経過時間とトピック進捗が表示される
+- [ ] 録画状態インジケーターが表示される
+- [ ] セッション終了ボタンが機能する
+
+**実装容易度**: ⭐⭐⭐ (12日) ※UI統合、文字起こし表示含む
 
 ---
 
@@ -821,10 +890,35 @@ So that 後で振り返りができる
 ```
 
 **機能詳細**:
-- ユーザーカメラ映像録画（MediaRecorder API）
-- アバター映像録画（Canvas captureStream）
-- WebM形式
-- S3アップロード（署名付きURL）
+- **ユーザーカメラ映像録画**（MediaRecorder API）
+  - リアルタイムでブラウザUI上に表示
+  - 解像度: 640x480 (Free) / 1280x720 (Pro) / 1920x1080 (Enterprise)
+  - フレームレート: 24fps (Free) / 30fps (Pro) / 60fps (Enterprise)
+  - カメラON/OFF制御可能（プライバシー保護）
+
+- **アバター映像録画**（Canvas captureStream）
+  - Three.js/Live2Dレンダリング結果を60fpsでキャプチャ
+  - リアルタイム口パク・表情変化を録画
+  - 音声トラック含む（ElevenLabs TTS出力）
+
+- **サイドバイサイドUI表示**
+  - セッション実行中、ユーザーとアバターを並べて表示
+  - リアルタイム字幕（Azure STT）
+  - 録画状態インジケーター、経過時間、進捗表示
+
+- **ファイル形式・品質**
+  - WebM (VP9 + Opus)
+  - ビットレート: 1.5 Mbps (Free) / 2.5 Mbps (Pro) / 5 Mbps (Enterprise)
+  - 推定ファイルサイズ（30分Pro）: ユーザー 562.5 MB、アバター 562.5 MB
+
+- **S3アップロード（署名付きURL）**
+  - セッション終了時、自動アップロード
+  - ライフサイクル管理: 7日 (Free) / 90日 (Pro) / 無制限 (Enterprise)
+
+- **プライバシー設定**
+  - セッション前: カメラON/OFF選択
+  - セッション中: カメラ・マイク切り替え可能
+  - 録画後: いつでも削除可能
 
 **実装**:
 ```typescript
@@ -917,12 +1011,19 @@ POST /api/recordings
 ```
 
 **受け入れ基準**:
-- [ ] セッション開始と同時に録画開始
-- [ ] ユーザーカメラとアバターの両方が録画される
-- [ ] セッション終了後、自動的にS3にアップロードされる
-- [ ] ファイルサイズ < 500MB（30分録画）
+- [ ] セッション開始前にカメラON/OFFを選択できる
+- [ ] セッション実行中、ユーザーとアバターがサイドバイサイドで表示される
+- [ ] セッション開始と同時に録画開始（両方同時）
+- [ ] ユーザーカメラとアバターの両方が録画される（WebM形式）
+- [ ] セッション中、カメラ・マイクのON/OFF切り替えができる
+- [ ] リアルタイム字幕が表示される（Azure STT）
+- [ ] 録画中インジケーターと経過時間が表示される
+- [ ] セッション終了後、自動的にS3にアップロードされる（並列、署名付きURL）
+- [ ] ファイルサイズがプラン設定に従う（Pro: 30分で約560MB/ファイル）
+- [ ] アップロード完了後、バックエンドに通知され処理開始される
+- [ ] ユーザーが録画をいつでも削除できる
 
-**実装容易度**: ⭐⭐ (4日)
+**実装容易度**: ⭐⭐ (6日) ※UIとプライバシー設定を含む
 
 ---
 
@@ -938,53 +1039,144 @@ So that 自分のパフォーマンスを確認できる
 ```
 
 **機能詳細**:
-- サイドバイサイド表示（ユーザー | アバター）
-- 基本的な再生コントロール（再生/一時停止、シーク）
-- トランスクリプト表示（基本版）
+- **合成動画再生**（combined_{session_id}.mp4）
+  - サイドバイサイド表示（左: AIアバター、右: ユーザー）
+  - MediaConvertで合成済み、H.264/MP4形式
+  - CloudFront CDN経由で配信（署名付きURL、低レイテンシ）
+
+- **再生コントロール**
+  - 再生/一時停止、10秒スキップ（前後）
+  - シークバー（クリックで任意の位置に移動）
+  - 再生速度変更（0.75x / 1x / 1.5x）
+  - 音量調整
+
+- **トランスクリプト表示（基本版）**
+  - 話者別表示（AI / YOU）
+  - タイムスタンプ付き
+  - クリックで該当箇所にジャンプ
+  - 動画再生に合わせてハイライト・自動スクロール
+
+- **ダウンロード・共有**
+  - ローカルダウンロード（Pro以上）
+  - 限定共有リンク生成（有効期限付き）
 
 **UI**:
 ```
-┌─────────────────────────────────────────────────┐
-│  セッション録画 - 2024/03/04 14:30             │
-├─────────────────────────────────────────────────┤
-│  ┌──────────────┬──────────────┐               │
-│  │  ユーザー    │  アバター    │               │
-│  │              │              │               │
-│  └──────────────┴──────────────┘               │
-│  │████████░░░░░░░░│ 12:34 / 30:00              │
-│  [◀◀] [▶] [▶▶]  🔊────                         │
-├─────────────────────────────────────────────────┤
-│  トランスクリプト:                              │
-│  ┌───────────────────────────────────────────┐ │
-│  │ 00:03 AI: 本日はよろしくお願いします...   │ │
-│  │ 00:08 YOU: よろしくお願いします。         │ │
-│  │ 00:15 AI: まず自己紹介をお願いできますか │ │
-│  └───────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  セッション録画 - 2026/03/04 14:30            [共有] [DL]   │
+├──────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────┐  ┌────────────────────────────┐  │
+│  │     AIアバター映像      │  │      ユーザー映像          │  │
+│  │                        │  │                            │  │
+│  │                        │  │                            │  │
+│  │   (合成済みMP4)        │  │                            │  │
+│  └────────────────────────┘  └────────────────────────────┘  │
+│  │████████████░░░░░░░░░░░│  12:34 / 30:00    [×0.75][×1][×1.5]│
+│  [◀10s] [▶/⏸] [10s▶]   🔊─────                              │
+├──────────────────────────────────────────────────────────────┤
+│  トランスクリプト          感情グラフ                         │
+│  ┌──────────────────────┐  ┌──────────────────────────────┐  │
+│  │00:03 AI  本日はよろし│  │自信度 ──▄▄▄▄▄▂▂▄▄▄▄▄▄▄▃▃──→│  │
+│  │         くお願いしま │  │緊張度 ──▃▃▂▂▂▄▄▂▂▂▂▂▂▃▃▂──→│  │
+│  │         す。まず...  │  │       0分  10分  20分  30分   │  │
+│  │                      │  └──────────────────────────────┘  │
+│  │▶ 00:08 YOU よろしく  │  ハイライト                        │
+│  │         お願いします │  ┌──────────────────────────────┐  │
+│  │   ← 現在再生中        │  │ ★ 08:23 技術説明が具体的     │  │
+│  │                      │  │ ▲ 15:41 視線が外れる傾向     │  │
+│  │  00:15 AI まず自己紹 │  │ ★ 22:09 志望動機が明確       │  │
+│  │         介をお願いで │  │                          [▶]  │  │
+│  └──────────────────────┘  └──────────────────────────────┘  │
+│                                                               │
+│  [レポートを見る]  [削除]                                     │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 **実装**:
 ```typescript
 // components/SessionPlayer.tsx
 export function SessionPlayer({ sessionId }: { sessionId: string }) {
-  const { session, recordings, transcript } = useSession(sessionId);
+  const { session, recording, transcript } = useSession(sessionId);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+
+  // 動画時間更新時、トランスクリプトをハイライト
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(video.currentTime);
+
+      // 該当するトランスクリプトエントリーを見つけてハイライト
+      const activeEntry = transcript.find(
+        e => video.currentTime >= e.timestampStart &&
+             video.currentTime <= e.timestampEnd
+      );
+      if (activeEntry) {
+        highlightTranscriptEntry(activeEntry.id);
+        scrollTranscriptToEntry(activeEntry.id);
+      }
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+  }, [transcript]);
+
+  const seekToTime = (time: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+      videoRef.current.play();
+    }
+  };
 
   return (
     <div className="session-player">
+      {/* 合成動画（サイドバイサイド） */}
       <div className="video-container">
-        <video src={recordings.user.url} controls />
-        <video src={recordings.avatar.url} controls />
+        <video
+          ref={videoRef}
+          src={recording.combined.url}  // combined_{session_id}.mp4
+          controls
+          className="combined-video"
+        >
+          {/* WebVTT字幕トラック */}
+          <track kind="subtitles" src={recording.vttUrl} label="日本語" />
+        </video>
       </div>
 
+      {/* カスタムコントロール */}
       <div className="controls">
-        <button onClick={play}>▶</button>
-        <button onClick={pause}>⏸</button>
-        <input type="range" min={0} max={session.duration} />
+        <button onClick={() => seekToTime(currentTime - 10)}>◀10s</button>
+        <button onClick={() => videoRef.current?.play()}>▶</button>
+        <button onClick={() => videoRef.current?.pause()}>⏸</button>
+        <button onClick={() => seekToTime(currentTime + 10)}>10s▶</button>
+
+        <div className="playback-rate">
+          {[0.75, 1, 1.5].map(rate => (
+            <button
+              key={rate}
+              onClick={() => {
+                setPlaybackRate(rate);
+                if (videoRef.current) videoRef.current.playbackRate = rate;
+              }}
+              className={playbackRate === rate ? 'active' : ''}
+            >
+              ×{rate}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {/* トランスクリプト（クリック可能） */}
       <div className="transcript">
         {transcript.map((entry) => (
-          <div key={entry.id} className="transcript-entry">
+          <div
+            key={entry.id}
+            className={`transcript-entry ${currentTime >= entry.timestampStart && currentTime <= entry.timestampEnd ? 'active' : ''}`}
+            onClick={() => seekToTime(entry.timestampStart)}
+          >
             <span className="timestamp">{formatTime(entry.timestampStart)}</span>
             <span className="speaker">{entry.speaker}</span>
             <span className="text">{entry.text}</span>
@@ -1001,13 +1193,38 @@ export function SessionPlayer({ sessionId }: { sessionId: string }) {
 GET /api/sessions/:id
   Response: {
     id, userId, scenarioId, status,
-    startedAt, endedAt, duration
+    startedAt, endedAt, duration,
+    recordingStatus: "processing" | "completed" | "failed"
   }
 
 GET /api/sessions/:id/recordings
   Response: {
-    user: { url: "https://cdn.example.com/...", type: "user" },
-    avatar: { url: "https://cdn.example.com/...", type: "avatar" }
+    // メイン再生用（合成済み、サイドバイサイド表示）
+    combined: {
+      url: "https://cdn.prance.com/combined_xxx.mp4",  // CloudFront CDN
+      type: "combined",
+      format: "mp4",
+      duration: 1812,  // 秒
+      size: 675000000  // bytes (675 MB)
+    },
+
+    // 生ファイル（オプション、ダウンロード用）
+    user: {
+      url: "https://cdn.prance.com/user_xxx.webm",
+      type: "user",
+      format: "webm"
+    },
+    avatar: {
+      url: "https://cdn.prance.com/avatar_xxx.webm",
+      type: "avatar",
+      format: "webm"
+    },
+
+    // WebVTT字幕ファイル
+    vttUrl: "https://cdn.prance.com/transcript_xxx.vtt",
+
+    // サムネイル
+    thumbnail: "https://cdn.prance.com/thumb_xxx.jpg"
   }
 
 GET /api/sessions/:id/transcript
@@ -1020,12 +1237,21 @@ GET /api/sessions/:id/transcript
 ```
 
 **受け入れ基準**:
-- [ ] 録画が正常に再生される
-- [ ] 2つの動画が同期して再生される
-- [ ] トランスクリプトが表示される
+- [ ] 合成動画（combined.mp4）が正常に再生される（サイドバイサイド表示）
+- [ ] ユーザーとアバターの映像が同期して再生される
+- [ ] CloudFront CDN経由で低レイテンシ配信される（署名付きURL）
+- [ ] トランスクリプトが話者別・タイムスタンプ付きで表示される
+- [ ] トランスクリプトをクリックすると該当箇所にジャンプする
+- [ ] 動画再生に合わせてトランスクリプトがハイライト・自動スクロールされる
+- [ ] 再生/一時停止、10秒スキップ（前後）が機能する
 - [ ] シークバーで任意の位置に移動できる
+- [ ] 再生速度変更（0.75x / 1x / 1.5x）ができる
+- [ ] 音量調整ができる
+- [ ] ダウンロードボタンが機能する（Pro以上）
+- [ ] 共有リンク生成ができる（有効期限付き）
+- [ ] 削除ボタンでセッションを削除できる
 
-**実装容易度**: ⭐ (3日)
+**実装容易度**: ⭐ (5日) ※同期プレイヤー、カスタムコントロール含む
 
 ---
 

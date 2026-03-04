@@ -430,7 +430,7 @@ Claude APIの会話サービスを実装してください。
 
 ---
 
-#### 1.5.3 セッション画面
+#### 1.5.3 セッション画面（3要素統合UI）
 
 **担当**: Frontend Engineer
 **実装容易度**: ⭐⭐⭐（高）
@@ -438,17 +438,66 @@ Claude APIの会話サービスを実装してください。
 
 ```bash
 # タスク
-- [ ] セッションレイアウト
+- [ ] セッションレイアウト（3要素統合）
+  - [ ] ユーザーカメラ映像表示エリア（右側）
+  - [ ] AIアバター映像表示エリア（左側）
+  - [ ] リアルタイム文字起こし表示エリア（下部）
+- [ ] ユーザーカメラ統合
+  - [ ] getUserMedia API実装
+  - [ ] カメラON/OFF切り替え
+  - [ ] デバイス選択UI
+  - [ ] プレビュー表示
 - [ ] アバター表示統合
+  - [ ] Three.js/Live2Dレンダリング統合
+  - [ ] リップシンク（Viseme連動）
+  - [ ] 60fps維持
 - [ ] 音声入出力制御
-- [ ] リアルタイム字幕表示
-- [ ] セッション制御（開始/終了）
+  - [ ] マイクON/OFF切り替え
+  - [ ] 音量調整
+  - [ ] デバイス選択UI
+- [ ] リアルタイム文字起こし表示
+  - [ ] Azure STT統合（ストリーミング認識）
+  - [ ] 認識中テキスト表示（暫定、グレー）
+  - [ ] 確定テキスト表示（通常色）
+  - [ ] 話者別色分け（AI: 青、USER: 緑）
+  - [ ] タイムスタンプ表示
+  - [ ] 自動スクロール
+  - [ ] 手動スクロール対応
+- [ ] 同時録画
+  - [ ] ユーザーカメラ録画（MediaRecorder）
+  - [ ] アバターCanvas録画（captureStream）
+  - [ ] 録画状態表示
+- [ ] セッション制御
+  - [ ] セッション開始/終了
+  - [ ] トピック進捗表示
+  - [ ] 経過時間表示
 ```
 
 **ファイル**:
 - `apps/web/app/[locale]/session/[id]/page.tsx`
-- `apps/web/components/session/SessionView.tsx`
+- `apps/web/components/session/SessionPlayer.tsx`
+- `apps/web/components/session/UserCameraView.tsx`
+- `apps/web/components/session/AvatarView.tsx`
+- `apps/web/components/session/RealtimeTranscript.tsx`
 - `apps/web/components/session/AudioController.tsx`
+- `apps/web/hooks/useRealtimeSession.ts`
+- `apps/web/hooks/useRealtimeTranscription.ts`
+- `apps/web/styles/transcript.css`
+
+**Claude Codeプロンプト例**:
+```
+セッション実行画面を実装してください。3要素統合UI:
+1. ユーザーカメラ映像（getUserMedia、右側表示）
+2. AIアバター映像（Three.js、左側表示、リップシンク）
+3. リアルタイム文字起こし（Azure STT、下部表示）
+
+要件:
+- Azure STTのストリーミング認識（recognizing/recognized イベント）
+- 認識中テキスト（グレー、💭認識中）と確定テキストの区別
+- 話者別色分け（AI: 青背景、USER: 緑背景）
+- タイムスタンプ付き表示、自動スクロール
+- ユーザーカメラ + アバターCanvas の同時録画（MediaRecorder）
+```
 
 ---
 

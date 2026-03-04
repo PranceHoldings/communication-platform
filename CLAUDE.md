@@ -648,6 +648,419 @@ ${remainingTopics.map(t => `- ${t}`).join('\n')}
     │<─ 処理完了 Push通知 ─────── │<─ 完了イベント ─────────── │
 ```
 
+#### セッション実行中のUI表示（リアルタイム）
+
+本システムでは、**ユーザーカメラ映像**、**AIアバター映像**、**リアルタイム文字起こし**の3要素を同時にブラウザUI上に表示します。
+
+**画面レイアウト:**
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ セッション実行中 - エンジニア採用面接   [⚙️設定] [録画中 ●] [終了] │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  【映像表示エリア】                                                   │
+│  ┌──────────────────────────┐  ┌───────────────────────────┐        │
+│  │   AIアバター（面接官）     │  │  あなた（カメラ映像）      │        │
+│  │   Three.js/Live2D         │  │  getUserMedia API         │        │
+│  │                           │  │                           │        │
+│  │                           │  │                           │        │
+│  │      👤                   │  │      📹                   │        │
+│  │   リアルタイム             │  │   リアルタイム             │        │
+│  │   レンダリング             │  │   カメラ映像              │        │
+│  │   60fps                   │  │   30fps (Pro設定)         │        │
+│  │                           │  │                           │        │
+│  │   💬 話しています          │  │   🎤 聞いています         │        │
+│  │   (口パク・表情変化)       │  │   (MediaPipe顔検出中)     │        │
+│  │                           │  │                           │        │
+│  │   1280x720 (Pro)          │  │   1280x720 (Pro)          │        │
+│  └──────────────────────────┘  └───────────────────────────┘        │
+│                                                                       │
+│  【デバイス制御】                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ 🎤 マイク: [ON ▼]  📹 カメラ: [ON ▼]  [デバイス設定]        │   │
+│  │ 🔊 スピーカー音量: ▓▓▓▓▓▓▓▓░░ 80%                           │   │
+│  │ 📊 通信状態: 良好 (レイテンシ: 120ms)                        │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                       │
+│  【リアルタイム文字起こし（会話履歴）】                              │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ 00:12 AI: 本日はよろしくお願いします。                       │   │
+│  │          まず、簡単に自己紹介をお願いできますか？             │   │
+│  │                                                              │   │
+│  │ 00:18 YOU: よろしくお願いします。私は山田太郎と申します。    │   │
+│  │           現在、Web開発を5年ほど経験しています。             │   │
+│  │                                                              │   │
+│  │ 00:34 AI: ありがとうございます。具体的にどのような           │   │
+│  │          技術スタックをお使いですか？                         │   │
+│  │                                                              │   │
+│  │ 00:41 YOU: 主にReactとNode.jsを使っています。バックエンド   │   │
+│  │           ではExpressやNestJSを... (認識中💭)               │   │
+│  │           ↑ 暫定テキスト（グレー表示、リアルタイム更新）     │   │
+│  │                                                              │   │
+│  │ [自動スクロール：最新の発話を常に表示]                       │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│  ▲ スクロールして過去の会話を確認可能                             │
+│                                                                       │
+│  【セッション情報】                                                   │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │ ⏱️  経過時間: 08:34 / 30:00                                  │   │
+│  │ 📋 トピック進捗: ██████░░░░ 3/5                             │   │
+│  │    ✓ 自己紹介  ✓ 技術スキル  ✓ 経験  □ 志望動機  □ 質問     │   │
+│  │ 💾 録画中: 562 MB (user), 558 MB (avatar)                   │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**3要素の統合構成:**
+
+| 要素 | 技術 | 表示位置 | 更新頻度 | 説明 |
+|------|------|---------|---------|------|
+| **AIアバター映像** | Three.js / Live2D | 画面左側 | 60fps | リアルタイムレンダリング、口パク・表情変化 |
+| **ユーザーカメラ映像** | getUserMedia API | 画面右側 | 30fps (Pro) | リアルタイムカメラ映像、MediaPipe顔検出 |
+| **リアルタイム文字起こし** | Azure STT | 画面下部 | リアルタイム | 話者別表示、認識中テキスト（暫定）と確定テキスト |
+
+**UI機能:**
+
+1. **リアルタイム映像表示**
+   - **左側: AIアバター**
+     - Three.js/Live2D リアルタイムレンダリング（60fps）
+     - ElevenLabs Visemeデータに基づく口パク
+     - 感情に応じた表情変化
+     - 話している/聞いている状態表示
+
+   - **右側: ユーザーカメラ映像**
+     - getUserMedia APIによるリアルタイム取得・表示
+     - MediaPipe顔検出（表情解析用）
+     - 解像度: 640x480 (Free) / 1280x720 (Pro) / 1920x1080 (Enterprise)
+     - カメラOFF時はプレースホルダー表示
+
+   - **同時録画**: 両方の映像を同時にMediaRecorderで録画（WebM形式）
+
+2. **リアルタイム文字起こし（会話履歴）**
+   - **Azure STT ストリーミング認識**
+     - `recognizing` イベント: 暫定テキスト（認識中💭、グレー表示）
+     - `recognized` イベント: 確定テキスト（通常表示）
+
+   - **話者別表示**
+     - `AI`: アバターの発話（ElevenLabs TTS → Claude応答テキスト）
+     - `YOU`: ユーザーの発話（Azure STT → リアルタイム認識）
+
+   - **タイムスタンプ付き**
+     - 各発話の開始時刻を表示（00:12, 00:18等）
+     - 後の動画再生時に該当箇所へジャンプ可能
+
+   - **自動スクロール**
+     - 最新の発話が常に見える位置に自動スクロール
+     - 手動スクロールで過去の会話を確認可能
+
+3. **デバイス制御**
+   - **マイク**: ON/OFF切り替え、デバイス選択、音量レベル表示
+   - **カメラ**: ON/OFF切り替え、デバイス選択、プレビュー表示
+   - **スピーカー**: 音量調整（AIアバターの音声）
+   - **通信状態**: WebSocketレイテンシ、接続品質表示
+
+4. **セッション情報表示**
+   - **経過時間**: 現在時刻 / 制限時間
+   - **トピック進捗**: シナリオの必須トピックの達成状況
+   - **録画状態**: 録画中インジケーター、ファイルサイズ表示
+   - **プライバシー**: カメラOFF時も文字起こしと録画は継続
+
+#### リアルタイム文字起こし実装詳細
+
+**1. Azure STT ストリーミング認識**
+
+```typescript
+// hooks/useRealtimeTranscription.ts
+import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
+
+export function useRealtimeTranscription(sessionId: string) {
+  const [transcriptEntries, setTranscriptEntries] = useState<TranscriptEntry[]>([]);
+  const [currentRecognizing, setCurrentRecognizing] = useState<string>('');
+
+  useEffect(() => {
+    // Azure STT設定
+    const speechConfig = sdk.SpeechConfig.fromSubscription(
+      process.env.AZURE_SPEECH_KEY!,
+      process.env.AZURE_SPEECH_REGION!
+    );
+    speechConfig.speechRecognitionLanguage = 'ja-JP';
+
+    const audioConfig = sdk.AudioConfig.fromDefaultMicrophone();
+    const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
+
+    // 認識中（暫定テキスト）→ リアルタイム表示
+    recognizer.recognizing = (s, e) => {
+      if (e.result.reason === sdk.ResultReason.RecognizingSpeech) {
+        console.log(`認識中: ${e.result.text}`);
+        setCurrentRecognizing(e.result.text);  // UIに暫定テキスト表示（グレー）
+      }
+    };
+
+    // 認識完了（確定テキスト）→ 会話履歴に追加
+    recognizer.recognized = (s, e) => {
+      if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
+        const confirmedText = e.result.text;
+        console.log(`確定: ${confirmedText}`);
+
+        // 会話履歴に追加
+        const entry: TranscriptEntry = {
+          id: generateId(),
+          speaker: 'USER',
+          text: confirmedText,
+          timestampStart: Date.now() / 1000,
+          timestampEnd: Date.now() / 1000,
+          confidence: 0.95,
+          isConfirmed: true
+        };
+
+        setTranscriptEntries(prev => [...prev, entry]);
+        setCurrentRecognizing('');  // 暫定テキストをクリア
+
+        // WebSocket経由でバックエンドに送信
+        sendToBackend({
+          type: 'user_speech',
+          text: confirmedText,
+          timestamp: entry.timestampStart
+        });
+      }
+    };
+
+    // 認識開始
+    recognizer.startContinuousRecognitionAsync();
+
+    return () => {
+      recognizer.stopContinuousRecognitionAsync();
+    };
+  }, [sessionId]);
+
+  return { transcriptEntries, currentRecognizing };
+}
+
+interface TranscriptEntry {
+  id: string;
+  speaker: 'AI' | 'USER';
+  text: string;
+  timestampStart: number;
+  timestampEnd: number;
+  confidence: number;
+  isConfirmed: boolean;  // 確定テキストか暫定テキストか
+}
+```
+
+**2. アバター発話の文字起こし表示**
+
+```typescript
+// WebSocketメッセージハンドラー
+useEffect(() => {
+  if (!wsClient) return;
+
+  wsClient.onMessage((message: ServerMessage) => {
+    switch (message.type) {
+      case 'avatar_response':
+        // Claude APIからの応答テキスト
+        const aiEntry: TranscriptEntry = {
+          id: generateId(),
+          speaker: 'AI',
+          text: message.text,
+          timestampStart: Date.now() / 1000,
+          timestampEnd: Date.now() / 1000 + estimateDuration(message.text),
+          confidence: 1.0,
+          isConfirmed: true
+        };
+
+        setTranscriptEntries(prev => [...prev, aiEntry]);
+        break;
+
+      case 'tts_audio':
+        // ElevenLabs音声再生開始（口パク開始）
+        playAudio(message.data);
+        applyVisemes(message.visemes);
+        break;
+    }
+  });
+}, [wsClient]);
+
+// 発話時間推定（文字数から）
+function estimateDuration(text: string): number {
+  const charCount = text.length;
+  const wpm = 140;  // 日本語の平均話速（文字/分）
+  return (charCount / wpm) * 60;
+}
+```
+
+**3. UI表示コンポーネント**
+
+```typescript
+// components/RealtimeTranscript.tsx
+export function RealtimeTranscript({
+  entries,
+  currentRecognizing
+}: {
+  entries: TranscriptEntry[];
+  currentRecognizing: string;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 新しい発話時に自動スクロール
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [entries, currentRecognizing]);
+
+  return (
+    <div className="transcript-container" ref={scrollRef}>
+      <h3>リアルタイム文字起こし（会話履歴）</h3>
+
+      {/* 確定した会話履歴 */}
+      {entries.map(entry => (
+        <div key={entry.id} className={`transcript-entry ${entry.speaker}`}>
+          <span className="timestamp">
+            {formatTime(entry.timestampStart)}
+          </span>
+          <span className="speaker">
+            {entry.speaker === 'AI' ? 'AI' : 'YOU'}:
+          </span>
+          <span className="text">{entry.text}</span>
+        </div>
+      ))}
+
+      {/* 認識中の暫定テキスト（ユーザー発話） */}
+      {currentRecognizing && (
+        <div className="transcript-entry USER recognizing">
+          <span className="timestamp">
+            {formatTime(Date.now() / 1000)}
+          </span>
+          <span className="speaker">YOU:</span>
+          <span className="text provisional">
+            {currentRecognizing}
+            <span className="indicator"> 💭 (認識中)</span>
+          </span>
+        </div>
+      )}
+
+      {/* 空状態 */}
+      {entries.length === 0 && !currentRecognizing && (
+        <div className="empty-state">
+          会話を開始してください...
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**4. スタイリング（話者別色分け）**
+
+```css
+/* styles/transcript.css */
+.transcript-container {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.transcript-entry {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* AI発話: 青系背景 */
+.transcript-entry.AI {
+  background: #e3f2fd;
+  border-left: 3px solid #2196f3;
+}
+
+/* ユーザー発話: 緑系背景 */
+.transcript-entry.USER {
+  background: #e8f5e9;
+  border-left: 3px solid #4caf50;
+}
+
+/* 認識中（暫定テキスト）: グレー、イタリック */
+.transcript-entry.recognizing {
+  background: #f5f5f5;
+  border-left: 3px dashed #9e9e9e;
+}
+
+.transcript-entry .text.provisional {
+  color: #757575;
+  font-style: italic;
+}
+
+.transcript-entry .indicator {
+  color: #9e9e9e;
+  font-size: 0.875rem;
+}
+
+.transcript-entry .timestamp {
+  color: #616161;
+  font-size: 0.75rem;
+  margin-right: 0.5rem;
+}
+
+.transcript-entry .speaker {
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+/* AI発話の話者名: 青 */
+.transcript-entry.AI .speaker {
+  color: #1976d2;
+}
+
+/* ユーザー発話の話者名: 緑 */
+.transcript-entry.USER .speaker {
+  color: #388e3c;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+```
+
+**5. データフロー（文字起こし）**
+
+```
+【ユーザー発話】
+ユーザーがマイクで発話
+  ↓
+getUserMedia → Azure STT（ストリーミング）
+  ↓
+recognizing イベント（0.1秒ごと）
+  ↓
+UI: 暫定テキスト表示（グレー、💭認識中）
+  ↓
+recognized イベント（発話終了時）
+  ↓
+UI: 確定テキスト表示（通常色）
+  ↓
+WebSocket → Lambda → Claude API（AI応答生成）
+
+【AI発話】
+Claude API応答テキスト
+  ↓
+WebSocket → ブラウザ
+  ↓
+UI: AI発話として表示（青背景）
+  ↓
+ElevenLabs TTS生成
+  ↓
+音声再生 + アバター口パク
+```
+
 #### 録画ファイル構成
 
 | ファイル | 形式 | 保存先 | 説明 |
@@ -657,6 +1070,207 @@ ${remainingTopics.map(t => `- ${t}`).join('\n')}
 | `combined_{session_id}.mp4` | MP4 (H.264) | S3 + CDN | サイドバイサイド合成済み |
 | `audio_{session_id}.wav` | WAV 16kHz | S3 | 解析用音声 |
 | `thumbnail_{session_id}.jpg` | JPEG | S3 + CDN | サムネイル |
+| `transcript_{session_id}.json` | JSON | Aurora DB | リアルタイム文字起こし全履歴 |
+| `transcript_{session_id}.vtt` | WebVTT | S3 + CDN | 動画字幕ファイル |
+
+#### 録画技術的実装詳細
+
+**1. ユーザーカメラ録画**
+
+```typescript
+// ユーザーカメラ取得
+const userStream = await navigator.mediaDevices.getUserMedia({
+  video: {
+    width: { ideal: 1280, max: 1920 },
+    height: { ideal: 720, max: 1080 },
+    frameRate: { ideal: 30, max: 60 },
+    facingMode: 'user'
+  },
+  audio: {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+    sampleRate: 48000,
+    channelCount: 1
+  }
+});
+
+// ユーザー映像を<video>に表示
+userVideoElement.srcObject = userStream;
+
+// MediaRecorder で録画
+const userRecorder = new MediaRecorder(userStream, {
+  mimeType: 'video/webm;codecs=vp9,opus',
+  videoBitsPerSecond: 2500000, // 2.5 Mbps
+  audioBitsPerSecond: 128000   // 128 kbps
+});
+
+const userChunks: Blob[] = [];
+userRecorder.ondataavailable = (e) => userChunks.push(e.data);
+userRecorder.start(1000); // 1秒ごとにチャンク生成
+```
+
+**2. アバターCanvas録画**
+
+```typescript
+// Three.js レンダラーからストリーム取得
+const avatarCanvas = renderer.domElement;
+const avatarStream = avatarCanvas.captureStream(60); // 60fps
+
+// 音声トラック追加（ElevenLabsからの音声）
+const audioContext = new AudioContext();
+const destination = audioContext.createMediaStreamDestination();
+// ... ElevenLabs音声を destination に接続
+avatarStream.addTrack(destination.stream.getAudioTracks()[0]);
+
+// MediaRecorder で録画
+const avatarRecorder = new MediaRecorder(avatarStream, {
+  mimeType: 'video/webm;codecs=vp9,opus',
+  videoBitsPerSecond: 2500000,
+  audioBitsPerSecond: 128000
+});
+
+const avatarChunks: Blob[] = [];
+avatarRecorder.ondataavailable = (e) => avatarChunks.push(e.data);
+avatarRecorder.start(1000);
+```
+
+**3. S3アップロード（セッション終了時）**
+
+```typescript
+// セッション終了時
+async function uploadRecordings(sessionId: string) {
+  // ユーザー録画をBlobに変換
+  const userBlob = new Blob(userChunks, { type: 'video/webm' });
+  const avatarBlob = new Blob(avatarChunks, { type: 'video/webm' });
+
+  // 署名付きURLを取得（Lambda経由）
+  const { userUploadUrl, avatarUploadUrl } = await fetch(
+    `/api/sessions/${sessionId}/upload-urls`
+  ).then(res => res.json());
+
+  // S3に直接アップロード（並列）
+  await Promise.all([
+    fetch(userUploadUrl, {
+      method: 'PUT',
+      body: userBlob,
+      headers: { 'Content-Type': 'video/webm' }
+    }),
+    fetch(avatarUploadUrl, {
+      method: 'PUT',
+      body: avatarBlob,
+      headers: { 'Content-Type': 'video/webm' }
+    })
+  ]);
+
+  // バックエンドに完了通知 → Step Functions起動
+  await fetch(`/api/sessions/${sessionId}/recording-complete`, {
+    method: 'POST'
+  });
+}
+```
+
+#### 録画品質設定
+
+| 設定項目 | Free | Pro | Enterprise | 説明 |
+|---------|------|-----|------------|------|
+| 解像度（ユーザー） | 640x480 | 1280x720 (HD) | 1920x1080 (Full HD) | カメラ映像解像度 |
+| 解像度（アバター） | 640x480 | 1280x720 (HD) | 1920x1080 (Full HD) | Canvas解像度 |
+| フレームレート | 24fps | 30fps | 60fps | 滑らかさ |
+| ビットレート（映像） | 1.5 Mbps | 2.5 Mbps | 5 Mbps | 映像品質 |
+| ビットレート（音声） | 64 kbps | 128 kbps | 192 kbps | 音声品質 |
+| 最大セッション時間 | 10分 | 30分 | 60分 | 録画時間上限 |
+
+#### ストレージ管理
+
+**ファイルサイズ見積もり（30分セッション、Pro設定）:**
+
+```
+ユーザー録画: 2.5 Mbps × 30分 × 60秒 = 562.5 MB
+アバター録画: 2.5 Mbps × 30分 × 60秒 = 562.5 MB
+合成動画 (H.264): 3 Mbps × 30分 × 60秒 = 675 MB
+音声 (WAV 16kHz): 16,000 × 2 bytes × 30 × 60 = 57.6 MB
+─────────────────────────────────────────────────
+合計: 約 1.86 GB / セッション
+```
+
+**ライフサイクルポリシー:**
+
+```yaml
+S3 Lifecycle Rules:
+  # 生録画ファイル（user/avatar .webm）
+  user_recordings/:
+    - 7日後: Standard-IA (コスト削減)
+    - 90日後: Glacier Instant Retrieval
+    - 365日後: 削除（Free/Pro）、保持（Enterprise）
+
+  # 合成動画ファイル（combined .mp4）
+  combined_recordings/:
+    - 30日間: Standard (頻繁にアクセス)
+    - 90日後: Standard-IA
+    - 保持期間: プラン別設定に従う
+      - Free: 7日
+      - Pro: 90日
+      - Enterprise: 無制限またはカスタム
+
+  # サムネイル・レポート
+  thumbnails/:
+    - 永続保持（軽量）
+
+  reports/:
+    - 永続保持（軽量）
+```
+
+**コスト最適化:**
+
+- **S3 Intelligent-Tiering**: 自動的にアクセス頻度に応じてストレージクラス変更
+- **CloudFront 署名付きURL**: 直接S3アクセスを防ぎ、コスト削減
+- **ユーザー制御**: ユーザーが不要なセッションを手動削除可能
+
+#### プライバシー・ユーザー制御
+
+**セッション前設定:**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ セッション開始前の確認                                   │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│ 📹 カメラ設定                                            │
+│ ○ カメラをONにする（録画・解析に使用）                   │
+│ ○ カメラをOFFにする（音声のみ）                         │
+│                                                          │
+│ 🎤 マイク設定                                            │
+│ デバイス: [Built-in Microphone ▼]                       │
+│ テスト: ▓▓▓▓▓▓░░░░ (音量確認)                           │
+│                                                          │
+│ ⚙️ 録画品質                                              │
+│ [標準 (720p)] [高品質 (1080p)]  (Pro以上)               │
+│                                                          │
+│ ℹ️  録画データの取り扱い                                 │
+│ • 録画は暗号化してサーバーに保存されます                 │
+│ • あなたのみがアクセス可能です                           │
+│ • いつでも削除できます                                   │
+│ • 詳細: プライバシーポリシー                             │
+│                                                          │
+│ [✓] 録画・解析に同意する                                │
+│                                                          │
+│                    [キャンセル]        [セッション開始]  │
+└─────────────────────────────────────────────────────────┘
+```
+
+**セッション中の制御:**
+
+- **カメラON/OFF切り替え**: いつでも可能（録画は継続、映像のみブランク）
+- **マイクミュート**: 一時的にミュート可能
+- **緊急停止**: セッション即座に終了、録画停止
+
+**録画後の管理:**
+
+- **閲覧制限**: 本人と組織管理者のみ（権限設定による）
+- **削除**: ユーザーがいつでも削除可能
+- **ダウンロード**: ローカルに保存可能（Pro以上）
+- **共有**: 限定的な共有リンク生成可能（有効期限付き）
 
 #### 合成動画レイアウト
 
@@ -3574,6 +4188,36 @@ type ServerMessage =
 | アニメ化 | AnimeGANv2 (Lambda Container) | - | Lambda Container (GPU不要版) |
 | 3Dアバター | Ready Player Me API | - | Lambda統合 |
 | PDF生成 | AWS Lambda (Puppeteer Layer) | - | Lambda Layer (Chrome Headless) |
+
+### リアルタイム会話機能の外部ツール一覧
+
+本プラットフォームでは、**事前録画されたビデオストリーミングではなく、リアルタイムで3D/2Dアバターをレンダリング**する方式を採用しています。これにより、データ量を最小化（音声データのみ：数KB/秒）し、低レイテンシ（50-200ms）でインタラクティブな会話体験を実現します。
+
+| カテゴリ | ツール | 用途 | 詳細 |
+|---------|--------|------|------|
+| **ユーザー映像取得** | getUserMedia API | カメラ取得 | ブラウザ標準API、ユーザー映像のリアルタイム取得 |
+| | MediaPipe Face Mesh | 顔ランドマーク検出 | 468点の顔ランドマーク、リアルタイム表情解析 |
+| | Azure Face API | 感情解析 | 7種類の感情スコア、視線方向（アイコンタクト判定） |
+| **音声処理** | getUserMedia API | マイク取得 | ブラウザ標準API、エコーキャンセル・ノイズ抑制対応 |
+| | Azure Speech Services | 音声認識（STT） | リアルタイムストリーミング認識、40言語以上対応 |
+| | ElevenLabs API | 音声合成（TTS） | 高品質音声生成 + Visemeデータ出力（リップシンク用） |
+| **アバターレンダリング** | Three.js + React Three Fiber | 3Dレンダリング | WebGL、60fpsリアルタイムレンダリング |
+| | Ready Player Me | 3Dアバターモデル | .glb形式、ARKit 52 Blendshapes対応 |
+| | Live2D Cubism SDK 5 | 2Dアニメアバター | Canvas 2D、高品質アニメーション、口パク対応 |
+| **リップシンク** | ElevenLabs Viseme | 口形状データ | Viseme → ARKit Blendshape / Canvas パラメータマッピング |
+| | ARKit Blendshapes | 3D表情制御 | 52種類の表情パラメータ（jawOpen, mouthFunnel等） |
+| **リアルタイム通信** | AWS IoT Core | WebSocket通信 | 100万同時接続対応、低レイテンシ（50-200ms） |
+| | MediaRecorder API | ブラウザ録画 | ユーザー映像 + アバター映像の同時録画（WebM形式） |
+| **会話AI** | Anthropic Claude (Opus 4) | 自然言語処理 | システムプロンプトベースの会話生成 |
+| | AWS Bedrock (Claude) | フォールバック | プライマリ障害時のバックアップ |
+| **動画処理** | AWS MediaConvert | 動画合成 | ユーザー映像 + アバター映像のサイドバイサイド合成 |
+| | FFmpeg (Lambda Layer) | カスタム処理 | サムネイル生成、フレーム抽出 |
+
+**アーキテクチャの特徴:**
+- **軽量**: 音声データのみ送受信（数KB/秒）、ビデオストリーミング（数MB/秒）と比較して圧倒的に軽量
+- **低レイテンシ**: AWS IoT Core WebSocketで50-200ms、リアルタイム会話に最適
+- **スケーラブル**: Lambda + IoT Coreで自動スケール、10ユーザー → 10万ユーザー対応
+- **リアルタイムレンダリング**: ブラウザ内で3D/2Dアバターを動的生成、無限のカスタマイズ可能
 
 ### データストア・ストレージ
 

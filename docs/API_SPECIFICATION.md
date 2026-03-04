@@ -1140,6 +1140,17 @@ ws.onopen = () => {
 }
 ```
 
+**ユーザー発話テキスト送信（STT確定後）:**
+
+```javascript
+{
+  type: 'user_speech',
+  text: 'よろしくお願いします。私は5年間Webエンジニアをしています。',
+  timestamp: 1234567890,
+  confidence: 0.95
+}
+```
+
 **セッション終了:**
 
 ```javascript
@@ -1150,21 +1161,24 @@ ws.onopen = () => {
 
 #### サーバー → クライアント
 
-**リアルタイム字幕（部分）:**
+**リアルタイム字幕（部分）- ユーザー発話認識中:**
 
 ```javascript
 {
   type: 'transcript_partial',
+  speaker: 'USER',
   text: 'よろしくお願い...',
-  confidence: 0.85
+  confidence: 0.85,
+  timestamp: 1234567890
 }
 ```
 
-**リアルタイム字幕（確定）:**
+**リアルタイム字幕（確定）- ユーザー発話確定:**
 
 ```javascript
 {
   type: 'transcript_final',
+  speaker: 'USER',
   text: 'よろしくお願いします。',
   timestamp_start: 9.1,
   timestamp_end: 11.3,
@@ -1172,11 +1186,12 @@ ws.onopen = () => {
 }
 ```
 
-**AI応答テキスト:**
+**AI応答テキスト（アバター発話）:**
 
 ```javascript
 {
   type: 'avatar_response',
+  speaker: 'AI',
   text: 'ありがとうございます。それでは、まず自己紹介をお願いできますか？',
   timestamp: 1234567890
 }

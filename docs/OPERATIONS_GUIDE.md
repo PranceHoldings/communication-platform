@@ -592,6 +592,310 @@ aws s3api put-bucket-lifecycle-configuration \
 }
 ```
 
+### 問題: リアルタイム文字起こしエラー（Azure STT）
+
+**症状:**
+
+- セッション中に文字起こしが停止する
+- 「音声認識エラー」メッセージが表示される
+- ユーザーが発話しても字幕が表示されない
+
+**診断手順:**
+
+```bash
+# 1. Azure Speech Services ステータス確認
+curl https://status.azure.com/en-us/status
+
+# 2. Lambda WebSocket ログ確認
+aws logs tail /aws/lambda/prance-websocket-function --since 10m \
+  --filter-pattern "STT Error"
+
+# 3. ユーザーセッションログ確認（CloudWatch Insights）
+# クエリ: 特定セッションのエラーログ
+fields @timestamp, @message
+| filter session_id = "session_abc123"
+| filter @message like /STT|Speech|Recognition/
+| sort @timestamp desc
+| limit 100
+
+# 4. Azure STT API Key 有効期限確認
+aws secretsmanager get-secret-value \
+  --secret-id prod/azure/speech-key \
+  --query 'SecretString' --output text | jq '.expires_at'
+```
+
+**一般的な原因と対処:**
+
+| 原因 | 診断 | 対処 |
+|------|------|------|
+| **Azure STT クォータ超過** | Azure Portal: クォータ使用状況確認 | クォータ増加申請、またはレート制限実装 |
+| **マイクアクセス拒否** | ブラウザログ: "NotAllowedError" | ユーザーにマイク権限付与を依頼 |
+| **ネットワークレイテンシ高** | CloudWatch: WebSocket latency > 500ms | リージョン変更、ネットワーク品質確認 |
+| **API Key 期限切れ** | Azure API: "401 Unauthorized" | Secrets Manager で API Key 更新 |
+| **WebSocket 切断** | Lambda ログ: "Connection closed" | 自動再接続ロジック確認、IoT Core 設定確認 |
+
+**対処（短期）:**
+
+```bash
+# Azure STT エンドポイント変更（フォールバック）
+# apps/web/.env.production
+NEXT_PUBLIC_AZURE_SPEECH_REGION=eastus  # → westus2 に変更
+
+# デプロイ
+npm run deploy:production
+```
+
+**対処（長期）:**
+
+```typescript
+// アプリ側での自動リトライ実装
+// apps/web/hooks/useRealtimeTranscription.ts
+
+recognizer.canceled = (s, e) => {
+  if (e.reason === sdk.CancellationReason.Error) {
+    console.error('STT Error:', e.errorDetails);
+
+    // 3回までリトライ
+    if (retryCount < 3) {
+      setTimeout(() => {
+        recognizer.startContinuousRecognitionAsync();
+        retryCount++;
+      }, 1000 * retryCount);
+    } else {
+      // マニュアル入力にフォールバック
+      setTranscriptionMode('manual');
+      showNotification({
+        type: 'error',
+        message: '音声認識に問題が発生しました。手動入力に切り替えてください。'
+      });
+    }
+  }
+};
+```
+
+### 問題: WebSocket 接続が頻繁に切断される
+
+**症状:**
+
+- セッション中に「接続が切断されました」メッセージが頻繁に表示される
+- 録画データが途中で途切れる
+- AI応答が届かない
+
+**診断手順:**
+
+```bash
+# 1. IoT Core 接続メトリクス確認
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/IoT \
+  --metric-name Connect.Success \
+  --metric-name Connect.Failure \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --period 300 \
+  --statistics Sum
+
+# 2. Lambda WebSocket ハンドラーエラー確認
+aws logs tail /aws/lambda/prance-websocket-function --since 30m \
+  --filter-pattern "ERROR|Disconnect"
+
+# 3. DynamoDB スロットリング確認
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/DynamoDB \
+  --metric-name UserErrors \
+  --dimensions Name=TableName,Value=websocket_connections \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --period 300 \
+  --statistics Sum
+```
+
+**一般的な原因と対処:**
+
+| 原因 | 診断 | 対処 |
+|------|------|------|
+| **Lambda タイムアウト** | CloudWatch Logs: "Task timed out after 60.00 seconds" | Lambda タイムアウトを 300秒に増加 |
+| **IoT Core ポリシー不足** | IoT Core ログ: "Forbidden" | IoT ポリシーに `iot:Publish`, `iot:Subscribe` 追加 |
+| **DynamoDB スロットリング** | CloudWatch: UserErrors > 0 | DynamoDB オンデマンドモードに変更 |
+| **クライアント側ネットワーク** | ブラウザコンソール: "WebSocket connection failed" | ユーザーにネットワーク確認を依頼 |
+| **Lambda 同時実行制限** | CloudWatch: Throttles > 0 | 予約済み同時実行数を増加 |
+
+**対処（即座）:**
+
+```bash
+# Lambda 同時実行数制限を緩和
+aws lambda put-function-concurrency \
+  --function-name prance-websocket-function \
+  --reserved-concurrent-executions 500
+
+# DynamoDB をオンデマンドモードに変更
+aws dynamodb update-table \
+  --table-name websocket_connections \
+  --billing-mode PAY_PER_REQUEST
+```
+
+**対処（長期）:**
+
+```typescript
+// クライアント側での自動再接続実装
+// apps/web/hooks/useWebSocket.ts
+
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 5;
+
+wsClient.onDisconnect(() => {
+  console.warn('WebSocket disconnected');
+
+  if (reconnectAttempts < maxReconnectAttempts) {
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+
+    setTimeout(() => {
+      console.log(`Reconnecting... (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+      wsClient.reconnect();
+      reconnectAttempts++;
+    }, delay);
+  } else {
+    // 再接続失敗 → ユーザーに通知
+    showNotification({
+      type: 'error',
+      message: '接続が切断されました。セッションを再開してください。'
+    });
+
+    // 録画データをローカルに保存
+    saveRecordingLocally();
+  }
+});
+
+wsClient.onConnect(() => {
+  // 再接続成功 → カウンターリセット
+  reconnectAttempts = 0;
+});
+```
+
+### 問題: 録画データのアップロード失敗
+
+**症状:**
+
+- セッション終了後、「録画データのアップロードに失敗しました」エラー
+- 録画ファイルがS3にない
+- Step Functions ワークフローが失敗している
+
+**診断手順:**
+
+```bash
+# 1. S3アップロードログ確認（CloudWatch Logs Insights）
+fields @timestamp, @message
+| filter @message like /S3|Upload|PutObject/
+| filter session_id = "session_abc123"
+| sort @timestamp desc
+
+# 2. Step Functions 実行履歴確認
+aws stepfunctions list-executions \
+  --state-machine-arn arn:aws:states:us-east-1:123456789012:stateMachine:SessionProcessing \
+  --status-filter FAILED \
+  --max-results 10
+
+# 3. S3バケットポリシー確認
+aws s3api get-bucket-policy \
+  --bucket prance-recordings-production \
+  --query Policy --output text | jq .
+
+# 4. Lambda S3 アクセス権限確認
+aws iam get-role-policy \
+  --role-name prance-api-function-role \
+  --policy-name S3AccessPolicy
+```
+
+**一般的な原因と対処:**
+
+| 原因 | 診断 | 対処 |
+|------|------|------|
+| **ファイルサイズ超過** | ブラウザログ: "413 Payload Too Large" | プラン別サイズ制限を調整、圧縮率向上 |
+| **S3バケット権限不足** | S3 ログ: "AccessDenied" | IAM ロールに `s3:PutObject` 権限追加 |
+| **署名付きURL 期限切れ** | ブラウザログ: "403 Forbidden" | URL有効期限を延長（15分 → 30分） |
+| **ネットワークタイムアウト** | ブラウザログ: "Network request failed" | アップロードタイムアウトを延長 |
+| **S3 CORS設定不足** | ブラウザログ: "CORS error" | S3バケット CORS設定を追加 |
+
+**対処（即座）:**
+
+```bash
+# S3バケット CORS設定追加
+aws s3api put-bucket-cors \
+  --bucket prance-recordings-production \
+  --cors-configuration file://cors-config.json
+
+# cors-config.json
+{
+  "CORSRules": [
+    {
+      "AllowedHeaders": ["*"],
+      "AllowedMethods": ["PUT", "POST"],
+      "AllowedOrigins": ["https://app.prance-platform.com"],
+      "ExposeHeaders": ["ETag"],
+      "MaxAgeSeconds": 3000
+    }
+  ]
+}
+```
+
+**対処（長期）:**
+
+```typescript
+// アップロードリトライロジック実装
+// apps/web/lib/recording/upload.ts
+
+async function uploadToS3WithRetry(
+  blob: Blob,
+  presignedUrl: string,
+  maxRetries: number = 3
+): Promise<void> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(presignedUrl, {
+        method: 'PUT',
+        body: blob,
+        headers: {
+          'Content-Type': blob.type
+        }
+      });
+
+      if (response.ok) {
+        console.log('Upload successful');
+        return;
+      }
+
+      throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+    } catch (error) {
+      console.error(`Upload attempt ${attempt} failed:`, error);
+
+      if (attempt === maxRetries) {
+        // 最後のリトライも失敗 → ローカル保存
+        saveRecordingLocally(blob);
+
+        showNotification({
+          type: 'error',
+          message: 'アップロードに失敗しました。録画データはローカルに保存されました。'
+        });
+
+        throw error;
+      }
+
+      // 指数バックオフで待機
+      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
+function saveRecordingLocally(blob: Blob): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `recording_${Date.now()}.webm`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+```
+
 ---
 
 ## バックアップ・リストア
