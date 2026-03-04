@@ -22,9 +22,24 @@ Pranceは、AIアバターとのリアルタイム会話を通じて面接練習
 ### 🚀 開発を始める前に
 
 **必読ドキュメント**:
-1. **[リリースプラン](docs/RELEASE_PLAN.md)** - どの機能をいつリリースするか
-2. **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各機能の詳細仕様（ユーザーストーリー、UI、API、受け入れ基準）
-3. **[実装プラン](docs/IMPLEMENTATION_PLAN.md)** - 技術的な実装手順
+1. **[外部ツールセットアップ](docs/EXTERNAL_TOOLS_SETUP.md)** ⭐ - API登録・キー取得の完全ガイド
+2. **[リリースプラン](docs/RELEASE_PLAN.md)** - どの機能をいつリリースするか
+3. **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各機能の詳細仕様（ユーザーストーリー、UI、API、受け入れ基準）
+4. **[実装プラン](docs/IMPLEMENTATION_PLAN.md)** - 技術的な実装手順
+
+**開発開始の流れ**:
+1. **外部サービス登録**（1-2日）
+   - Claude API、ElevenLabs、Azure等のアカウント作成
+   - APIキー取得・Secrets Manager設定
+   - 👉 [外部ツールセットアップガイド](docs/EXTERNAL_TOOLS_SETUP.md)
+
+2. **インフラ構築**（2週間）
+   - AWS CDKによるサーバーレス基盤構築
+   - 👉 [実装プラン Phase 0](docs/IMPLEMENTATION_PLAN.md#phase-0)
+
+3. **機能開発**（13ヶ月）
+   - Alpha → Beta → v1.0 → v1.x → v2.0
+   - 👉 [機能ロードマップ](docs/FEATURE_ROADMAP.md)
 
 **開発スケジュール**:
 - **Alpha版（2ヶ月）**: コア会話機能
@@ -94,9 +109,18 @@ npm run deploy:production
 
 ## ドキュメント
 
+### 🔧 セットアップ
+- **[外部ツールセットアップ](docs/EXTERNAL_TOOLS_SETUP.md)** ⭐ - API登録・キー取得の完全ガイド（1,492行）
+  - AI・会話サービス（Claude、OpenAI、Gemini）
+  - 音声サービス（ElevenLabs、Azure Speech）
+  - 画像・感情解析（Azure Face、MediaPipe）
+  - アバター生成（Ready Player Me、Live2D）
+  - AWS、Stripe、ATS連携
+  - チェックリスト・コスト試算
+
 ### 📋 プロジェクト管理
 - **[リリースプラン](docs/RELEASE_PLAN.md)** - 段階的リリース戦略（Alpha → Beta → v1.0 → v2.0）
-- **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各リリース段階の詳細機能仕様
+- **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各リリース段階の詳細機能仕様（2,117行）
 - [実装プラン](docs/IMPLEMENTATION_PLAN.md) - 技術的実装計画（フェーズ分け）
 - [プロジェクト構造](docs/PROJECT_STRUCTURE.md) - コードベース構成
 
