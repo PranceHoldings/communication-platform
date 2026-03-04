@@ -263,9 +263,11 @@ AWS_REGION=us-east-1
 AWS_ACCOUNT_ID=123456789012  # 実際のアカウントIDに置き換え
 
 #############################################
-# Anthropic (Claude API)
+# AWS Bedrock (Claude API)
 #############################################
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
+# Bedrockは AWS SDK が自動的にIAM認証を使用します
+BEDROCK_REGION=us-east-1
+BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
 
 #############################################
 # ElevenLabs (TTS)
@@ -386,8 +388,8 @@ npx prisma generate
 
 ### Week 3: 会話エンジン（完了目標: 3/25）
 
-**Claude API統合**:
-- [ ] Claude API Lambdaラッパー
+**AWS Bedrock (Claude) 統合**:
+- [ ] Bedrock Lambdaラッパー (@aws-sdk/client-bedrock-runtime)
 - [ ] システムプロンプト管理
 - [ ] 会話コンテキスト管理（DynamoDB）
 
@@ -461,7 +463,7 @@ npx prisma generate
 ### 📋 事前準備
 
 - [ ] AWSアカウント作成・設定
-- [ ] Anthropic APIキー取得
+- [ ] AWS Bedrock Claude モデル有効化（us-east-1）
 - [ ] ElevenLabs APIキー取得
 - [ ] Azure Speech Servicesキー取得
 - [ ] Ready Player Meアプリ作成
@@ -494,7 +496,8 @@ npx prisma generate
 ### 即座に実行すべきこと
 
 1. **外部サービスアカウント作成**（1-2時間）
-   - AWS, Anthropic, ElevenLabs, Azure, Ready Player Me
+   - AWS（Bedrock Claude モデル有効化含む）
+   - ElevenLabs, Azure, Ready Player Me
    - APIキー取得
    - `.env.local` ファイルに記入
 

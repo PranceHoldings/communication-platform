@@ -1620,19 +1620,18 @@ interface ReportSection {
 │                                                               │
 │ 🤖 会話AI (Conversation AI)                                  │
 │ ┌──────────────────────────────────────────────────────────┐ │
-│ │ アクティブプロバイダ: [Anthropic Claude ▼]      [変更]  │ │
+│ │ アクティブプロバイダ: [AWS Bedrock (Claude) ▼]  [変更]  │ │
 │ │                                                          │ │
 │ │ 利用可能なプロバイダ:                                    │ │
-│ │  ● Anthropic Claude (claude-opus-4)        ✓ 設定済み   │ │
+│ │  ● AWS Bedrock (Claude 3.5 Sonnet)     ✓ 設定済み       │ │
 │ │  ○ OpenAI GPT-4 Turbo                      ⚙️ 未設定    │ │
 │ │  ○ Google Gemini Pro                       ⚙️ 未設定    │ │
-│ │  ○ AWS Bedrock (Claude)                    ⚙️ 未設定    │ │
 │ │                                                          │ │
 │ │ 設定:                                                    │ │
-│ │ API Key: [●●●●●●●●●●●●●●●●●●●●]         [更新]        │ │
-│ │ Model:   [claude-opus-4 ▼]                              │ │
+│ │ 認証: IAM Role (自動)                                   │ │
+│ │ Model ID: [anthropic.claude-3-5-sonnet-20241022-v2:0]  │ │
 │ │ Region:  [us-east-1 ▼]                                  │ │
-│ │ Endpoint: [https://api.anthropic.com/v1/messages]      │ │
+│ │ Max Tokens: [2000    ]                                  │ │
 │ │                                              [接続テスト] │ │
 │ └──────────────────────────────────────────────────────────┘ │
 │                                                               │
