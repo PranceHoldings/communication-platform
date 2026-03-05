@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import { headers } from 'next/headers';
 import './globals.css';
-import { AuthProvider } from '@/contexts/auth-context';
+import { Providers } from '@/components/providers';
+import { getMessages } from '@/lib/i18n/messages';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,15 +21,22 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Get language from middleware-set header
+  const headersList = await headers();
+  const locale = headersList.get('x-locale') || 'en';
+
+  // Load messages for the current locale
+  const messages = getMessages(locale);
+
   return (
-    <html lang="ja" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className={inter.className}>
-        <AuthProvider>
+        <Providers locale={locale} messages={messages}>
           <div className="relative flex min-h-screen flex-col">
             <main className="flex-1">{children}</main>
           </div>
-        </AuthProvider>
+        </Providers>
       </body>
     </html>
   );

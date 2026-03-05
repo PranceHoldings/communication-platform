@@ -1,0 +1,44 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back, {name}!",
+    "overview": "Overview",
+    "stats": {
+      "totalSessions": "Total Sessions",
+      "completedSessions": "Completed Sessions",
+      "averageScore": "Average Score",
+      "totalTime": "Total Time",
+      "thisMonth": "This month",
+      "allTime": "All time"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "startSession": "Start New Session",
+      "createScenario": "Create Scenario",
+      "viewReports": "View Reports",
+      "manageAvatars": "Manage Avatars"
+    },
+    "recentSessions": {
+      "title": "Recent Sessions",
+      "noSessions": "No sessions yet. Start your first session!",
+      "viewAll": "View All Sessions",
+      "scenario": "Scenario",
+      "duration": "Duration",
+      "score": "Score",
+      "date": "Date",
+      "status": {
+        "completed": "Completed",
+        "inProgress": "In Progress",
+        "pending": "Pending",
+        "failed": "Failed"
+      }
+    },
+    "performance": {
+      "title": "Performance",
+      "lastWeek": "Last 7 days",
+      "lastMonth": "Last 30 days",
+      "improvement": "+{percent}% improvement",
+      "decline": "{percent}% decline"
+    }
+  }
+}

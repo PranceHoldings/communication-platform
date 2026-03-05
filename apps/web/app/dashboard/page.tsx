@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { useI18n } from '@/lib/i18n/provider';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import QuickActions from '@/components/dashboard/QuickActions';
@@ -11,6 +12,7 @@ import RecentSessions from '@/components/dashboard/RecentSessions';
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { t } = useI18n();
 
   useEffect(() => {
     // 認証チェック: ローディング完了後、未認証ならログインページへリダイレクト
@@ -31,7 +33,7 @@ export default function DashboardPage() {
   // Mock data - will be replaced with real API calls
   const stats = [
     {
-      name: 'Total Sessions',
+      name: t('dashboard.stats.totalSessions'),
       value: '0',
       icon: (
         <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +47,7 @@ export default function DashboardPage() {
       ),
     },
     {
-      name: 'Hours Practiced',
+      name: t('dashboard.stats.totalTime'),
       value: '0.0',
       icon: (
         <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,7 +61,7 @@ export default function DashboardPage() {
       ),
     },
     {
-      name: 'Avg. Score',
+      name: t('dashboard.stats.averageScore'),
       value: '-',
       icon: (
         <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +75,7 @@ export default function DashboardPage() {
       ),
     },
     {
-      name: 'Scenarios',
+      name: t('navigation.scenarios'),
       value: '0',
       icon: (
         <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,8 +92,8 @@ export default function DashboardPage() {
 
   const quickActions = [
     {
-      name: 'Start New Session',
-      description: 'Begin a conversation with an AI avatar',
+      name: t('dashboard.quickActions.startSession'),
+      description: t('dashboard.quickActions.startSession'),
       href: '/dashboard/sessions/new',
       icon: (
         <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,8 +108,8 @@ export default function DashboardPage() {
       color: 'text-indigo-600',
     },
     {
-      name: 'Browse Avatars',
-      description: 'Explore available AI avatars',
+      name: t('dashboard.quickActions.manageAvatars'),
+      description: t('dashboard.quickActions.manageAvatars'),
       href: '/dashboard/avatars',
       icon: (
         <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,8 +124,8 @@ export default function DashboardPage() {
       color: 'text-purple-600',
     },
     {
-      name: 'Create Scenario',
-      description: 'Design a custom conversation scenario',
+      name: t('dashboard.quickActions.createScenario'),
+      description: t('dashboard.quickActions.createScenario'),
       href: '/dashboard/scenarios/new',
       icon: (
         <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,9 +155,9 @@ export default function DashboardPage() {
     <DashboardLayout>
       {/* Welcome Section */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t('dashboard.welcome', { name: user.name })}</h1>
         <p className="mt-2 text-gray-600">
-          Here's what's happening with your practice sessions today.
+          {t('dashboard.overview')}
         </p>
       </div>
 
@@ -166,7 +168,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="mb-8">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">{t('dashboard.quickActions.title')}</h2>
         <QuickActions actions={quickActions} />
       </div>
 
@@ -194,12 +196,9 @@ export default function DashboardPage() {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-indigo-800">Alpha Version Notice</h3>
+            <h3 className="text-sm font-medium text-indigo-800">{t('common.info')}</h3>
             <div className="mt-2 text-sm text-indigo-700">
-              <p>
-                You're using the alpha version of Prance Platform. Full features including session
-                execution, avatar customization, and analytics are coming soon.
-              </p>
+              <p>{t('common.appName')}</p>
             </div>
           </div>
         </div>

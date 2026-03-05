@@ -1,0 +1,44 @@
+{
+  "dashboard": {
+    "title": "ダッシュボード",
+    "welcome": "おかえりなさい、{name}さん！",
+    "overview": "概要",
+    "stats": {
+      "totalSessions": "総セッション数",
+      "completedSessions": "完了したセッション",
+      "averageScore": "平均スコア",
+      "totalTime": "合計時間",
+      "thisMonth": "今月",
+      "allTime": "全期間"
+    },
+    "quickActions": {
+      "title": "クイックアクション",
+      "startSession": "新規セッション開始",
+      "createScenario": "シナリオ作成",
+      "viewReports": "レポート表示",
+      "manageAvatars": "アバター管理"
+    },
+    "recentSessions": {
+      "title": "最近のセッション",
+      "noSessions": "まだセッションがありません。最初のセッションを開始しましょう！",
+      "viewAll": "すべてのセッションを表示",
+      "scenario": "シナリオ",
+      "duration": "所要時間",
+      "score": "スコア",
+      "date": "日付",
+      "status": {
+        "completed": "完了",
+        "inProgress": "進行中",
+        "pending": "待機中",
+        "failed": "失敗"
+      }
+    },
+    "performance": {
+      "title": "パフォーマンス",
+      "lastWeek": "過去7日間",
+      "lastMonth": "過去30日間",
+      "improvement": "+{percent}% 改善",
+      "decline": "{percent}% 低下"
+    }
+  }
+}

@@ -1,8 +1,8 @@
 # 多言語対応システム
 
-**バージョン:** 2.0
+**バージョン:** 2.1
 **最終更新:** 2026-03-05
-**ステータス:** 設計完了
+**ステータス:** Phase 1 実装完了（言語検出・Cookie管理）
 
 ---
 
@@ -1221,6 +1221,167 @@ export default function DateTimeExample() {
 ✅ **フォールバック**: 未翻訳キーは英語で表示
 
 このシステムにより、プラットフォームは簡単に新しい市場へ展開でき、各地域のユーザーに最適化された体験を提供できます。
+
+---
+
+## 実装状況（Phase 1）
+
+### ✅ 実装完了（2026-03-05）
+
+#### 1. Next.js Middleware実装
+
+**ファイル:** `apps/web/middleware.ts`
+
+**実装内容:**
+- URLパラメータ `lang` による言語切り替え（最優先）
+- Cookie `NEXT_LOCALE` による言語保持
+- Accept-Languageヘッダーからの自動検出
+- デフォルト言語へのフォールバック
+
+**言語検出の優先順位:**
+```
+1. URL parameter (?lang=en, ?lang=ja, etc.)
+   → Cookie設定 + パラメータ削除してリダイレクト
+2. Cookie (NEXT_LOCALE)
+3. Accept-Language ヘッダー
+4. デフォルト言語 (en)
+```
+
+**主要機能:**
+
+1. **URLパラメータ検出**
+   ```typescript
+   // /?lang=en でアクセス → Cookieに保存して / にリダイレクト
+   const langParam = searchParams.get('lang');
+   if (langParam && supportedLocales.includes(langParam)) {
+     searchParams.delete('lang');
+     const cleanUrl = new URL(pathname + ..., request.url);
+     const response = NextResponse.redirect(cleanUrl);
+     response.cookies.set('NEXT_LOCALE', langParam, { ... });
+     return response;
+   }
+   ```
+
+2. **Cookie優先**
+   ```typescript
+   let locale = request.cookies.get('NEXT_LOCALE')?.value;
+   ```
+
+3. **Accept-Language検出**
+   ```typescript
+   function detectLanguageFromHeader(acceptLanguage: string | null): string {
+     // 品質値で降順ソート、サポート言語を優先選択
+     // 例: Accept-Language: ja,en;q=0.9,fr;q=0.8 → ja
+   }
+   ```
+
+4. **リクエストヘッダーに言語を追加**
+   ```typescript
+   requestHeaders.set('x-locale', locale);
+   ```
+
+**テスト結果:**
+```bash
+# URLパラメータでの切り替え
+curl 'http://localhost:3001/?lang=en' → 307 redirect to / + Cookie: NEXT_LOCALE=en
+curl 'http://localhost:3001/?lang=ja' → 307 redirect to / + Cookie: NEXT_LOCALE=ja
+curl 'http://localhost:3001/?lang=zh-CN' → 307 redirect to / + Cookie: NEXT_LOCALE=zh-CN
+
+# Cookie保持
+2回目のアクセス → Cookieから自動的に言語を読み取り
+
+# Accept-Language検出
+curl -H 'Accept-Language: ja,en;q=0.9' → HTML lang="ja"
+curl -H 'Accept-Language: fr,en;q=0.9' → HTML lang="fr"
+```
+
+#### 2. RootLayout動的lang属性
+
+**ファイル:** `apps/web/app/layout.tsx`
+
+**実装内容:**
+- MiddlewareでセットされたHTTPヘッダー `x-locale` を取得
+- HTMLの`lang`属性を動的に設定
+
+**コード:**
+```typescript
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersList = await headers();
+  const locale = headersList.get('x-locale') || 'en';
+
+  return (
+    <html lang={locale} suppressHydrationWarning>
+      {/* ... */}
+    </html>
+  );
+}
+```
+
+**動作確認:**
+```bash
+# 言語毎に正しいlang属性が設定される
+/?lang=en → <html lang="en">
+/?lang=ja → <html lang="ja">
+/?lang=zh-CN → <html lang="zh-CN">
+```
+
+#### 3. サポート言語
+
+現在サポートされている言語（middleware.tsで定義）:
+- 🇺🇸 英語（en）- デフォルト
+- 🇯🇵 日本語（ja）
+- 🇨🇳 中国語簡体字（zh-CN）
+- 🇰🇷 韓国語（ko）
+- 🇪🇸 スペイン語（es）
+- 🇫🇷 フランス語（fr）
+- 🇩🇪 ドイツ語（de）
+
+### 🚧 未実装（Phase 2）
+
+以下の機能はPhase 2で実装予定：
+
+1. **I18nプロバイダー**
+   - 言語リソースファイル（JSON）からテキストを読み込むシステム
+   - `useI18n()` フック、`t()` 関数の実装
+
+2. **言語リソースファイル**
+   - `messages/en.json`, `messages/ja.json` 等の作成
+   - 各ページ・コンポーネントの翻訳キー定義
+
+3. **LanguageSwitcherコンポーネント**
+   - ヘッダーに配置する言語切り替えUI
+   - ドロップダウンまたはフラグアイコン選択
+
+4. **既存ページの多言語化**
+   - ハードコードされたテキストをI18nキーに置き換え
+   - すべてのUIテキストを翻訳可能にする
+
+5. **ホットデプロイシステム**
+   - スーパー管理者UIからの言語リソースアップロード
+   - S3 + CloudFrontへのデプロイ
+   - キャッシュ無効化
+
+### 技術的メモ
+
+**Cookie仕様（実装済み）:**
+```typescript
+{
+  name: 'NEXT_LOCALE',
+  path: '/',
+  maxAge: 31536000, // 1年
+  sameSite: 'lax',
+  httpOnly: false, // JavaScript アクセス許可（言語切り替えUI用）
+}
+```
+
+**Matcher設定（実装済み）:**
+```typescript
+export const config = {
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+};
+```
+- APIルート、Next.js内部ファイル、静的ファイルを除外
+- すべてのページリクエストでMiddlewareが実行される
 
 ---
 

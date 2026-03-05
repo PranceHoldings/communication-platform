@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/auth';
 import { useAuth } from '@/contexts/auth-context';
+import { useI18n } from '@/lib/i18n/provider';
+import LanguageSwitcher from '@/components/language-switcher';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { refreshUser } = useAuth();
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,13 +25,13 @@ export default function RegisterPage() {
 
     // パスワード一致チェック
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.register.errors.passwordMismatch'));
       return;
     }
 
     // パスワード強度チェック
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('auth.register.errors.passwordTooShort'));
       return;
     }
 
@@ -38,7 +41,7 @@ export default function RegisterPage() {
       const response = await authApi.register({ name, email, password });
 
       if (!response.success || !response.data) {
-        throw new Error(response.error?.message || 'Registration failed');
+        throw new Error(response.error?.message || t('auth.register.errors.serverError'));
       }
 
       // 認証情報を保存
@@ -50,20 +53,25 @@ export default function RegisterPage() {
       // ダッシュボードにリダイレクト
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : t('errors.generic'));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-12">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
+        {/* Language Switcher */}
+        <div className="flex justify-end">
+          <LanguageSwitcher />
+        </div>
+
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('auth.register.title')}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Start your journey with Prance
+            {t('auth.register.subtitle')}
           </p>
         </div>
 
@@ -80,7 +88,7 @@ export default function RegisterPage() {
             {/* Name Field */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Full name
+                {t('auth.register.name')}
               </label>
               <input
                 id="name"
@@ -91,14 +99,14 @@ export default function RegisterPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="John Doe"
+                placeholder={t('auth.register.namePlaceholder')}
               />
             </div>
 
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email address
+                {t('auth.register.email')}
               </label>
               <input
                 id="email"
@@ -109,14 +117,14 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="you@example.com"
+                placeholder={t('auth.register.emailPlaceholder')}
               />
             </div>
 
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                {t('auth.register.password')}
               </label>
               <input
                 id="password"
@@ -127,17 +135,14 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="••••••••"
+                placeholder={t('auth.register.passwordPlaceholder')}
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Must be at least 8 characters with uppercase, lowercase, and numbers
-              </p>
             </div>
 
             {/* Confirm Password Field */}
             <div>
               <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm password
+                {t('auth.register.confirmPassword')}
               </label>
               <input
                 id="confirm-password"
@@ -148,7 +153,7 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="••••••••"
+                placeholder={t('auth.register.confirmPasswordPlaceholder')}
               />
             </div>
           </div>
@@ -163,13 +168,13 @@ export default function RegisterPage() {
               className="h-4 w-4 mt-0.5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
             <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-              I agree to the{' '}
+              {t('auth.register.agreeToTerms')}{' '}
               <a href="#" className="text-indigo-600 hover:text-indigo-500">
-                Terms of Service
+                {t('auth.register.termsOfService')}
               </a>{' '}
-              and{' '}
+              {t('auth.register.and')}{' '}
               <a href="#" className="text-indigo-600 hover:text-indigo-500">
-                Privacy Policy
+                {t('auth.register.privacyPolicy')}
               </a>
             </label>
           </div>
@@ -186,10 +191,10 @@ export default function RegisterPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Creating account...
+                {t('auth.register.registering')}
               </span>
             ) : (
-              'Create account'
+              t('auth.register.registerButton')
             )}
           </button>
         </form>
@@ -197,9 +202,9 @@ export default function RegisterPage() {
         {/* Sign In Link */}
         <div className="text-center">
           <p className="text-sm text-gray-600">
-            Already have an account?{' '}
+            {t('auth.register.hasAccount')}{' '}
             <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Sign in
+              {t('auth.register.signIn')}
             </Link>
           </p>
         </div>

@@ -4,9 +4,10 @@
  * Cookie-based language detection without locale prefixes in URLs.
  *
  * Language detection priority:
- * 1. Cookie (NEXT_LOCALE)
- * 2. Accept-Language header (browser settings)
- * 3. Default language (en)
+ * 1. URL parameter (lang=en, lang=ja, etc.) - Sets cookie and redirects
+ * 2. Cookie (NEXT_LOCALE)
+ * 3. Accept-Language header (browser settings)
+ * 4. Default language (en)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -40,10 +41,31 @@ function detectLanguageFromHeader(acceptLanguage: string | null): string {
 }
 
 export function middleware(request: NextRequest) {
-  // 1. Get language from Cookie
+  const { searchParams, pathname } = new URL(request.url);
+  const langParam = searchParams.get('lang');
+
+  // 1. Check URL parameter 'lang' (highest priority)
+  if (langParam && supportedLocales.includes(langParam)) {
+    // Remove 'lang' parameter from URL
+    searchParams.delete('lang');
+    const cleanUrl = new URL(pathname + (searchParams.toString() ? `?${searchParams.toString()}` : ''), request.url);
+
+    // Redirect to clean URL with language cookie set
+    const response = NextResponse.redirect(cleanUrl);
+    response.cookies.set('NEXT_LOCALE', langParam, {
+      path: '/',
+      maxAge: 31536000, // 1 year
+      sameSite: 'lax',
+      httpOnly: false,
+    });
+
+    return response;
+  }
+
+  // 2. Get language from Cookie
   let locale = request.cookies.get('NEXT_LOCALE')?.value;
 
-  // 2. If no Cookie or unsupported locale, detect from Accept-Language header
+  // 3. If no Cookie or unsupported locale, detect from Accept-Language header
   if (!locale || !supportedLocales.includes(locale)) {
     const acceptLanguage = request.headers.get('accept-language');
     locale = detectLanguageFromHeader(acceptLanguage);

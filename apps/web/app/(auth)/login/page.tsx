@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/auth';
 import { useAuth } from '@/contexts/auth-context';
+import { useI18n } from '@/lib/i18n/provider';
+import LanguageSwitcher from '@/components/language-switcher';
 
 export default function LoginPage() {
   const router = useRouter();
   const { refreshUser } = useAuth();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,7 +26,7 @@ export default function LoginPage() {
       const response = await authApi.login({ email, password });
 
       if (!response.success || !response.data) {
-        throw new Error(response.error?.message || 'Login failed');
+        throw new Error(response.error?.message || t('auth.login.errors.serverError'));
       }
 
       // 認証情報を保存
@@ -35,7 +38,7 @@ export default function LoginPage() {
       // ダッシュボードにリダイレクト
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : t('errors.generic'));
     } finally {
       setIsLoading(false);
     }
@@ -44,11 +47,16 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
+        {/* Language Switcher */}
+        <div className="flex justify-end">
+          <LanguageSwitcher />
+        </div>
+
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('auth.login.title')}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to your Prance account
+            {t('auth.login.subtitle')}
           </p>
         </div>
 
@@ -65,7 +73,7 @@ export default function LoginPage() {
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email address
+                {t('auth.login.email')}
               </label>
               <input
                 id="email"
@@ -76,14 +84,14 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="you@example.com"
+                placeholder={t('auth.login.emailPlaceholder')}
               />
             </div>
 
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                {t('auth.login.password')}
               </label>
               <input
                 id="password"
@@ -94,7 +102,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="••••••••"
+                placeholder={t('auth.login.passwordPlaceholder')}
               />
             </div>
           </div>
@@ -109,13 +117,13 @@ export default function LoginPage() {
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                Remember me
+                {t('auth.login.rememberMe')}
               </label>
             </div>
 
             <div className="text-sm">
               <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Forgot password?
+                {t('auth.login.forgotPassword')}
               </a>
             </div>
           </div>
@@ -132,10 +140,10 @@ export default function LoginPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Signing in...
+                {t('auth.login.loggingIn')}
               </span>
             ) : (
-              'Sign in'
+              t('auth.login.loginButton')
             )}
           </button>
         </form>
@@ -143,9 +151,9 @@ export default function LoginPage() {
         {/* Sign Up Link */}
         <div className="text-center">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
+            {t('auth.login.noAccount')}{' '}
             <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Sign up
+              {t('auth.login.signUp')}
             </Link>
           </p>
         </div>
