@@ -96,6 +96,8 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   environment,
   vpc: networkStack.vpc,
   lambdaSecurityGroup: networkStack.lambdaSecurityGroup,
+  databaseCluster: databaseStack.cluster,
+  databaseSecret: databaseStack.secret,
   description: 'Prance Platform - API Gateway, Lambda Functions, and Authorizer',
 });
 
@@ -104,7 +106,8 @@ certificateStack.addDependency(dnsStack);
 storageStack.addDependency(certificateStack);
 databaseStack.addDependency(networkStack);
 cognitoStack.addDependency(networkStack);
-// ApiLambdaStackはprops経由で自動的にNetwork + Authorizerに依存（明示的設定不要）
+apiLambdaStack.addDependency(networkStack);
+apiLambdaStack.addDependency(databaseStack);
 
 // タグ付け
 cdk.Tags.of(app).add('Project', 'Prance');

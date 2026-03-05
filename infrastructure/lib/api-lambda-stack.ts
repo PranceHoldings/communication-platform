@@ -5,6 +5,8 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as rds from 'aws-cdk-lib/aws-rds';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as path from 'path';
 import { Construct } from 'constructs';
 
@@ -12,6 +14,8 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   environment: string;
   vpc: ec2.Vpc;
   lambdaSecurityGroup: ec2.SecurityGroup;
+  databaseCluster: rds.DatabaseCluster;
+  databaseSecret: secretsmanager.Secret;
 }
 
 export class ApiLambdaStack extends cdk.Stack {
@@ -118,12 +122,17 @@ export class ApiLambdaStack extends cdk.Stack {
       resultsCacheTtl: cdk.Duration.minutes(5), // 5分間キャッシュ
     });
 
+    // DATABASE_URLを構築（Secrets Managerから認証情報を取得）
+    const dbUsername = props.databaseSecret.secretValueFromJson('username').unsafeUnwrap();
+    const dbPassword = props.databaseSecret.secretValueFromJson('password').unsafeUnwrap();
+    const DATABASE_URL = `postgresql://${dbUsername}:${dbPassword}@${props.databaseCluster.clusterEndpoint.hostname}:${props.databaseCluster.clusterEndpoint.port}/prance`;
+
     // Lambda共通環境変数
     const commonEnvironment = {
       ENVIRONMENT: props.environment,
       LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
       NODE_ENV: props.environment === 'production' ? 'production' : 'development',
-      DATABASE_URL: process.env.DATABASE_URL || '',
+      DATABASE_URL,
       JWT_SECRET: process.env.JWT_SECRET || 'development-secret-change-in-production',
     };
 
@@ -588,6 +597,24 @@ export class ApiLambdaStack extends cdk.Stack {
       description: 'Database Migration Lambda Function ARN',
       exportName: `${props.environment}-MigrationFunctionArn`,
     });
+
+    // Lambda関数にSecretsとRDSへのアクセス権限を付与
+    props.databaseSecret.grantRead(this.registerFunction);
+    props.databaseSecret.grantRead(this.loginFunction);
+    props.databaseSecret.grantRead(this.getCurrentUserFunction);
+    props.databaseSecret.grantRead(this.migrationFunction);
+    props.databaseSecret.grantRead(this.listSessionsFunction);
+    props.databaseSecret.grantRead(this.createSessionFunction);
+    props.databaseSecret.grantRead(this.getSessionFunction);
+
+    // RDSクラスターへの接続を許可
+    props.databaseCluster.connections.allowDefaultPortFrom(this.registerFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.loginFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.getCurrentUserFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.migrationFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.listSessionsFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.createSessionFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.getSessionFunction);
 
     new cdk.CfnOutput(this, 'MigrationFunctionName', {
       value: this.migrationFunction.functionName,
