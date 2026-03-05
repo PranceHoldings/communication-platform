@@ -133,6 +133,26 @@ class ApiClient {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   }
+
+  /**
+   * Unwrap API response and throw error if not successful
+   * Reduces boilerplate in API functions
+   */
+  unwrapResponse<T>(response: ApiResponse<T>): T {
+    if (!response.success || !response.data) {
+      throw new Error(response.error?.message || 'Request failed');
+    }
+    return response.data;
+  }
+
+  /**
+   * Unwrap API response for void/delete operations
+   */
+  unwrapVoidResponse(response: ApiResponse<any>): void {
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Request failed');
+    }
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

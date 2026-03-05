@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { buildQueryString } from './utils';
 
 export interface Scenario {
   id: string;
@@ -47,20 +48,9 @@ export async function listScenarios(params?: {
   category?: string;
   visibility?: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
 }): Promise<ScenarioListResponse> {
-  const queryParams = new URLSearchParams();
-  if (params?.limit) queryParams.set('limit', params.limit.toString());
-  if (params?.offset) queryParams.set('offset', params.offset.toString());
-  if (params?.category) queryParams.set('category', params.category);
-  if (params?.visibility) queryParams.set('visibility', params.visibility);
-
-  const url = `/scenarios${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const url = `/scenarios${buildQueryString(params)}`;
   const response = await apiClient.get<ScenarioListResponse>(url);
-
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to fetch scenarios');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -68,12 +58,7 @@ export async function listScenarios(params?: {
  */
 export async function createScenario(data: CreateScenarioRequest): Promise<Scenario> {
   const response = await apiClient.post<Scenario>('/scenarios', data);
-
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to create scenario');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -81,12 +66,7 @@ export async function createScenario(data: CreateScenarioRequest): Promise<Scena
  */
 export async function getScenario(id: string): Promise<Scenario> {
   const response = await apiClient.get<Scenario>(`/scenarios/${id}`);
-
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to fetch scenario');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -94,12 +74,7 @@ export async function getScenario(id: string): Promise<Scenario> {
  */
 export async function updateScenario(id: string, data: UpdateScenarioRequest): Promise<Scenario> {
   const response = await apiClient.put<Scenario>(`/scenarios/${id}`, data);
-
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to update scenario');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -107,8 +82,5 @@ export async function updateScenario(id: string, data: UpdateScenarioRequest): P
  */
 export async function deleteScenario(id: string): Promise<void> {
   const response = await apiClient.delete<{ message: string; id: string }>(`/scenarios/${id}`);
-
-  if (!response.success) {
-    throw new Error(response.error?.message || 'Failed to delete scenario');
-  }
+  apiClient.unwrapVoidResponse(response);
 }

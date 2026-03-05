@@ -75,10 +75,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         scenarioId: session.scenarioId,
         scenario: session.scenario,
         avatarId: session.avatarId,
-        avatar: {
-          ...session.avatar,
-          imageUrl: session.avatar.thumbnailUrl, // Map thumbnailUrl to imageUrl for frontend compatibility
-        },
+        avatar: session.avatar
+          ? {
+              ...session.avatar,
+              imageUrl: session.avatar.thumbnailUrl, // Map thumbnailUrl to imageUrl for frontend compatibility
+            }
+          : null,
         status: session.status,
         startedAt: session.startedAt,
         endedAt: session.endedAt,

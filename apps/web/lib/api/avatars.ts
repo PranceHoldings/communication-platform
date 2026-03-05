@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { buildQueryString } from './utils';
 
 export interface Avatar {
   id: string;
@@ -63,22 +64,9 @@ export async function listAvatars(params?: {
   source?: 'PRESET' | 'GENERATED' | 'ORG_CUSTOM';
   visibility?: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
 }): Promise<AvatarListResponse> {
-  const queryParams = new URLSearchParams();
-  if (params?.limit) queryParams.set('limit', params.limit.toString());
-  if (params?.offset) queryParams.set('offset', params.offset.toString());
-  if (params?.type) queryParams.set('type', params.type);
-  if (params?.style) queryParams.set('style', params.style);
-  if (params?.source) queryParams.set('source', params.source);
-  if (params?.visibility) queryParams.set('visibility', params.visibility);
-
-  const url = `/avatars${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const url = `/avatars${buildQueryString(params)}`;
   const response = await apiClient.get<AvatarListResponse>(url);
-
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to fetch avatars');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -87,11 +75,7 @@ export async function listAvatars(params?: {
 export async function createAvatar(data: CreateAvatarRequest): Promise<Avatar> {
   const response = await apiClient.post<Avatar>('/avatars', data);
 
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to create avatar');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -100,11 +84,7 @@ export async function createAvatar(data: CreateAvatarRequest): Promise<Avatar> {
 export async function getAvatar(id: string): Promise<Avatar> {
   const response = await apiClient.get<Avatar>(`/avatars/${id}`);
 
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to fetch avatar');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -113,11 +93,7 @@ export async function getAvatar(id: string): Promise<Avatar> {
 export async function updateAvatar(id: string, data: UpdateAvatarRequest): Promise<Avatar> {
   const response = await apiClient.put<Avatar>(`/avatars/${id}`, data);
 
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to update avatar');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -126,9 +102,7 @@ export async function updateAvatar(id: string, data: UpdateAvatarRequest): Promi
 export async function deleteAvatar(id: string): Promise<void> {
   const response = await apiClient.delete<{ message: string; id: string }>(`/avatars/${id}`);
 
-  if (!response.success) {
-    throw new Error(response.error?.message || 'Failed to delete avatar');
-  }
+  apiClient.unwrapVoidResponse(response);
 }
 
 /**
@@ -140,9 +114,5 @@ export async function cloneAvatar(id: string): Promise<Avatar> {
     {}
   );
 
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to clone avatar');
-  }
-
-  return response.data.avatar;
+  return apiClient.unwrapResponse(response).avatar;
 }

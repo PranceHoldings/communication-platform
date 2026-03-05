@@ -10,6 +10,7 @@
  */
 
 import { apiClient } from './client';
+import { buildQueryString } from './utils';
 
 export interface Session {
   id: string;
@@ -80,19 +81,9 @@ export interface ListSessionsResponse {
  * セッション一覧を取得
  */
 export async function listSessions(params?: ListSessionsRequest): Promise<ListSessionsResponse> {
-  const query = new URLSearchParams();
-  if (params?.limit) query.append('limit', params.limit.toString());
-  if (params?.offset) query.append('offset', params.offset.toString());
-  if (params?.status) query.append('status', params.status);
-
-  const endpoint = `/sessions${query.toString() ? `?${query.toString()}` : ''}`;
+  const endpoint = `/sessions${buildQueryString(params)}`;
   const response = await apiClient.get<ListSessionsResponse>(endpoint);
-
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to fetch sessions');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -101,11 +92,7 @@ export async function listSessions(params?: ListSessionsRequest): Promise<ListSe
 export async function createSession(data: CreateSessionRequest): Promise<Session> {
   const response = await apiClient.post<Session>('/sessions', data);
 
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to create session');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -114,11 +101,7 @@ export async function createSession(data: CreateSessionRequest): Promise<Session
 export async function getSession(id: string): Promise<Session> {
   const response = await apiClient.get<Session>(`/sessions/${id}`);
 
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to fetch session');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -127,11 +110,7 @@ export async function getSession(id: string): Promise<Session> {
 export async function updateSession(id: string, data: Partial<Session>): Promise<Session> {
   const response = await apiClient.put<Session>(`/sessions/${id}`, data);
 
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || 'Failed to update session');
-  }
-
-  return response.data;
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -140,9 +119,7 @@ export async function updateSession(id: string, data: Partial<Session>): Promise
 export async function deleteSession(id: string): Promise<void> {
   const response = await apiClient.delete<void>(`/sessions/${id}`);
 
-  if (!response.success) {
-    throw new Error(response.error?.message || 'Failed to delete session');
-  }
+  apiClient.unwrapVoidResponse(response);
 }
 
 // Backward compatibility - オブジェクト形式のエクスポートも維持
