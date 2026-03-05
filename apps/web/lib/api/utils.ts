@@ -16,7 +16,9 @@
  * buildQueryString({})
  * // Returns: ""
  */
-export function buildQueryString(params?: Record<string, string | number | boolean | undefined | null>): string {
+export function buildQueryString(
+  params?: Record<string, string | number | boolean | undefined | null>
+): string {
   if (!params) return '';
 
   const queryParams = new URLSearchParams();

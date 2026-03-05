@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/provider';
 import { getScenario, updateScenario } from '@/lib/api/scenarios';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function EditScenarioPage() {
-  const params = useParams();
   const router = useRouter();
+  const params = useParams();
   const { t } = useI18n();
-
   const scenarioId = params.id as string;
 
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,26 +24,25 @@ export default function EditScenarioPage() {
   const [visibility, setVisibility] = useState<'PRIVATE' | 'ORGANIZATION' | 'PUBLIC'>('PRIVATE');
   const [configJson, setConfigJson] = useState('');
 
+  // Load existing scenario data
   useEffect(() => {
+    const loadScenario = async () => {
+      try {
+        const scenario = await getScenario(scenarioId);
+        setTitle(scenario.title);
+        setCategory(scenario.category);
+        setLanguage(scenario.language);
+        setVisibility(scenario.visibility);
+        setConfigJson(JSON.stringify(scenario.configJson, null, 2));
+        setIsLoading(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load scenario');
+        setIsLoading(false);
+      }
+    };
+
     loadScenario();
   }, [scenarioId]);
-
-  const loadScenario = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getScenario(scenarioId);
-      setTitle(data.title);
-      setCategory(data.category);
-      setLanguage(data.language);
-      setVisibility(data.visibility);
-      setConfigJson(JSON.stringify(data.configJson, null, 2));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load scenario');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,18 +79,20 @@ export default function EditScenarioPage() {
         configJson: parsedConfig,
       });
 
-      // Success - redirect to scenario detail page
+      toast.success('Scenario updated successfully');
       router.push(`/dashboard/scenarios/${scenarioId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update scenario');
+      toast.error('Failed to update scenario');
       setIsSubmitting(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="max-w-3xl mx-auto py-12 text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <p className="mt-4 text-gray-500">Loading scenario...</p>
       </div>
     );
   }
@@ -215,7 +216,7 @@ export default function EditScenarioPage() {
             href={`/dashboard/scenarios/${scenarioId}`}
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
-            Cancel
+            {t('scenarios.create.form.cancel')}
           </Link>
           <button
             type="submit"

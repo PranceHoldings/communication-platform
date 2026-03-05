@@ -81,7 +81,9 @@ export interface ListSessionsResponse {
  * セッション一覧を取得
  */
 export async function listSessions(params?: ListSessionsRequest): Promise<ListSessionsResponse> {
-  const endpoint = `/sessions${buildQueryString(params)}`;
+  const endpoint = `/sessions${buildQueryString(
+    params as Record<string, string | number | boolean | undefined | null>
+  )}`;
   const response = await apiClient.get<ListSessionsResponse>(endpoint);
   return apiClient.unwrapResponse(response);
 }

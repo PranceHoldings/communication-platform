@@ -6,8 +6,8 @@ import { useI18n } from '@/lib/i18n/provider';
 import { getAvatar, deleteAvatar, cloneAvatar, type Avatar } from '@/lib/api/avatars';
 import { authApi } from '@/lib/api/auth';
 import Link from 'next/link';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import Toast from '@/components/Toast';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { toast } from 'sonner';
 
 export default function AvatarDetailPage() {
   const params = useParams();
@@ -21,7 +21,6 @@ export default function AvatarDetailPage() {
   const [isCloning, setIsCloning] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCloneDialog, setShowCloneDialog] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
 
   const avatarId = params.id as string;
   const currentUser = authApi.getCurrentUser();
@@ -78,22 +77,18 @@ export default function AvatarDetailPage() {
   };
 
   const handleDeleteConfirm = async () => {
-    setShowDeleteDialog(false);
     setIsDeleting(true);
 
     try {
       await deleteAvatar(avatarId);
+      toast.success(t('avatars.delete.success'));
       // Success - redirect to avatars list
       router.push('/dashboard/avatars');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('avatars.delete.error');
-      setToast({ message: errorMessage, type: 'error' });
+      toast.error(errorMessage);
       setIsDeleting(false);
     }
-  };
-
-  const handleDeleteCancel = () => {
-    setShowDeleteDialog(false);
   };
 
   const handleCloneClick = () => {
@@ -101,25 +96,18 @@ export default function AvatarDetailPage() {
   };
 
   const handleCloneConfirm = async () => {
-    setShowCloneDialog(false);
     setIsCloning(true);
 
     try {
       const clonedAvatar = await cloneAvatar(avatarId);
-      setToast({ message: t('avatars.clone.success'), type: 'success' });
-      // Redirect to the cloned avatar detail page after a short delay
-      setTimeout(() => {
-        router.push(`/dashboard/avatars/${clonedAvatar.id}`);
-      }, 1500);
+      toast.success(t('avatars.clone.success'));
+      // Redirect to the cloned avatar detail page
+      router.push(`/dashboard/avatars/${clonedAvatar.id}`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('avatars.clone.error');
-      setToast({ message: errorMessage, type: 'error' });
+      toast.error(errorMessage);
       setIsCloning(false);
     }
-  };
-
-  const handleCloneCancel = () => {
-    setShowCloneDialog(false);
   };
 
   if (loading) {
@@ -313,37 +301,29 @@ export default function AvatarDetailPage() {
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
-        isOpen={showDeleteDialog}
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
         title={t('avatars.delete.confirm')}
-        message={t('avatars.delete.confirmMessage')}
-        confirmLabel={t('avatars.detail.delete')}
-        cancelLabel="Cancel"
+        description={t('avatars.delete.confirmMessage')}
+        confirmText={t('avatars.detail.delete')}
+        cancelText={t('common.cancel')}
         onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-        variant="danger"
+        variant="destructive"
       />
 
       {/* Clone Confirmation Dialog */}
       <ConfirmDialog
-        isOpen={showCloneDialog}
+        open={showCloneDialog}
+        onOpenChange={setShowCloneDialog}
         title={t('avatars.clone.confirm')}
-        message={t('avatars.clone.confirmMessage')}
-        confirmLabel={t('avatars.clone.button')}
-        cancelLabel="Cancel"
+        description={t('avatars.clone.confirmMessage')}
+        confirmText={t('avatars.clone.button')}
+        cancelText={t('common.cancel')}
         onConfirm={handleCloneConfirm}
-        onCancel={handleCloneCancel}
-        variant="info"
+        variant="default"
       />
 
-      {/* Toast Notification */}
-      {toast && (
-        <Toast
-          isOpen={!!toast}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+
     </div>
   );
 }

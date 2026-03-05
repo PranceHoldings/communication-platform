@@ -6,8 +6,8 @@ import { useI18n } from '@/lib/i18n/provider';
 import { getScenario, deleteScenario, type Scenario } from '@/lib/api/scenarios';
 import { authApi } from '@/lib/api/auth';
 import Link from 'next/link';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import Toast from '@/components/Toast';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { toast } from 'sonner';
 
 export default function ScenarioDetailPage() {
   const params = useParams();
@@ -19,7 +19,6 @@ export default function ScenarioDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
 
   const scenarioId = params.id as string;
   const currentUser = authApi.getCurrentUser();
@@ -68,22 +67,18 @@ export default function ScenarioDetailPage() {
   };
 
   const handleDeleteConfirm = async () => {
-    setShowDeleteDialog(false);
     setIsDeleting(true);
 
     try {
       await deleteScenario(scenarioId);
+      toast.success(t('scenarios.delete.success'));
       // Success - redirect to scenarios list
       router.push('/dashboard/scenarios');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('scenarios.delete.error');
-      setToast({ message: errorMessage, type: 'error' });
+      toast.error(errorMessage);
       setIsDeleting(false);
     }
-  };
-
-  const handleDeleteCancel = () => {
-    setShowDeleteDialog(false);
   };
 
   if (loading) {
@@ -199,25 +194,15 @@ export default function ScenarioDetailPage() {
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
-        isOpen={showDeleteDialog}
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
         title={t('scenarios.delete.confirm')}
-        message={t('scenarios.delete.confirmMessage')}
-        confirmLabel={t('scenarios.detail.delete')}
-        cancelLabel="Cancel"
+        description={t('scenarios.delete.confirmMessage')}
+        confirmText={t('scenarios.detail.delete')}
+        cancelText={t('common.cancel')}
         onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-        variant="danger"
+        variant="destructive"
       />
-
-      {/* Toast Notification */}
-      {toast && (
-        <Toast
-          isOpen={!!toast}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }
