@@ -250,7 +250,7 @@ export default function SessionsPage() {
               Previous
             </button>
             <button
-              onClick={() => loadSessions(pagination.offset + pagination.limit))}
+              onClick={() => loadSessions(pagination.offset + pagination.limit)}
               disabled={!pagination.hasMore}
               className="px-3 py-1 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >

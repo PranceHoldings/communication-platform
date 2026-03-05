@@ -9,7 +9,7 @@
       "filter": {
         "all": "All",
         "pending": "Pending",
-        "inProgress": "In Progress",
+        "in_progress": "In Progress",
         "completed": "Completed",
         "failed": "Failed"
       }
