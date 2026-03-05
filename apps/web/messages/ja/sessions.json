@@ -1,0 +1,60 @@
+{
+  "new": {
+    "title": "新しいセッションを作成",
+    "description": "シナリオとアバターを選択して、会話セッションを開始します",
+    "step_1": "ステップ1: シナリオを選択",
+    "step_2": "ステップ2: アバターを選択",
+    "step_3": "ステップ3: セッション設定",
+    "scenario": {
+      "title": "シナリオを選択",
+      "description": "このセッションで使用する会話シナリオを選択してください",
+      "search_placeholder": "シナリオを検索...",
+      "filter_all": "すべてのカテゴリ",
+      "no_results": "シナリオが見つかりません",
+      "card": {
+        "category": "カテゴリ",
+        "language": "言語",
+        "visibility": "公開設定"
+      }
+    },
+    "avatar": {
+      "title": "アバターを選択",
+      "description": "あなたと対話するAIアバターを選択してください",
+      "search_placeholder": "アバターを検索...",
+      "filter": {
+        "all_types": "すべてのタイプ",
+        "all_styles": "すべてのスタイル",
+        "type_2d": "2D",
+        "type_3d": "3D",
+        "style_anime": "アニメ",
+        "style_realistic": "リアル"
+      },
+      "no_results": "アバターが見つかりません",
+      "card": {
+        "type": "タイプ",
+        "style": "スタイル",
+        "source": "ソース"
+      }
+    },
+    "options": {
+      "title": "セッション設定",
+      "description": "セッションの追加設定を行います",
+      "metadata": "セッションメタデータ（任意）",
+      "metadata_placeholder": "JSONメタデータを入力..."
+    },
+    "actions": {
+      "back": "戻る",
+      "next": "次へ",
+      "create": "セッションを作成",
+      "cancel": "キャンセル"
+    },
+    "validation": {
+      "scenario_required": "シナリオを選択してください",
+      "avatar_required": "アバターを選択してください",
+      "invalid_metadata": "メタデータのJSON形式が無効です"
+    },
+    "creating": "セッションを作成中...",
+    "success": "セッションが正常に作成されました！",
+    "error": "セッションの作成に失敗しました"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "new": {
+    "title": "Create New Session",
+    "description": "Select a scenario and avatar to start your conversation session",
+    "step_1": "Step 1: Select Scenario",
+    "step_2": "Step 2: Select Avatar",
+    "step_3": "Step 3: Session Options",
+    "scenario": {
+      "title": "Choose a Scenario",
+      "description": "Select the conversation scenario for this session",
+      "search_placeholder": "Search scenarios...",
+      "filter_all": "All Categories",
+      "no_results": "No scenarios found",
+      "card": {
+        "category": "Category",
+        "language": "Language",
+        "visibility": "Visibility"
+      }
+    },
+    "avatar": {
+      "title": "Choose an Avatar",
+      "description": "Select the AI avatar that will interact with you",
+      "search_placeholder": "Search avatars...",
+      "filter": {
+        "all_types": "All Types",
+        "all_styles": "All Styles",
+        "type_2d": "2D",
+        "type_3d": "3D",
+        "style_anime": "Anime",
+        "style_realistic": "Realistic"
+      },
+      "no_results": "No avatars found",
+      "card": {
+        "type": "Type",
+        "style": "Style",
+        "source": "Source"
+      }
+    },
+    "options": {
+      "title": "Session Options",
+      "description": "Configure additional settings for your session",
+      "metadata": "Session Metadata (optional)",
+      "metadata_placeholder": "Enter JSON metadata..."
+    },
+    "actions": {
+      "back": "Back",
+      "next": "Next",
+      "create": "Create Session",
+      "cancel": "Cancel"
+    },
+    "validation": {
+      "scenario_required": "Please select a scenario",
+      "avatar_required": "Please select an avatar",
+      "invalid_metadata": "Invalid JSON format in metadata"
+    },
+    "creating": "Creating session...",
+    "success": "Session created successfully!",
+    "error": "Failed to create session"
+  }
+}
