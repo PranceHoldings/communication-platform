@@ -10,7 +10,7 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'ACTIVE' | 'PROCESSING' | 'COMPLETED'>(
+  const [filter, setFilter] = useState<'all' | 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR'>(
     'all'
   );
   const [pagination, setPagination] = useState({
@@ -63,6 +63,8 @@ export default function SessionsPage() {
         return 'bg-blue-100 text-blue-800';
       case 'ACTIVE':
         return 'bg-yellow-100 text-yellow-800';
+      case 'ERROR':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -114,7 +116,7 @@ export default function SessionsPage() {
           <span className="text-sm font-medium text-gray-700">
             Filter:
           </span>
-          {(['all', 'ACTIVE', 'PROCESSING', 'COMPLETED'] as const).map((status) => (
+          {(['all', 'ACTIVE', 'PROCESSING', 'COMPLETED', 'ERROR'] as const).map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}

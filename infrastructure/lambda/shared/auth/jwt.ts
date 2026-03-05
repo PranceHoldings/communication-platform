@@ -94,7 +94,7 @@ export const getUserFromEvent = (
         return {
           userId: auth.userId,
           email: auth.email,
-          role: auth.role as 'super_admin' | 'client_admin' | 'client_user',
+          role: auth.role as 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER',
           organizationId: auth.organizationId,
         };
       }

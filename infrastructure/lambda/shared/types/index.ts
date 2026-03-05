@@ -1,6 +1,9 @@
 /**
  * 共通型定義
  * すべてのLambda関数で使用される型
+ *
+ * NOTE: これらの型はPrismaスキーマと整合性を保つ必要があります
+ * スキーマ: packages/database/prisma/schema.prisma
  */
 
 // ========================================
@@ -10,7 +13,7 @@
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: 'super_admin' | 'client_admin' | 'client_user';
+  role: 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER';
   organizationId: string;
   iat?: number;
   exp?: number;
@@ -48,10 +51,10 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'super_admin' | 'client_admin' | 'client_user';
+  role: 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER';
   organizationId: string;
   createdAt: Date;
-  updatedAt: Date;
+  lastLoginAt: Date | null;
 }
 
 // ========================================
@@ -61,11 +64,15 @@ export interface User {
 export interface Avatar {
   id: string;
   name: string;
-  type: '2d' | '3d';
-  thumbnailUrl: string;
+  type: 'TWO_D' | 'THREE_D';
+  style: 'ANIME' | 'REALISTIC';
+  source: 'PRESET' | 'GENERATED' | 'ORG_CUSTOM';
+  thumbnailUrl: string | null;
   modelUrl: string;
-  voiceSettings: object;
-  description: string;
+  configJson: object | null;
+  tags: string[];
+  visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  createdAt: Date;
 }
 
 // ========================================
@@ -74,13 +81,12 @@ export interface Avatar {
 
 export interface Scenario {
   id: string;
-  name: string;
-  description: string;
-  systemPrompt: string;
-  topics: string[];
-  evaluationCriteria: object;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  estimatedDuration: number;
+  title: string;
+  category: string;
+  language: string;
+  visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  configJson: object;
+  createdAt: Date;
 }
 
 // ========================================
@@ -90,12 +96,14 @@ export interface Scenario {
 export interface Session {
   id: string;
   userId: string;
+  orgId: string;
   avatarId: string;
   scenarioId: string;
-  status: 'created' | 'in_progress' | 'completed' | 'failed';
-  startedAt: Date | null;
+  status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
+  startedAt: Date;
   endedAt: Date | null;
-  duration: number | null;
+  durationSec: number | null;
+  metadataJson: object | null;
 }
 
 // ========================================
@@ -123,10 +131,27 @@ export interface WebSocketMessage {
 export interface Recording {
   id: string;
   sessionId: string;
-  type: 'user' | 'avatar' | 'merged';
-  url: string;
-  duration: number;
+  type: 'USER' | 'AVATAR' | 'COMBINED';
+  s3Url: string;
+  cdnUrl: string | null;
+  thumbnailUrl: string | null;
+  fileSizeBytes: bigint;
   createdAt: Date;
+}
+
+// ========================================
+// 書き起こし関連
+// ========================================
+
+export interface Transcript {
+  id: string;
+  sessionId: string;
+  speaker: 'AI' | 'USER';
+  text: string;
+  timestampStart: number;
+  timestampEnd: number;
+  confidence: number | null;
+  highlight: 'POSITIVE' | 'NEGATIVE' | 'IMPORTANT' | null;
 }
 
 // ========================================

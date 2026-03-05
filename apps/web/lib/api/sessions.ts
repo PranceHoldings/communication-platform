@@ -8,7 +8,7 @@ export interface Session {
   id: string;
   scenarioId: string;
   avatarId: string;
-  status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED';
+  status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
   startedAt: string;
   endedAt: string | null;
   duration: number | null;
@@ -56,7 +56,7 @@ export interface CreateSessionRequest {
 export interface ListSessionsRequest {
   limit?: number;
   offset?: number;
-  status?: 'ACTIVE' | 'PROCESSING' | 'COMPLETED';
+  status?: 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
 }
 
 export interface ListSessionsResponse {

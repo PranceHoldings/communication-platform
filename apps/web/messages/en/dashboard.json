@@ -10,7 +10,8 @@
         "all": "All",
         "ACTIVE": "Active",
         "PROCESSING": "Processing",
-        "COMPLETED": "Completed"
+        "COMPLETED": "Completed",
+        "ERROR": "Error"
       }
     },
     "create": {
@@ -44,7 +45,8 @@
     "status": {
       "ACTIVE": "Active",
       "PROCESSING": "Processing",
-      "COMPLETED": "Completed"
+      "COMPLETED": "Completed",
+      "ERROR": "Error"
     },
     "table": {
       "scenario": "Scenario",
@@ -87,7 +89,8 @@
       "status": {
         "ACTIVE": "Active",
         "PROCESSING": "Processing",
-        "COMPLETED": "Completed"
+        "COMPLETED": "Completed",
+        "ERROR": "Error"
       }
     },
     "performance": {

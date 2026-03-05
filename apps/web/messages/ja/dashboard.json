@@ -10,7 +10,8 @@
         "all": "すべて",
         "ACTIVE": "アクティブ",
         "PROCESSING": "処理中",
-        "COMPLETED": "完了"
+        "COMPLETED": "完了",
+        "ERROR": "エラー"
       }
     },
     "create": {
@@ -44,7 +45,8 @@
     "status": {
       "ACTIVE": "アクティブ",
       "PROCESSING": "処理中",
-      "COMPLETED": "完了"
+      "COMPLETED": "完了",
+      "ERROR": "エラー"
     },
     "table": {
       "scenario": "シナリオ",
@@ -87,7 +89,8 @@
       "status": {
         "ACTIVE": "アクティブ",
         "PROCESSING": "処理中",
-        "COMPLETED": "完了"
+        "COMPLETED": "完了",
+        "ERROR": "エラー"
       }
     },
     "performance": {

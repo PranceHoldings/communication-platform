@@ -11,7 +11,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  * Query Parameters:
  * - limit: number (default: 20, max: 100)
  * - offset: number (default: 0)
- * - status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED'
+ * - status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR'
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
   console.log('List sessions request:', JSON.stringify(event, null, 2));
@@ -27,7 +27,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const queryParams = event.queryStringParameters || {};
     const limit = Math.min(parseInt(queryParams.limit || '20'), 100);
     const offset = parseInt(queryParams.offset || '0');
-    const status = queryParams.status as 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | undefined;
+    const status = queryParams.status as 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR' | undefined;
 
     // Build where clause
     const where: any = {
