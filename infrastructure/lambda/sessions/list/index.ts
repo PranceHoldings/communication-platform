@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { getPrismaClient } from '../../shared/database/prisma';
+import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
 
@@ -39,8 +39,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Get sessions from database
-    const prisma = getPrismaClient();
-
     const [sessions, total] = await Promise.all([
       prisma.session.findMany({
         where,

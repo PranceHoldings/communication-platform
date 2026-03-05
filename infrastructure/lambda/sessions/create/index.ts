@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { getPrismaClient } from '../../shared/database/prisma';
+import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
 
@@ -37,8 +37,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!avatarId) {
       return errorResponse(400, 'Validation Error', 'avatarId is required');
     }
-
-    const prisma = getPrismaClient();
 
     // Verify scenario exists and belongs to the user's organization
     const scenario = await prisma.scenario.findUnique({

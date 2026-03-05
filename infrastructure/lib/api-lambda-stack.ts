@@ -22,6 +22,9 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly loginFunction: nodejs.NodejsFunction;
   public readonly getCurrentUserFunction: nodejs.NodejsFunction;
   public readonly migrationFunction: nodejs.NodejsFunction;
+  public readonly listSessionsFunction: nodejs.NodejsFunction;
+  public readonly createSessionFunction: nodejs.NodejsFunction;
+  public readonly getSessionFunction: nodejs.NodejsFunction;
   public readonly authorizer: apigateway.TokenAuthorizer;
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
@@ -311,6 +314,80 @@ export class ApiLambdaStack extends cdk.Stack {
       },
     });
 
+    // ==================== Session Management Lambda Functions ====================
+
+    // Prisma bundling configuration (共通)
+    const prismaBundlingConfig = {
+      minify: props.environment === 'production',
+      sourceMap: true,
+      target: 'es2020',
+      externalModules: ['aws-sdk', '@aws-sdk/*'],
+      nodeModules: ['@prisma/client'],
+      commandHooks: {
+        beforeBundling(inputDir: string, outputDir: string): string[] {
+          return [];
+        },
+        afterBundling(inputDir: string, outputDir: string): string[] {
+          return [
+            // Copy Prisma generated client
+            `mkdir -p ${outputDir}/node_modules/.prisma`,
+            `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+            // Copy Prisma schema
+            `mkdir -p ${outputDir}/prisma`,
+            `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+          ];
+        },
+        beforeInstall(): string[] {
+          return [];
+        },
+      },
+    };
+
+    // セッション一覧取得Lambda関数
+    this.listSessionsFunction = new nodejs.NodejsFunction(this, 'ListSessionsFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-sessions-list-${props.environment}`,
+      description: 'List sessions for authenticated user',
+      entry: path.join(__dirname, '../lambda/sessions/list/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // セッション作成Lambda関数
+    this.createSessionFunction = new nodejs.NodejsFunction(this, 'CreateSessionFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-sessions-create-${props.environment}`,
+      description: 'Create a new session',
+      entry: path.join(__dirname, '../lambda/sessions/create/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // セッション詳細取得Lambda関数
+    this.getSessionFunction = new nodejs.NodejsFunction(this, 'GetSessionFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-sessions-get-${props.environment}`,
+      description: 'Get session details by ID',
+      entry: path.join(__dirname, '../lambda/sessions/get/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
     // ==================== API Gateway統合 ====================
 
     const healthIntegration = new apigateway.LambdaIntegration(this.healthCheckFunction, {
@@ -329,6 +406,21 @@ export class ApiLambdaStack extends cdk.Stack {
     });
 
     const getCurrentUserIntegration = new apigateway.LambdaIntegration(this.getCurrentUserFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const listSessionsIntegration = new apigateway.LambdaIntegration(this.listSessionsFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const createSessionIntegration = new apigateway.LambdaIntegration(this.createSessionFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const getSessionIntegration = new apigateway.LambdaIntegration(this.getSessionFunction, {
       proxy: true,
       allowTestInvoke: props.environment !== 'production',
     });
@@ -360,6 +452,31 @@ export class ApiLambdaStack extends cdk.Stack {
 
     const meResource = usersResource.addResource('me');
     meResource.addMethod('GET', getCurrentUserIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Sessions endpoints
+    const sessionsResource = apiV1.addResource('sessions');
+
+    // GET /api/v1/sessions (List sessions)
+    sessionsResource.addMethod('GET', listSessionsIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/sessions (Create session)
+    sessionsResource.addMethod('POST', createSessionIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // GET /api/v1/sessions/{id} (Get session by ID)
+    const sessionIdResource = sessionsResource.addResource('{id}');
+    sessionIdResource.addMethod('GET', getSessionIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
@@ -490,6 +607,33 @@ export class ApiLambdaStack extends cdk.Stack {
         me: `${this.restApi.url}api/v1/users/me`,
       }),
       description: 'Users API Endpoints',
+    });
+
+    new cdk.CfnOutput(this, 'ListSessionsFunctionArn', {
+      value: this.listSessionsFunction.functionArn,
+      description: 'List Sessions Lambda Function ARN',
+      exportName: `${props.environment}-ListSessionsFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'CreateSessionFunctionArn', {
+      value: this.createSessionFunction.functionArn,
+      description: 'Create Session Lambda Function ARN',
+      exportName: `${props.environment}-CreateSessionFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'GetSessionFunctionArn', {
+      value: this.getSessionFunction.functionArn,
+      description: 'Get Session Lambda Function ARN',
+      exportName: `${props.environment}-GetSessionFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'SessionsEndpoints', {
+      value: JSON.stringify({
+        list: `${this.restApi.url}api/v1/sessions`,
+        create: `${this.restApi.url}api/v1/sessions`,
+        get: `${this.restApi.url}api/v1/sessions/{id}`,
+      }),
+      description: 'Sessions API Endpoints',
     });
   }
 }

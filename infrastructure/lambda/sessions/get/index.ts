@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { getPrismaClient } from '../../shared/database/prisma';
+import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
 
@@ -23,8 +23,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!sessionId) {
       return errorResponse(400, 'Session ID is required');
     }
-
-    const prisma = getPrismaClient();
 
     // Get session from database
     const session = await prisma.session.findUnique({
