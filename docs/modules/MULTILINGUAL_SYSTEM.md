@@ -1,6 +1,6 @@
 # 多言語対応システム
 
-**バージョン:** 1.0
+**バージョン:** 2.0
 **最終更新:** 2026-03-05
 **ステータス:** 設計完了
 
@@ -9,12 +9,13 @@
 ## 目次
 
 1. [概要](#概要)
-2. [設計原則](#設計原則)
-3. [言語リソース管理](#言語リソース管理)
-4. [実装アーキテクチャ](#実装アーキテクチャ)
-5. [言語追加プロセス](#言語追加プロセス)
-6. [UI実装](#ui実装)
-7. [実装ガイド](#実装ガイド)
+2. [URL設計と言語検出](#url設計と言語検出)
+3. [設計原則](#設計原則)
+4. [言語リソース管理](#言語リソース管理)
+5. [実装アーキテクチャ](#実装アーキテクチャ)
+6. [言語追加プロセス](#言語追加プロセス)
+7. [UI実装](#ui実装)
+8. [実装ガイド](#実装ガイド)
 
 ---
 
@@ -46,6 +47,269 @@
 - 🇪🇸 スペイン語（es）
 - 🇫🇷 フランス語（fr）
 - 🇩🇪 ドイツ語（de）
+
+---
+
+## URL設計と言語検出
+
+### URL設計: 全言語共通URL
+
+**重要:** Pranceプラットフォームでは、**全言語で同一のURLを使用**します。URLにロケールプレフィックス（`/en/`, `/ja/`など）は含めません。
+
+#### ✅ 正しいURL設計
+
+```
+https://platform.prance.co.jp/dashboard
+https://platform.prance.co.jp/sessions
+https://platform.prance.co.jp/reports
+```
+
+すべてのユーザーが同じURLにアクセスし、言語はCookieとブラウザ設定によって自動的に決定されます。
+
+#### ❌ 使用しないURL設計
+
+```
+https://platform.prance.co.jp/en/dashboard   ← 使用しない
+https://platform.prance.co.jp/ja/dashboard   ← 使用しない
+https://en.platform.prance.co.jp/dashboard   ← 使用しない
+```
+
+**理由:**
+- URLの共有が容易（言語に関係なく同じリンクを共有できる）
+- SEO最適化（canonical URLが1つのみ）
+- シンプルなルーティング（next-intlのロケールプレフィックス不要）
+
+---
+
+### 言語検出ロジック
+
+言語は以下の**優先順位**で自動検出されます：
+
+```
+1. Cookie ('NEXT_LOCALE')
+   ↓ なし
+2. Accept-Language ヘッダー（ブラウザ設定）
+   ↓ なし or サポート外言語
+3. デフォルト言語（英語: en）
+```
+
+#### 1. Cookie優先（ユーザー設定）
+
+ユーザーがUI上で言語を明示的に選択した場合、その言語を**Cookie**に保存します。
+
+```typescript
+// Cookieに言語を保存
+document.cookie = `NEXT_LOCALE=ja; path=/; max-age=31536000; SameSite=Lax`;
+```
+
+**Cookie仕様:**
+- **名前**: `NEXT_LOCALE`
+- **値**: 言語コード（例: `en`, `ja`, `zh-CN`）
+- **有効期限**: 1年（`max-age=31536000`）
+- **パス**: `/`（全ページで有効）
+- **SameSite**: `Lax`（CSRF対策）
+
+#### 2. ブラウザ設定（Accept-Language）
+
+Cookieが存在しない、または初回アクセス時は、ブラウザの`Accept-Language`ヘッダーから言語を検出します。
+
+```
+Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7
+                 ↓
+                 ja (日本語) を選択
+```
+
+**検出ロジック:**
+```typescript
+function detectLanguageFromHeader(acceptLanguage: string): string {
+  const supportedLocales = ['en', 'ja', 'zh-CN', 'ko', 'es', 'fr', 'de'];
+  const languages = acceptLanguage.split(',').map(lang => {
+    const [code, qValue] = lang.trim().split(';q=');
+    return { code: code.split('-')[0], q: qValue ? parseFloat(qValue) : 1.0 };
+  });
+
+  languages.sort((a, b) => b.q - a.q);
+
+  for (const lang of languages) {
+    if (supportedLocales.includes(lang.code)) {
+      return lang.code;
+    }
+  }
+
+  return 'en'; // デフォルト: 英語
+}
+```
+
+#### 3. デフォルト言語（英語）
+
+CookieもAccept-Languageも有効な言語を提供しない場合、**英語（en）**をデフォルトとして使用します。
+
+---
+
+### 言語切り替えフロー
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ ユーザーがページにアクセス                                │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────┐
+│ Middleware: 言語検出                                     │
+│ 1. Cookie 'NEXT_LOCALE' をチェック                       │
+│    ├─ あり → その言語を使用                              │
+│    └─ なし → 2へ                                         │
+│                                                          │
+│ 2. Accept-Language ヘッダーをチェック                    │
+│    ├─ サポート言語あり → その言語を使用                  │
+│    └─ なし → 3へ                                         │
+│                                                          │
+│ 3. デフォルト言語（en）を使用                            │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────┐
+│ 言語リソースを読み込み                                    │
+│ - S3 + CloudFront から JSON リソース取得                 │
+│ - ブラウザキャッシュ（5分）                               │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────┐
+│ ページレンダリング（選択された言語）                      │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### ユーザーがUI上で言語を変更した場合
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ ユーザーがヘッダーの言語選択ドロップダウンをクリック      │
+│ 例: 🇯🇵 日本語 → 🇺🇸 English                             │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────┐
+│ フロントエンド: Cookie更新                                │
+│ document.cookie = 'NEXT_LOCALE=en; ...'                 │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────┐
+│ ページリロード（location.reload()）                       │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────┐
+│ Middleware: Cookie 'NEXT_LOCALE=en' を検出               │
+│ → 英語でページをレンダリング                              │
+└─────────────────────────────────────────────────────────┘
+```
+
+**次回アクセス時:**
+- Cookieが保持されているため、自動的に選択した言語（英語）で表示
+- ユーザーが再度UI上で変更するまで、この言語を使用
+
+---
+
+### 言語設定の集中管理
+
+言語検出と取得は**単一のMiddleware**で一元管理します。各ページやコンポーネントで個別に言語判定を行いません。
+
+```typescript
+// apps/web/middleware.ts
+import { NextRequest, NextResponse } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  // 1. Cookie から言語取得
+  let locale = request.cookies.get('NEXT_LOCALE')?.value;
+
+  // 2. Cookieがなければ Accept-Language から検出
+  if (!locale) {
+    const acceptLanguage = request.headers.get('accept-language');
+    locale = detectLanguageFromHeader(acceptLanguage || '');
+  }
+
+  // 3. サポート言語チェック
+  const supportedLocales = ['en', 'ja', 'zh-CN', 'ko'];
+  if (!supportedLocales.includes(locale)) {
+    locale = 'en'; // デフォルト
+  }
+
+  // 4. リクエストヘッダーに言語を追加（App Routerで使用）
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-locale', locale);
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+}
+
+export const config = {
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+};
+```
+
+---
+
+### フォールバック戦略
+
+言語リソースに翻訳が存在しない場合、**英語（en）にフォールバック**します。
+
+#### フォールバックの仕組み
+
+```typescript
+function translate(key: string, locale: string): string {
+  // 1. 選択言語のリソースを確認
+  const translation = resources[locale]?.[key];
+  if (translation) {
+    return translation;
+  }
+
+  // 2. 英語（デフォルト言語）にフォールバック
+  const fallback = resources['en']?.[key];
+  if (fallback) {
+    console.warn(`Translation missing for key "${key}" in locale "${locale}", using English fallback`);
+    return fallback;
+  }
+
+  // 3. キーがどの言語にも存在しない場合
+  console.error(`Translation missing for key "${key}" in all locales`);
+  return key; // キー名をそのまま表示（開発時にデバッグしやすい）
+}
+```
+
+#### フォールバック例
+
+```typescript
+// ユーザーの言語: 日本語 (ja)
+// キー: 'dashboard.newFeature'
+
+// ケース1: 日本語リソースに存在
+resources = {
+  ja: { 'dashboard.newFeature': '新機能' },
+  en: { 'dashboard.newFeature': 'New Feature' }
+};
+→ 結果: "新機能"
+
+// ケース2: 日本語リソースに存在しない（英語にフォールバック）
+resources = {
+  ja: { /* キーなし */ },
+  en: { 'dashboard.newFeature': 'New Feature' }
+};
+→ 結果: "New Feature" + 警告ログ
+
+// ケース3: どの言語にも存在しない
+resources = {
+  ja: { /* キーなし */ },
+  en: { /* キーなし */ }
+};
+→ 結果: "dashboard.newFeature" + エラーログ
+```
 
 ---
 
@@ -341,125 +605,354 @@ cp language-resources/en/*.json language-resources/zh-CN/
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### ステップ3: 自動処理
+### ステップ3: 自動処理（ホットデプロイ）
+
+**重要**: 言語リソースをアップロードすると、**アプリケーションの再ビルド・再デプロイなし**で即座に反映されます。
+
+#### ホットデプロイの仕組み
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ 1. スーパー管理者が言語リソースをアップロード            │
+│    (UI: /admin/languages/upload)                        │
+└──────────────┬───────────────────────────────────────────┘
+               │ POST /api/v1/admin/languages
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│ 2. Lambda: Language Resource Manager                    │
+│    - リソースファイルをS3にアップロード                  │
+│    - metadata.json を更新                                │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│ 3. CloudFront キャッシュ無効化                           │
+│    - 新しい言語のパス: /{languageCode}/*                 │
+│    - メタデータ: /metadata.json                          │
+└──────────────┬───────────────────────────────────────────┘
+               │ (1-5分で完了)
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│ 4. 次回ページロード時に新言語が利用可能                  │
+│    - ユーザーは言語選択ドロップダウンから選択可能        │
+│    - Cookieに保存され、以降は自動的にその言語で表示      │
+└──────────────────────────────────────────────────────────┘
+```
+
+#### Lambda実装例
 
 ```typescript
-// POST /api/v1/languages
-export const addLanguage: APIGatewayProxyHandler = async (event) => {
-  const { languageCode, languageName, nativeName, flag, files } = JSON.parse(event.body);
+// infrastructure/lambda/admin/languages/upload.ts
+import { APIGatewayProxyHandler } from 'aws-lambda';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
+import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 
-  // 1. S3にアップロード
-  await Promise.all(
-    files.map(file =>
-      s3.putObject({
+const s3 = new S3Client({ region: 'us-east-1' });
+const cloudfront = new CloudFrontClient({ region: 'us-east-1' });
+const sns = new SNSClient({ region: 'us-east-1' });
+
+export const handler: APIGatewayProxyHandler = async (event) => {
+  const { languageCode, languageName, nativeName, flag, files } = JSON.parse(event.body || '{}');
+
+  console.log(`Adding language: ${languageName} (${languageCode})`);
+
+  try {
+    // 1. S3にリソースファイルをアップロード
+    await Promise.all(
+      files.map((file: { name: string; content: string }) =>
+        s3.send(
+          new PutObjectCommand({
+            Bucket: 'prance-language-resources',
+            Key: `${languageCode}/${file.name}`,
+            Body: file.content,
+            ContentType: 'application/json',
+            CacheControl: 'public, max-age=300', // 5分キャッシュ
+          })
+        )
+      )
+    );
+
+    // 2. metadata.jsonを更新
+    const metadataResponse = await s3.send(
+      new GetObjectCommand({
         Bucket: 'prance-language-resources',
-        Key: `${languageCode}/${file.name}`,
-        Body: file.content,
-        ContentType: 'application/json',
+        Key: 'metadata.json',
       })
-    )
-  );
+    );
+    const metadata = JSON.parse(await metadataResponse.Body.transformToString());
 
-  // 2. メタデータ更新
-  const metadata = await getMetadata();
-  metadata.languages.push({
-    code: languageCode,
-    name: languageName,
-    nativeName,
-    flag,
-    direction: 'ltr',
-    isDefault: false,
-    completeness: 100,
-  });
-  metadata.lastUpdated = new Date().toISOString();
+    metadata.languages.push({
+      code: languageCode,
+      name: languageName,
+      nativeName,
+      flag,
+      direction: 'ltr',
+      isDefault: false,
+      completeness: 100,
+    });
+    metadata.lastUpdated = new Date().toISOString();
+    metadata.version = incrementVersion(metadata.version);
 
-  await s3.putObject({
-    Bucket: 'prance-language-resources',
-    Key: 'metadata.json',
-    Body: JSON.stringify(metadata, null, 2),
-    ContentType: 'application/json',
-  });
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: 'prance-language-resources',
+        Key: 'metadata.json',
+        Body: JSON.stringify(metadata, null, 2),
+        ContentType: 'application/json',
+        CacheControl: 'public, max-age=300',
+      })
+    );
 
-  // 3. CloudFrontキャッシュ無効化
-  await cloudfront.createInvalidation({
-    DistributionId: process.env.CLOUDFRONT_DISTRIBUTION_ID,
-    InvalidationBatch: {
-      CallerReference: Date.now().toString(),
-      Paths: {
-        Quantity: 1,
-        Items: [`/${languageCode}/*`, '/metadata.json'],
+    // 3. CloudFrontキャッシュ無効化（重要！）
+    await cloudfront.send(
+      new CreateInvalidationCommand({
+        DistributionId: process.env.CLOUDFRONT_DISTRIBUTION_ID!,
+        InvalidationBatch: {
+          CallerReference: `lang-${languageCode}-${Date.now()}`,
+          Paths: {
+            Quantity: 2,
+            Items: [`/${languageCode}/*`, '/metadata.json'],
+          },
+        },
+      })
+    );
+
+    console.log(`CloudFront cache invalidated for language: ${languageCode}`);
+
+    // 4. 管理者に通知
+    await sns.send(
+      new PublishCommand({
+        TopicArn: process.env.ADMIN_TOPIC_ARN!,
+        Subject: `New language added: ${languageName}`,
+        Message: `Language "${languageName}" (${languageCode}) has been successfully added to Prance Platform.\n\nThe new language is now available for all users. CloudFront cache invalidation is in progress (1-5 minutes).`,
+      })
+    );
+
+    return {
+      statusCode: 201,
+      headers: {
+        'Content-Type': 'application/json',
       },
-    },
-  });
-
-  // 4. 通知送信
-  await sns.publish({
-    TopicArn: process.env.ADMIN_TOPIC_ARN,
-    Subject: 'New language added',
-    Message: `Language ${languageName} (${languageCode}) has been added successfully.`,
-  });
-
-  return {
-    statusCode: 201,
-    body: JSON.stringify({ success: true, languageCode }),
-  };
+      body: JSON.stringify({
+        success: true,
+        languageCode,
+        message: `Language ${languageName} added successfully. It will be available to users within 5 minutes.`,
+      }),
+    };
+  } catch (error) {
+    console.error('Error adding language:', error);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    };
+  }
 };
+
+function incrementVersion(version: string): string {
+  const [major, minor, patch] = version.split('.').map(Number);
+  return `${major}.${minor}.${patch + 1}`;
+}
 ```
+
+#### ホットデプロイのメリット
+
+| メリット | 説明 |
+|---------|------|
+| **迅速な展開** | 新言語を1-5分で追加可能（ビルド不要） |
+| **ダウンタイムゼロ** | サービス停止なしで言語追加 |
+| **コスト削減** | CI/CD パイプライン不要、Lambda実行のみ |
+| **A/Bテスト** | 言語リソースのA/Bテストが容易 |
+| **即座に修正** | 翻訳ミスをすぐに修正可能 |
+
+#### 注意事項
+
+1. **CloudFrontキャッシュ無効化は必須**: 無効化しないと、古いリソースが最大5分間配信される
+2. **メタデータ更新を忘れない**: `metadata.json`を更新しないと、UIに言語選択肢が表示されない
+3. **完全性チェック**: すべての必須キーが翻訳されているか確認する
+4. **ロールバック準備**: 問題がある場合に備えて、前バージョンのリソースを保持する
 
 ---
 
 ## UI実装
 
-### Next.js設定
+### Next.js Middleware（言語検出）
+
+**重要**: URLにロケールプレフィックスは使用しません。言語はCookieとAccept-Languageヘッダーで検出します。
 
 ```typescript
-// next.config.js
-const withNextIntl = require('next-intl/plugin')();
+// apps/web/middleware.ts
+import { NextRequest, NextResponse } from 'next/server';
 
-module.exports = withNextIntl({
-  i18n: {
-    locales: ['en', 'ja', 'zh-CN'],
-    defaultLocale: 'en',
-    localeDetection: true, // ブラウザ言語自動検出
-  },
-});
-```
+const supportedLocales = ['en', 'ja', 'zh-CN', 'ko', 'es', 'fr', 'de'];
+const defaultLocale = 'en';
 
-```typescript
-// middleware.ts
-import createMiddleware from 'next-intl/middleware';
+/**
+ * Accept-Languageヘッダーから言語を検出
+ */
+function detectLanguageFromHeader(acceptLanguage: string | null): string {
+  if (!acceptLanguage) return defaultLocale;
 
-export default createMiddleware({
-  locales: ['en', 'ja', 'zh-CN'],
-  defaultLocale: 'en',
-  localePrefix: 'as-needed', // /en/... は /... にリダイレクト
-});
+  const languages = acceptLanguage.split(',').map((lang) => {
+    const [code, qValue] = lang.trim().split(';q=');
+    const baseCode = code.split('-')[0].toLowerCase();
+    return { code: baseCode, q: qValue ? parseFloat(qValue) : 1.0 };
+  });
+
+  // 品質値で降順ソート
+  languages.sort((a, b) => b.q - a.q);
+
+  // サポートされている言語を優先的に選択
+  for (const lang of languages) {
+    if (supportedLocales.includes(lang.code)) {
+      return lang.code;
+    }
+  }
+
+  return defaultLocale;
+}
+
+export function middleware(request: NextRequest) {
+  // 1. Cookieから言語を取得
+  let locale = request.cookies.get('NEXT_LOCALE')?.value;
+
+  // 2. Cookieがなければ Accept-Language ヘッダーから検出
+  if (!locale || !supportedLocales.includes(locale)) {
+    const acceptLanguage = request.headers.get('accept-language');
+    locale = detectLanguageFromHeader(acceptLanguage);
+  }
+
+  // 3. リクエストヘッダーに言語を追加（コンポーネントで使用）
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-locale', locale);
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  // 4. Cookieに言語を保存（初回アクセス時）
+  if (!request.cookies.get('NEXT_LOCALE')) {
+    response.cookies.set('NEXT_LOCALE', locale, {
+      path: '/',
+      maxAge: 31536000, // 1年
+      sameSite: 'lax',
+    });
+  }
+
+  return response;
+}
 
 export const config = {
-  matcher: ['/((?!api|_next|.*\\..*).*)'],
+  // APIルート、静的ファイル、画像を除外
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 };
+```
+
+### 言語プロバイダー設定
+
+```typescript
+// apps/web/lib/i18n/provider.tsx
+'use client';
+
+import { createContext, useContext, useEffect, useState } from 'react';
+import { headers } from 'next/headers';
+
+interface I18nContextType {
+  locale: string;
+  messages: Record<string, any>;
+  t: (key: string, params?: Record<string, any>) => string;
+  setLocale: (locale: string) => void;
+}
+
+const I18nContext = createContext<I18nContextType | null>(null);
+
+export function I18nProvider({ children, initialLocale, initialMessages }: {
+  children: React.ReactNode;
+  initialLocale: string;
+  initialMessages: Record<string, any>;
+}) {
+  const [locale, setLocaleState] = useState(initialLocale);
+  const [messages, setMessages] = useState(initialMessages);
+
+  const t = (key: string, params?: Record<string, any>): string => {
+    const keys = key.split('.');
+    let value: any = messages;
+
+    for (const k of keys) {
+      value = value?.[k];
+      if (value === undefined) {
+        console.warn(`Translation missing: ${key} (locale: ${locale})`);
+        return key; // キー名をそのまま返す
+      }
+    }
+
+    // パラメータ置換
+    if (params && typeof value === 'string') {
+      return value.replace(/\{(\w+)\}/g, (_, param) => params[param] ?? `{${param}}`);
+    }
+
+    return value;
+  };
+
+  const setLocale = async (newLocale: string) => {
+    // Cookieに保存
+    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
+
+    // 言語リソースを取得
+    const response = await fetch(`https://cdn.prance.ai/languages/${newLocale}/common.json`);
+    const newMessages = await response.json();
+
+    setLocaleState(newLocale);
+    setMessages(newMessages);
+
+    // ページをリロードして新しい言語を反映
+    window.location.reload();
+  };
+
+  return (
+    <I18nContext.Provider value={{ locale, messages, t, setLocale }}>
+      {children}
+    </I18nContext.Provider>
+  );
+}
+
+export function useI18n() {
+  const context = useContext(I18nContext);
+  if (!context) {
+    throw new Error('useI18n must be used within I18nProvider');
+  }
+  return context;
+}
 ```
 
 ### 翻訳Hook使用例
 
 ```typescript
-// app/[locale]/dashboard/page.tsx
+// app/dashboard/page.tsx
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useI18n } from '@/lib/i18n/provider';
 
 export default function DashboardPage() {
-  const t = useTranslations('dashboard');
+  const { t } = useI18n();
 
   return (
     <div>
-      <h1>{t('title')}</h1>
-      <p>{t('welcome', { name: 'John' })}</p>
+      <h1>{t('dashboard.title')}</h1>
+      <p>{t('dashboard.welcome', { name: 'John' })}</p>
 
-      <button>{t('session.create')}</button>
+      <button>{t('dashboard.session.create')}</button>
 
       <div>
-        {t('stats.sessions', { count: 45 })}
+        {t('dashboard.stats.sessions', { count: 45 })}
       </div>
     </div>
   );
@@ -502,37 +995,54 @@ async function fetchMessages(locale: string): Promise<Record<string, any>> {
 // components/LanguageSwitcher.tsx
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { useI18n } from '@/lib/i18n/provider';
 
 export default function LanguageSwitcher() {
-  const t = useTranslations('common');
-  const locale = useLocale();
-  const router = useRouter();
-  const pathname = usePathname();
+  const { locale, setLocale, t } = useI18n();
+  const [isLoading, setIsLoading] = useState(false);
 
   const languages = [
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'ja', name: '日本語', flag: '🇯🇵' },
+    { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
+    { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
+    { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文', flag: '🇨🇳' },
+    { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
   ];
 
-  const changeLanguage = (newLocale: string) => {
-    const newPath = pathname.replace(`/${locale}`, `/${newLocale}`);
-    router.push(newPath);
+  const handleLanguageChange = async (newLocale: string) => {
+    if (newLocale === locale) return;
+
+    setIsLoading(true);
+    await setLocale(newLocale);
+    // setLocale内でwindow.location.reload()が呼ばれるため、ここに到達しない
   };
 
+  const currentLanguage = languages.find((lang) => lang.code === locale) || languages[0];
+
   return (
-    <select
-      value={locale}
-      onChange={(e) => changeLanguage(e.target.value)}
-      className="language-switcher"
-    >
-      {languages.map((lang) => (
-        <option key={lang.code} value={lang.code}>
-          {lang.flag} {lang.name}
-        </option>
-      ))}
-    </select>
+    <div className="relative inline-block text-left">
+      <select
+        value={locale}
+        onChange={(e) => void handleLanguageChange(e.target.value)}
+        disabled={isLoading}
+        className="block w-full px-4 py-2 pr-8 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+      >
+        {languages.map((lang) => (
+          <option key={lang.code} value={lang.code}>
+            {lang.flag} {lang.nativeName}
+          </option>
+        ))}
+      </select>
+
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-lg">
+          <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+      )}
+    </div>
   );
 }
 ```
@@ -671,14 +1181,44 @@ export default function DateTimeExample() {
 
 ## まとめ
 
-多言語対応システムは、以下の価値を提供します：
+### 重要なポイント（再確認）
+
+#### 1. URL設計
+- ✅ **全言語で共通URL**: `/dashboard`, `/sessions` など
+- ❌ **ロケールプレフィックスなし**: `/en/dashboard`, `/ja/dashboard` は使用しない
+
+#### 2. 言語検出の優先順位
+1. **Cookie** (`NEXT_LOCALE`)
+2. **Accept-Language** ヘッダー（ブラウザ設定）
+3. **デフォルト言語**（英語: en）
+
+#### 3. 言語切り替え
+- ユーザーがUI上で言語を選択 → **Cookieに保存**
+- 次回アクセス時に自動的に選択した言語で表示
+- 明示的にUI上で変更するまでCookieを保持
+
+#### 4. 言語リソース管理
+- **S3 + CloudFront** で配信
+- **ホットデプロイ**: スーパー管理者がアップロード → 1-5分で反映
+- **フォールバック**: リソースがない場合は英語にフォールバック
+
+#### 5. 集中管理
+- 言語検出は**Middleware**で一元管理
+- 各ページやコンポーネントで個別に言語判定を行わない
+
+---
+
+### システムの価値
 
 ✅ **グローバル展開**: 複数言語でのサービス提供
 ✅ **コード変更不要**: 言語リソースファイルのみで新言語追加
-✅ **ホットデプロイ**: リビルド不要で即座に反映
+✅ **ホットデプロイ**: リビルド不要で即座に反映（1-5分）
+✅ **シンプルなURL**: 全言語で同一URLを使用
+✅ **ユーザー体験**: ブラウザ設定を自動検出、選択した言語を記憶
 ✅ **高速配信**: CloudFront CDNによる世界中への高速配信
 ✅ **保守性**: 文字列の一元管理、翻訳の容易性
 ✅ **スケーラビリティ**: 言語数が増えてもパフォーマンス影響なし
+✅ **フォールバック**: 未翻訳キーは英語で表示
 
 このシステムにより、プラットフォームは簡単に新しい市場へ展開でき、各地域のユーザーに最適化された体験を提供できます。
 
