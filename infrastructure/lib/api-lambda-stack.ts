@@ -32,6 +32,9 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly listScenariosFunction: nodejs.NodejsFunction;
   public readonly createScenarioFunction: nodejs.NodejsFunction;
   public readonly getScenarioFunction: nodejs.NodejsFunction;
+  public readonly listAvatarsFunction: nodejs.NodejsFunction;
+  public readonly createAvatarFunction: nodejs.NodejsFunction;
+  public readonly getAvatarFunction: nodejs.NodejsFunction;
   public readonly authorizer: apigateway.TokenAuthorizer;
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
@@ -447,6 +450,53 @@ export class ApiLambdaStack extends cdk.Stack {
       bundling: prismaBundlingConfig,
     });
 
+    // ==================== アバター管理Lambda関数 ====================
+
+    // アバター一覧取得Lambda関数
+    this.listAvatarsFunction = new nodejs.NodejsFunction(this, 'ListAvatarsFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-avatars-list-${props.environment}`,
+      description: 'Get list of avatars',
+      entry: path.join(__dirname, '../lambda/avatars/list/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // アバター作成Lambda関数
+    this.createAvatarFunction = new nodejs.NodejsFunction(this, 'CreateAvatarFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-avatars-create-${props.environment}`,
+      description: 'Create a new avatar',
+      entry: path.join(__dirname, '../lambda/avatars/create/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // アバター詳細取得Lambda関数
+    this.getAvatarFunction = new nodejs.NodejsFunction(this, 'GetAvatarFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-avatars-get-${props.environment}`,
+      description: 'Get avatar details by ID',
+      entry: path.join(__dirname, '../lambda/avatars/get/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
     // ==================== API Gateway統合 ====================
 
     const healthIntegration = new apigateway.LambdaIntegration(this.healthCheckFunction, {
@@ -495,6 +545,21 @@ export class ApiLambdaStack extends cdk.Stack {
     });
 
     const getScenarioIntegration = new apigateway.LambdaIntegration(this.getScenarioFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const listAvatarsIntegration = new apigateway.LambdaIntegration(this.listAvatarsFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const createAvatarIntegration = new apigateway.LambdaIntegration(this.createAvatarFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const getAvatarIntegration = new apigateway.LambdaIntegration(this.getAvatarFunction, {
       proxy: true,
       allowTestInvoke: props.environment !== 'production',
     });
@@ -576,6 +641,31 @@ export class ApiLambdaStack extends cdk.Stack {
     // GET /api/v1/scenarios/{id} (Get scenario by ID)
     const scenarioIdResource = scenariosResource.addResource('{id}');
     scenarioIdResource.addMethod('GET', getScenarioIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Avatars endpoints
+    const avatarsResource = apiV1.addResource('avatars');
+
+    // GET /api/v1/avatars (List avatars)
+    avatarsResource.addMethod('GET', listAvatarsIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/avatars (Create avatar)
+    avatarsResource.addMethod('POST', createAvatarIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // GET /api/v1/avatars/{id} (Get avatar by ID)
+    const avatarIdResource = avatarsResource.addResource('{id}');
+    avatarIdResource.addMethod('GET', getAvatarIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
@@ -699,6 +789,9 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseSecret.grantRead(this.listScenariosFunction);
     props.databaseSecret.grantRead(this.createScenarioFunction);
     props.databaseSecret.grantRead(this.getScenarioFunction);
+    props.databaseSecret.grantRead(this.listAvatarsFunction);
+    props.databaseSecret.grantRead(this.createAvatarFunction);
+    props.databaseSecret.grantRead(this.getAvatarFunction);
 
     // RDSクラスターへの接続を許可
     props.databaseCluster.connections.allowDefaultPortFrom(this.registerFunction);
@@ -711,6 +804,9 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseCluster.connections.allowDefaultPortFrom(this.listScenariosFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.createScenarioFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.getScenarioFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.listAvatarsFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.createAvatarFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.getAvatarFunction);
 
     new cdk.CfnOutput(this, 'MigrationFunctionName', {
       value: this.migrationFunction.functionName,
@@ -775,6 +871,33 @@ export class ApiLambdaStack extends cdk.Stack {
         get: `${this.restApi.url}api/v1/scenarios/{id}`,
       }),
       description: 'Scenarios API Endpoints',
+    });
+
+    new cdk.CfnOutput(this, 'ListAvatarsFunctionArn', {
+      value: this.listAvatarsFunction.functionArn,
+      description: 'List Avatars Lambda Function ARN',
+      exportName: `${props.environment}-ListAvatarsFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'CreateAvatarFunctionArn', {
+      value: this.createAvatarFunction.functionArn,
+      description: 'Create Avatar Lambda Function ARN',
+      exportName: `${props.environment}-CreateAvatarFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'GetAvatarFunctionArn', {
+      value: this.getAvatarFunction.functionArn,
+      description: 'Get Avatar Lambda Function ARN',
+      exportName: `${props.environment}-GetAvatarFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'AvatarsEndpoints', {
+      value: JSON.stringify({
+        list: `${this.restApi.url}api/v1/avatars`,
+        create: `${this.restApi.url}api/v1/avatars`,
+        get: `${this.restApi.url}api/v1/avatars/{id}`,
+      }),
+      description: 'Avatars API Endpoints',
     });
 
     new cdk.CfnOutput(this, 'SessionsEndpoints', {
