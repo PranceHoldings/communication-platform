@@ -1,4 +1,64 @@
 {
+  "sessions": {
+    "title": "セッション",
+    "list": {
+      "title": "すべてのセッション",
+      "description": "練習セッションを表示・管理",
+      "empty": "セッションが見つかりません",
+      "emptyDescription": "新しいセッションを開始して練習を始めましょう",
+      "filter": {
+        "all": "すべて",
+        "pending": "待機中",
+        "inProgress": "進行中",
+        "completed": "完了",
+        "failed": "失敗"
+      }
+    },
+    "create": {
+      "title": "新しいセッションを作成",
+      "button": "新規セッション",
+      "scenario": "シナリオ",
+      "scenarioPlaceholder": "シナリオを選択",
+      "avatar": "アバター",
+      "avatarPlaceholder": "アバターを選択",
+      "submit": "セッションを作成",
+      "cancel": "キャンセル",
+      "success": "セッションが作成されました",
+      "error": "セッションの作成に失敗しました"
+    },
+    "detail": {
+      "title": "セッション詳細",
+      "information": "セッション情報",
+      "scenario": "シナリオ",
+      "avatar": "アバター",
+      "status": "ステータス",
+      "startTime": "開始時刻",
+      "endTime": "終了時刻",
+      "duration": "所要時間",
+      "recording": "録画",
+      "transcript": "文字起こし",
+      "noRecording": "録画がありません",
+      "noTranscript": "文字起こしがありません",
+      "notStarted": "未開始",
+      "minutes": "{count}分"
+    },
+    "status": {
+      "pending": "待機中",
+      "inProgress": "進行中",
+      "completed": "完了",
+      "failed": "失敗"
+    },
+    "table": {
+      "scenario": "シナリオ",
+      "avatar": "アバター",
+      "status": "ステータス",
+      "date": "日付",
+      "duration": "所要時間",
+      "actions": "アクション",
+      "view": "表示",
+      "noData": "利用可能なセッションがありません"
+    }
+  },
   "dashboard": {
     "title": "ダッシュボード",
     "welcome": "おかえりなさい、{name}さん！",

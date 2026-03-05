@@ -1,4 +1,64 @@
 {
+  "sessions": {
+    "title": "Sessions",
+    "list": {
+      "title": "All Sessions",
+      "description": "View and manage your practice sessions",
+      "empty": "No sessions found",
+      "emptyDescription": "Start a new session to begin practicing",
+      "filter": {
+        "all": "All",
+        "pending": "Pending",
+        "inProgress": "In Progress",
+        "completed": "Completed",
+        "failed": "Failed"
+      }
+    },
+    "create": {
+      "title": "Create New Session",
+      "button": "New Session",
+      "scenario": "Scenario",
+      "scenarioPlaceholder": "Select a scenario",
+      "avatar": "Avatar",
+      "avatarPlaceholder": "Select an avatar",
+      "submit": "Create Session",
+      "cancel": "Cancel",
+      "success": "Session created successfully",
+      "error": "Failed to create session"
+    },
+    "detail": {
+      "title": "Session Details",
+      "information": "Session Information",
+      "scenario": "Scenario",
+      "avatar": "Avatar",
+      "status": "Status",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "duration": "Duration",
+      "recording": "Recording",
+      "transcript": "Transcript",
+      "noRecording": "Recording not available",
+      "noTranscript": "Transcript not available",
+      "notStarted": "Not started",
+      "minutes": "{count} minutes"
+    },
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "table": {
+      "scenario": "Scenario",
+      "avatar": "Avatar",
+      "status": "Status",
+      "date": "Date",
+      "duration": "Duration",
+      "actions": "Actions",
+      "view": "View",
+      "noData": "No sessions available"
+    }
+  },
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome back, {name}!",
