@@ -4,6 +4,9 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+// デバッグ: API URL確認
+console.log('[API Client] Base URL:', API_BASE_URL);
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -44,10 +47,26 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    // デバッグログ
+    console.log('[API Client] Request:', {
+      url,
+      method: options.method || 'GET',
+      hasToken: !!token,
+      headers: Object.keys(headers),
+    });
+
     try {
       const response = await fetch(url, {
         ...options,
         headers,
+        mode: 'cors',
+        credentials: 'omit',
+      });
+
+      console.log('[API Client] Response:', {
+        url,
+        status: response.status,
+        ok: response.ok,
       });
 
       const data = (await response.json()) as ApiResponse<T>;
