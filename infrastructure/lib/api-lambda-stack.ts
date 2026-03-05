@@ -29,6 +29,9 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly listSessionsFunction: nodejs.NodejsFunction;
   public readonly createSessionFunction: nodejs.NodejsFunction;
   public readonly getSessionFunction: nodejs.NodejsFunction;
+  public readonly listScenariosFunction: nodejs.NodejsFunction;
+  public readonly createScenarioFunction: nodejs.NodejsFunction;
+  public readonly getScenarioFunction: nodejs.NodejsFunction;
   public readonly authorizer: apigateway.TokenAuthorizer;
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
@@ -397,6 +400,53 @@ export class ApiLambdaStack extends cdk.Stack {
       bundling: prismaBundlingConfig,
     });
 
+    // ==================== シナリオ管理Lambda関数 ====================
+
+    // シナリオ一覧取得Lambda関数
+    this.listScenariosFunction = new nodejs.NodejsFunction(this, 'ListScenariosFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-scenarios-list-${props.environment}`,
+      description: 'Get list of scenarios',
+      entry: path.join(__dirname, '../lambda/scenarios/list/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // シナリオ作成Lambda関数
+    this.createScenarioFunction = new nodejs.NodejsFunction(this, 'CreateScenarioFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-scenarios-create-${props.environment}`,
+      description: 'Create a new scenario',
+      entry: path.join(__dirname, '../lambda/scenarios/create/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // シナリオ詳細取得Lambda関数
+    this.getScenarioFunction = new nodejs.NodejsFunction(this, 'GetScenarioFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-scenarios-get-${props.environment}`,
+      description: 'Get scenario details by ID',
+      entry: path.join(__dirname, '../lambda/scenarios/get/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
     // ==================== API Gateway統合 ====================
 
     const healthIntegration = new apigateway.LambdaIntegration(this.healthCheckFunction, {
@@ -430,6 +480,21 @@ export class ApiLambdaStack extends cdk.Stack {
     });
 
     const getSessionIntegration = new apigateway.LambdaIntegration(this.getSessionFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const listScenariosIntegration = new apigateway.LambdaIntegration(this.listScenariosFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const createScenarioIntegration = new apigateway.LambdaIntegration(this.createScenarioFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const getScenarioIntegration = new apigateway.LambdaIntegration(this.getScenarioFunction, {
       proxy: true,
       allowTestInvoke: props.environment !== 'production',
     });
@@ -486,6 +551,31 @@ export class ApiLambdaStack extends cdk.Stack {
     // GET /api/v1/sessions/{id} (Get session by ID)
     const sessionIdResource = sessionsResource.addResource('{id}');
     sessionIdResource.addMethod('GET', getSessionIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Scenarios endpoints
+    const scenariosResource = apiV1.addResource('scenarios');
+
+    // GET /api/v1/scenarios (List scenarios)
+    scenariosResource.addMethod('GET', listScenariosIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/scenarios (Create scenario)
+    scenariosResource.addMethod('POST', createScenarioIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // GET /api/v1/scenarios/{id} (Get scenario by ID)
+    const scenarioIdResource = scenariosResource.addResource('{id}');
+    scenarioIdResource.addMethod('GET', getScenarioIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
@@ -606,6 +696,9 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseSecret.grantRead(this.listSessionsFunction);
     props.databaseSecret.grantRead(this.createSessionFunction);
     props.databaseSecret.grantRead(this.getSessionFunction);
+    props.databaseSecret.grantRead(this.listScenariosFunction);
+    props.databaseSecret.grantRead(this.createScenarioFunction);
+    props.databaseSecret.grantRead(this.getScenarioFunction);
 
     // RDSクラスターへの接続を許可
     props.databaseCluster.connections.allowDefaultPortFrom(this.registerFunction);
@@ -615,6 +708,9 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseCluster.connections.allowDefaultPortFrom(this.listSessionsFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.createSessionFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.getSessionFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.listScenariosFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.createScenarioFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.getScenarioFunction);
 
     new cdk.CfnOutput(this, 'MigrationFunctionName', {
       value: this.migrationFunction.functionName,
@@ -652,6 +748,33 @@ export class ApiLambdaStack extends cdk.Stack {
       value: this.getSessionFunction.functionArn,
       description: 'Get Session Lambda Function ARN',
       exportName: `${props.environment}-GetSessionFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'ListScenariosFunctionArn', {
+      value: this.listScenariosFunction.functionArn,
+      description: 'List Scenarios Lambda Function ARN',
+      exportName: `${props.environment}-ListScenariosFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'CreateScenarioFunctionArn', {
+      value: this.createScenarioFunction.functionArn,
+      description: 'Create Scenario Lambda Function ARN',
+      exportName: `${props.environment}-CreateScenarioFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'GetScenarioFunctionArn', {
+      value: this.getScenarioFunction.functionArn,
+      description: 'Get Scenario Lambda Function ARN',
+      exportName: `${props.environment}-GetScenarioFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'ScenariosEndpoints', {
+      value: JSON.stringify({
+        list: `${this.restApi.url}api/v1/scenarios`,
+        create: `${this.restApi.url}api/v1/scenarios`,
+        get: `${this.restApi.url}api/v1/scenarios/{id}`,
+      }),
+      description: 'Scenarios API Endpoints',
     });
 
     new cdk.CfnOutput(this, 'SessionsEndpoints', {
