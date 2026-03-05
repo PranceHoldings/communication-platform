@@ -1,0 +1,54 @@
+{
+  "common": {
+    "app_name": "Prance",
+    "tagline": "AI Avatar Communication Platform",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "sessions": "Sessions",
+    "scenarios": "Scenarios",
+    "reports": "Reports",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email Address",
+    "password": "Password",
+    "confirm_password": "Confirm Password",
+    "name": "Full Name",
+    "forgot_password": "Forgot password?",
+    "remember_me": "Remember me",
+    "sign_in": "Sign in",
+    "sign_up": "Sign up",
+    "create_account": "Create account",
+    "already_have_account": "Already have an account?",
+    "dont_have_account": "Don't have an account?",
+    "signing_in": "Signing in...",
+    "creating_account": "Creating account..."
+  },
+  "dashboard": {
+    "welcome": "Welcome back, {name}!",
+    "quick_actions": "Quick Actions",
+    "new_session": "New Session",
+    "my_sessions": "My Sessions",
+    "avatars": "Avatars",
+    "stats": "Statistics",
+    "total_sessions": "Total Sessions",
+    "hours_practiced": "Hours Practiced",
+    "avg_score": "Avg. Score",
+    "scenarios_completed": "Scenarios Completed"
+  },
+  "errors": {
+    "required": "{field} is required",
+    "invalid_email": "Please enter a valid email address",
+    "password_too_short": "Password must be at least 8 characters",
+    "passwords_dont_match": "Passwords do not match",
+    "login_failed": "Login failed",
+    "registration_failed": "Registration failed"
+  }
+}

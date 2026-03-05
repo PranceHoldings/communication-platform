@@ -18,7 +18,7 @@ AWS Cloud Development Kit (CDK) を使用したPranceプラットフォームの
 | **StorageStack** | ストレージ・CDN | S3 Buckets, CloudFront Distribution, Custom Domain |
 | **DynamoDBStack** | NoSQLデータストア | セッション状態、WebSocket接続、ベンチマークキャッシュ、APIレート制限 |
 | **ApiGatewayStack** | API Gateway | REST API, WebSocket API, Cognito Authorizer |
-| **LambdaStack** | Lambda関数 | ヘルスチェック関数（他の関数は追加予定） |
+| **ApiLambdaStack** ★UPDATED | Lambda関数 | ヘルスチェック、JWT Authorizer、認証API（Register/Login/Me）、DBマイグレーション |
 
 ## 🌐 ドメイン設定
 
@@ -335,11 +335,66 @@ bash deploy.sh dev
 ## 🔄 次のステップ
 
 1. ✅ Phase 0: インフラ基盤構築（完了）
-2. ⏭️ Phase 1: Lambda関数実装（API/WebSocketハンドラー）
-3. ⏭️ Phase 2: Step Functions（非同期処理ワークフロー）
-4. ⏭️ Phase 3: EventBridge統合（イベント駆動）
+2. ✅ 認証API実装（完了）- Register、Login、/users/me、Lambda Authorizer
+3. ⏭️ Phase 1: MVP開発（進行中）
+   - フロントエンド開発（Next.js）
+   - アバター・会話エンジン実装
+   - 音声・セッション実行機能
+4. ⏭️ Phase 2: Step Functions（非同期処理ワークフロー）
+5. ⏭️ Phase 3: EventBridge統合（イベント駆動）
 
 ---
 
-**最終更新**: 2026-03-04
+## 🎯 デプロイ済みAPI情報（2026-03-05）
+
+**API Base URL:** `https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/`
+
+**稼働中のエンドポイント:**
+
+```bash
+# ヘルスチェック
+GET /api/v1/health
+
+# 認証API
+POST /api/v1/auth/register     # ユーザー登録
+POST /api/v1/auth/login        # ログイン
+GET  /api/v1/users/me          # 現在のユーザー情報取得（認証必要）
+```
+
+**動作確認:**
+
+```bash
+# API Base URL設定
+API_URL="https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev"
+
+# 1. ヘルスチェック
+curl "$API_URL/api/v1/health"
+
+# 2. ユーザー登録
+curl -X POST "$API_URL/api/v1/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"SecurePass123","name":"Test User"}'
+
+# 3. ログイン
+TOKEN=$(curl -s -X POST "$API_URL/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"SecurePass123"}' | jq -r '.data.tokens.accessToken')
+
+# 4. 認証済みAPI呼び出し
+curl -X GET "$API_URL/api/v1/users/me" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Lambda関数一覧:**
+
+- `prance-authorizer-dev` - JWT Token検証
+- `prance-auth-register-dev` - ユーザー登録
+- `prance-auth-login-dev` - ログイン
+- `prance-users-me-dev` - ユーザー情報取得
+- `prance-health-check-dev` - ヘルスチェック
+- `prance-db-migration-dev` - DBマイグレーション
+
+---
+
+**最終更新**: 2026-03-05
 **バージョン**: 0.1.0-alpha

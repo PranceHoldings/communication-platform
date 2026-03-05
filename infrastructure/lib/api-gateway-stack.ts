@@ -1,19 +1,16 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
-import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 
 export interface ApiGatewayStackProps extends cdk.StackProps {
   environment: string;
-  userPool: cognito.UserPool;
 }
 
 export class ApiGatewayStack extends cdk.Stack {
   public readonly restApi: apigateway.RestApi;
   public readonly webSocketApi: apigatewayv2.CfnApi;
-  public readonly authorizer: apigateway.CognitoUserPoolsAuthorizer;
 
   constructor(scope: Construct, id: string, props: ApiGatewayStackProps) {
     super(scope, id, props);
@@ -26,30 +23,11 @@ export class ApiGatewayStack extends cdk.Stack {
         props.environment === 'production' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
-    // REST API
+    // REST API（デプロイは手動で制御 - Lambda統合後に実行）
     this.restApi = new apigateway.RestApi(this, 'RestApi', {
       restApiName: `prance-api-${props.environment}`,
       description: `Prance Platform REST API - ${props.environment}`,
-      deploy: true,
-      deployOptions: {
-        stageName: props.environment,
-        throttlingBurstLimit: 500,
-        throttlingRateLimit: 1000,
-        loggingLevel: apigateway.MethodLoggingLevel.INFO,
-        dataTraceEnabled: props.environment !== 'production',
-        accessLogDestination: new apigateway.LogGroupLogDestination(restApiLogGroup),
-        accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields({
-          caller: true,
-          httpMethod: true,
-          ip: true,
-          protocol: true,
-          requestTime: true,
-          resourcePath: true,
-          responseLength: true,
-          status: true,
-          user: true,
-        }),
-      },
+      deploy: false, // Lambda統合後に手動でデプロイ
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS, // TODO: 本番環境では特定ドメインに制限
         allowMethods: apigateway.Cors.ALL_METHODS,
@@ -59,75 +37,10 @@ export class ApiGatewayStack extends cdk.Stack {
       cloudWatchRole: true,
     });
 
-    // Cognito Authorizer
-    this.authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
-      cognitoUserPools: [props.userPool],
-      authorizerName: `prance-authorizer-${props.environment}`,
-      identitySource: 'method.request.header.Authorization',
-    });
+    // Note: Lambda Authorizer (JWT) は LambdaStack で作成されます
 
     // APIリソース構造の基本定義
-    const apiV1 = this.restApi.root.addResource('api').addResource('v1');
-
-    // ヘルスチェックエンドポイント（認証不要）
-    const health = this.restApi.root.addResource('health');
-    health.addMethod('GET', new apigateway.MockIntegration({
-      integrationResponses: [{
-        statusCode: '200',
-        responseTemplates: {
-          'application/json': JSON.stringify({
-            status: 'healthy',
-            environment: props.environment,
-            timestamp: '$context.requestTime',
-          }),
-        },
-      }],
-      passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
-      requestTemplates: {
-        'application/json': '{"statusCode": 200}',
-      },
-    }), {
-      methodResponses: [{ statusCode: '200' }],
-    });
-
-    // 認証済みヘルスチェック（Authorizerのテスト用）
-    const secureHealth = apiV1.addResource('secure-health');
-    secureHealth.addMethod('GET', new apigateway.MockIntegration({
-      integrationResponses: [{
-        statusCode: '200',
-        responseTemplates: {
-          'application/json': JSON.stringify({
-            status: 'healthy',
-            message: 'Authenticated',
-          }),
-        },
-      }],
-      passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
-      requestTemplates: {
-        'application/json': '{"statusCode": 200}',
-      },
-    }), {
-      authorizer: this.authorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-      methodResponses: [{ statusCode: '200' }],
-    });
-
-    // Usage Plan (レート制限)
-    const usagePlan = this.restApi.addUsagePlan('UsagePlan', {
-      name: `prance-usage-plan-${props.environment}`,
-      throttle: {
-        rateLimit: 1000,
-        burstLimit: 500,
-      },
-      quota: {
-        limit: 100000,
-        period: apigateway.Period.MONTH,
-      },
-    });
-
-    usagePlan.addApiStage({
-      stage: this.restApi.deploymentStage,
-    });
+    // Note: 全てのエンドポイントはLambdaStackで作成されます（Deployment制御のため）
 
     // WebSocket API (AWS IoT Core代替として、まずAPI Gateway WebSocketで実装)
     // 注: 本番環境ではAWS IoT Coreに移行予定
@@ -139,11 +52,7 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // Outputs
-    new cdk.CfnOutput(this, 'RestApiUrl', {
-      value: this.restApi.url,
-      description: 'REST API URL',
-      exportName: `${props.environment}-RestApiUrl`,
-    });
+    // Note: RestApiUrl は LambdaStack で出力されます（デプロイメント後）
 
     new cdk.CfnOutput(this, 'RestApiId', {
       value: this.restApi.restApiId,

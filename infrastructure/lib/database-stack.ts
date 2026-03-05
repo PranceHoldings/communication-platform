@@ -32,7 +32,7 @@ export class DatabaseStack extends cdk.Stack {
     // Aurora Serverless v2クラスター作成
     this.cluster = new rds.DatabaseCluster(this, 'AuroraCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_15_4,
+        version: rds.AuroraPostgresEngineVersion.VER_15_8,
       }),
       credentials: rds.Credentials.fromSecret(this.secret),
       defaultDatabaseName: 'prance',

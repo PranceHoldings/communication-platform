@@ -1,0 +1,54 @@
+{
+  "common": {
+    "app_name": "Prance",
+    "tagline": "AIアバター会話プラットフォーム",
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました",
+    "success": "成功しました"
+  },
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "sessions": "セッション",
+    "scenarios": "シナリオ",
+    "reports": "レポート",
+    "settings": "設定",
+    "logout": "ログアウト"
+  },
+  "auth": {
+    "login": "ログイン",
+    "register": "新規登録",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "confirm_password": "パスワード（確認）",
+    "name": "名前",
+    "forgot_password": "パスワードをお忘れですか？",
+    "remember_me": "ログイン状態を保持",
+    "sign_in": "サインイン",
+    "sign_up": "サインアップ",
+    "create_account": "アカウント作成",
+    "already_have_account": "すでにアカウントをお持ちですか？",
+    "dont_have_account": "アカウントをお持ちでないですか？",
+    "signing_in": "サインイン中...",
+    "creating_account": "アカウント作成中..."
+  },
+  "dashboard": {
+    "welcome": "ようこそ、{name}さん！",
+    "quick_actions": "クイックアクション",
+    "new_session": "新規セッション",
+    "my_sessions": "マイセッション",
+    "avatars": "アバター",
+    "stats": "統計情報",
+    "total_sessions": "総セッション数",
+    "hours_practiced": "練習時間",
+    "avg_score": "平均スコア",
+    "scenarios_completed": "完了シナリオ"
+  },
+  "errors": {
+    "required": "{field}は必須です",
+    "invalid_email": "有効なメールアドレスを入力してください",
+    "password_too_short": "パスワードは8文字以上である必要があります",
+    "passwords_dont_match": "パスワードが一致しません",
+    "login_failed": "ログインに失敗しました",
+    "registration_failed": "登録に失敗しました"
+  }
+}

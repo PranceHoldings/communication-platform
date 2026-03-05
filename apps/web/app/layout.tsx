@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { AuthProvider } from '@/contexts/auth-context';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,17 +19,15 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja" suppressHydrationWarning>
       <body className={inter.className}>
-        <div className="relative flex min-h-screen flex-col">
-          <main className="flex-1">{children}</main>
-        </div>
+        <AuthProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <main className="flex-1">{children}</main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

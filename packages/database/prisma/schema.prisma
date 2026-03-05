@@ -36,7 +36,8 @@ model User {
   email          String       @unique
   name           String
   role           UserRole     @default(CLIENT_USER)
-  cognitoSub     String       @unique @map("cognito_sub")
+  passwordHash   String?      @map("password_hash")
+  cognitoSub     String?      @unique @map("cognito_sub")
   profileJson    Json?        @map("profile_json")
   preferencesJson Json?       @map("preferences_json")
   createdAt      DateTime     @default(now()) @map("created_at")

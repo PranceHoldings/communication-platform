@@ -1,7 +1,7 @@
 # Prance Alpha開発 - セッション進捗まとめ
 
-**最終更新:** 2026-03-04
-**セッション:** 初期セットアップ完了
+**最終更新:** 2026-03-05
+**セッション:** Phase 0完了 + 認証機能実装完了
 
 ---
 
@@ -57,19 +57,61 @@ prance-communication-platform/
 ├── .env.local                    # 環境変数（秘密情報含む、Git除外）
 ├── .env.example                  # 環境変数テンプレート
 ├── package.json                  # ルートパッケージ（workspace設定）
-├── apps/                         # アプリケーション
-│   ├── web/                      # Next.js 15 (未実装)
-│   └── api/                      # Lambda関数 (未実装)
+├── apps/
+│   ├── web/                      # Next.js 15 ✅
+│   │   ├── src/
+│   │   │   └── app/              # App Router
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   └── api/                      # Lambda関数 (Phase 1以降)
 ├── packages/
-│   ├── shared/                   # 共通型定義
-│   │   ├── src/types/index.ts   # TypeScript型定義（User, Session等）
+│   ├── shared/                   # 共通型定義 ✅
+│   │   ├── src/types/index.ts   # TypeScript型定義
 │   │   └── src/index.ts
-│   └── database/                 # Prisma設定
+│   └── database/                 # Prisma設定 ✅
 │       ├── prisma/
 │       │   ├── schema.prisma    # データベーススキーマ（8モデル）
 │       │   └── migrations/       # マイグレーション履歴
 │       └── .env                  # Prisma用環境変数
-├── infrastructure/               # AWS CDK (未実装)
+├── infrastructure/               # AWS CDK ✅
+│   ├── bin/
+│   │   └── infrastructure.ts    # CDK App
+│   ├── lib/                      # CDK Stacks
+│   │   ├── network-stack.ts     # VPC、Subnets、Security Groups
+│   │   ├── database-stack.ts    # Aurora Serverless v2
+│   │   ├── storage-stack.ts     # S3、CloudFront
+│   │   ├── dynamodb-stack.ts    # DynamoDB Tables
+│   │   ├── cognito-stack.ts     # Cognito User Pool
+│   │   ├── api-gateway-stack.ts # API Gateway、WebSocket
+│   │   └── api-lambda-stack.ts  # Lambda Functions
+│   ├── lambda/                   # Lambda関数実装 ✅
+│   │   ├── health-check/
+│   │   │   └── index.ts
+│   │   ├── auth/
+│   │   │   ├── authorizer/
+│   │   │   │   └── index.ts     # JWT Authorizer
+│   │   │   ├── register/
+│   │   │   │   └── index.ts     # ユーザー登録
+│   │   │   └── login/
+│   │   │       └── index.ts     # ログイン
+│   │   ├── users/
+│   │   │   └── me/
+│   │   │       └── index.ts     # 現在のユーザー情報取得
+│   │   ├── migrations/
+│   │   │   └── index.ts         # DBマイグレーション
+│   │   └── shared/               # 共有ユーティリティ ✅
+│   │       ├── auth/
+│   │       │   ├── jwt.ts       # JWT生成/検証
+│   │       │   └── password.ts  # パスワードハッシュ
+│   │       ├── database/
+│   │       │   └── prisma.ts    # Prismaクライアント
+│   │       ├── utils/
+│   │       │   ├── response.ts  # レスポンスハンドラー
+│   │       │   └── validation.ts # バリデーション
+│   │       └── types/
+│   │           └── index.ts     # 共通型定義
+│   ├── cdk.json
+│   └── package.json
 ├── docs/                         # ドキュメント
 │   ├── ALPHA_DEVELOPMENT.md
 │   ├── AZURE_SETUP_CHECKLIST.md
@@ -162,6 +204,10 @@ aws sts get-caller-identity
 | #6  | Next.js 15 プロジェクト初期化      | ✅ 完了    | App Router、Tailwind CSS設定完了       |
 | #7  | AWS CDK プロジェクト初期化         | ✅ 完了    | 7スタック構築完了、CDK Synth成功       |
 | #8  | 開発環境ドキュメント作成           | ✅ 完了    | infrastructure/README.md作成完了       |
+| #9  | AWS環境デプロイ（全7スタック）     | ✅ 完了    | Network、Database、Storage、API等      |
+| #10 | Lambda Authorizer実装              | ✅ 完了    | JWT認証、環境変数設定                  |
+| #11 | 認証API実装                        | ✅ 完了    | Register、Login、/users/me             |
+| #12 | 認証フロー動作確認                 | ✅ 完了    | 登録→ログイン→認証済みAPI正常動作      |
 
 ---
 
@@ -185,60 +231,299 @@ aws sts get-caller-identity
 - [x] CDK Synth成功: 7スタック生成
 - [x] 包括的ドキュメント: infrastructure/README.md
 
+**追加実装（2026-03-05）** ✅
+- [x] Lambda Authorizer実装: JWT Token検証、IAMポリシー生成
+- [x] 認証Lambda関数実装: Register、Login、GetCurrentUser
+- [x] 共有ユーティリティ実装: JWT生成/検証、パスワードハッシュ、レスポンスハンドラー
+- [x] Prismaクライアント統合: Lambda関数からのDB接続
+- [x] 環境変数設定: JWT_SECRET、DATABASE_URL、LOG_LEVEL
+- [x] 全スタックAWSデプロイ: 7スタック正常デプロイ完了
+
 ### 成果物
 
 - ✅ インフラコードリポジトリ (AWS CDK TypeScript)
 - ✅ 7つのCloudFormationスタック (cdk.out/ ディレクトリ)
 - ✅ ドキュメント完備 (README.md)
+- ✅ **稼働中のAWS環境** (us-east-1リージョン)
+- ✅ **動作確認済みの認証API** (Register、Login、/users/me)
 
-## 🚀 次のステップ（Phase 1へ）
+---
 
-### Option A: AWSへデプロイ（推奨）
+## 🔐 実装済み認証システム（2026-03-05）
 
-実際のAWS環境にインフラをデプロイ：
+### Lambda関数構成
 
-```bash
-cd infrastructure
+| 関数名                     | 用途                         | VPC接続 | メモリ | タイムアウト |
+| -------------------------- | ---------------------------- | ------- | ------ | ------------ |
+| `prance-authorizer-dev`    | JWT Token検証、認可          | なし    | 256MB  | 10秒         |
+| `prance-auth-register-dev` | ユーザー登録、組織作成       | あり    | 512MB  | 30秒         |
+| `prance-auth-login-dev`    | ユーザーログイン、JWT発行    | あり    | 512MB  | 30秒         |
+| `prance-users-me-dev`      | 現在のユーザー情報取得       | あり    | 512MB  | 30秒         |
+| `prance-health-check-dev`  | ヘルスチェック               | なし    | 256MB  | 30秒         |
+| `prance-db-migration-dev`  | データベースマイグレーション | あり    | 1024MB | 300秒        |
 
-# AWS認証確認
-aws sts get-caller-identity
+### API エンドポイント
 
-# CDK Bootstrap（初回のみ）
-npm run bootstrap
+**ベースURL:** `https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/`
 
-# 全スタックデプロイ
-npm run deploy
+| メソッド | エンドポイント               | 認証 | 説明                         |
+| -------- | ---------------------------- | ---- | ---------------------------- |
+| GET      | `/api/v1/health`             | 不要 | ヘルスチェック               |
+| POST     | `/api/v1/auth/register`      | 不要 | ユーザー登録                 |
+| POST     | `/api/v1/auth/login`         | 不要 | ログイン、JWT取得            |
+| GET      | `/api/v1/users/me`           | 必要 | 現在のユーザー情報取得       |
+
+### 認証フロー
+
+```
+1. ユーザー登録
+   POST /api/v1/auth/register
+   {
+     "email": "user@example.com",
+     "password": "SecurePass123",
+     "name": "User Name",
+     "organizationName": "Org Name"  // オプション
+   }
+
+   → 組織作成（新規の場合）
+   → ユーザー作成（CLIENT_ADMIN）
+   → JWT Token発行
+   → Response: { user, tokens: { accessToken, refreshToken, expiresIn } }
+
+2. ログイン
+   POST /api/v1/auth/login
+   {
+     "email": "user@example.com",
+     "password": "SecurePass123"
+   }
+
+   → パスワード検証（bcrypt）
+   → JWT Token発行
+   → Response: { user, tokens }
+
+3. 認証済みAPI呼び出し
+   GET /api/v1/users/me
+   Headers: {
+     "Authorization": "Bearer <accessToken>"
+   }
+
+   → Lambda Authorizer: JWT検証
+   → Lambda Authorizer: IAMポリシー生成（Allow/Deny）
+   → API Gateway: ポリシー評価
+   → Lambda Function: ユーザー情報取得
+   → Response: { id, email, name, role, organizationId, organization }
 ```
 
-### Option B: Phase 1開始（MVP開発）
+### JWT仕様
 
-Lambda関数の実装を開始：
+**Access Token:**
+- 有効期限: 24時間
+- ペイロード: `{ userId, email, role, organizationId }`
+- アルゴリズム: HS256
+- シークレット: 環境変数 `JWT_SECRET`
 
+**Refresh Token:**
+- 有効期限: 7日間
+- 同じペイロード
+- 将来的にトークンリフレッシュエンドポイント実装予定
+
+### 環境変数設定
+
+**全Lambda関数共通（共通環境変数）:**
 ```bash
-# Lambda関数テンプレート作成
-mkdir -p infrastructure/lambda/{auth,session,analysis,report}
-
-# API実装開始
-# - セッション管理API
-# - アバター管理API
-# - シナリオ管理API
+ENVIRONMENT=dev
+LOG_LEVEL=DEBUG
+NODE_ENV=development
+DATABASE_URL=postgresql://...（Secrets Manager参照）
+JWT_SECRET=development-secret-change-in-production
 ```
 
-### Option C: 開発環境整備
+**注意事項:**
+- JWT_SECRETは全認証関連Lambda関数で統一
+- 本番環境ではAWS Secrets Managerから取得
+- CDKデプロイ時に自動設定
 
-Next.js開発サーバーとの統合：
+### 動作確認済みシナリオ
 
+✅ **シナリオ1: 新規ユーザー登録**
 ```bash
-cd apps/web
+curl -X POST "$API_URL/api/v1/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"SecurePass123","name":"Test User"}'
 
-# 環境変数設定（AWS連携）
-# - API Gateway URL
-# - Cognito User Pool ID
-# - WebSocket URL
-
-# 開発サーバー起動
-npm run dev
+→ 成功: 組織作成、ユーザー作成、JWT発行
 ```
+
+✅ **シナリオ2: ログイン**
+```bash
+curl -X POST "$API_URL/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"SecurePass123"}'
+
+→ 成功: パスワード検証、JWT発行
+```
+
+✅ **シナリオ3: 認証済みAPI呼び出し**
+```bash
+curl -X GET "$API_URL/api/v1/users/me" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+
+→ 成功: JWT検証、ユーザー情報取得
+```
+
+✅ **シナリオ4: 無効なトークンでの呼び出し**
+```bash
+curl -X GET "$API_URL/api/v1/users/me" \
+  -H "Authorization: Bearer invalid_token"
+
+→ 失敗: 401 Unauthorized
+```
+
+### トラブルシューティング履歴
+
+**問題1: JWT_SECRET不一致**
+- 症状: Authorizerでトークン検証失敗
+- 原因: Register/Login関数でJWT_SECRET環境変数未設定
+- 解決: CDK再デプロイで環境変数自動設定
+
+**問題2: Prismaフィールド名不一致**
+- 症状: Prismaクエリで`organizationId`フィールドエラー
+- 原因: DBスキーマは`orgId`、APIレスポンスは`organizationId`
+- 解決: Prismaクエリで`orgId`使用、レスポンスで`organizationId`にマッピング
+
+**問題3: Lambda Authorizer context未使用**
+- 症状: 認証済みエンドポイントでユーザー情報取得失敗
+- 原因: `event.requestContext.authorizer`からユーザー情報取得していない
+- 解決: `getUserFromEvent`関数でAuthorizer contextを優先的に確認
+
+---
+
+## 🚀 次のステップ（Phase 1: MVP開発）
+
+**Phase 0完了により、以下が実現:**
+- ✅ AWSインフラ基盤構築完了
+- ✅ 認証システム動作確認済み
+- ✅ API Gatewayと Lambda関数の連携確認済み
+
+**Phase 1の選択肢:**
+
+### Option A: フロントエンド開発開始（推奨）★
+
+Next.js開発環境を整備して、ユーザーがブラウザで操作できるようにします。
+
+**実装内容（Week 1-2の残り）:**
+
+1. **Next.js開発サーバー起動とAWS連携**
+   ```bash
+   cd apps/web
+
+   # 環境変数設定
+   cat > .env.local << EOF
+   NEXT_PUBLIC_API_URL=https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev
+   NEXT_PUBLIC_WS_URL=wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
+   EOF
+
+   # 開発サーバー起動
+   npm run dev
+   ```
+
+2. **認証フロー実装**
+   - ログイン画面 (`/login`)
+   - 新規登録画面 (`/register`)
+   - 認証状態管理（Zustand or TanStack Query）
+   - JWT Token保存（localStorage or Cookie）
+
+3. **ダッシュボード基本レイアウト**
+   - ヘッダー（ユーザー情報、ログアウト）
+   - サイドバーナビゲーション
+   - ホーム画面
+
+**成果物:**
+- ✅ ブラウザでログイン → ダッシュボード表示
+- ✅ フロントエンド ↔ バックエンド連携確認
+- ✅ 全体のUX/UIフロー確認
+
+---
+
+### Option B: アバター・会話エンジン実装
+
+バックエンド中心で、コアとなる会話機能を先に作ります。
+
+**実装内容（Week 3-4タスク）:**
+
+1. **3Dアバター実装**
+   - Three.js + React Three Fiber セットアップ
+   - Ready Player Me統合（APIキー取得）
+   - プリセットアバター表示機能
+   - リップシンク基盤（ARKit Blendshapes）
+
+2. **Claude API統合（会話エンジン）**
+   ```bash
+   cd infrastructure/lambda
+   mkdir -p conversation/{session,chat}
+
+   # 実装:
+   # - AWS Bedrockとの連携
+   # - システムプロンプト生成ロジック
+   # - シナリオ → 会話フロー変換
+   ```
+
+3. **シナリオ管理API**
+   - シナリオCRUD（Create, Read, Update, Delete）
+   - シナリオテンプレート機能
+   - シナリオビルダーUI（基本版）
+
+**成果物:**
+- ✅ AIアバター会話のプロトタイプ
+- ✅ 技術的な難易度の高い部分の解決
+- ✅ コア機能の早期確立
+
+---
+
+### Option C: 音声・セッション実行
+
+リアルタイム会話機能の実装を開始します。
+
+**実装内容（Week 5-6タスク）:**
+
+1. **音声処理統合**
+   - ElevenLabs TTS統合
+   - Azure STT リアルタイム音声認識
+   - WebSocket通信（AWS IoT Core）
+
+2. **セッション実行フロー**
+   - セッション開始/終了API
+   - ブラウザ録画（MediaRecorder API）
+   - S3アップロード（署名付きURL）
+
+3. **基本トランスクリプト生成**
+   - 音声認識結果の保存
+   - タイムスタンプ付きトランスクリプト
+
+**成果物:**
+- ✅ リアルタイム会話セッション実行
+- ✅ 録画・トランスクリプトの基本機能
+
+---
+
+### 推奨順序
+
+**Phase 1全体を効率的に進めるための推奨順序:**
+
+```
+1. Option A: フロントエンド開発開始（1-2週間）
+   └─ ユーザーがブラウザで操作できる基盤
+
+2. Option B: アバター・会話エンジン（2-3週間）
+   └─ コア機能の実装
+
+3. Option C: 音声・セッション実行（2-3週間）
+   └─ リアルタイム会話機能の完成
+
+合計: 5-8週間でPhase 1（MVP）完成
+```
+
+**どれから始めますか？**
 
 ---
 
@@ -331,6 +616,45 @@ docker rm -f prance-postgres
 # 認証確認
 aws sts get-caller-identity
 
+# デプロイ済みスタック一覧
+aws cloudformation list-stacks \
+  --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+  --query 'StackSummaries[?contains(StackName, `Prance-dev`)].StackName'
+
+# Lambda関数一覧
+aws lambda list-functions \
+  --query 'Functions[?contains(FunctionName, `prance`)].FunctionName'
+
+# API Gateway情報
+aws apigateway get-rest-apis \
+  --query 'items[?name==`prance-api-dev`].[id,name]'
+
+# Lambda関数環境変数確認
+aws lambda get-function-configuration \
+  --function-name prance-auth-register-dev \
+  --query 'Environment.Variables'
+
+# Lambda関数ログ確認（直近10分）
+aws logs tail /aws/lambda/prance-auth-register-dev --since 10m
+
+# 認証APIテスト
+API_URL="https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev"
+
+# ユーザー登録
+curl -X POST "$API_URL/api/v1/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"SecurePass123","name":"Test User"}'
+
+# ログイン
+curl -X POST "$API_URL/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"SecurePass123"}'
+
+# 認証済みAPI呼び出し
+TOKEN="<your_access_token>"
+curl -X GET "$API_URL/api/v1/users/me" \
+  -H "Authorization: Bearer $TOKEN"
+
 # Bedrock利用可能モデル一覧
 aws bedrock list-foundation-models --region us-east-1 --query 'modelSummaries[?contains(modelId, `claude`)].modelId'
 
@@ -383,14 +707,124 @@ aws configure list
 aws configure
 ```
 
+### Lambda関数のJWT_SECRET不一致（解決済み）
+
+**症状:** Lambda Authorizerでトークン検証失敗、401 Unauthorized
+
+**原因:** Register/Login関数でJWT_SECRET環境変数が設定されていない
+
+**解決方法:**
+```bash
+cd infrastructure
+
+# 正しいコマンドでデプロイ
+npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+
+# 環境変数確認
+aws lambda get-function-configuration \
+  --function-name prance-auth-register-dev \
+  --query 'Environment.Variables.JWT_SECRET'
+```
+
+**重要:** CDKコードは正しく設定されている。`--all`と特定スタック名の併用は不可。
+
+### Prisma "Unknown field" エラー（解決済み）
+
+**症状:** `Unknown field 'organizationId' for select statement on model 'User'`
+
+**原因:** Prismaスキーマは`orgId`、APIレスポンスは`organizationId`
+
+**解決方法:**
+```typescript
+// Prismaクエリでは orgId を使用
+const user = await prisma.user.findUnique({
+  where: { email },
+  select: {
+    id: true,
+    email: true,
+    orgId: true,  // ← orgId
+    // ...
+  },
+});
+
+// レスポンスで organizationId にマッピング
+return successResponse({
+  id: user.id,
+  email: user.email,
+  organizationId: user.orgId,  // ← マッピング
+});
+```
+
+### Lambda Authorizer contextが使われない（解決済み）
+
+**症状:** 認証済みエンドポイントでユーザー情報が取得できない
+
+**原因:** `event.requestContext.authorizer`からユーザー情報を取得していない
+
+**解決方法:**
+```typescript
+// lambda/shared/auth/jwt.ts
+export const getUserFromEvent = (event) => {
+  // Lambda Authorizerがある場合は、そこからユーザー情報を取得
+  if (event.requestContext?.authorizer) {
+    const auth = event.requestContext.authorizer;
+    if (auth.userId && auth.email && auth.role && auth.organizationId) {
+      return {
+        userId: auth.userId,
+        email: auth.email,
+        role: auth.role,
+        organizationId: auth.organizationId,
+      };
+    }
+  }
+
+  // フォールバック: ヘッダーから直接トークンを検証
+  const authHeader = event.headers['Authorization'] || event.headers['authorization'];
+  const token = extractTokenFromHeader(authHeader);
+  return verifyToken(token);
+};
+```
+
 ---
 
 ## 📝 メモ
 
-- 開発環境はすべてローカル（Docker + localhost）
-- 本番環境はAWSサーバーレス（Phase 0以降で構築）
-- 現在はPhase 0準備段階（基本セットアップ完了）
-- 次回から本格的な開発フェーズに入る準備が整った
+### 現在のステータス（2026-03-05）
+
+- ✅ **Phase 0完了**: インフラ基盤構築完了、AWSにデプロイ済み
+- ✅ **認証システム稼働中**: Register、Login、認証済みAPI動作確認済み
+- ✅ **AWS環境稼働中**: us-east-1リージョンで7スタック稼働
+- 🚀 **Phase 1開始準備完了**: MVP開発を開始できる状態
+
+### 開発環境構成
+
+- **ローカル開発**: Docker PostgreSQL（prance-postgres）
+- **本番環境**: AWSサーバーレス（7スタックデプロイ済み）
+- **認証**: JWT Token（24時間有効）
+- **API Base URL**: `https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/`
+
+### 次回セッション開始時の確認
+
+1. **Docker起動確認**
+   ```bash
+   docker ps | grep prance-postgres
+   docker start prance-postgres  # 必要な場合
+   ```
+
+2. **AWS認証確認**
+   ```bash
+   aws sts get-caller-identity
+   ```
+
+3. **API動作確認**
+   ```bash
+   curl https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/health
+   ```
+
+4. **Phase 1の方向性決定**
+   - Option A: フロントエンド開発（推奨）
+   - Option B: アバター・会話エンジン
+   - Option C: 音声・セッション実行
 
 ---
 

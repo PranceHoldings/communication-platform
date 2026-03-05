@@ -6,8 +6,7 @@ import { CognitoStack } from '../lib/cognito-stack';
 import { DatabaseStack } from '../lib/database-stack';
 import { StorageStack } from '../lib/storage-stack';
 import { DynamoDBStack } from '../lib/dynamodb-stack';
-import { ApiGatewayStack } from '../lib/api-gateway-stack';
-import { LambdaStack } from '../lib/lambda-stack';
+import { ApiLambdaStack } from '../lib/api-lambda-stack';
 import { DnsStack } from '../lib/dns-stack';
 import { CertificateStack } from '../lib/certificate-stack';
 import { getConfig } from '../lib/config';
@@ -91,23 +90,13 @@ const dynamoDBStack = new DynamoDBStack(app, `${stackPrefix}-DynamoDB`, {
   description: 'Prance Platform - DynamoDB Tables',
 });
 
-// API Gatewayスタック
-const apiGatewayStack = new ApiGatewayStack(app, `${stackPrefix}-ApiGateway`, {
-  env,
-  environment,
-  userPool: cognitoStack.userPool,
-  description: 'Prance Platform - API Gateway (REST & WebSocket)',
-});
-
-// Lambdaスタック
-const lambdaStack = new LambdaStack(app, `${stackPrefix}-Lambda`, {
+// API + Lambda + Authorizerスタック（完全統合）
+const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   env,
   environment,
   vpc: networkStack.vpc,
   lambdaSecurityGroup: networkStack.lambdaSecurityGroup,
-  restApi: apiGatewayStack.restApi,
-  authorizer: apiGatewayStack.authorizer,
-  description: 'Prance Platform - Lambda Functions',
+  description: 'Prance Platform - API Gateway, Lambda Functions, and Authorizer',
 });
 
 // スタック依存関係の設定（デプロイ順序を保証）
@@ -115,9 +104,7 @@ certificateStack.addDependency(dnsStack);
 storageStack.addDependency(certificateStack);
 databaseStack.addDependency(networkStack);
 cognitoStack.addDependency(networkStack);
-apiGatewayStack.addDependency(cognitoStack);
-// LambdaStackはApiGatewayStackのrestApiを使用するため、自動的に依存関係が設定される
-// lambdaStack.addDependency(apiGatewayStack); // 循環依存を避けるため削除
+// ApiLambdaStackはprops経由で自動的にNetwork + Authorizerに依存（明示的設定不要）
 
 // タグ付け
 cdk.Tags.of(app).add('Project', 'Prance');
