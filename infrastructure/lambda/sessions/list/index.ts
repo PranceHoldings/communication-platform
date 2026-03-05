@@ -52,7 +52,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             select: {
               id: true,
               title: true,
-              description: true,
+              category: true,
             },
           },
           avatar: {

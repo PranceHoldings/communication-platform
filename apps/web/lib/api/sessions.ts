@@ -17,9 +17,7 @@ export interface Session {
   scenario?: {
     id: string;
     title: string;
-    category?: string;
-    language?: string;
-    configJson?: Record<string, unknown>;
+    category: string;
   };
   avatar?: {
     id: string;

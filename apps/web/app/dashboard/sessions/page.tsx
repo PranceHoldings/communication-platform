@@ -190,7 +190,7 @@ export default function SessionsPage() {
                       {session.scenario?.title || 'N/A'}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {session.scenario?.description || ''}
+                      {session.scenario?.category || ''}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
