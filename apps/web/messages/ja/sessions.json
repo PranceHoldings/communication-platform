@@ -1,4 +1,38 @@
 {
+  "list": {
+    "title": "セッション",
+    "description": "会話セッションを表示・管理します",
+    "empty": "セッションが見つかりません",
+    "emptyDescription": "最初のセッションを作成して始めましょう",
+    "filter": {
+      "all": "すべて",
+      "ACTIVE": "アクティブ",
+      "PROCESSING": "処理中",
+      "COMPLETED": "完了",
+      "ERROR": "エラー"
+    }
+  },
+  "table": {
+    "scenario": "シナリオ",
+    "avatar": "アバター",
+    "status": "ステータス",
+    "date": "日時",
+    "duration": "所要時間",
+    "actions": "操作",
+    "view": "表示"
+  },
+  "status": {
+    "ACTIVE": "アクティブ",
+    "PROCESSING": "処理中",
+    "COMPLETED": "完了",
+    "ERROR": "エラー"
+  },
+  "detail": {
+    "minutes": "{count}分"
+  },
+  "create": {
+    "button": "セッションを作成"
+  },
   "new": {
     "title": "新しいセッションを作成",
     "description": "シナリオとアバターを選択して、会話セッションを開始します",

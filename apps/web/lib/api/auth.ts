@@ -9,7 +9,7 @@ export interface User {
   email: string;
   name: string;
   role: string;
-  organizationId?: string;
+  orgId?: string; // Aligned with Prisma schema
 }
 
 export interface AuthTokens {

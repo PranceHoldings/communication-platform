@@ -32,29 +32,55 @@ export const successResponse = <T>(data: T, statusCode = 200): APIResponse<Succe
 };
 
 /**
- * エラーレスポンスを生成
+ * エラーレスポンスを生成 (オーバーロード)
  */
-export const errorResponse = (
-  error: AppError | Error,
-  statusCode?: number
-): APIResponse<ErrorResponse> => {
+export function errorResponse(error: AppError | Error, statusCode?: number): APIResponse<ErrorResponse>;
+export function errorResponse(statusCode: number, message: string, details?: string): APIResponse<ErrorResponse>;
+export function errorResponse(
+  errorOrStatusCode: AppError | Error | number,
+  statusCodeOrMessage?: number | string,
+  details?: string
+): APIResponse<ErrorResponse> {
   let code = 'INTERNAL_SERVER_ERROR';
   let message = 'An unexpected error occurred';
-  let details: any;
-  let finalStatusCode = statusCode || 500;
+  let errorDetails: any;
+  let finalStatusCode = 500;
 
-  if (error instanceof AppError) {
-    code = error.code;
-    message = error.message;
-    details = error.details;
-    finalStatusCode = error.statusCode;
-  } else if (error instanceof Error) {
-    message = error.message;
+  // 新しい形式: errorResponse(new AppError(...))
+  if (typeof errorOrStatusCode === 'object') {
+    const error = errorOrStatusCode;
+    if (error instanceof AppError) {
+      code = error.code;
+      message = error.message;
+      errorDetails = error.details;
+      finalStatusCode = error.statusCode;
+    } else if (error instanceof Error) {
+      message = error.message;
+    }
+    if (typeof statusCodeOrMessage === 'number') {
+      finalStatusCode = statusCodeOrMessage;
+    }
+  }
+  // 古い形式: errorResponse(401, 'Unauthorized')
+  else if (typeof errorOrStatusCode === 'number') {
+    finalStatusCode = errorOrStatusCode;
+    message = typeof statusCodeOrMessage === 'string' ? statusCodeOrMessage : message;
+    if (details) {
+      errorDetails = details;
+    }
+
+    // コードを自動設定
+    if (finalStatusCode === 400) code = 'VALIDATION_ERROR';
+    else if (finalStatusCode === 401) code = 'AUTHENTICATION_ERROR';
+    else if (finalStatusCode === 403) code = 'AUTHORIZATION_ERROR';
+    else if (finalStatusCode === 404) code = 'NOT_FOUND';
+    else if (finalStatusCode === 409) code = 'CONFLICT';
+    else if (finalStatusCode === 500) code = 'INTERNAL_SERVER_ERROR';
   }
 
   // 本番環境ではスタックトレースを隠す
   if (process.env.ENVIRONMENT !== 'dev') {
-    delete details?.stack;
+    delete errorDetails?.stack;
   }
 
   const response: ErrorResponse = {
@@ -62,7 +88,7 @@ export const errorResponse = (
     error: {
       code,
       message,
-      ...(details && { details }),
+      ...(errorDetails && { details: errorDetails }),
     },
   };
 
@@ -71,7 +97,7 @@ export const errorResponse = (
     code,
     message,
     statusCode: finalStatusCode,
-    ...(error instanceof Error && { stack: error.stack }),
+    ...(typeof errorOrStatusCode === 'object' && errorOrStatusCode instanceof Error && { stack: errorOrStatusCode.stack }),
   });
 
   return {
@@ -79,7 +105,7 @@ export const errorResponse = (
     headers: DEFAULT_HEADERS,
     body: JSON.stringify(response),
   };
-};
+}
 
 /**
  * ページネーションレスポンスを生成

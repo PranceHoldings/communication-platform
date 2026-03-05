@@ -78,8 +78,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const jwtPayload: JWTPayload = {
       userId: user.id,
       email: user.email,
-      role: user.role as 'super_admin' | 'client_admin' | 'client_user',
-      organizationId: user.orgId,
+      role: user.role as 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER',
+      orgId: user.orgId,
     };
 
     const tokens = generateTokenPair(jwtPayload);
@@ -93,7 +93,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         email: user.email,
         name: user.name,
         role: user.role,
-        organizationId: user.orgId,
+        orgId: user.orgId,
       },
       tokens,
     });

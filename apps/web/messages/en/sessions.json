@@ -1,4 +1,38 @@
 {
+  "list": {
+    "title": "Sessions",
+    "description": "View and manage your conversation sessions",
+    "empty": "No sessions found",
+    "emptyDescription": "Create your first session to get started",
+    "filter": {
+      "all": "All",
+      "ACTIVE": "Active",
+      "PROCESSING": "Processing",
+      "COMPLETED": "Completed",
+      "ERROR": "Error"
+    }
+  },
+  "table": {
+    "scenario": "Scenario",
+    "avatar": "Avatar",
+    "status": "Status",
+    "date": "Date",
+    "duration": "Duration",
+    "actions": "Actions",
+    "view": "View"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "PROCESSING": "Processing",
+    "COMPLETED": "Completed",
+    "ERROR": "Error"
+  },
+  "detail": {
+    "minutes": "{count} min"
+  },
+  "create": {
+    "button": "Create Session"
+  },
   "new": {
     "title": "Create New Session",
     "description": "Select a scenario and avatar to start your conversation session",

@@ -35,6 +35,11 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly listAvatarsFunction: nodejs.NodejsFunction;
   public readonly createAvatarFunction: nodejs.NodejsFunction;
   public readonly getAvatarFunction: nodejs.NodejsFunction;
+  public readonly updateScenarioFunction: nodejs.NodejsFunction;
+  public readonly deleteScenarioFunction: nodejs.NodejsFunction;
+  public readonly updateAvatarFunction: nodejs.NodejsFunction;
+  public readonly deleteAvatarFunction: nodejs.NodejsFunction;
+  public readonly cloneAvatarFunction: nodejs.NodejsFunction;
   public readonly authorizer: apigateway.TokenAuthorizer;
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
@@ -320,6 +325,7 @@ export class ApiLambdaStack extends cdk.Stack {
               // Copy migration SQL files
               `cp /asset-input/infrastructure/lambda/migrations/migration.sql ${outputDir}/`,
               `cp /asset-input/infrastructure/lambda/migrations/schema-update.sql ${outputDir}/`,
+              `cp /asset-input/infrastructure/lambda/migrations/add-allow-cloning.sql ${outputDir}/`,
             ];
           },
           beforeInstall(): string[] {
@@ -450,6 +456,36 @@ export class ApiLambdaStack extends cdk.Stack {
       bundling: prismaBundlingConfig,
     });
 
+    // シナリオ更新Lambda関数
+    this.updateScenarioFunction = new nodejs.NodejsFunction(this, 'UpdateScenarioFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-scenarios-update-${props.environment}`,
+      description: 'Update an existing scenario',
+      entry: path.join(__dirname, '../lambda/scenarios/update/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // シナリオ削除Lambda関数
+    this.deleteScenarioFunction = new nodejs.NodejsFunction(this, 'DeleteScenarioFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-scenarios-delete-${props.environment}`,
+      description: 'Delete a scenario',
+      entry: path.join(__dirname, '../lambda/scenarios/delete/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
     // ==================== アバター管理Lambda関数 ====================
 
     // アバター一覧取得Lambda関数
@@ -488,6 +524,51 @@ export class ApiLambdaStack extends cdk.Stack {
       functionName: `prance-avatars-get-${props.environment}`,
       description: 'Get avatar details by ID',
       entry: path.join(__dirname, '../lambda/avatars/get/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // アバター更新Lambda関数
+    this.updateAvatarFunction = new nodejs.NodejsFunction(this, 'UpdateAvatarFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-avatars-update-${props.environment}`,
+      description: 'Update an existing avatar',
+      entry: path.join(__dirname, '../lambda/avatars/update/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // アバター削除Lambda関数
+    this.deleteAvatarFunction = new nodejs.NodejsFunction(this, 'DeleteAvatarFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-avatars-delete-${props.environment}`,
+      description: 'Delete an avatar',
+      entry: path.join(__dirname, '../lambda/avatars/delete/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // アバタークローンLambda関数
+    this.cloneAvatarFunction = new nodejs.NodejsFunction(this, 'CloneAvatarFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-avatars-clone-${props.environment}`,
+      description: 'Clone a public avatar to user organization',
+      entry: path.join(__dirname, '../lambda/avatars/clone/index.ts'),
       handler: 'handler',
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
@@ -560,6 +641,31 @@ export class ApiLambdaStack extends cdk.Stack {
     });
 
     const getAvatarIntegration = new apigateway.LambdaIntegration(this.getAvatarFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const updateScenarioIntegration = new apigateway.LambdaIntegration(this.updateScenarioFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const deleteScenarioIntegration = new apigateway.LambdaIntegration(this.deleteScenarioFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const updateAvatarIntegration = new apigateway.LambdaIntegration(this.updateAvatarFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const deleteAvatarIntegration = new apigateway.LambdaIntegration(this.deleteAvatarFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const cloneAvatarIntegration = new apigateway.LambdaIntegration(this.cloneAvatarFunction, {
       proxy: true,
       allowTestInvoke: props.environment !== 'production',
     });
@@ -646,6 +752,20 @@ export class ApiLambdaStack extends cdk.Stack {
       authorizationType: apigateway.AuthorizationType.CUSTOM,
     });
 
+    // PUT /api/v1/scenarios/{id} (Update scenario)
+    scenarioIdResource.addMethod('PUT', updateScenarioIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // DELETE /api/v1/scenarios/{id} (Delete scenario)
+    scenarioIdResource.addMethod('DELETE', deleteScenarioIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
     // Avatars endpoints
     const avatarsResource = apiV1.addResource('avatars');
 
@@ -666,6 +786,28 @@ export class ApiLambdaStack extends cdk.Stack {
     // GET /api/v1/avatars/{id} (Get avatar by ID)
     const avatarIdResource = avatarsResource.addResource('{id}');
     avatarIdResource.addMethod('GET', getAvatarIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // PUT /api/v1/avatars/{id} (Update avatar)
+    avatarIdResource.addMethod('PUT', updateAvatarIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // DELETE /api/v1/avatars/{id} (Delete avatar)
+    avatarIdResource.addMethod('DELETE', deleteAvatarIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/avatars/{id}/clone (Clone avatar)
+    const avatarCloneResource = avatarIdResource.addResource('clone');
+    avatarCloneResource.addMethod('POST', cloneAvatarIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
@@ -792,6 +934,9 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseSecret.grantRead(this.listAvatarsFunction);
     props.databaseSecret.grantRead(this.createAvatarFunction);
     props.databaseSecret.grantRead(this.getAvatarFunction);
+    props.databaseSecret.grantRead(this.updateAvatarFunction);
+    props.databaseSecret.grantRead(this.deleteAvatarFunction);
+    props.databaseSecret.grantRead(this.cloneAvatarFunction);
 
     // RDSクラスターへの接続を許可
     props.databaseCluster.connections.allowDefaultPortFrom(this.registerFunction);
@@ -807,6 +952,9 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseCluster.connections.allowDefaultPortFrom(this.listAvatarsFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.createAvatarFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.getAvatarFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.updateAvatarFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.deleteAvatarFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.cloneAvatarFunction);
 
     new cdk.CfnOutput(this, 'MigrationFunctionName', {
       value: this.migrationFunction.functionName,

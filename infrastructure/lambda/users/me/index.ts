@@ -76,7 +76,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       email: user.email,
       name: user.name,
       role: user.role,
-      organizationId: user.orgId,
+      orgId: user.orgId,
       organization: user.organization,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt,

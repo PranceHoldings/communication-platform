@@ -1,0 +1,1110 @@
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin#bind is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin#bind is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_dynamodb.TableOptions#pointInTimeRecovery is deprecated.
+  use `pointInTimeRecoverySpecification` instead
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_dynamodb.TableOptions#pointInTimeRecovery is deprecated.
+  use `pointInTimeRecoverySpecification` instead
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 1.4s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 done
+#4 DONE 0.0s
+
+#5 [ 2/12] RUN npm install --global yarn@1.22.5
+#5 CACHED
+
+#6 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#6 CACHED
+
+#7 [ 3/12] RUN npm install --global pnpm@7.33.7
+#7 CACHED
+
+#8 [ 5/12] RUN npm install --global typescript
+#8 CACHED
+
+#9 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#9 CACHED
+
+#10 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#10 CACHED
+
+#11 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#11 CACHED
+
+#12 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#12 CACHED
+
+#13 [10/12] RUN npm config --global set update-notifier false
+#13 CACHED
+
+#14 [ 4/12] RUN npm install --global bun@1.2.23
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:180db403e7330a5145bccf090ee40299ff971e813462e0584499f0ed5695c44e done
+#16 exporting manifest list sha256:3d722286f4be76df78be6d7007475dfe5ff7e71af3621bd04b8f12b097256995 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/AuthorizerFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      142.7kb
+  asset-output/index.js.map  264.1kb
+
+⚡ Done in 53ms
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 done
+#4 DONE 0.0s
+
+#5 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#5 CACHED
+
+#6 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#6 CACHED
+
+#7 [ 2/12] RUN npm install --global yarn@1.22.5
+#7 CACHED
+
+#8 [ 3/12] RUN npm install --global pnpm@7.33.7
+#8 CACHED
+
+#9 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#9 CACHED
+
+#10 [ 4/12] RUN npm install --global bun@1.2.23
+#10 CACHED
+
+#11 [ 5/12] RUN npm install --global typescript
+#11 CACHED
+
+#12 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#12 CACHED
+
+#13 [10/12] RUN npm config --global set update-notifier false
+#13 CACHED
+
+#14 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:96d778c4da208064cbcbe4aa130f9240d174ff7d5588a7973d3c413730644271 done
+#16 exporting manifest list sha256:3a49377b729fba34c08a3622aadb715df0b882c39b60939f42ef8dffefa95ae4 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.0s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/HealthCheckFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      1.6kb
+  asset-output/index.js.map  1.3kb
+
+⚡ Done in 9ms
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 done
+#4 DONE 0.0s
+
+#5 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#5 CACHED
+
+#6 [ 3/12] RUN npm install --global pnpm@7.33.7
+#6 CACHED
+
+#7 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#7 CACHED
+
+#8 [10/12] RUN npm config --global set update-notifier false
+#8 CACHED
+
+#9 [ 4/12] RUN npm install --global bun@1.2.23
+#9 CACHED
+
+#10 [ 5/12] RUN npm install --global typescript
+#10 CACHED
+
+#11 [ 2/12] RUN npm install --global yarn@1.22.5
+#11 CACHED
+
+#12 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#12 CACHED
+
+#13 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#13 CACHED
+
+#14 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:4013ea4a5718bc8d95b90ae32e1fcc47c4b64375058a5ea47df8ae4a770e4abb done
+#16 exporting manifest list sha256:0c4b4f672b155494219b0483fd106f8b2770581f370aff02712af1b7fed9a50c done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/RegisterFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      191.4kb
+  asset-output/index.js.map  365.7kb
+
+⚡ Done in 80ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 done
+#4 DONE 0.0s
+
+#5 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#5 CACHED
+
+#6 [10/12] RUN npm config --global set update-notifier false
+#6 CACHED
+
+#7 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#7 CACHED
+
+#8 [ 3/12] RUN npm install --global pnpm@7.33.7
+#8 CACHED
+
+#9 [ 5/12] RUN npm install --global typescript
+#9 CACHED
+
+#10 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#10 CACHED
+
+#11 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#11 CACHED
+
+#12 [ 4/12] RUN npm install --global bun@1.2.23
+#12 CACHED
+
+#13 [ 2/12] RUN npm install --global yarn@1.22.5
+#13 CACHED
+
+#14 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:d36ae89e654addb2ae0d097f0ab2cdf84ac2b7d182707a71c8c2b3fc77a9f836 0.0s done
+#16 exporting manifest list sha256:653eb39bba0817ae3488f5df55b419dc05040d73f13bfd9854896aaa13dd2275 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/LoginFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      189.9kb
+  asset-output/index.js.map  363.1kb
+
+⚡ Done in 52ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 0.0s done
+#4 DONE 0.0s
+
+#5 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#5 CACHED
+
+#6 [ 5/12] RUN npm install --global typescript
+#6 CACHED
+
+#7 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#7 CACHED
+
+#8 [ 3/12] RUN npm install --global pnpm@7.33.7
+#8 CACHED
+
+#9 [ 4/12] RUN npm install --global bun@1.2.23
+#9 CACHED
+
+#10 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#10 CACHED
+
+#11 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#11 CACHED
+
+#12 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#12 CACHED
+
+#13 [10/12] RUN npm config --global set update-notifier false
+#13 CACHED
+
+#14 [ 2/12] RUN npm install --global yarn@1.22.5
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:987d12b162bec9b1d8b23c20d46cdab834c55c3b6cec17e9058b90494eac6060 done
+#16 exporting manifest list sha256:52414d01408a29a9f3623612d969b26da4f1b51444c68850a3cc1290e27ced09 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/GetCurrentUserFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      145.4kb
+  asset-output/index.js.map  269.4kb
+
+⚡ Done in 45ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 0.0s done
+#4 DONE 0.0s
+
+#5 [ 3/12] RUN npm install --global pnpm@7.33.7
+#5 CACHED
+
+#6 [ 2/12] RUN npm install --global yarn@1.22.5
+#6 CACHED
+
+#7 [ 5/12] RUN npm install --global typescript
+#7 CACHED
+
+#8 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#8 CACHED
+
+#9 [10/12] RUN npm config --global set update-notifier false
+#9 CACHED
+
+#10 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#10 CACHED
+
+#11 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#11 CACHED
+
+#12 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#12 CACHED
+
+#13 [ 4/12] RUN npm install --global bun@1.2.23
+#13 CACHED
+
+#14 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:a84ebf2fa4238c505cfc52d3a5285a07635199ec6f6a7145c5c28b64eedd7c74 0.0s done
+#16 exporting manifest list sha256:10a55bb663170c602cbfb180d6044b536ba810b017fab7386dc4ff1e49183812 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/MigrationFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      3.5kb
+  asset-output/index.js.map  4.8kb
+
+⚡ Done in 6ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 done
+#4 DONE 0.0s
+
+#5 [10/12] RUN npm config --global set update-notifier false
+#5 CACHED
+
+#6 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#6 CACHED
+
+#7 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#7 CACHED
+
+#8 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#8 CACHED
+
+#9 [ 2/12] RUN npm install --global yarn@1.22.5
+#9 CACHED
+
+#10 [ 3/12] RUN npm install --global pnpm@7.33.7
+#10 CACHED
+
+#11 [ 5/12] RUN npm install --global typescript
+#11 CACHED
+
+#12 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#12 CACHED
+
+#13 [ 4/12] RUN npm install --global bun@1.2.23
+#13 CACHED
+
+#14 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:29885388d0ba5f97d3a3e127f6e78aa925179b5ddacfd44e900606f4ae078b5d done
+#16 exporting manifest list sha256:42077da01618910ce6634efd63f019e7e74496745376255e51a747aebdc8df40 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/ListSessionsFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      145.9kb
+  asset-output/index.js.map  270.0kb
+
+⚡ Done in 50ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 0.0s done
+#4 DONE 0.0s
+
+#5 [ 3/12] RUN npm install --global pnpm@7.33.7
+#5 CACHED
+
+#6 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#6 CACHED
+
+#7 [ 4/12] RUN npm install --global bun@1.2.23
+#7 CACHED
+
+#8 [ 2/12] RUN npm install --global yarn@1.22.5
+#8 CACHED
+
+#9 [10/12] RUN npm config --global set update-notifier false
+#9 CACHED
+
+#10 [ 5/12] RUN npm install --global typescript
+#10 CACHED
+
+#11 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#11 CACHED
+
+#12 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#12 CACHED
+
+#13 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#13 CACHED
+
+#14 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:888d984bfc8f19bbcf6d15ab7b9c5899142b6395e502e0d163c8b14c3ab6c8d8 0.0s done
+#16 exporting manifest list sha256:032294e3f49324467c19f1c6ae01e0c0d0cdc5880074bed55b08b78732e0a37d done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/CreateSessionFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      146.3kb
+  asset-output/index.js.map  270.7kb
+
+⚡ Done in 39ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 done
+#4 DONE 0.0s
+
+#5 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#5 CACHED
+
+#6 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#6 CACHED
+
+#7 [ 2/12] RUN npm install --global yarn@1.22.5
+#7 CACHED
+
+#8 [ 5/12] RUN npm install --global typescript
+#8 CACHED
+
+#9 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#9 CACHED
+
+#10 [10/12] RUN npm config --global set update-notifier false
+#10 CACHED
+
+#11 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#11 CACHED
+
+#12 [ 3/12] RUN npm install --global pnpm@7.33.7
+#12 CACHED
+
+#13 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#13 CACHED
+
+#14 [ 4/12] RUN npm install --global bun@1.2.23
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:09206ae110f336aad22174c2bedfb32c2563d02c6b8ca8d5fd6430ccfb7f3f67 done
+#16 exporting manifest list sha256:7fb7d434e68c56a20add3705f25038e52a8f2f01c3b5a063af4c0b55755d8f81 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/GetSessionFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      146.2kb
+  asset-output/index.js.map  270.2kb
+
+⚡ Done in 43ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.4s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 done
+#4 DONE 0.0s
+
+#5 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#5 CACHED
+
+#6 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#6 CACHED
+
+#7 [ 4/12] RUN npm install --global bun@1.2.23
+#7 CACHED
+
+#8 [ 3/12] RUN npm install --global pnpm@7.33.7
+#8 CACHED
+
+#9 [ 5/12] RUN npm install --global typescript
+#9 CACHED
+
+#10 [ 2/12] RUN npm install --global yarn@1.22.5
+#10 CACHED
+
+#11 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#11 CACHED
+
+#12 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#12 CACHED
+
+#13 [10/12] RUN npm config --global set update-notifier false
+#13 CACHED
+
+#14 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:0fa43d6bd8257b5ef55af7d43e7b959ebf20ed6f707e3c95a0ba7c3809c56c94 done
+#16 exporting manifest list sha256:41e0ad9de222a8b758d186f83d7b55ae4a92b598fcf21ea45b11aed8ac9ba8d4 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/ListScenariosFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      145.5kb
+  asset-output/index.js.map  269.6kb
+
+⚡ Done in 44ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 0.0s done
+#4 DONE 0.0s
+
+#5 [ 4/12] RUN npm install --global bun@1.2.23
+#5 CACHED
+
+#6 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#6 CACHED
+
+#7 [ 5/12] RUN npm install --global typescript
+#7 CACHED
+
+#8 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#8 CACHED
+
+#9 [ 2/12] RUN npm install --global yarn@1.22.5
+#9 CACHED
+
+#10 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#10 CACHED
+
+#11 [10/12] RUN npm config --global set update-notifier false
+#11 CACHED
+
+#12 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#12 CACHED
+
+#13 [ 3/12] RUN npm install --global pnpm@7.33.7
+#13 CACHED
+
+#14 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:80a8ff711dd945230d04d709c2779bcd5d8451aca728f6d3a3b8b318507df7e6 done
+#16 exporting manifest list sha256:04e14e694ea7a03f9572d26e2a220376a0ff7db2b95379f9fdbd8b6932a90226 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/CreateScenarioFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      145.6kb
+  asset-output/index.js.map  269.7kb
+
+⚡ Done in 45ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:82bfd456b876710d4dae00cd0f13589a3df4235b68eb0c47eecd9605c5e32d72 done
+#4 DONE 0.0s
+
+#5 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#5 CACHED
+
+#6 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#6 CACHED
+
+#7 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#7 CACHED
+
+#8 [ 4/12] RUN npm install --global bun@1.2.23
+#8 CACHED
+
+#9 [ 2/12] RUN npm install --global yarn@1.22.5
+#9 CACHED
+
+#10 [ 3/12] RUN npm install --global pnpm@7.33.7
+#10 CACHED
+
+#11 [ 5/12] RUN npm install --global typescript
+#11 CACHED
+
+#12 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#12 CACHED
+
+#13 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#13 CACHED
+
+#14 [10/12] RUN npm config --global set update-notifier false
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:d470eb0dcdf74e984f432878eedd823ec936a4b1dcd445ec5682652b24c1865b done
+#16 exporting config sha256:d06e1a90b254a6efe3a3562c8f68e5dbd78a47214afd63a1cb8afed30a92f790 done
+#16 exporting attestation manifest sha256:150372dc7f0bd7f7de3d63cc3453a164343ee1a21bcab919b4920867cf35a221 done
+#16 exporting manifest list sha256:b770f9d9d6ee9d419da74c49c9aa9cf203968f937652003a397eb5cbe4d582ea 0.0s done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/GetScenarioFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      144.9kb
+  asset-output/index.js.map  268.2kb
+
+⚡ Done in 41ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+Including dependency stacks: Prance-dev-Network, Prance-dev-Database
+[Warning at /Prance-dev-ApiLambda] If you are relying on AWS SDK v2 to be present in the Lambda environment already, please explicitly configure a NodeJS runtime of Node 16 or lower. [ack: @aws-cdk/aws-lambda-nodejs:sdkV2NotInRuntime]
+
+✨  Synthesis time: 41.72s
+
+Prance-dev-Network
+Prance-dev-Network: deploying... [1/3]
+Prance-dev-ApiLambda: start: Building ListScenariosFunction/Code
+Prance-dev-ApiLambda: success: Built ListScenariosFunction/Code
+Prance-dev-ApiLambda: start: Building CreateScenarioFunction/Code
+Prance-dev-ApiLambda: success: Built CreateScenarioFunction/Code
+Prance-dev-ApiLambda: start: Building GetScenarioFunction/Code
+Prance-dev-ApiLambda: success: Built GetScenarioFunction/Code
+Prance-dev-ApiLambda: start: Building Prance-dev-ApiLambda Template
+Prance-dev-ApiLambda: success: Built Prance-dev-ApiLambda Template
+Prance-dev-Network: creating CloudFormation changeset...
+
+ ✅  Prance-dev-Network (no changes)
+
+✨  Deployment time: 8.44s
+
+Outputs:
+Prance-dev-Network.AuroraSecurityGroupId = sg-0fd983e1ed0ac0064
+Prance-dev-Network.ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB = sg-097c26918446f958a
+Prance-dev-Network.ExportsOutputRefPranceVpc36F975A91BB27C87 = vpc-03b010274210041f2
+Prance-dev-Network.ExportsOutputRefPranceVpcIsolatedSubnet1SubnetBE9312C0FEFFB869 = subnet-0b3ef373e89febbd9
+Prance-dev-Network.ExportsOutputRefPranceVpcIsolatedSubnet2Subnet5815D9DB200F5C3B = subnet-060950c2259b16ee5
+Prance-dev-Network.ExportsOutputRefPranceVpcPrivateSubnet1SubnetC739762BEDFE8700 = subnet-0c53bd990663b9502
+Prance-dev-Network.ExportsOutputRefPranceVpcPrivateSubnet2SubnetC6814683A020AEB3 = subnet-0fc7f2087efc62e58
+Prance-dev-Network.LambdaSecurityGroupId = sg-097c26918446f958a
+Prance-dev-Network.VpcId = vpc-03b010274210041f2
+Stack ARN:
+arn:aws:cloudformation:us-east-1:010438500933:stack/Prance-dev-Network/1a9946a0-17dd-11f1-8708-0afff64f2363
+
+✨  Total time: 50.16s
+
+Prance-dev-Database
+Prance-dev-Database: deploying... [2/3]
+
+ ✅  Prance-dev-Database (no changes)
+
+✨  Deployment time: 1.54s
+
+Outputs:
+Prance-dev-Database.ClusterEndpoint = prance-dev-database-auroracluster23d869c0-q5mfamjdr2yp.cluster-cc92ikiosj07.us-east-1.rds.amazonaws.com
+Prance-dev-Database.ClusterReadEndpoint = prance-dev-database-auroracluster23d869c0-q5mfamjdr2yp.cluster-ro-cc92ikiosj07.us-east-1.rds.amazonaws.com
+Prance-dev-Database.ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907 = prance-dev-database-auroracluster23d869c0-q5mfamjdr2yp.cluster-cc92ikiosj07.us-east-1.rds.amazonaws.com
+Prance-dev-Database.ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07 = 5432
+Prance-dev-Database.ExportsOutputRefAuroraSecret41E6E877B1EAA24F = arn:aws:secretsmanager:us-east-1:010438500933:secret:prance/aurora/dev-rFYGXy
+Prance-dev-Database.SecretArn = arn:aws:secretsmanager:us-east-1:010438500933:secret:prance/aurora/dev-rFYGXy
+Stack ARN:
+arn:aws:cloudformation:us-east-1:010438500933:stack/Prance-dev-Database/093470f0-182e-11f1-9e34-0e9e2ddb4515
+
+✨  Total time: 43.26s
+
+Prance-dev-ApiLambda: start: Publishing ListScenariosFunction/Code (010438500933-us-east-1-67d55a53)
+Prance-dev-ApiLambda: start: Publishing GetScenarioFunction/Code (010438500933-us-east-1-4fcfe8de)
+Prance-dev-ApiLambda: start: Publishing Prance-dev-ApiLambda Template (010438500933-us-east-1-558074b1)
+Prance-dev-ApiLambda: start: Publishing CreateScenarioFunction/Code (010438500933-us-east-1-c6323de3)
+Prance-dev-ApiLambda: success: Published Prance-dev-ApiLambda Template (010438500933-us-east-1-558074b1)
+Prance-dev-ApiLambda: success: Published GetScenarioFunction/Code (010438500933-us-east-1-4fcfe8de)
+Prance-dev-ApiLambda: success: Published ListScenariosFunction/Code (010438500933-us-east-1-67d55a53)
+Prance-dev-ApiLambda: success: Published CreateScenarioFunction/Code (010438500933-us-east-1-c6323de3)
+Prance-dev-ApiLambda
+Prance-dev-ApiLambda: deploying... [3/3]
+Prance-dev-ApiLambda: creating CloudFormation changeset...
+Prance-dev-ApiLambda |  0/30 | 10:58:53 AM | UPDATE_IN_PROGRESS   | AWS::CloudFormation::Stack  | Prance-dev-ApiLambda User Initiated
+Prance-dev-ApiLambda |  0/30 | 10:58:58 AM | CREATE_IN_PROGRESS   | AWS::IAM::Role              | CreateScenarioFunction/ServiceRole (CreateScenarioFunctionServiceRoleE387709C) 
+Prance-dev-ApiLambda |  0/30 | 10:58:58 AM | CREATE_IN_PROGRESS   | AWS::IAM::Role              | GetScenarioFunction/ServiceRole (GetScenarioFunctionServiceRole0FB85C1D) 
+Prance-dev-ApiLambda |  0/30 | 10:58:58 AM | CREATE_IN_PROGRESS   | AWS::IAM::Role              | ListScenariosFunction/ServiceRole (ListScenariosFunctionServiceRole4C73CD2C) 
+Prance-dev-ApiLambda |  0/30 | 10:58:58 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Resource   | RestApi/Default/api/v1/scenarios (RestApiapiv1scenarios86E1B026) 
+Prance-dev-ApiLambda |  0/30 | 10:58:59 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Resource   | RestApi/Default/api/v1/scenarios (RestApiapiv1scenarios86E1B026) Resource creation Initiated
+Prance-dev-ApiLambda |  0/30 | 10:58:59 AM | CREATE_IN_PROGRESS   | AWS::IAM::Role              | CreateScenarioFunction/ServiceRole (CreateScenarioFunctionServiceRoleE387709C) Resource creation Initiated
+Prance-dev-ApiLambda |  0/30 | 10:58:59 AM | CREATE_IN_PROGRESS   | AWS::IAM::Role              | GetScenarioFunction/ServiceRole (GetScenarioFunctionServiceRole0FB85C1D) Resource creation Initiated
+Prance-dev-ApiLambda |  0/30 | 10:58:59 AM | CREATE_IN_PROGRESS   | AWS::IAM::Role              | ListScenariosFunction/ServiceRole (ListScenariosFunctionServiceRole4C73CD2C) Resource creation Initiated
+Prance-dev-ApiLambda |  1/30 | 10:59:00 AM | CREATE_COMPLETE      | AWS::ApiGateway::Resource   | RestApi/Default/api/v1/scenarios (RestApiapiv1scenarios86E1B026) 
+Prance-dev-ApiLambda |  1/30 | 10:59:00 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/OPTIONS (RestApiapiv1scenariosOPTIONSAA14F451) 
+Prance-dev-ApiLambda |  1/30 | 10:59:01 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Resource   | RestApi/Default/api/v1/scenarios/{id} (RestApiapiv1scenariosidE9E0FEDE) 
+Prance-dev-ApiLambda |  1/30 | 10:59:01 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/OPTIONS (RestApiapiv1scenariosOPTIONSAA14F451) Resource creation Initiated
+Prance-dev-ApiLambda |  1/30 | 10:59:01 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Resource   | RestApi/Default/api/v1/scenarios/{id} (RestApiapiv1scenariosidE9E0FEDE) Resource creation Initiated
+Prance-dev-ApiLambda |  2/30 | 10:59:02 AM | CREATE_COMPLETE      | AWS::ApiGateway::Resource   | RestApi/Default/api/v1/scenarios/{id} (RestApiapiv1scenariosidE9E0FEDE) 
+Prance-dev-ApiLambda |  2/30 | 10:59:03 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/{id}/OPTIONS (RestApiapiv1scenariosidOPTIONS83833EA7) 
+Prance-dev-ApiLambda |  3/30 | 10:59:03 AM | CREATE_COMPLETE      | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/OPTIONS (RestApiapiv1scenariosOPTIONSAA14F451) 
+Prance-dev-ApiLambda |  3/30 | 10:59:04 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/{id}/OPTIONS (RestApiapiv1scenariosidOPTIONS83833EA7) Resource creation Initiated
+Prance-dev-ApiLambda |  4/30 | 10:59:06 AM | CREATE_COMPLETE      | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/{id}/OPTIONS (RestApiapiv1scenariosidOPTIONS83833EA7) 
+Prance-dev-ApiLambda |  5/30 | 10:59:16 AM | CREATE_COMPLETE      | AWS::IAM::Role              | CreateScenarioFunction/ServiceRole (CreateScenarioFunctionServiceRoleE387709C) 
+Prance-dev-ApiLambda |  6/30 | 10:59:16 AM | CREATE_COMPLETE      | AWS::IAM::Role              | ListScenariosFunction/ServiceRole (ListScenariosFunctionServiceRole4C73CD2C) 
+Prance-dev-ApiLambda |  7/30 | 10:59:16 AM | CREATE_COMPLETE      | AWS::IAM::Role              | GetScenarioFunction/ServiceRole (GetScenarioFunctionServiceRole0FB85C1D) 
+Prance-dev-ApiLambda |  7/30 | 10:59:16 AM | CREATE_IN_PROGRESS   | AWS::IAM::Policy            | CreateScenarioFunction/ServiceRole/DefaultPolicy (CreateScenarioFunctionServiceRoleDefaultPolicyB994DAD6) 
+Prance-dev-ApiLambda |  7/30 | 10:59:16 AM | CREATE_IN_PROGRESS   | AWS::IAM::Policy            | ListScenariosFunction/ServiceRole/DefaultPolicy (ListScenariosFunctionServiceRoleDefaultPolicy4DF63752) 
+Prance-dev-ApiLambda |  7/30 | 10:59:17 AM | CREATE_IN_PROGRESS   | AWS::IAM::Policy            | GetScenarioFunction/ServiceRole/DefaultPolicy (GetScenarioFunctionServiceRoleDefaultPolicy160D7B4F) 
+Prance-dev-ApiLambda |  7/30 | 10:59:17 AM | CREATE_IN_PROGRESS   | AWS::IAM::Policy            | GetScenarioFunction/ServiceRole/DefaultPolicy (GetScenarioFunctionServiceRoleDefaultPolicy160D7B4F) Resource creation Initiated
+Prance-dev-ApiLambda |  7/30 | 10:59:17 AM | CREATE_IN_PROGRESS   | AWS::IAM::Policy            | CreateScenarioFunction/ServiceRole/DefaultPolicy (CreateScenarioFunctionServiceRoleDefaultPolicyB994DAD6) Resource creation Initiated
+Prance-dev-ApiLambda |  7/30 | 10:59:17 AM | CREATE_IN_PROGRESS   | AWS::IAM::Policy            | ListScenariosFunction/ServiceRole/DefaultPolicy (ListScenariosFunctionServiceRoleDefaultPolicy4DF63752) Resource creation Initiated
+Prance-dev-ApiLambda |  8/30 | 10:59:33 AM | CREATE_COMPLETE      | AWS::IAM::Policy            | GetScenarioFunction/ServiceRole/DefaultPolicy (GetScenarioFunctionServiceRoleDefaultPolicy160D7B4F) 
+Prance-dev-ApiLambda |  9/30 | 10:59:33 AM | CREATE_COMPLETE      | AWS::IAM::Policy            | ListScenariosFunction/ServiceRole/DefaultPolicy (ListScenariosFunctionServiceRoleDefaultPolicy4DF63752) 
+Prance-dev-ApiLambda | 10/30 | 10:59:33 AM | CREATE_COMPLETE      | AWS::IAM::Policy            | CreateScenarioFunction/ServiceRole/DefaultPolicy (CreateScenarioFunctionServiceRoleDefaultPolicyB994DAD6) 
+Prance-dev-ApiLambda | 10/30 | 10:59:34 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Function       | GetScenarioFunction (GetScenarioFunctionE27D3C83) 
+Prance-dev-ApiLambda | 10/30 | 10:59:34 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Function       | ListScenariosFunction (ListScenariosFunctionA1238C6D) 
+Prance-dev-ApiLambda | 10/30 | 10:59:34 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Function       | CreateScenarioFunction (CreateScenarioFunction5349712A) 
+Prance-dev-ApiLambda | 10/30 | 10:59:36 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Function       | GetScenarioFunction (GetScenarioFunctionE27D3C83) Resource creation Initiated
+Prance-dev-ApiLambda | 10/30 | 10:59:36 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Function       | ListScenariosFunction (ListScenariosFunctionA1238C6D) Resource creation Initiated
+Prance-dev-ApiLambda | 10/30 | 10:59:36 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Function       | CreateScenarioFunction (CreateScenarioFunction5349712A) Resource creation Initiated
+Prance-dev-ApiLambda | 11/30 | 10:59:47 AM | CREATE_COMPLETE      | AWS::Lambda::Function       | ListScenariosFunction (ListScenariosFunctionA1238C6D) 
+Prance-dev-ApiLambda | 12/30 | 10:59:47 AM | CREATE_COMPLETE      | AWS::Lambda::Function       | GetScenarioFunction (GetScenarioFunctionE27D3C83) 
+Prance-dev-ApiLambda | 13/30 | 10:59:47 AM | CREATE_COMPLETE      | AWS::Lambda::Function       | CreateScenarioFunction (CreateScenarioFunction5349712A) 
+Prance-dev-ApiLambda | 13/30 | 10:59:47 AM | CREATE_IN_PROGRESS   | Custom::LogRetention        | ListScenariosFunction/LogRetention (ListScenariosFunctionLogRetention040F336E) 
+Prance-dev-ApiLambda | 13/30 | 10:59:47 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/GET/ApiPermission.Test.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios (RestApiapiv1scenariosGETApiPermissionTestPrancedevApiLambdaRestApi143930C6GETapiv1scenariosA749DBF9) 
+Prance-dev-ApiLambda | 13/30 | 10:59:47 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/GET (RestApiapiv1scenariosGETD672B9DE) 
+Prance-dev-ApiLambda | 13/30 | 10:59:47 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/{id}/GET/ApiPermission.Test.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios.{id} (RestApiapiv1scenariosidGETApiPermissionTestPrancedevApiLambdaRestApi143930C6GETapiv1scenariosidC4CC7879) 
+Prance-dev-ApiLambda | 13/30 | 10:59:47 AM | CREATE_IN_PROGRESS   | Custom::LogRetention        | GetScenarioFunction/LogRetention (GetScenarioFunctionLogRetentionA68150B7) 
+Prance-dev-ApiLambda | 13/30 | 10:59:47 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/{id}/GET (RestApiapiv1scenariosidGETADB2D0A7) 
+Prance-dev-ApiLambda | 13/30 | 10:59:47 AM | CREATE_IN_PROGRESS   | Custom::LogRetention        | CreateScenarioFunction/LogRetention (CreateScenarioFunctionLogRetentionADAA3718) 
+Prance-dev-ApiLambda | 13/30 | 10:59:47 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/POST/ApiPermission.Test.PrancedevApiLambdaRestApi143930C6.POST..api.v1.scenarios (RestApiapiv1scenariosPOSTApiPermissionTestPrancedevApiLambdaRestApi143930C6POSTapiv1scenarios6DE5AF45) 
+Prance-dev-ApiLambda | 13/30 | 10:59:47 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/POST (RestApiapiv1scenariosPOSTADDD775A) 
+Prance-dev-ApiLambda | 13/30 | 10:59:48 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/GET (RestApiapiv1scenariosGETD672B9DE) Resource creation Initiated
+Prance-dev-ApiLambda | 13/30 | 10:59:48 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/{id}/GET (RestApiapiv1scenariosidGETADB2D0A7) Resource creation Initiated
+Prance-dev-ApiLambda | 13/30 | 10:59:48 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/POST (RestApiapiv1scenariosPOSTADDD775A) Resource creation Initiated
+Prance-dev-ApiLambda | 13/30 | 10:59:48 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/{id}/GET/ApiPermission.Test.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios.{id} (RestApiapiv1scenariosidGETApiPermissionTestPrancedevApiLambdaRestApi143930C6GETapiv1scenariosidC4CC7879) Resource creation Initiated
+Prance-dev-ApiLambda | 13/30 | 10:59:48 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/POST/ApiPermission.Test.PrancedevApiLambdaRestApi143930C6.POST..api.v1.scenarios (RestApiapiv1scenariosPOSTApiPermissionTestPrancedevApiLambdaRestApi143930C6POSTapiv1scenarios6DE5AF45) Resource creation Initiated
+Prance-dev-ApiLambda | 14/30 | 10:59:49 AM | CREATE_COMPLETE      | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/{id}/GET/ApiPermission.Test.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios.{id} (RestApiapiv1scenariosidGETApiPermissionTestPrancedevApiLambdaRestApi143930C6GETapiv1scenariosidC4CC7879) 
+Prance-dev-ApiLambda | 15/30 | 10:59:49 AM | CREATE_COMPLETE      | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/POST/ApiPermission.Test.PrancedevApiLambdaRestApi143930C6.POST..api.v1.scenarios (RestApiapiv1scenariosPOSTApiPermissionTestPrancedevApiLambdaRestApi143930C6POSTapiv1scenarios6DE5AF45) 
+Prance-dev-ApiLambda | 15/30 | 10:59:49 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/GET/ApiPermission.Test.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios (RestApiapiv1scenariosGETApiPermissionTestPrancedevApiLambdaRestApi143930C6GETapiv1scenariosA749DBF9) Resource creation Initiated
+Prance-dev-ApiLambda | 16/30 | 10:59:50 AM | CREATE_COMPLETE      | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/GET (RestApiapiv1scenariosGETD672B9DE) 
+Prance-dev-ApiLambda | 17/30 | 10:59:50 AM | CREATE_COMPLETE      | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/GET/ApiPermission.Test.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios (RestApiapiv1scenariosGETApiPermissionTestPrancedevApiLambdaRestApi143930C6GETapiv1scenariosA749DBF9) 
+Prance-dev-ApiLambda | 18/30 | 10:59:50 AM | CREATE_COMPLETE      | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/{id}/GET (RestApiapiv1scenariosidGETADB2D0A7) 
+Prance-dev-ApiLambda | 19/30 | 10:59:50 AM | CREATE_COMPLETE      | AWS::ApiGateway::Method     | RestApi/Default/api/v1/scenarios/POST (RestApiapiv1scenariosPOSTADDD775A) 
+Prance-dev-ApiLambda | 19/30 | 10:59:50 AM | CREATE_IN_PROGRESS   | Custom::LogRetention        | GetScenarioFunction/LogRetention (GetScenarioFunctionLogRetentionA68150B7) Resource creation Initiated
+Prance-dev-ApiLambda | 19/30 | 10:59:50 AM | CREATE_IN_PROGRESS   | Custom::LogRetention        | ListScenariosFunction/LogRetention (ListScenariosFunctionLogRetention040F336E) Resource creation Initiated
+Prance-dev-ApiLambda | 20/30 | 10:59:50 AM | CREATE_COMPLETE      | Custom::LogRetention        | GetScenarioFunction/LogRetention (GetScenarioFunctionLogRetentionA68150B7) 
+Prance-dev-ApiLambda | 20/30 | 10:59:50 AM | CREATE_IN_PROGRESS   | Custom::LogRetention        | CreateScenarioFunction/LogRetention (CreateScenarioFunctionLogRetentionADAA3718) Resource creation Initiated
+Prance-dev-ApiLambda | 21/30 | 10:59:50 AM | CREATE_COMPLETE      | Custom::LogRetention        | ListScenariosFunction/LogRetention (ListScenariosFunctionLogRetention040F336E) 
+Prance-dev-ApiLambda | 22/30 | 10:59:51 AM | CREATE_COMPLETE      | Custom::LogRetention        | CreateScenarioFunction/LogRetention (CreateScenarioFunctionLogRetentionADAA3718) 
+Prance-dev-ApiLambda | 22/30 | 10:59:51 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Deployment | RestApi/Deployment (RestApiDeployment180EC5030825a7f3d948492b455af0aead3e21ac) 
+Prance-dev-ApiLambda | 22/30 | 10:59:52 AM | CREATE_IN_PROGRESS   | AWS::ApiGateway::Deployment | RestApi/Deployment (RestApiDeployment180EC5030825a7f3d948492b455af0aead3e21ac) Resource creation Initiated
+Prance-dev-ApiLambda | 23/30 | 10:59:52 AM | CREATE_COMPLETE      | AWS::ApiGateway::Deployment | RestApi/Deployment (RestApiDeployment180EC5030825a7f3d948492b455af0aead3e21ac) 
+Prance-dev-ApiLambda | 23/30 | 10:59:54 AM | UPDATE_IN_PROGRESS   | AWS::ApiGateway::Stage      | RestApi/DeploymentStage.dev (RestApiDeploymentStagedevDA121244) 
+Prance-dev-ApiLambda | 24/30 | 10:59:55 AM | UPDATE_COMPLETE      | AWS::ApiGateway::Stage      | RestApi/DeploymentStage.dev (RestApiDeploymentStagedevDA121244) 
+Prance-dev-ApiLambda | 24/30 | 10:59:56 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/{id}/GET/ApiPermission.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios.{id} (RestApiapiv1scenariosidGETApiPermissionPrancedevApiLambdaRestApi143930C6GETapiv1scenariosid0A71B9A3) 
+Prance-dev-ApiLambda | 24/30 | 10:59:56 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/POST/ApiPermission.PrancedevApiLambdaRestApi143930C6.POST..api.v1.scenarios (RestApiapiv1scenariosPOSTApiPermissionPrancedevApiLambdaRestApi143930C6POSTapiv1scenarios231B9004) 
+Prance-dev-ApiLambda | 24/30 | 10:59:56 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/GET/ApiPermission.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios (RestApiapiv1scenariosGETApiPermissionPrancedevApiLambdaRestApi143930C6GETapiv1scenariosF1F190C7) 
+Prance-dev-ApiLambda | 24/30 | 10:59:57 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/POST/ApiPermission.PrancedevApiLambdaRestApi143930C6.POST..api.v1.scenarios (RestApiapiv1scenariosPOSTApiPermissionPrancedevApiLambdaRestApi143930C6POSTapiv1scenarios231B9004) Resource creation Initiated
+Prance-dev-ApiLambda | 24/30 | 10:59:57 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/{id}/GET/ApiPermission.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios.{id} (RestApiapiv1scenariosidGETApiPermissionPrancedevApiLambdaRestApi143930C6GETapiv1scenariosid0A71B9A3) Resource creation Initiated
+Prance-dev-ApiLambda | 24/30 | 10:59:57 AM | CREATE_IN_PROGRESS   | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/GET/ApiPermission.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios (RestApiapiv1scenariosGETApiPermissionPrancedevApiLambdaRestApi143930C6GETapiv1scenariosF1F190C7) Resource creation Initiated
+Prance-dev-ApiLambda | 25/30 | 10:59:57 AM | CREATE_COMPLETE      | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/POST/ApiPermission.PrancedevApiLambdaRestApi143930C6.POST..api.v1.scenarios (RestApiapiv1scenariosPOSTApiPermissionPrancedevApiLambdaRestApi143930C6POSTapiv1scenarios231B9004) 
+Prance-dev-ApiLambda | 26/30 | 10:59:57 AM | CREATE_COMPLETE      | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/{id}/GET/ApiPermission.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios.{id} (RestApiapiv1scenariosidGETApiPermissionPrancedevApiLambdaRestApi143930C6GETapiv1scenariosid0A71B9A3) 
+Prance-dev-ApiLambda | 27/30 | 10:59:58 AM | CREATE_COMPLETE      | AWS::Lambda::Permission     | RestApi/Default/api/v1/scenarios/GET/ApiPermission.PrancedevApiLambdaRestApi143930C6.GET..api.v1.scenarios (RestApiapiv1scenariosGETApiPermissionPrancedevApiLambdaRestApi143930C6GETapiv1scenariosF1F190C7) 
+Prance-dev-ApiLambda | 28/30 | 11:00:00 AM | UPDATE_COMPLETE_CLEA | AWS::CloudFormation::Stack  | Prance-dev-ApiLambda 
+Prance-dev-ApiLambda | 28/30 | 11:00:01 AM | DELETE_IN_PROGRESS   | AWS::ApiGateway::Deployment | RestApiDeployment180EC50388fa2877f6e4cb3b3bf208dea9c48f0a 
+Prance-dev-ApiLambda | 29/30 | 11:00:03 AM | DELETE_COMPLETE      | AWS::ApiGateway::Deployment | RestApiDeployment180EC50388fa2877f6e4cb3b3bf208dea9c48f0a 
+Prance-dev-ApiLambda | 30/30 | 11:00:03 AM | UPDATE_COMPLETE      | AWS::CloudFormation::Stack  | Prance-dev-ApiLambda 
+
+ ✅  Prance-dev-ApiLambda
+
+✨  Deployment time: 101.4s
+
+Outputs:
+Prance-dev-ApiLambda.ApiStageName = dev
+Prance-dev-ApiLambda.AuthEndpoints = {"register":"https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/auth/register","login":"https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/auth/login"}
+Prance-dev-ApiLambda.AuthorizerArn = prn8qi
+Prance-dev-ApiLambda.AuthorizerFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-authorizer-dev
+Prance-dev-ApiLambda.AuthorizerFunctionName = prance-authorizer-dev
+Prance-dev-ApiLambda.CreateScenarioFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-scenarios-create-dev
+Prance-dev-ApiLambda.CreateSessionFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-sessions-create-dev
+Prance-dev-ApiLambda.GetCurrentUserFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-users-me-dev
+Prance-dev-ApiLambda.GetScenarioFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-scenarios-get-dev
+Prance-dev-ApiLambda.GetSessionFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-sessions-get-dev
+Prance-dev-ApiLambda.HealthCheckFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-health-check-dev
+Prance-dev-ApiLambda.HealthCheckFunctionName = prance-health-check-dev
+Prance-dev-ApiLambda.ListScenariosFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-scenarios-list-dev
+Prance-dev-ApiLambda.ListSessionsFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-sessions-list-dev
+Prance-dev-ApiLambda.LoginFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-auth-login-dev
+Prance-dev-ApiLambda.MigrationFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-db-migration-dev
+Prance-dev-ApiLambda.MigrationFunctionName = prance-db-migration-dev
+Prance-dev-ApiLambda.RegisterFunctionArn = arn:aws:lambda:us-east-1:010438500933:function:prance-auth-register-dev
+Prance-dev-ApiLambda.RestApiEndpoint0551178A = https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/
+Prance-dev-ApiLambda.RestApiId = ffypxkomg1
+Prance-dev-ApiLambda.RestApiUrl = https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/
+Prance-dev-ApiLambda.ScenariosEndpoints = {"list":"https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/scenarios","create":"https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/scenarios","get":"https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/scenarios/{id}"}
+Prance-dev-ApiLambda.SessionsEndpoints = {"list":"https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/sessions","create":"https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/sessions","get":"https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/sessions/{id}"}
+Prance-dev-ApiLambda.UsersEndpoints = {"me":"https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/users/me"}
+Prance-dev-ApiLambda.WebSocketApiEndpoint = wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
+Prance-dev-ApiLambda.WebSocketApiId = bu179h4agh
+Stack ARN:
+arn:aws:cloudformation:us-east-1:010438500933:stack/Prance-dev-ApiLambda/b69e8c20-1820-11f1-8e67-12909fa61e15
+
+✨  Total time: 143.13s
+

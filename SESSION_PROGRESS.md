@@ -1,7 +1,7 @@
 # Prance Alpha開発 - セッション進捗まとめ
 
-**最終更新:** 2026-03-05 11:10 AM
-**セッション:** Phase 1 MVP開発 - セッション作成機能完了
+**最終更新:** 2026-03-05 4:30 PM
+**セッション:** Phase 1 MVP開発 - CRUD基盤・テストデータ完成
 
 ---
 
@@ -1057,3 +1057,363 @@ export const getUserFromEvent = (event) => {
 ---
 
 **このドキュメントは次回セッション開始時に最初に確認してください。**
+
+---
+
+## 🚀 Phase 1: MVP開発 進捗記録（2026-03-05）
+
+### タスク完了履歴
+
+| Task ID | タスク名 | 開始日時 | 完了日時 | 所要時間 | ステータス |
+|---------|---------|---------|---------|---------|-----------|
+| #20 | シナリオ管理API（Lambda関数） | 2026-03-05 9:30 AM | 2026-03-05 10:59 AM | 1時間29分 | ✅ 完了 |
+| #21 | アバター管理API（Lambda関数） | 2026-03-05 10:59 AM | 2026-03-05 11:07 AM | 8分 | ✅ 完了 |
+| #22 | セッション作成画面（フロントエンド） | 2026-03-05 11:07 AM | 2026-03-05 11:15 AM | 8分 | ✅ 完了 |
+| #23 | シナリオ管理画面（フロントエンド） | 2026-03-05 11:30 AM | 2026-03-05 1:00 PM | 1時間30分 | ✅ 完了 |
+| #24 | アバター管理画面（フロントエンド） | 2026-03-05 1:00 PM | 2026-03-05 2:15 PM | 1時間15分 | ✅ 完了 |
+
+**合計作業時間:** 約4時間30分
+
+### Task #20: シナリオ管理API（Lambda関数）
+
+**開始:** 2026-03-05 9:30 AM
+**完了:** 2026-03-05 10:59 AM
+**デプロイ時間:** 101.4秒
+
+**実装内容:**
+- Lambda関数3つ作成
+  - `prance-scenarios-list-dev` - シナリオ一覧取得
+  - `prance-scenarios-create-dev` - シナリオ作成
+  - `prance-scenarios-get-dev` - シナリオ詳細取得
+- API Gateway統合、IAM権限設定
+- ページネーション（limit, offset）
+- カテゴリ・可視性フィルター
+- アクセス制御（組織内 OR PUBLIC）
+
+**成果物:**
+- `infrastructure/lambda/scenarios/list/index.ts`
+- `infrastructure/lambda/scenarios/create/index.ts`
+- `infrastructure/lambda/scenarios/get/index.ts`
+- APIエンドポイント3つ追加
+
+---
+
+### Task #21: アバター管理API（Lambda関数）
+
+**開始:** 2026-03-05 10:59 AM
+**完了:** 2026-03-05 11:07 AM
+**デプロイ時間:** 112.77秒
+
+**実装内容:**
+- Lambda関数3つ作成
+  - `prance-avatars-list-dev` - アバター一覧取得
+  - `prance-avatars-create-dev` - アバター作成
+  - `prance-avatars-get-dev` - アバター詳細取得
+- API Gateway統合、IAM権限設定
+- タイプ・スタイル・ソースフィルター
+- アクセス制御（組織内 OR PRESET OR PUBLIC）
+- PRESET作成はSUPER_ADMINのみ可能
+
+**成果物:**
+- `infrastructure/lambda/avatars/list/index.ts`
+- `infrastructure/lambda/avatars/create/index.ts`
+- `infrastructure/lambda/avatars/get/index.ts`
+- APIエンドポイント3つ追加
+
+---
+
+### Task #22: セッション作成画面（フロントエンド）
+
+**開始:** 2026-03-05 11:07 AM
+**完了:** 2026-03-05 11:15 AM
+
+**実装内容:**
+- APIクライアント作成
+  - `apps/web/lib/api/scenarios.ts` - シナリオAPI統合
+  - `apps/web/lib/api/avatars.ts` - アバターAPI統合
+- セッション作成ページ (`/dashboard/sessions/new`)
+  - 3ステップウィザード形式
+  - プログレスインジケーター、バリデーション
+- セッション詳細ページ (`/dashboard/sessions/[id]`)
+- 多言語対応
+  - `messages/en/sessions.json`
+  - `messages/ja/sessions.json`
+
+**成果物:**
+- `apps/web/app/dashboard/sessions/new/page.tsx`
+- `apps/web/app/dashboard/sessions/[id]/page.tsx`
+- `apps/web/lib/api/scenarios.ts`
+- `apps/web/lib/api/avatars.ts`
+- 言語リソース2ファイル
+
+---
+
+### Task #23: シナリオ管理画面（フロントエンド）
+
+**開始:** 2026-03-05 11:30 AM
+**完了:** 2026-03-05 1:00 PM
+
+**実装内容:**
+- シナリオ一覧ページ (`/dashboard/scenarios`)
+  - テーブル形式表示
+  - フィルター（カテゴリ、可視性）
+  - ページネーション
+- シナリオ作成ページ (`/dashboard/scenarios/new`)
+  - フォームバリデーション（JSON構文チェック含む）
+  - 作成成功後 → 詳細ページへリダイレクト
+- シナリオ詳細ページ (`/dashboard/scenarios/[id]`)
+  - 基本情報・configJson表示
+  - 編集・削除ボタン（プレースホルダー）
+- 多言語対応
+  - `messages/en/scenarios.json`
+  - `messages/ja/scenarios.json`
+
+**成果物:**
+- `apps/web/app/dashboard/scenarios/page.tsx`
+- `apps/web/app/dashboard/scenarios/new/page.tsx`
+- `apps/web/app/dashboard/scenarios/[id]/page.tsx`
+- 言語リソース2ファイル
+
+---
+
+### Task #24: アバター管理画面（フロントエンド）
+
+**開始:** 2026-03-05 1:00 PM
+**完了:** 2026-03-05 2:15 PM
+
+**実装内容:**
+- アバター一覧ページ (`/dashboard/avatars`)
+  - カードグリッド形式表示（3列、レスポンシブ）
+  - サムネイル画像表示
+  - フィルター（タイプ、スタイル、ソース）
+  - ページネーション
+- アバター作成ページ (`/dashboard/avatars/new`)
+  - フォームバリデーション
+  - 作成成功後 → 詳細ページへリダイレクト
+  - PRESET除外（管理者専用）
+- アバター詳細ページ (`/dashboard/avatars/[id]`)
+  - サムネイル・基本情報・URL・タグ表示
+  - 編集・削除ボタン（プレースホルダー）
+- 多言語対応（既存リソース使用）
+
+**成果物:**
+- `apps/web/app/dashboard/avatars/page.tsx`
+- `apps/web/app/dashboard/avatars/new/page.tsx`
+- `apps/web/app/dashboard/avatars/[id]/page.tsx`
+
+---
+
+### 本日の総合成果（2026-03-05）
+
+**バックエンド:**
+- Lambda関数: 6つ実装・デプロイ
+- APIエンドポイント: 6つ追加
+- CloudFormation更新: ApiLambdaStack
+
+**フロントエンド:**
+- ページ実装: 9つ
+  - セッション: new, [id]
+  - シナリオ: index, new, [id]
+  - アバター: index, new, [id]
+- APIクライアント: 2ファイル
+- 言語リソース: 6ファイル（en/ja × 3モジュール）
+
+**デプロイ済みAPI一覧:**
+```
+GET  /api/v1/health
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+GET  /api/v1/users/me
+GET  /api/v1/sessions
+POST /api/v1/sessions
+GET  /api/v1/sessions/{id}
+GET  /api/v1/scenarios       ← NEW
+POST /api/v1/scenarios       ← NEW
+GET  /api/v1/scenarios/{id}  ← NEW
+GET  /api/v1/avatars         ← NEW
+POST /api/v1/avatars         ← NEW
+GET  /api/v1/avatars/{id}    ← NEW
+```
+
+**実装済みページ一覧:**
+```
+/
+/login
+/register
+/dashboard
+/dashboard/sessions
+/dashboard/sessions/new
+/dashboard/sessions/[id]
+/dashboard/scenarios         ← NEW
+/dashboard/scenarios/new     ← NEW
+/dashboard/scenarios/[id]    ← NEW
+/dashboard/avatars           ← NEW
+/dashboard/avatars/new       ← NEW
+/dashboard/avatars/[id]      ← NEW
+```
+
+---
+
+### 本日午後の追加作業（2026-03-05 3:00 PM - 4:30 PM）
+
+#### ✅ Task #25: Toaster通知システム実装
+**完了時刻:** 3:30 PM
+**所要時間:** 30分
+
+**実装内容:**
+- sonnerライブラリ導入（Toast通知用）
+- Providersコンポーネントに統合
+  - `<Toaster position="top-right" richColors />`
+- アバター作成・編集ページに通知追加
+  - `toast.success()` - 成功時
+  - `toast.error()` - エラー時
+
+#### ✅ Task #26: アバタークローニング機能完成
+**完了時刻:** 4:00 PM
+**所要時間:** 30分
+
+**実装内容:**
+- アバター作成ページ (`/dashboard/avatars/new`)
+  - `allowCloning` チェックボックス追加
+  - フォーム送信時にallowCloning値を送信
+- アバター編集ページ (`/dashboard/avatars/[id]/edit`)
+  - `allowCloning` チェックボックス追加
+  - 既存値の読み込み・更新
+- 多言語対応
+  - `messages/en/avatars.json` - allowCloning, allowCloningDescription追加
+  - `messages/ja/avatars.json` - 日本語翻訳追加
+
+**注意:** Clone Button（アバター詳細ページ）のUI実装は未完了
+
+#### ✅ Task #27: テストデータ作成スクリプト
+**完了時刻:** 4:30 PM
+**所要時間:** 30分
+
+**作成されたスクリプト:**
+- `apps/web/scripts/seed-test-data.ts`
+  - 組織・ユーザー自動作成（存在しない場合）
+  - アバター2件作成
+  - シナリオ2件作成
+
+**実行方法:**
+```bash
+cd /workspaces/prance-communication-platform/apps/web
+npx tsx scripts/seed-test-data.ts
+```
+
+**作成されたテストデータ:**
+
+**アバター（2件）:**
+1. Emma - Professional Interviewer
+   - Type: THREE_D, Style: REALISTIC
+   - Source: PRESET, Visibility: PUBLIC
+   - allowCloning: true ✅
+   - Tags: professional, interviewer, realistic
+
+2. Yuki - Anime Support Agent
+   - Type: TWO_D, Style: ANIME
+   - Source: GENERATED, Visibility: ORGANIZATION
+   - allowCloning: false ❌
+   - Tags: anime, support, friendly
+
+**シナリオ（2件）:**
+1. Technical Interview - Software Engineer
+   - Category: interview, Language: en
+   - Visibility: PUBLIC
+   - Duration: 1800秒（30分）
+   - Difficulty: INTERMEDIATE
+
+2. Customer Support - Product Issue Resolution
+   - Category: customer_service, Language: en
+   - Visibility: ORGANIZATION
+   - Duration: 900秒（15分）
+   - Difficulty: BEGINNER
+
+---
+
+### 次のタスク（優先順位順）
+
+| 優先度 | タスク | 推定時間 | 説明 | ステータス |
+|-------|-------|---------|------|---------|
+| ~~🔴 **必須**~~ | ~~テストデータ作成~~ | ~~15分~~ | ~~シナリオ2件、アバター2件~~ | ✅ 完了 |
+| 🟡 **中** | UPDATE API実装 | 30-45分 | シナリオ・アバター更新Lambda関数 | ⏳ 未完了 |
+| 🟡 **中** | DELETE API実装 | 30-45分 | シナリオ・アバター削除Lambda関数 | ⏳ 未完了 |
+| 🟢 **低** | 削除UI実装 | 30-45分 | 詳細ページに削除ボタン追加 | ⏳ 未完了 |
+| 🟢 **低** | クローニングUI実装 | 1時間 | Clone Buttonの実装 | ⏳ 未完了 |
+| 🔵 **将来** | セッションプレイヤー | 1-2週間 | リアルタイム会話UI | - |
+
+---
+
+### 未実装の機能
+
+**CRUD操作（編集・削除）:**
+- シナリオ: UPDATE/DELETE APIが未実装（編集UIは実装済み）
+- アバター: UPDATE/DELETE APIが未実装（編集UIは実装済み）
+- セッション: UPDATE/DELETE APIが未実装
+
+**アバタークローニング:**
+- バックエンド: allowCloningフィールド実装済み
+- フロントエンド（作成・編集）: チェックボックス実装済み ✅
+- フロントエンド（Clone Button）: 未実装 ❌
+- Clone API: POST /api/v1/avatars/{id}/clone（実装済み、未テスト）
+
+**必要なAPIエンドポイント:**
+```
+PUT    /api/v1/scenarios/{id}
+DELETE /api/v1/scenarios/{id}
+PUT    /api/v1/avatars/{id}
+DELETE /api/v1/avatars/{id}
+```
+
+---
+
+### データベース状態
+
+**現在のレコード数:**
+- Organizations: 1件（Test Organization）
+- Users: 1件（test@example.com）
+- Sessions: 0件
+- Scenarios: 2件 ✅
+  - Technical Interview - Software Engineer
+  - Customer Support - Product Issue Resolution
+- Avatars: 2件 ✅
+  - Emma - Professional Interviewer (cloning OK)
+  - Yuki - Anime Support Agent (cloning NG)
+
+**次回セッション開始時:**
+1. ~~テストデータ作成~~ ← ✅ 完了
+2. セッション作成フローの動作確認 ← 次のステップ
+3. UPDATE/DELETE API実装 ← 優先
+
+---
+
+### 技術的メモ
+
+**Prismaスキーマの重要フィールド:**
+- Session: `startedAt` (createdAtではない)
+- Session: `durationSec` (durationではない)
+- User: `orgId` (organizationIdではない)
+- Enum値: 全て大文字（TWO_D, ANIME, PRESET, ACTIVE等）
+
+**Lambda関数のパターン:**
+- 認証チェック: `getUserFromEvent(event)`
+- バリデーション: 必須フィールドチェック
+- Prisma操作: データ取得・作成
+- アクセス制御: 組織ID確認
+- レスポンス: `successResponse()` / `errorResponse()`
+
+**Toast通知パターン（sonner）:**
+```typescript
+import { toast } from 'sonner';
+
+// 成功
+toast.success('Operation completed successfully');
+
+// エラー
+toast.error('Failed to perform operation');
+```
+
+---
+
+**Phase 1進捗率:** 約50%完了（CRUD基盤・テストデータ完成）
+**次の目標:** UPDATE/DELETE API実装 → CRUD完全実装 → セッションプレイヤー

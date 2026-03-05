@@ -77,12 +77,7 @@ export const getUserFromEvent = (
   event: {
     headers: { [key: string]: string | undefined };
     requestContext?: {
-      authorizer?: {
-        userId?: string;
-        email?: string;
-        role?: string;
-        organizationId?: string;
-      };
+      authorizer?: any; // Allow any type for authorizer to accept Lambda Authorizer context
     };
   }
 ): JWTPayload | null => {
@@ -95,7 +90,7 @@ export const getUserFromEvent = (
           userId: auth.userId,
           email: auth.email,
           role: auth.role as 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER',
-          organizationId: auth.organizationId,
+          orgId: auth.organizationId, // API Gateway context field mapped to internal schema
         };
       }
     }

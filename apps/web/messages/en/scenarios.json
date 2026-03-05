@@ -1,0 +1,74 @@
+{
+  "list": {
+    "title": "Scenarios",
+    "description": "Create and manage conversation scenarios for your AI avatars",
+    "empty": "No scenarios found",
+    "emptyDescription": "Create your first scenario to get started",
+    "filter": {
+      "all": "All",
+      "category": "Category",
+      "language": "Language",
+      "visibility": "Visibility"
+    }
+  },
+  "table": {
+    "title": "Title",
+    "category": "Category",
+    "language": "Language",
+    "visibility": "Visibility",
+    "createdAt": "Created",
+    "actions": "Actions",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "visibility": {
+    "PRIVATE": "Private",
+    "ORGANIZATION": "Organization",
+    "PUBLIC": "Public"
+  },
+  "create": {
+    "button": "Create Scenario",
+    "title": "Create New Scenario",
+    "description": "Design a new conversation scenario",
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "Enter scenario title",
+      "category": "Category",
+      "categoryPlaceholder": "e.g., interview, training, sales",
+      "language": "Language",
+      "visibility": "Visibility",
+      "config": "Configuration (JSON)",
+      "configPlaceholder": "Enter scenario configuration as JSON",
+      "submit": "Create Scenario",
+      "cancel": "Cancel",
+      "creating": "Creating..."
+    },
+    "validation": {
+      "titleRequired": "Title is required",
+      "categoryRequired": "Category is required",
+      "configRequired": "Configuration is required",
+      "invalidJson": "Invalid JSON format"
+    },
+    "success": "Scenario created successfully",
+    "error": "Failed to create scenario"
+  },
+  "detail": {
+    "title": "Scenario Details",
+    "edit": "Edit Scenario",
+    "delete": "Delete Scenario",
+    "config": "Configuration",
+    "createdBy": "Created by",
+    "createdAt": "Created at"
+  },
+  "delete": {
+    "confirm": "Delete Scenario",
+    "confirmMessage": "Are you sure you want to delete this scenario? This action cannot be undone.",
+    "confirmDescription": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "success": "Scenario deleted successfully",
+    "error": "Failed to delete scenario"
+  }
+}

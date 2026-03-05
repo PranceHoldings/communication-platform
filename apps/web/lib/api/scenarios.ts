@@ -8,7 +8,7 @@ export interface Scenario {
   visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
   configJson: Record<string, unknown>;
   createdAt: string;
-  userId: string;
+  userId: string | null; // Optional - Prismaスキーマでは userId? (任意)
   orgId: string;
 }
 
@@ -30,6 +30,14 @@ export interface CreateScenarioRequest {
   visibility?: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
 }
 
+export interface UpdateScenarioRequest {
+  title?: string;
+  category?: string;
+  configJson?: Record<string, unknown>;
+  language?: string;
+  visibility?: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+}
+
 /**
  * Get list of scenarios
  */
@@ -46,22 +54,61 @@ export async function listScenarios(params?: {
   if (params?.visibility) queryParams.set('visibility', params.visibility);
 
   const url = `/scenarios${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-  return apiClient<ScenarioListResponse>(url);
+  const response = await apiClient.get<ScenarioListResponse>(url);
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to fetch scenarios');
+  }
+
+  return response.data;
 }
 
 /**
  * Create a new scenario
  */
 export async function createScenario(data: CreateScenarioRequest): Promise<Scenario> {
-  return apiClient<Scenario>('/scenarios', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const response = await apiClient.post<Scenario>('/scenarios', data);
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to create scenario');
+  }
+
+  return response.data;
 }
 
 /**
  * Get scenario by ID
  */
 export async function getScenario(id: string): Promise<Scenario> {
-  return apiClient<Scenario>(`/scenarios/${id}`);
+  const response = await apiClient.get<Scenario>(`/scenarios/${id}`);
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to fetch scenario');
+  }
+
+  return response.data;
+}
+
+/**
+ * Update an existing scenario
+ */
+export async function updateScenario(id: string, data: UpdateScenarioRequest): Promise<Scenario> {
+  const response = await apiClient.put<Scenario>(`/scenarios/${id}`, data);
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to update scenario');
+  }
+
+  return response.data;
+}
+
+/**
+ * Delete a scenario
+ */
+export async function deleteScenario(id: string): Promise<void> {
+  const response = await apiClient.delete<{ message: string; id: string }>(`/scenarios/${id}`);
+
+  if (!response.success) {
+    throw new Error(response.error?.message || 'Failed to delete scenario');
+  }
 }

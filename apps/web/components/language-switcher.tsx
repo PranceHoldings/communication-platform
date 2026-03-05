@@ -25,8 +25,6 @@ export default function LanguageSwitcher() {
     // setLocale will reload the page, so no need to set isChanging back to false
   };
 
-  const currentLanguage = languages.find((lang) => lang.code === locale) || languages[0];
-
   return (
     <div className="relative inline-block">
       <select

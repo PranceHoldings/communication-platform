@@ -2,21 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useI18n } from '@/lib/i18n/provider';
 import { listScenarios, type Scenario } from '@/lib/api/scenarios';
 import { listAvatars, type Avatar } from '@/lib/api/avatars';
 import { createSession } from '@/lib/api/sessions';
+import Toast from '@/components/Toast';
 
 type Step = 'scenario' | 'avatar' | 'options';
 
 export default function NewSessionPage() {
   const router = useRouter();
-  const t = useTranslations('sessions.new');
+  const { t } = useI18n();
 
   const [currentStep, setCurrentStep] = useState<Step>('scenario');
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
 
   // Data
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -49,12 +50,12 @@ export default function NewSessionPage() {
 
   const loadScenarios = async () => {
     setLoading(true);
-    setError(null);
+    setToast(null);
     try {
       const response = await listScenarios({ limit: 50 });
       setScenarios(response.scenarios);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load scenarios');
+      setToast({ message: err instanceof Error ? err.message : 'Failed to load scenarios', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -62,7 +63,7 @@ export default function NewSessionPage() {
 
   const loadAvatars = async () => {
     setLoading(true);
-    setError(null);
+    setToast(null);
     try {
       const response = await listAvatars({
         limit: 50,
@@ -71,7 +72,7 @@ export default function NewSessionPage() {
       });
       setAvatars(response.avatars);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load avatars');
+      setToast({ message: err instanceof Error ? err.message : 'Failed to load avatars', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -80,23 +81,23 @@ export default function NewSessionPage() {
   const handleNext = () => {
     if (currentStep === 'scenario') {
       if (!selectedScenario) {
-        setError(t('validation.scenario_required'));
+        setToast({ message: t('sessions.new.validation.scenario_required'), type: 'warning' });
         return;
       }
-      setError(null);
+      setToast(null);
       setCurrentStep('avatar');
     } else if (currentStep === 'avatar') {
       if (!selectedAvatar) {
-        setError(t('validation.avatar_required'));
+        setToast({ message: t('sessions.new.validation.avatar_required'), type: 'warning' });
         return;
       }
-      setError(null);
+      setToast(null);
       setCurrentStep('options');
     }
   };
 
   const handleBack = () => {
-    setError(null);
+    setToast(null);
     if (currentStep === 'avatar') {
       setCurrentStep('scenario');
     } else if (currentStep === 'options') {
@@ -106,7 +107,7 @@ export default function NewSessionPage() {
 
   const handleCreate = async () => {
     if (!selectedScenario || !selectedAvatar) {
-      setError('Please complete all steps');
+      setToast({ message: 'Please complete all steps', type: 'warning' });
       return;
     }
 
@@ -116,13 +117,13 @@ export default function NewSessionPage() {
       try {
         metadataObj = JSON.parse(metadata);
       } catch (err) {
-        setError(t('validation.invalid_metadata'));
+        setToast({ message: t('sessions.new.validation.invalid_metadata'), type: 'error' });
         return;
       }
     }
 
     setCreating(true);
-    setError(null);
+    setToast(null);
     try {
       const session = await createSession({
         scenarioId: selectedScenario.id,
@@ -133,7 +134,7 @@ export default function NewSessionPage() {
       // Redirect to session detail page
       router.push(`/dashboard/sessions/${session.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('error'));
+      setToast({ message: err instanceof Error ? err.message : t('sessions.new.error'), type: 'error' });
       setCreating(false);
     }
   };
@@ -151,8 +152,8 @@ export default function NewSessionPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-gray-600 mt-2">{t('description')}</p>
+        <h1 className="text-3xl font-bold">{t('sessions.new.title')}</h1>
+        <p className="text-gray-600 mt-2">{t('sessions.new.description')}</p>
       </div>
 
       {/* Progress Steps */}
@@ -161,43 +162,36 @@ export default function NewSessionPage() {
           <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep === 'scenario' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-300'}`}>
             1
           </div>
-          <span className="ml-2">{t('step_1')}</span>
+          <span className="ml-2">{t('sessions.new.step_1')}</span>
         </div>
         <div className="h-0.5 w-16 bg-gray-300" />
         <div className={`flex items-center ${currentStep === 'avatar' ? 'text-indigo-600 font-semibold' : 'text-gray-400'}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep === 'avatar' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-300'}`}>
             2
           </div>
-          <span className="ml-2">{t('step_2')}</span>
+          <span className="ml-2">{t('sessions.new.step_2')}</span>
         </div>
         <div className="h-0.5 w-16 bg-gray-300" />
         <div className={`flex items-center ${currentStep === 'options' ? 'text-indigo-600 font-semibold' : 'text-gray-400'}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep === 'options' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-300'}`}>
             3
           </div>
-          <span className="ml-2">{t('step_3')}</span>
+          <span className="ml-2">{t('sessions.new.step_3')}</span>
         </div>
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
 
       {/* Step: Scenario Selection */}
       {currentStep === 'scenario' && (
         <div className="space-y-4">
           <div>
-            <h2 className="text-xl font-semibold">{t('scenario.title')}</h2>
-            <p className="text-gray-600 text-sm mt-1">{t('scenario.description')}</p>
+            <h2 className="text-xl font-semibold">{t('sessions.new.scenario.title')}</h2>
+            <p className="text-gray-600 text-sm mt-1">{t('sessions.new.scenario.description')}</p>
           </div>
 
           {/* Search */}
           <input
             type="text"
-            placeholder={t('scenario.search_placeholder')}
+            placeholder={t('sessions.new.scenario.search_placeholder')}
             value={scenarioSearch}
             onChange={(e) => setScenarioSearch(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -207,7 +201,7 @@ export default function NewSessionPage() {
           {loading ? (
             <div className="text-center py-12 text-gray-500">Loading...</div>
           ) : filteredScenarios.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">{t('scenario.no_results')}</div>
+            <div className="text-center py-12 text-gray-500">{t('sessions.new.scenario.no_results')}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredScenarios.map((scenario) => (
@@ -223,15 +217,15 @@ export default function NewSessionPage() {
                   <h3 className="font-semibold text-lg mb-2">{scenario.title}</h3>
                   <div className="space-y-1 text-sm text-gray-600">
                     <div className="flex justify-between">
-                      <span className="font-medium">{t('scenario.card.category')}:</span>
+                      <span className="font-medium">{t('sessions.new.scenario.card.category')}:</span>
                       <span>{scenario.category}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-medium">{t('scenario.card.language')}:</span>
+                      <span className="font-medium">{t('sessions.new.scenario.card.language')}:</span>
                       <span>{scenario.language}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-medium">{t('scenario.card.visibility')}:</span>
+                      <span className="font-medium">{t('sessions.new.scenario.card.visibility')}:</span>
                       <span>{scenario.visibility}</span>
                     </div>
                   </div>
@@ -246,14 +240,14 @@ export default function NewSessionPage() {
               onClick={() => router.push('/dashboard/sessions')}
               className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
-              {t('actions.cancel')}
+              {t('sessions.new.actions.cancel')}
             </button>
             <button
               onClick={handleNext}
               disabled={!selectedScenario}
               className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {t('actions.next')}
+              {t('sessions.new.actions.next')}
             </button>
           </div>
         </div>
@@ -263,15 +257,15 @@ export default function NewSessionPage() {
       {currentStep === 'avatar' && (
         <div className="space-y-4">
           <div>
-            <h2 className="text-xl font-semibold">{t('avatar.title')}</h2>
-            <p className="text-gray-600 text-sm mt-1">{t('avatar.description')}</p>
+            <h2 className="text-xl font-semibold">{t('sessions.new.avatar.title')}</h2>
+            <p className="text-gray-600 text-sm mt-1">{t('sessions.new.avatar.description')}</p>
           </div>
 
           {/* Search and Filters */}
           <div className="flex gap-4">
             <input
               type="text"
-              placeholder={t('avatar.search_placeholder')}
+              placeholder={t('sessions.new.avatar.search_placeholder')}
               value={avatarSearch}
               onChange={(e) => setAvatarSearch(e.target.value)}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -281,18 +275,18 @@ export default function NewSessionPage() {
               onChange={(e) => setAvatarTypeFilter(e.target.value as 'TWO_D' | 'THREE_D' | '')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="">{t('avatar.filter.all_types')}</option>
-              <option value="TWO_D">{t('avatar.filter.type_2d')}</option>
-              <option value="THREE_D">{t('avatar.filter.type_3d')}</option>
+              <option value="">{t('sessions.new.avatar.filter.all_types')}</option>
+              <option value="TWO_D">{t('sessions.new.avatar.filter.type_2d')}</option>
+              <option value="THREE_D">{t('sessions.new.avatar.filter.type_3d')}</option>
             </select>
             <select
               value={avatarStyleFilter}
               onChange={(e) => setAvatarStyleFilter(e.target.value as 'ANIME' | 'REALISTIC' | '')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="">{t('avatar.filter.all_styles')}</option>
-              <option value="ANIME">{t('avatar.filter.style_anime')}</option>
-              <option value="REALISTIC">{t('avatar.filter.style_realistic')}</option>
+              <option value="">{t('sessions.new.avatar.filter.all_styles')}</option>
+              <option value="ANIME">{t('sessions.new.avatar.filter.style_anime')}</option>
+              <option value="REALISTIC">{t('sessions.new.avatar.filter.style_realistic')}</option>
             </select>
           </div>
 
@@ -300,7 +294,7 @@ export default function NewSessionPage() {
           {loading ? (
             <div className="text-center py-12 text-gray-500">Loading...</div>
           ) : filteredAvatars.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">{t('avatar.no_results')}</div>
+            <div className="text-center py-12 text-gray-500">{t('sessions.new.avatar.no_results')}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {filteredAvatars.map((avatar) => (
@@ -329,15 +323,15 @@ export default function NewSessionPage() {
                   <h3 className="font-semibold mb-2">{avatar.name}</h3>
                   <div className="space-y-1 text-xs text-gray-600">
                     <div className="flex justify-between">
-                      <span className="font-medium">{t('avatar.card.type')}:</span>
+                      <span className="font-medium">{t('sessions.new.avatar.card.type')}:</span>
                       <span>{avatar.type}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-medium">{t('avatar.card.style')}:</span>
+                      <span className="font-medium">{t('sessions.new.avatar.card.style')}:</span>
                       <span>{avatar.style}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-medium">{t('avatar.card.source')}:</span>
+                      <span className="font-medium">{t('sessions.new.avatar.card.source')}:</span>
                       <span>{avatar.source}</span>
                     </div>
                   </div>
@@ -352,14 +346,14 @@ export default function NewSessionPage() {
               onClick={handleBack}
               className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
-              {t('actions.back')}
+              {t('sessions.new.actions.back')}
             </button>
             <button
               onClick={handleNext}
               disabled={!selectedAvatar}
               className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {t('actions.next')}
+              {t('sessions.new.actions.next')}
             </button>
           </div>
         </div>
@@ -369,8 +363,8 @@ export default function NewSessionPage() {
       {currentStep === 'options' && (
         <div className="space-y-4">
           <div>
-            <h2 className="text-xl font-semibold">{t('options.title')}</h2>
-            <p className="text-gray-600 text-sm mt-1">{t('options.description')}</p>
+            <h2 className="text-xl font-semibold">{t('sessions.new.options.title')}</h2>
+            <p className="text-gray-600 text-sm mt-1">{t('sessions.new.options.description')}</p>
           </div>
 
           {/* Selected Summary */}
@@ -385,11 +379,11 @@ export default function NewSessionPage() {
 
           {/* Metadata */}
           <div>
-            <label className="block text-sm font-medium mb-2">{t('options.metadata')}</label>
+            <label className="block text-sm font-medium mb-2">{t('sessions.new.options.metadata')}</label>
             <textarea
               value={metadata}
               onChange={(e) => setMetadata(e.target.value)}
-              placeholder={t('options.metadata_placeholder')}
+              placeholder={t('sessions.new.options.metadata_placeholder')}
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
             />
@@ -402,17 +396,27 @@ export default function NewSessionPage() {
               disabled={creating}
               className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
             >
-              {t('actions.back')}
+              {t('sessions.new.actions.back')}
             </button>
             <button
               onClick={handleCreate}
               disabled={creating}
               className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed"
             >
-              {creating ? t('creating') : t('actions.create')}
+              {creating ? t('sessions.new.creating') : t('sessions.new.actions.create')}
             </button>
           </div>
         </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          isOpen={!!toast}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

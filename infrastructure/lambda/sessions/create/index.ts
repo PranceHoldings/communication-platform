@@ -2,6 +2,12 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
+import {
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  ValidationError,
+} from '../../shared/types';
 
 /**
  * POST /api/v1/sessions
@@ -22,7 +28,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Get authenticated user
     const user = getUserFromEvent(event);
     if (!user) {
-      return errorResponse(401, 'Unauthorized');
+      return errorResponse(new AuthenticationError());
     }
 
     // Parse request body
@@ -31,46 +37,52 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate required fields
     if (!scenarioId) {
-      return errorResponse(400, 'Validation Error', 'scenarioId is required');
+      return errorResponse(new ValidationError('scenarioId is required'));
     }
 
     if (!avatarId) {
-      return errorResponse(400, 'Validation Error', 'avatarId is required');
+      return errorResponse(new ValidationError('avatarId is required'));
     }
 
-    // Verify scenario exists and belongs to the user's organization
+    // Verify scenario exists and user has access to it
     const scenario = await prisma.scenario.findUnique({
       where: { id: scenarioId },
-      select: { id: true, orgId: true },
+      select: { id: true, orgId: true, visibility: true },
     });
 
     if (!scenario) {
-      return errorResponse(404, 'Scenario not found');
+      return errorResponse(new NotFoundError('Scenario'));
     }
 
-    if (scenario.orgId !== user.organizationId) {
-      return errorResponse(403, 'Access denied to this scenario');
+    // Check access: must be same org OR scenario is PUBLIC
+    if (scenario.orgId !== user.orgId && scenario.visibility !== 'PUBLIC') {
+      return errorResponse(new AuthorizationError('Access denied to this scenario'));
     }
 
-    // Verify avatar exists and belongs to the user's organization
+    // Verify avatar exists and user has access to it
     const avatar = await prisma.avatar.findUnique({
       where: { id: avatarId },
-      select: { id: true, orgId: true },
+      select: { id: true, orgId: true, visibility: true, source: true },
     });
 
     if (!avatar) {
-      return errorResponse(404, 'Avatar not found');
+      return errorResponse(new NotFoundError('Avatar'));
     }
 
-    if (avatar.orgId !== user.organizationId) {
-      return errorResponse(403, 'Access denied to this avatar');
+    // Check access: must be same org OR avatar is PUBLIC OR avatar is PRESET
+    if (
+      avatar.orgId !== user.orgId &&
+      avatar.visibility !== 'PUBLIC' &&
+      avatar.source !== 'PRESET'
+    ) {
+      return errorResponse(new AuthorizationError('Access denied to this avatar'));
     }
 
     // Create session
     const session = await prisma.session.create({
       data: {
         userId: user.userId,
-        orgId: user.organizationId,
+        orgId: user.orgId,
         scenarioId,
         avatarId,
         status: 'ACTIVE',
@@ -117,6 +129,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     );
   } catch (error) {
     console.error('Error creating session:', error);
-    return errorResponse(500, 'Failed to create session', error instanceof Error ? error.message : undefined);
+    if (error instanceof Error) {
+      return errorResponse(error);
+    }
+    return errorResponse(new Error('Failed to create session'));
   }
 };

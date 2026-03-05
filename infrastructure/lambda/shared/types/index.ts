@@ -14,7 +14,7 @@ export interface JWTPayload {
   userId: string;
   email: string;
   role: 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER';
-  organizationId: string;
+  orgId: string; // Aligned with Prisma schema
   iat?: number;
   exp?: number;
 }
@@ -52,7 +52,7 @@ export interface User {
   email: string;
   name: string;
   role: 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER';
-  organizationId: string;
+  orgId: string; // Aligned with Prisma schema
   createdAt: Date;
   lastLoginAt: Date | null;
 }
@@ -72,6 +72,7 @@ export interface Avatar {
   configJson: object | null;
   tags: string[];
   visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  allowCloning: boolean;
   createdAt: Date;
 }
 

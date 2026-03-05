@@ -47,7 +47,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Verify user has access to this scenario
     // User can access if: same org OR scenario is PUBLIC
     const hasAccess =
-      scenario.orgId === user.organizationId || scenario.visibility === 'PUBLIC';
+      scenario.orgId === user.orgId || scenario.visibility === 'PUBLIC';
 
     if (!hasAccess) {
       return errorResponse(403, 'Access denied to this scenario');

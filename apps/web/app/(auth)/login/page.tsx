@@ -7,6 +7,7 @@ import { authApi } from '@/lib/api/auth';
 import { useAuth } from '@/contexts/auth-context';
 import { useI18n } from '@/lib/i18n/provider';
 import LanguageSwitcher from '@/components/language-switcher';
+import Toast from '@/components/Toast';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,12 +15,12 @@ export default function LoginPage() {
   const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setToast(null);
     setIsLoading(true);
 
     try {
@@ -38,7 +39,10 @@ export default function LoginPage() {
       // ダッシュボードにリダイレクト
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errors.generic'));
+      setToast({
+        message: err instanceof Error ? err.message : t('errors.generic'),
+        type: 'error',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -59,13 +63,6 @@ export default function LoginPage() {
             {t('auth.login.subtitle')}
           </p>
         </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
 
         {/* Login Form */}
         <form onSubmit={(e) => void handleSubmit(e)} className="mt-8 space-y-6">
@@ -158,6 +155,16 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          isOpen={!!toast}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

@@ -72,7 +72,7 @@ export const handler = async (
     console.log('Token verified successfully:', {
       userId: decoded.userId,
       role: decoded.role,
-      organizationId: decoded.organizationId,
+      orgId: decoded.orgId,
     });
 
     // メソッドARNから全てのリソースへのアクセスを許可するワイルドカードARNを生成
@@ -84,12 +84,12 @@ export const handler = async (
     const stage = apiGatewayArnTmp[1];
     const wildcard = `arn:aws:execute-api:${region}:${awsAccountId}:${restApiId}/${stage}/*/*`;
 
-    // Allowポリシーを生成（コンテキストに認証情報を含める）
+    // Generate Allow policy with authentication context
     return generatePolicy(decoded.userId, 'Allow', wildcard, {
       userId: decoded.userId,
       email: decoded.email,
       role: decoded.role,
-      organizationId: decoded.organizationId,
+      organizationId: decoded.orgId, // API Gateway context field
     });
   } catch (error) {
     console.error('Authorization failed:', error);

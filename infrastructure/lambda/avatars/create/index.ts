@@ -18,7 +18,8 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  *   "thumbnailUrl": "string" (optional),
  *   "configJson": {} (optional),
  *   "tags": ["string"] (optional),
- *   "visibility": "PRIVATE" | "ORGANIZATION" | "PUBLIC" (optional, default: "PRIVATE")
+ *   "visibility": "PRIVATE" | "ORGANIZATION" | "PUBLIC" (optional, default: "PRIVATE"),
+ *   "allowCloning": boolean (optional, default: false)
  * }
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -33,7 +34,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { name, type, style, source, modelUrl, thumbnailUrl, configJson, tags, visibility } = body;
+    const { name, type, style, source, modelUrl, thumbnailUrl, configJson, tags, visibility, allowCloning } = body;
 
     // Validate required fields
     if (!name) {
@@ -92,7 +93,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const avatar = await prisma.avatar.create({
       data: {
         userId: user.userId,
-        orgId: user.organizationId,
+        orgId: user.orgId,
         name,
         type,
         style,
@@ -102,6 +103,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         configJson: configJson || null,
         tags: tags || [],
         visibility: visibility || 'PRIVATE',
+        allowCloning: allowCloning || false,
       },
       select: {
         id: true,
@@ -113,6 +115,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         thumbnailUrl: true,
         tags: true,
         visibility: true,
+        allowCloning: true,
         createdAt: true,
         userId: true,
         orgId: true,

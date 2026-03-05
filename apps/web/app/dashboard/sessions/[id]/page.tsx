@@ -2,13 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import { getSession, type Session } from '@/lib/api/sessions';
 
 export default function SessionDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const t = useTranslations('dashboard');
 
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +90,7 @@ export default function SessionDetailPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Status</h2>
-          <span className={\`px-3 py-1 rounded-full text-sm font-semibold \${getStatusColor(session.status)}\`}>
+          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(session.status)}`}>
             {session.status}
           </span>
         </div>

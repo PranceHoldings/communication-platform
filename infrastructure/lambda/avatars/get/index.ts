@@ -38,6 +38,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         configJson: true,
         tags: true,
         visibility: true,
+        allowCloning: true,
         createdAt: true,
         userId: true,
         orgId: true,
@@ -51,7 +52,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Verify user has access to this avatar
     // User can access if: same org OR avatar is PRESET OR avatar is PUBLIC
     const hasAccess =
-      avatar.orgId === user.organizationId ||
+      avatar.orgId === user.orgId ||
       avatar.source === 'PRESET' ||
       avatar.visibility === 'PUBLIC';
 

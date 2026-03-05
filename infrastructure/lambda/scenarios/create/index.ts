@@ -63,7 +63,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const scenario = await prisma.scenario.create({
       data: {
         userId: user.userId,
-        orgId: user.organizationId,
+        orgId: user.orgId,
         title,
         category,
         configJson,

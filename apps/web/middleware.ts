@@ -23,7 +23,8 @@ function detectLanguageFromHeader(acceptLanguage: string | null): string {
 
   const languages = acceptLanguage.split(',').map((lang) => {
     const [code, qValue] = lang.trim().split(';q=');
-    const baseCode = code.split('-')[0].toLowerCase();
+    const parts = code ? code.split('-') : [];
+    const baseCode = parts[0] ? parts[0].toLowerCase() : defaultLocale;
     return { code: baseCode, q: qValue ? parseFloat(qValue) : 1.0 };
   });
 

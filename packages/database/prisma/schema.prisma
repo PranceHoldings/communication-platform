@@ -75,6 +75,7 @@ model Avatar {
   configJson  Json?        @map("config_json")
   tags        String[]     @default([])
   visibility  Visibility   @default(PRIVATE)
+  allowCloning Boolean     @default(false) @map("allow_cloning")
   createdAt   DateTime     @default(now()) @map("created_at")
 
   user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -140,8 +141,8 @@ model Session {
   id               String        @id @default(uuid())
   userId           String        @map("user_id")
   orgId            String        @map("org_id")
-  scenarioId       String        @map("scenario_id")
-  avatarId         String        @map("avatar_id")
+  scenarioId       String?       @map("scenario_id")
+  avatarId         String?       @map("avatar_id")
   status           SessionStatus @default(ACTIVE)
   startedAt        DateTime      @default(now()) @map("started_at")
   endedAt          DateTime?     @map("ended_at")
@@ -150,8 +151,8 @@ model Session {
 
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization     Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  scenario         Scenario      @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
-  avatar           Avatar        @relation(fields: [avatarId], references: [id], onDelete: Cascade)
+  scenario         Scenario?     @relation(fields: [scenarioId], references: [id], onDelete: SetNull)
+  avatar           Avatar?       @relation(fields: [avatarId], references: [id], onDelete: SetNull)
 
   recordings       Recording[]
   transcripts      Transcript[]

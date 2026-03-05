@@ -38,7 +38,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Build where clause - get avatars from user's org, presets, or public avatars
     const where: any = {
       OR: [
-        { orgId: user.organizationId }, // User's organization avatars
+        { orgId: user.orgId }, // User's organization avatars
         { source: 'PRESET' }, // System preset avatars
         { visibility: 'PUBLIC' }, // Public avatars from any organization
       ],
@@ -59,7 +59,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (source === 'PRESET') {
         where.source = 'PRESET';
       } else {
-        where.orgId = user.organizationId;
+        where.orgId = user.orgId;
         where.source = source;
       }
     }
@@ -67,7 +67,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (visibility) {
       // If specific visibility is requested, add to filter
       if (!where.OR) {
-        where.orgId = user.organizationId;
+        where.orgId = user.orgId;
       }
       where.visibility = visibility;
     }
@@ -91,6 +91,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           thumbnailUrl: true,
           tags: true,
           visibility: true,
+          allowCloning: true,
           createdAt: true,
           userId: true,
           orgId: true,

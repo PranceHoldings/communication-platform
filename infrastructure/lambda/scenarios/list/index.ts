@@ -34,7 +34,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Build where clause - get scenarios from user's org or public scenarios
     const where: any = {
       OR: [
-        { orgId: user.organizationId }, // User's organization scenarios
+        { orgId: user.orgId }, // User's organization scenarios
         { visibility: 'PUBLIC' }, // Public scenarios from any organization
       ],
     };
@@ -47,7 +47,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (visibility) {
       // If specific visibility is requested, override the OR condition
       delete where.OR;
-      where.orgId = user.organizationId;
+      where.orgId = user.orgId;
       where.visibility = visibility;
     }
 

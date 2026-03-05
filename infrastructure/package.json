@@ -23,7 +23,9 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@types/pg": "^8.18.0",
     "aws-cdk-lib": "^2.120.0",
-    "constructs": "^10.3.0"
+    "constructs": "^10.3.0",
+    "pg": "^8.20.0"
   }
 }

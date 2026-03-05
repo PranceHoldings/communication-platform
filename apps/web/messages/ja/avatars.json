@@ -1,0 +1,114 @@
+{
+  "list": {
+    "title": "アバター",
+    "description": "会話用のAIアバターを閲覧・カスタマイズします",
+    "empty": "アバターが見つかりません",
+    "emptyDescription": "最初のアバターを作成して始めましょう",
+    "filter": {
+      "all": "すべて",
+      "type": "タイプ",
+      "style": "スタイル",
+      "source": "ソース",
+      "visibility": "公開設定"
+    }
+  },
+  "table": {
+    "name": "名前",
+    "type": "タイプ",
+    "style": "スタイル",
+    "source": "ソース",
+    "visibility": "公開設定",
+    "tags": "タグ",
+    "createdAt": "作成日",
+    "actions": "操作",
+    "view": "表示",
+    "edit": "編集",
+    "delete": "削除"
+  },
+  "type": {
+    "TWO_D": "2D",
+    "THREE_D": "3D"
+  },
+  "style": {
+    "ANIME": "アニメ",
+    "REALISTIC": "リアル"
+  },
+  "source": {
+    "PRESET": "プリセット",
+    "GENERATED": "生成",
+    "ORG_CUSTOM": "カスタム"
+  },
+  "visibility": {
+    "PRIVATE": "プライベート",
+    "ORGANIZATION": "組織内",
+    "PUBLIC": "公開"
+  },
+  "badge": {
+    "yourOrg": "あなたの組織",
+    "preset": "プリセット",
+    "shared": "共有"
+  },
+  "create": {
+    "button": "アバターを作成",
+    "title": "新しいアバターを作成",
+    "description": "新しいAIアバターをコレクションに追加します",
+    "form": {
+      "name": "名前",
+      "namePlaceholder": "アバターの名前を入力",
+      "type": "タイプ",
+      "style": "スタイル",
+      "source": "ソース",
+      "modelUrl": "モデルURL",
+      "modelUrlPlaceholder": "https://models.example.com/avatar.glb",
+      "thumbnailUrl": "サムネイルURL（任意）",
+      "thumbnailUrlPlaceholder": "https://models.example.com/thumbnail.png",
+      "tags": "タグ（カンマ区切り）",
+      "tagsPlaceholder": "女性, プロフェッショナル, フレンドリー",
+      "visibility": "公開設定",
+      "allowCloning": "他のユーザーによる複製を許可",
+      "allowCloningDescription": "有効にすると、他のユーザーがこのアバターを自分の組織に複製できます",
+      "submit": "アバターを作成",
+      "cancel": "キャンセル",
+      "creating": "作成中..."
+    },
+    "validation": {
+      "nameRequired": "名前は必須です",
+      "typeRequired": "タイプは必須です",
+      "styleRequired": "スタイルは必須です",
+      "sourceRequired": "ソースは必須です",
+      "modelUrlRequired": "モデルURLは必須です"
+    },
+    "success": "アバターが正常に作成されました",
+    "error": "アバターの作成に失敗しました"
+  },
+  "detail": {
+    "title": "アバター詳細",
+    "edit": "アバターを編集",
+    "delete": "アバターを削除",
+    "info": "基本情報",
+    "modelUrl": "モデルURL",
+    "thumbnailUrl": "サムネイルURL",
+    "tags": "タグ",
+    "createdAt": "作成日時"
+  },
+  "delete": {
+    "confirm": "アバターを削除",
+    "confirmMessage": "このアバターを削除してもよろしいですか？この操作は取り消せません。",
+    "confirmDescription": "この操作は取り消せません。",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "deleting": "削除中...",
+    "success": "アバターが正常に削除されました",
+    "error": "アバターの削除に失敗しました"
+  },
+  "clone": {
+    "button": "アバターを複製",
+    "confirm": "アバターを複製",
+    "confirmMessage": "このアバターをあなたの組織に複製しますか？カスタムアバターとしてコピーが作成されます。",
+    "cloning": "複製中...",
+    "success": "アバターが正常に複製されました",
+    "error": "アバターの複製に失敗しました",
+    "notAllowed": "このアバターは複製できません",
+    "sameOrg": "自組織のアバターは複製できません"
+  }
+}

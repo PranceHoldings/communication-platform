@@ -1,0 +1,74 @@
+{
+  "list": {
+    "title": "シナリオ",
+    "description": "AIアバターの会話シナリオを作成・管理します",
+    "empty": "シナリオが見つかりません",
+    "emptyDescription": "最初のシナリオを作成して始めましょう",
+    "filter": {
+      "all": "すべて",
+      "category": "カテゴリ",
+      "language": "言語",
+      "visibility": "公開設定"
+    }
+  },
+  "table": {
+    "title": "タイトル",
+    "category": "カテゴリ",
+    "language": "言語",
+    "visibility": "公開設定",
+    "createdAt": "作成日",
+    "actions": "操作",
+    "view": "表示",
+    "edit": "編集",
+    "delete": "削除"
+  },
+  "visibility": {
+    "PRIVATE": "プライベート",
+    "ORGANIZATION": "組織内",
+    "PUBLIC": "公開"
+  },
+  "create": {
+    "button": "シナリオを作成",
+    "title": "新しいシナリオを作成",
+    "description": "新しい会話シナリオを設計します",
+    "form": {
+      "title": "タイトル",
+      "titlePlaceholder": "シナリオのタイトルを入力",
+      "category": "カテゴリ",
+      "categoryPlaceholder": "例: 面接、研修、営業",
+      "language": "言語",
+      "visibility": "公開設定",
+      "config": "設定（JSON）",
+      "configPlaceholder": "シナリオ設定をJSON形式で入力",
+      "submit": "シナリオを作成",
+      "cancel": "キャンセル",
+      "creating": "作成中..."
+    },
+    "validation": {
+      "titleRequired": "タイトルは必須です",
+      "categoryRequired": "カテゴリは必須です",
+      "configRequired": "設定は必須です",
+      "invalidJson": "JSON形式が無効です"
+    },
+    "success": "シナリオが正常に作成されました",
+    "error": "シナリオの作成に失敗しました"
+  },
+  "detail": {
+    "title": "シナリオ詳細",
+    "edit": "シナリオを編集",
+    "delete": "シナリオを削除",
+    "config": "設定",
+    "createdBy": "作成者",
+    "createdAt": "作成日時"
+  },
+  "delete": {
+    "confirm": "シナリオを削除",
+    "confirmMessage": "このシナリオを削除してもよろしいですか？この操作は取り消せません。",
+    "confirmDescription": "この操作は取り消せません。",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "deleting": "削除中...",
+    "success": "シナリオが正常に削除されました",
+    "error": "シナリオの削除に失敗しました"
+  }
+}

@@ -1,19 +1,26 @@
 /**
  * Sessions API
+ *
+ * 注意: このファイルの型定義はAPIレスポンスの形式に基づいています。
+ * Lambda関数が以下のマッピングを行っています:
+ * - durationSec → duration
+ * - metadataJson → metadata
+ * - startedAt → createdAt (互換性のため)
+ * - thumbnailUrl → imageUrl (Avatar)
  */
 
-import { apiClient, ApiResponse } from './client';
+import { apiClient } from './client';
 
 export interface Session {
   id: string;
   scenarioId: string;
   avatarId: string;
   status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
-  startedAt: string;
-  endedAt: string | null;
-  duration: number | null;
-  metadata: Record<string, unknown>;
-  createdAt: string;
+  startedAt: string; // セッション開始日時
+  endedAt: string | null; // セッション終了日時
+  duration: number | null; // 所要時間（秒）- DBでは durationSec
+  metadata: Record<string, unknown>; // セッションメタデータ - DBでは metadataJson
+  createdAt: string; // startedAtのエイリアス（互換性のため）
   scenario?: {
     id: string;
     title: string;
@@ -23,7 +30,7 @@ export interface Session {
     id: string;
     name: string;
     type?: string;
-    imageUrl?: string;
+    imageUrl?: string; // thumbnailUrlのエイリアス（互換性のため）
     thumbnailUrl?: string;
     modelUrl?: string;
   };
@@ -69,45 +76,80 @@ export interface ListSessionsResponse {
   };
 }
 
+/**
+ * セッション一覧を取得
+ */
+export async function listSessions(params?: ListSessionsRequest): Promise<ListSessionsResponse> {
+  const query = new URLSearchParams();
+  if (params?.limit) query.append('limit', params.limit.toString());
+  if (params?.offset) query.append('offset', params.offset.toString());
+  if (params?.status) query.append('status', params.status);
+
+  const endpoint = `/sessions${query.toString() ? `?${query.toString()}` : ''}`;
+  const response = await apiClient.get<ListSessionsResponse>(endpoint);
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to fetch sessions');
+  }
+
+  return response.data;
+}
+
+/**
+ * セッションを作成
+ */
+export async function createSession(data: CreateSessionRequest): Promise<Session> {
+  const response = await apiClient.post<Session>('/sessions', data);
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to create session');
+  }
+
+  return response.data;
+}
+
+/**
+ * セッション詳細を取得
+ */
+export async function getSession(id: string): Promise<Session> {
+  const response = await apiClient.get<Session>(`/sessions/${id}`);
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to fetch session');
+  }
+
+  return response.data;
+}
+
+/**
+ * セッションを更新（将来実装）
+ */
+export async function updateSession(id: string, data: Partial<Session>): Promise<Session> {
+  const response = await apiClient.put<Session>(`/sessions/${id}`, data);
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to update session');
+  }
+
+  return response.data;
+}
+
+/**
+ * セッションを削除（将来実装）
+ */
+export async function deleteSession(id: string): Promise<void> {
+  const response = await apiClient.delete<void>(`/sessions/${id}`);
+
+  if (!response.success) {
+    throw new Error(response.error?.message || 'Failed to delete session');
+  }
+}
+
+// Backward compatibility - オブジェクト形式のエクスポートも維持
 export const sessionsApi = {
-  /**
-   * セッション一覧を取得
-   */
-  async list(params?: ListSessionsRequest): Promise<ApiResponse<ListSessionsResponse>> {
-    const query = new URLSearchParams();
-    if (params?.limit) query.append('limit', params.limit.toString());
-    if (params?.offset) query.append('offset', params.offset.toString());
-    if (params?.status) query.append('status', params.status);
-
-    const endpoint = `/sessions${query.toString() ? `?${query.toString()}` : ''}`;
-    return apiClient.get<ListSessionsResponse>(endpoint);
-  },
-
-  /**
-   * セッションを作成
-   */
-  async create(data: CreateSessionRequest): Promise<ApiResponse<Session>> {
-    return apiClient.post<Session>('/sessions', data);
-  },
-
-  /**
-   * セッション詳細を取得
-   */
-  async get(id: string): Promise<ApiResponse<Session>> {
-    return apiClient.get<Session>(`/sessions/${id}`);
-  },
-
-  /**
-   * セッションを更新（将来実装）
-   */
-  async update(id: string, data: Partial<Session>): Promise<ApiResponse<Session>> {
-    return apiClient.put<Session>(`/sessions/${id}`, data);
-  },
-
-  /**
-   * セッションを削除（将来実装）
-   */
-  async delete(id: string): Promise<ApiResponse<void>> {
-    return apiClient.delete<void>(`/sessions/${id}`);
-  },
+  list: listSessions,
+  create: createSession,
+  get: getSession,
+  update: updateSession,
+  delete: deleteSession,
 };

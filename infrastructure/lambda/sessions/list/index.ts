@@ -70,7 +70,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     console.log(`Found ${sessions.length} sessions for user ${user.userId}`);
 
     return successResponse({
-      sessions: sessions.map((session) => ({
+      sessions: sessions.map((session: any) => ({
         id: session.id,
         scenarioId: session.scenarioId,
         scenario: session.scenario,

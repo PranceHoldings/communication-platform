@@ -79,7 +79,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // パスワードのハッシュ化
     const passwordHash = await hashPassword(password);
 
-    // 組織の確認（organizationIdが指定されている場合）
+    // 組織の確認（招待の場合は既存組織に参加、自己登録の場合は新規組織作成）
     let finalOrganizationId = organizationId;
     if (organizationId) {
       const organization = await prisma.organization.findUnique({
@@ -105,7 +105,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         email,
         passwordHash,
         name,
-        role: organizationId ? 'CLIENT_USER' : 'CLIENT_ADMIN', // 招待の場合は CLIENT_USER、自己登録の場合は CLIENT_ADMIN
+        role: organizationId ? 'CLIENT_USER' : 'CLIENT_ADMIN', // Invited users are CLIENT_USER, self-registered are CLIENT_ADMIN
         organization: {
           connect: { id: finalOrganizationId! },
         },
@@ -124,8 +124,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const jwtPayload: JWTPayload = {
       userId: user.id,
       email: user.email,
-      role: user.role as 'super_admin' | 'client_admin' | 'client_user',
-      organizationId: user.orgId,
+      role: user.role as 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER',
+      orgId: user.orgId,
     };
 
     const tokens = generateTokenPair(jwtPayload);
@@ -140,7 +140,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
           email: user.email,
           name: user.name,
           role: user.role,
-          organizationId: user.orgId,
+          orgId: user.orgId,
         },
         tokens,
       },

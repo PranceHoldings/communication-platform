@@ -37,19 +37,12 @@ export default function SessionsPage() {
       });
 
       console.log('Sessions API response:', response);
-
-      if (response.success && response.data) {
-        setSessions(response.data.sessions);
-        setPagination(response.data.pagination);
-      } else {
-        const errorMsg = response.error?.message || 'Failed to load sessions';
-        console.error('Sessions API error:', errorMsg, response.error);
-        setError(errorMsg);
-      }
+      setSessions(response.sessions);
+      setPagination(response.pagination);
     } catch (err) {
       console.error('Sessions API exception:', err);
       const errorMsg = err instanceof Error ? err.message : 'An error occurred';
-      setError(`Network error: ${errorMsg}. Please check your login status.`);
+      setError(`Failed to load sessions: ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }
@@ -221,7 +214,7 @@ export default function SessionsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(session.createdAt)}
+                    {formatDate(session.startedAt)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDuration(session.duration)}
