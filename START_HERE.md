@@ -1,9 +1,9 @@
-# 次回セッション開始手順（2026-03-05終了時点）
+# 次回セッション開始手順（2026-03-06終了時点）
 
-**最終作業日:** 2026-03-05 11:32 PM
-**Phase 1進捗:** 約60%完了
-**最新コミット:** 02926a5
-**最新デプロイ:** Sessions APIバグ修正完了
+**最終作業日:** 2026-03-06 12:45 AM
+**Phase 1進捗:** 約65%完了
+**最新コミット:** 8e40958
+**最新デプロイ:** Sessions APIバグ修正完了（2026-03-05）
 
 ---
 
@@ -85,13 +85,13 @@ http://localhost:3000/dashboard/sessions/new
 - ✅ DELETE /api/v1/avatars/{id} - アバター削除
 - ✅ POST /api/v1/avatars/{id}/clone - アバタークローン
 
-### 4. 管理画面UI拡張（1-1.5時間） 🔴 **次回の優先タスク**
-**残タスク:**
-- シナリオ詳細ページに編集・削除ボタン追加
-- アバター詳細ページに編集・削除ボタン追加
-- アバター詳細ページにCloneボタン追加（allowCloning=trueのみ）
-- ConfirmDialogコンポーネント統合
-- 削除・クローン機能の動作確認
+### ~~4. 管理画面UI拡張~~ ✅ **完了（2026-03-06 12:45 AM）**
+**実装完了:**
+- ✅ ConfirmDialogコンポーネント作成（shadcn/ui）
+- ✅ シナリオ編集・削除機能実装
+- ✅ アバター編集・削除・クローン機能実装
+- ✅ sonner toast統合
+- ✅ ビルド成功確認
 
 ---
 
@@ -125,35 +125,49 @@ http://localhost:3000/dashboard/sessions/new
 |--------|---------|-------|----------|
 | ~~Sessions APIバグ修正~~ | 10-15分 | 🔴 最優先 | ✅ 完了 |
 | ~~UPDATE/DELETE API実装~~ | 1-2時間 | 🔴 最優先 | ✅ 完了 |
-| 管理画面UI拡張 | 1-1.5時間 | 🔴 最優先 | ⏳ 次回作業 |
+| ~~管理画面UI拡張~~ | 1-1.5時間 | 🔴 最優先 | ✅ 完了 |
 | セッションプレイヤー実装 | 1-2週間 | 🔵 将来 | 未着手 |
 
-**Phase 1進捗:** 60%完了
-**次のマイルストーン:** 管理画面UI拡張完了後、65%達成
+**Phase 1進捗:** 65%完了
+**次のマイルストーン:** セッションプレイヤー実装（Phase 1完了）
 
 ---
 
-## ✅ 前回セッションで完了した作業（2026-03-05 11:32 PM）
+## ✅ 前回セッションで完了した作業（2026-03-06 12:45 AM）
 
-### 1. ドキュメント構造の統一
-- `START_HERE.md` - 唯一のエントリーポイント（簡潔、最新状態）
-- `docs/progress/SESSION_HISTORY.md` - 詳細な履歴アーカイブ
-- `docs/progress/ARCHIVE_2026-03-05_session-complete.md` - 本日のセッション詳細
-- ドキュメント参照先の明確化
+### 1. 管理画面UI拡張（完全実装）
+**所要時間:** 約1時間15分
 
-### 2. Sessions APIバグ修正デプロイ
-- `infrastructure/lambda/sessions/list/index.ts` - null check追加
-- `infrastructure/lambda/sessions/get/index.ts` - null check追加
-- デプロイ完了（74秒）
+**実装内容:**
+- ConfirmDialogコンポーネント作成（shadcn/ui AlertDialog使用）
+- シナリオ編集ページ（`/dashboard/scenarios/[id]/edit`）
+- アバター編集ページ（`/dashboard/avatars/[id]/edit`）
+- シナリオ詳細ページに編集・削除ボタン追加
+- アバター詳細ページに編集・削除・クローンボタン追加
+- sonner toast統合（成功・エラー通知）
+- 型安全性向上（buildQueryString型定義改善）
+
+**成果:**
+- ✅ シナリオ完全CRUD（Create/Read/Update/Delete）
+- ✅ アバター完全CRUD + Clone機能
+- ✅ ユーザーフレンドリーな確認ダイアログ
+- ✅ 完全な多言語対応
+- ✅ ビルド成功確認
+
+**コミット:** `8e40958`
+
+---
+
+### 2. 前々回（2026-03-05 11:32 PM）
+
+**ドキュメント構造の統一:**
+- START_HERE.md - 唯一のエントリーポイント確立
+- docs/progress/配下にアーカイブ整理
+- 開発プロセスガイドライン追加（CLAUDE.md）
+
+**Sessions APIバグ修正デプロイ:**
+- avatarがnullの場合のエラー対応
 - 18関数更新（UPDATE/DELETE API含む）
-
-### 3. UPDATE/DELETE API実装デプロイ
-- PUT /api/v1/scenarios/{id} - シナリオ更新
-- DELETE /api/v1/scenarios/{id} - シナリオ削除
-- PUT /api/v1/avatars/{id} - アバター更新
-- DELETE /api/v1/avatars/{id} - アバター削除
-- POST /api/v1/avatars/{id}/clone - アバタークローン
-- 全API動作確認済み
 
 ---
 
