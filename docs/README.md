@@ -1,44 +1,95 @@
 # Prance Platform ドキュメント
 
-このディレクトリにはPranceプラットフォームの各種ドキュメントが格納されています。
+このディレクトリにはPranceプラットフォームの包括的な技術ドキュメントが格納されています。
 
 ---
 
-## 📂 ディレクトリ構造
+## 📂 ドキュメント体系
+
+### マスターファイル
+
+- **[CLAUDE.md](../CLAUDE.md)** - プロジェクト全体の概要と重要な方針（約350行）
+
+### 新構成（v2.0）
 
 ```
 docs/
 ├── README.md                          # このファイル
-├── GLOSSARY.md                        # 重要用語集
+├── GLOSSARY.md                        # 重要用語集（統合版は reference/GLOSSARY.md）
 │
-├── [永続化ドキュメント]               # プロジェクト全体で参照される重要ドキュメント
-│   ├── ALPHA_DEVELOPMENT.md           # アルファ版開発計画
-│   ├── API_SPECIFICATION.md           # API仕様書
-│   ├── ARCHITECTURE.md                # システムアーキテクチャ
-│   ├── CICD.md                        # CI/CDパイプライン
-│   ├── CODING_STANDARDS.md            # コーディング規約
-│   ├── DATABASE_DESIGN.md             # データベース設計
-│   ├── DEPLOYMENT.md                  # デプロイ手順
-│   ├── DEVELOPMENT_GUIDE.md           # 開発ガイド
-│   ├── FEATURE_ROADMAP.md             # 機能ロードマップ
-│   ├── IMPLEMENTATION_PLAN.md         # 実装計画
-│   ├── OPERATIONS_GUIDE.md            # 運用ガイド
-│   ├── PROJECT_STRUCTURE.md           # プロジェクト構造
-│   ├── RELEASE_PLAN.md                # リリース計画
-│   └── SECURITY.md                    # セキュリティガイドライン
+├── architecture/                       # アーキテクチャ設計
+│   ├── SYSTEM_ARCHITECTURE.md          - システム全体構成
+│   └── MULTITENANCY.md                 - マルチテナント設計
 │
-├── reference/                          # レファレンス的なドキュメント
-│   ├── AUTH_COMPARISON_CLERK_VS_COGNITO.md  # 認証サービス比較
-│   ├── AWS_MIGRATION_ANALYSIS.md            # AWS移行分析
-│   ├── AZURE_SETUP_CHECKLIST.md             # Azureセットアップチェックリスト
-│   ├── BUSINESS_OVERVIEW.md                 # ビジネス概要
-│   ├── CLIENT_PRESENTATION.md               # クライアントプレゼン資料
-│   └── EXTERNAL_TOOLS_SETUP.md              # 外部ツールセットアップ
+├── modules/                            # モジュール詳細設計（14モジュール）
+│   ├── AVATAR_MODULE.md                - アバター管理
+│   ├── VOICE_MODULE.md                 - 音声処理
+│   ├── SCENARIO_ENGINE.md              - シナリオエンジン
+│   ├── SESSION_RECORDING.md            - セッション・録画
+│   ├── TRANSCRIPT_PLAYER.md            - トランスクリプトプレイヤー
+│   ├── ANALYSIS_MODULE.md              - 感情・非言語解析
+│   ├── REPORT_MODULE.md                - レポート生成
+│   ├── AI_MANAGEMENT.md                - AIプロンプト・プロバイダ管理
+│   ├── BENCHMARK_SYSTEM.md             - ベンチマークシステム
+│   ├── EXTERNAL_API.md                 - 外部連携API
+│   ├── SUBSCRIPTION_PLANS.md           - サブスクリプション・プラン管理
+│   ├── MULTILINGUAL_SYSTEM.md          - 多言語対応
+│   ├── ATS_INTEGRATION.md              - ATS連携
+│   └── PLUGIN_SYSTEM.md                - プラグインシステム
 │
-└── steering/                           # ステアリングドキュメント（作業単位）
-    ├── TEMPLATE_STEERING_DOCUMENT.md   # テンプレート
-    └── SESSION_YYYY-MM-DD_*.md         # 各作業セッションのログ
+├── development/                        # 開発関連
+│   ├── IMPLEMENTATION_PHASES.md        - 実装フェーズ計画
+│   ├── API_DESIGN.md                   - API設計
+│   └── DATABASE_DESIGN.md              - データベース設計
+│
+├── infrastructure/                     # インフラ構成
+│   └── AWS_SERVERLESS.md               - AWSサーバーレス詳細
+│
+├── reference/                          # リファレンス
+│   ├── TECH_STACK.md                   - 技術スタック詳細
+│   ├── FAQ.md                          - よくある質問
+│   ├── GLOSSARY.md                     - 用語集（統合版）
+│   ├── AUTH_COMPARISON_CLERK_VS_COGNITO.md
+│   ├── AWS_MIGRATION_ANALYSIS.md
+│   ├── AZURE_SETUP_CHECKLIST.md
+│   ├── BUSINESS_OVERVIEW.md
+│   ├── CLIENT_PRESENTATION.md
+│   └── EXTERNAL_TOOLS_SETUP.md
+│
+├── steering/                           # ステアリングドキュメント
+│   ├── TEMPLATE_STEERING_DOCUMENT.md
+│   └── SESSION_YYYY-MM-DD_*.md
+│
+└── [レガシードキュメント]              # 旧構成（v1.x）
+    ├── ALPHA_DEVELOPMENT.md
+    ├── API_SPECIFICATION.md
+    ├── ARCHITECTURE.md
+    ├── CICD.md
+    ├── CODING_STANDARDS.md
+    ├── DATABASE_DESIGN.md
+    ├── DEPLOYMENT.md
+    ├── DEVELOPMENT_GUIDE.md
+    ├── FEATURE_ROADMAP.md
+    ├── IMPLEMENTATION_PLAN.md
+    ├── OPERATIONS_GUIDE.md
+    ├── PROJECT_STRUCTURE.md
+    ├── RELEASE_PLAN.md
+    └── SECURITY.md
 ```
+
+### ドキュメント統計
+
+| カテゴリ       | ファイル数 | 総サイズ | 説明                     |
+| -------------- | ---------- | -------- | ------------------------ |
+| **マスター**   | 1          | 50KB     | CLAUDE.md                |
+| **アーキテクチャ** | 2      | 108KB    | システム設計・マルチテナント |
+| **モジュール** | 14         | 380KB    | 各機能モジュール詳細     |
+| **開発**       | 3          | 124KB    | API・DB・実装フェーズ    |
+| **インフラ**   | 1          | 40KB     | AWSサーバーレス構成      |
+| **リファレンス** | 4        | 204KB    | 技術スタック・FAQ・用語集 |
+| **合計（v2.0）** | **25**   | **906KB**| **全ドキュメント**       |
+
+**削減効果:** 元のCLAUDE.md（300KB、6000行）→ 新CLAUDE.md（50KB、350行）+ 分割ドキュメント
 
 ---
 
@@ -138,18 +189,40 @@ docs/
 
 ## 🔍 ドキュメントの探し方
 
-### 目的別の参照先
+### 目的別の参照先（v2.0対応）
 
 | 目的 | 参照先 |
 |------|--------|
-| プロジェクト全体の理解 | `ARCHITECTURE.md`, `PROJECT_STRUCTURE.md` |
-| 開発を始める | `DEVELOPMENT_GUIDE.md`, `CODING_STANDARDS.md` |
-| APIを実装する | `API_SPECIFICATION.md` |
-| データベースを設計する | `DATABASE_DESIGN.md` |
-| デプロイする | `DEPLOYMENT.md` |
-| 技術選定の背景を知る | `reference/` 配下のドキュメント |
-| 過去の作業を確認する | `steering/` 配下のドキュメント |
-| 用語の意味を調べる | `GLOSSARY.md` |
+| **プロジェクト全体の理解** | [CLAUDE.md](../CLAUDE.md), [SYSTEM_ARCHITECTURE.md](architecture/SYSTEM_ARCHITECTURE.md) |
+| **開発を始める** | [IMPLEMENTATION_PHASES.md](development/IMPLEMENTATION_PHASES.md), [TECH_STACK.md](reference/TECH_STACK.md) |
+| **特定機能を実装する** | [modules/](modules/) 配下の該当モジュールドキュメント |
+| **APIを実装する** | [API_DESIGN.md](development/API_DESIGN.md) |
+| **データベースを設計する** | [DATABASE_DESIGN.md](development/DATABASE_DESIGN.md) |
+| **インフラ・デプロイ** | [AWS_SERVERLESS.md](infrastructure/AWS_SERVERLESS.md), `../infrastructure/README.md` |
+| **マルチテナント理解** | [MULTITENANCY.md](architecture/MULTITENANCY.md) |
+| **技術選定の背景を知る** | [FAQ.md](reference/FAQ.md), `reference/` 配下のドキュメント |
+| **過去の作業を確認する** | `steering/` 配下のドキュメント, `../SESSION_PROGRESS.md` |
+| **用語の意味を調べる** | [GLOSSARY.md](reference/GLOSSARY.md) |
+
+### 初めてプロジェクトに参加する場合
+
+1. **[CLAUDE.md](../CLAUDE.md)** - プロジェクト全体の概要を把握
+2. **[SYSTEM_ARCHITECTURE.md](architecture/SYSTEM_ARCHITECTURE.md)** - システムアーキテクチャを理解
+3. **[TECH_STACK.md](reference/TECH_STACK.md)** - 使用技術を確認
+4. **[IMPLEMENTATION_PHASES.md](development/IMPLEMENTATION_PHASES.md)** - 現在のフェーズと次のタスクを確認
+
+### 特定の機能を開発する場合
+
+1. **該当するモジュールドキュメント** - 詳細仕様を確認
+   - 例: アバター機能 → [AVATAR_MODULE.md](modules/AVATAR_MODULE.md)
+2. **[API_DESIGN.md](development/API_DESIGN.md)** - APIエンドポイント仕様を確認
+3. **[DATABASE_DESIGN.md](development/DATABASE_DESIGN.md)** - データベーススキーマを確認
+
+### 困ったとき
+
+1. **[FAQ.md](reference/FAQ.md)** - よくある質問を確認
+2. **[GLOSSARY.md](reference/GLOSSARY.md)** - 用語を確認
+3. **`../SESSION_PROGRESS.md`** - プロジェクト進捗を確認
 
 ---
 
@@ -240,5 +313,6 @@ docs/
 
 ---
 
-**最終更新:** 2026-03-04
-**管理者:** プロジェクトリード
+**最終更新:** 2026-03-05
+**ドキュメントバージョン:** 2.0
+**管理者:** Prance Development Team
