@@ -70,10 +70,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const session = await prisma.session.create({
       data: {
         userId: user.userId,
+        orgId: user.organizationId,
         scenarioId,
         avatarId,
-        status: 'pending',
-        metadata: metadata || {},
+        status: 'ACTIVE',
+        metadataJson: metadata || {},
       },
       include: {
         scenario: {
@@ -87,7 +88,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           select: {
             id: true,
             name: true,
-            imageUrl: true,
+            thumbnailUrl: true,
           },
         },
       },
@@ -101,14 +102,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         scenarioId: session.scenarioId,
         scenario: session.scenario,
         avatarId: session.avatarId,
-        avatar: session.avatar,
+        avatar: {
+          ...session.avatar,
+          imageUrl: session.avatar.thumbnailUrl, // Map thumbnailUrl to imageUrl for frontend compatibility
+        },
         status: session.status,
-        startTime: session.startTime,
-        endTime: session.endTime,
-        duration: session.duration,
-        metadata: session.metadata,
-        createdAt: session.createdAt,
-        updatedAt: session.updatedAt,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        duration: session.durationSec,
+        metadata: session.metadataJson,
+        createdAt: session.startedAt, // Use startedAt as createdAt for frontend compatibility
       },
       201
     );

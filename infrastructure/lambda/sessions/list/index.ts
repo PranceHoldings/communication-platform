@@ -11,7 +11,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  * Query Parameters:
  * - limit: number (default: 20, max: 100)
  * - offset: number (default: 0)
- * - status: 'pending' | 'in_progress' | 'completed' | 'failed'
+ * - status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED'
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
   console.log('List sessions request:', JSON.stringify(event, null, 2));
@@ -27,7 +27,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const queryParams = event.queryStringParameters || {};
     const limit = Math.min(parseInt(queryParams.limit || '20'), 100);
     const offset = parseInt(queryParams.offset || '0');
-    const status = queryParams.status as 'pending' | 'in_progress' | 'completed' | 'failed' | undefined;
+    const status = queryParams.status as 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | undefined;
 
     // Build where clause
     const where: any = {
@@ -45,7 +45,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         take: limit,
         skip: offset,
         orderBy: {
-          createdAt: 'desc',
+          startedAt: 'desc',
         },
         include: {
           scenario: {
@@ -59,7 +59,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             select: {
               id: true,
               name: true,
-              imageUrl: true,
+              thumbnailUrl: true,
             },
           },
         },
@@ -75,14 +75,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         scenarioId: session.scenarioId,
         scenario: session.scenario,
         avatarId: session.avatarId,
-        avatar: session.avatar,
+        avatar: {
+          ...session.avatar,
+          imageUrl: session.avatar.thumbnailUrl, // Map thumbnailUrl to imageUrl for frontend compatibility
+        },
         status: session.status,
-        startTime: session.startTime,
-        endTime: session.endTime,
-        duration: session.duration,
-        metadata: session.metadata,
-        createdAt: session.createdAt,
-        updatedAt: session.updatedAt,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        duration: session.durationSec,
+        metadata: session.metadataJson,
+        createdAt: session.startedAt, // Use startedAt as createdAt for frontend compatibility
       })),
       pagination: {
         total,

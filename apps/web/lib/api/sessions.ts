@@ -8,37 +8,45 @@ export interface Session {
   id: string;
   scenarioId: string;
   avatarId: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'failed';
-  startTime: string | null;
-  endTime: string | null;
+  status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED';
+  startedAt: string;
+  endedAt: string | null;
   duration: number | null;
   metadata: Record<string, unknown>;
   createdAt: string;
-  updatedAt: string;
   scenario?: {
     id: string;
     title: string;
-    description: string;
+    category?: string;
+    language?: string;
+    configJson?: Record<string, unknown>;
   };
   avatar?: {
     id: string;
     name: string;
-    imageUrl: string;
+    type?: string;
+    imageUrl?: string;
+    thumbnailUrl?: string;
+    modelUrl?: string;
   };
-  recording?: {
+  recordings?: Array<{
     id: string;
-    recordingUrl: string;
-    thumbnailUrl: string;
-    duration: number;
-    fileSize: number;
-    metadata: Record<string, unknown>;
-  };
-  transcript?: {
+    type: string;
+    s3Url: string;
+    cdnUrl: string | null;
+    thumbnailUrl: string | null;
+    fileSizeBytes: number;
+    createdAt: string;
+  }>;
+  transcripts?: Array<{
     id: string;
-    segments: unknown[];
-    summary: string | null;
-    analysis: Record<string, unknown> | null;
-  };
+    speaker: 'AI' | 'USER';
+    text: string;
+    timestampStart: number;
+    timestampEnd: number;
+    confidence: number | null;
+    highlight: 'POSITIVE' | 'NEGATIVE' | 'IMPORTANT' | null;
+  }>;
 }
 
 export interface CreateSessionRequest {
@@ -50,7 +58,7 @@ export interface CreateSessionRequest {
 export interface ListSessionsRequest {
   limit?: number;
   offset?: number;
-  status?: 'pending' | 'in_progress' | 'completed' | 'failed';
+  status?: 'ACTIVE' | 'PROCESSING' | 'COMPLETED';
 }
 
 export interface ListSessionsResponse {

@@ -8,10 +8,9 @@
       "emptyDescription": "Start a new session to begin practicing",
       "filter": {
         "all": "All",
-        "pending": "Pending",
-        "in_progress": "In Progress",
-        "completed": "Completed",
-        "failed": "Failed"
+        "ACTIVE": "Active",
+        "PROCESSING": "Processing",
+        "COMPLETED": "Completed"
       }
     },
     "create": {
@@ -43,10 +42,9 @@
       "minutes": "{count} minutes"
     },
     "status": {
-      "pending": "Pending",
-      "inProgress": "In Progress",
-      "completed": "Completed",
-      "failed": "Failed"
+      "ACTIVE": "Active",
+      "PROCESSING": "Processing",
+      "COMPLETED": "Completed"
     },
     "table": {
       "scenario": "Scenario",
@@ -87,10 +85,9 @@
       "score": "Score",
       "date": "Date",
       "status": {
-        "completed": "Completed",
-        "inProgress": "In Progress",
-        "pending": "Pending",
-        "failed": "Failed"
+        "ACTIVE": "Active",
+        "PROCESSING": "Processing",
+        "COMPLETED": "Completed"
       }
     },
     "performance": {

@@ -32,36 +32,43 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           select: {
             id: true,
             title: true,
-            description: true,
-            systemPrompt: true,
-            evaluationCriteria: true,
+            category: true,
+            language: true,
+            configJson: true,
           },
         },
         avatar: {
           select: {
             id: true,
             name: true,
-            imageUrl: true,
-            modelUrl: true,
-            voiceSettings: true,
-          },
-        },
-        recording: {
-          select: {
-            id: true,
-            recordingUrl: true,
+            type: true,
             thumbnailUrl: true,
-            duration: true,
-            fileSize: true,
-            metadata: true,
+            modelUrl: true,
           },
         },
-        transcript: {
+        recordings: {
           select: {
             id: true,
-            segments: true,
-            summary: true,
-            analysis: true,
+            type: true,
+            s3Url: true,
+            cdnUrl: true,
+            thumbnailUrl: true,
+            fileSizeBytes: true,
+            createdAt: true,
+          },
+        },
+        transcripts: {
+          select: {
+            id: true,
+            speaker: true,
+            text: true,
+            timestampStart: true,
+            timestampEnd: true,
+            confidence: true,
+            highlight: true,
+          },
+          orderBy: {
+            timestampStart: 'asc',
           },
         },
       },
@@ -83,16 +90,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       scenarioId: session.scenarioId,
       scenario: session.scenario,
       avatarId: session.avatarId,
-      avatar: session.avatar,
+      avatar: {
+        ...session.avatar,
+        imageUrl: session.avatar.thumbnailUrl, // Map thumbnailUrl to imageUrl for frontend compatibility
+      },
       status: session.status,
-      startTime: session.startTime,
-      endTime: session.endTime,
-      duration: session.duration,
-      recording: session.recording,
-      transcript: session.transcript,
-      metadata: session.metadata,
-      createdAt: session.createdAt,
-      updatedAt: session.updatedAt,
+      startedAt: session.startedAt,
+      endedAt: session.endedAt,
+      duration: session.durationSec,
+      recordings: session.recordings,
+      transcripts: session.transcripts,
+      metadata: session.metadataJson,
+      createdAt: session.startedAt, // Use startedAt as createdAt for frontend compatibility
     });
   } catch (error) {
     console.error('Error getting session:', error);
