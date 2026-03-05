@@ -4,6 +4,8 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { useI18n } from '@/lib/i18n/provider';
+import LanguageSwitcher from '@/components/language-switcher';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -12,10 +14,11 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { t } = useI18n();
 
   const navigation = [
     {
-      name: 'Dashboard',
+      name: t('navigation.dashboard'),
       href: '/dashboard',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,7 +27,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       ),
     },
     {
-      name: 'Sessions',
+      name: t('navigation.sessions'),
       href: '/dashboard/sessions',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +36,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       ),
     },
     {
-      name: 'Avatars',
+      name: t('navigation.avatars'),
       href: '/dashboard/avatars',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,7 +45,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       ),
     },
     {
-      name: 'Scenarios',
+      name: t('navigation.scenarios'),
       href: '/dashboard/scenarios',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +54,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       ),
     },
     {
-      name: 'Reports',
+      name: t('navigation.reports'),
       href: '/dashboard/reports',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +63,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       ),
     },
     {
-      name: 'Settings',
+      name: t('navigation.settings'),
       href: '/dashboard/settings',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,7 +94,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <nav className="flex-1 px-4 py-4 space-y-1">
           {navigation.map((item) => (
             <Link
-              key={item.name}
+              key={item.href}
               href={item.href}
               className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                 isActive(item.href)
@@ -113,14 +116,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 {user?.name?.charAt(0).toUpperCase()}
               </div>
             </div>
-            <div className="ml-3 flex-1">
+            <div className="ml-3 flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
               <p className="text-xs text-gray-500 truncate">{user?.email}</p>
             </div>
             <button
               onClick={() => logout()}
               className="ml-2 p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
-              title="Logout"
+              title={t('common.logout')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -134,10 +137,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <main className="ml-64">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-8 py-4">
+          <div className="px-8 py-4 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">
-              {navigation.find((item) => isActive(item.href))?.name || 'Dashboard'}
+              {navigation.find((item) => isActive(item.href))?.name || t('navigation.dashboard')}
             </h2>
+
+            {/* Header Actions */}
+            <div className="flex items-center gap-4">
+              {/* Language Switcher */}
+              <LanguageSwitcher />
+
+              {/* User Menu Button (Mobile) */}
+              <div className="lg:hidden">
+                <button
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                  title={t('common.profile')}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </header>
 
