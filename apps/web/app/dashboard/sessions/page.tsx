@@ -29,20 +29,27 @@ export default function SessionsPage() {
     setError(null);
 
     try {
+      console.log('Loading sessions with filter:', filter, 'offset:', offset);
       const response = await sessionsApi.list({
         limit: 20,
         offset,
         status: filter === 'all' ? undefined : filter,
       });
 
+      console.log('Sessions API response:', response);
+
       if (response.success && response.data) {
         setSessions(response.data.sessions);
         setPagination(response.data.pagination);
       } else {
-        setError(response.error?.message || 'Failed to load sessions');
+        const errorMsg = response.error?.message || 'Failed to load sessions';
+        console.error('Sessions API error:', errorMsg, response.error);
+        setError(errorMsg);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Sessions API exception:', err);
+      const errorMsg = err instanceof Error ? err.message : 'An error occurred';
+      setError(`Network error: ${errorMsg}. Please check your login status.`);
     } finally {
       setIsLoading(false);
     }
