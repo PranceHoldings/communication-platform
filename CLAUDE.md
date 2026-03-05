@@ -15,7 +15,11 @@
 ### 📚 ドキュメント構成
 
 ```
+START_HERE.md                      ← 次回セッション開始（唯一のエントリーポイント）
 CLAUDE.md (このファイル)           ← プロジェクト概要・重要方針
+├── docs/progress/                 ← セッション進捗記録
+│   ├── SESSION_HISTORY.md         - 全セッション詳細履歴
+│   └── ARCHIVE_*.md               - 各セッション詳細
 ├── docs/architecture/             ← アーキテクチャ設計
 │   ├── SYSTEM_ARCHITECTURE.md     - システム全体構成
 │   └── MULTITENANCY.md            - マルチテナント設計
@@ -349,7 +353,75 @@ git push origin main
 
 ---
 
-## 8. 貢献・サポート
+## 8. 開発プロセスガイドライン
+
+### セッション管理ルール
+
+**プライマリドキュメント:**
+- **`START_HERE.md`** - 次回セッション開始の唯一のエントリーポイント
+  - 簡潔（200行以内）
+  - 常に最新状態を反映
+  - 環境確認手順、最優先タスク（1-3項目）のみ記載
+
+**アーカイブドキュメント:**
+- **`docs/progress/SESSION_HISTORY.md`** - 全セッションの詳細履歴
+- **`docs/progress/ARCHIVE_YYYY-MM-DD_*.md`** - 各セッションの詳細記録
+
+### セッション終了時の記録手順
+
+**1. START_HERE.md の更新（必須）**
+```bash
+# 以下を更新:
+- 最終作業日時
+- Phase進捗率
+- 最新デプロイ情報
+- 完了したタスク（取り消し線）
+- 次回の優先タスク（3項目以内）
+- 前回セッションで完了した作業
+```
+
+**2. セッション詳細のアーカイブ（推奨）**
+- 詳細な作業内容は `docs/progress/ARCHIVE_YYYY-MM-DD_*.md` に保存
+- コミットハッシュ、デプロイ時間、エラー対応履歴を記録
+
+**3. 重要な発見・決定事項**
+- 技術的な重要発見は `CLAUDE.md` の関連セクションに追加
+- アーキテクチャ変更は該当するドキュメント（`docs/architecture/`, `docs/modules/`）を更新
+
+### 次回セッション開始時の手順
+
+**第一声:**
+```
+前回の続きから始めます。START_HERE.mdを確認してください。
+```
+
+**自動実行される内容:**
+1. START_HERE.md の読み込み
+2. 環境確認（Docker、PostgreSQL、開発サーバー）
+3. 最優先タスクの開始
+
+### ドキュメント更新ルール
+
+**START_HERE.md の更新タイミング:**
+- ✅ セッション終了時（最新状態を反映）
+- ✅ 重要なマイルストーン達成時（Phase進捗、デプロイ完了）
+- ❌ セッション途中の細かい変更（アーカイブに記録）
+
+**CLAUDE.md の更新タイミング:**
+- ✅ アーキテクチャ変更・重要な設計決定
+- ✅ 新しいモジュール追加
+- ✅ Phase完了時の総括
+- ❌ 日常的な実装進捗（START_HERE.mdまたはアーカイブに記録）
+
+**docs/ 配下の更新タイミング:**
+- ✅ 技術仕様の変更
+- ✅ API設計の追加・変更
+- ✅ インフラ構成の変更
+- ✅ 新しいモジュールの詳細設計
+
+---
+
+## 9. 貢献・サポート
 
 ### 開発チーム
 
@@ -365,7 +437,7 @@ git push origin main
 
 - **Issues**: GitHub Issues
 - **Documentation**: このリポジトリの `docs/` ディレクトリ
-- **Progress Tracking**: [SESSION_PROGRESS.md](SESSION_PROGRESS.md)
+- **Progress Tracking**: [START_HERE.md](START_HERE.md)（最新状態）、[docs/progress/](docs/progress/)（履歴）
 
 ---
 

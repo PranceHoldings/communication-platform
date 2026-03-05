@@ -1,8 +1,9 @@
 # 次回セッション開始手順（2026-03-05終了時点）
 
-**最終作業日:** 2026-03-05 5:45 PM
-**Phase 1進捗:** 約55%完了
+**最終作業日:** 2026-03-05 11:32 PM
+**Phase 1進捗:** 約60%完了
 **最新コミット:** 02926a5
+**最新デプロイ:** Sessions APIバグ修正完了
 
 ---
 
@@ -65,32 +66,17 @@ http://localhost:3000/dashboard/sessions/new
 # - Step 3: セッション作成成功
 ```
 
-### 3. Sessions APIバグ修正デプロイ（10-15分） 🔴 **最優先**
-**ステータス:** コード修正完了、デプロイ待ち
+### ~~3. Sessions APIバグ修正デプロイ~~ ✅ **完了（2026-03-05 11:32 PM）**
+**ステータス:** デプロイ完了
 
-**問題:** セッション一覧/詳細でavatarがnullの場合に500エラー
 **修正内容:**
 - `infrastructure/lambda/sessions/list/index.ts` - null check追加
 - `infrastructure/lambda/sessions/get/index.ts` - null check追加
+- デプロイ時間: 74秒
+- 更新されたLambda関数: 18関数（UPDATE/DELETE API含む）
 
-**デプロイ手順:**
-```bash
-cd /workspaces/prance-communication-platform/infrastructure
-
-# ⚠️ 重要: CDK bundling-temp問題の解決
-# 前回のデプロイでbundling-tempディレクトリが残っているため、削除が必要
-rm -rf cdk.out
-
-# Lambda関数デプロイ
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
-
-# 動作確認
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/sessions
-```
-
-### 4. UPDATE/DELETE API実装（1-2時間）
-**ステータス:** コード実装済み、デプロイ済み ✅
+### 3. UPDATE/DELETE API実装 ✅ **完了（2026-03-05 11:32 PM）**
+**ステータス:** デプロイ完了
 
 以下のAPI全てデプロイ完了:
 - ✅ PUT /api/v1/scenarios/{id} - シナリオ更新
@@ -99,31 +85,26 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 - ✅ DELETE /api/v1/avatars/{id} - アバター削除
 - ✅ POST /api/v1/avatars/{id}/clone - アバタークローン
 
-### 5. 管理画面UI拡張（1-1.5時間）
+### 4. 管理画面UI拡張（1-1.5時間） 🔴 **次回の優先タスク**
 **残タスク:**
-- シナリオ詳細ページに削除ボタン追加
-- アバター詳細ページに削除ボタン追加
+- シナリオ詳細ページに編集・削除ボタン追加
+- アバター詳細ページに編集・削除ボタン追加
 - アバター詳細ページにCloneボタン追加（allowCloning=trueのみ）
 - ConfirmDialogコンポーネント統合
+- 削除・クローン機能の動作確認
 
 ---
 
 ## 📝 重要なファイル
 
 ### ドキュメント
-- `/workspaces/prance-communication-platform/NEXT_SESSION.md` - 詳細な作業ガイド
-- `/workspaces/prance-communication-platform/SESSION_PROGRESS.md` - 進捗記録
+- `docs/progress/SESSION_HISTORY.md` - 詳細な進捗履歴（Phase 0から全て）
+- `docs/progress/ARCHIVE_2026-03-05_session-complete.md` - 本日のセッション詳細
 - `/home/vscode/.claude/projects/-workspaces/memory/MEMORY.md` - 開発メモリ
+- `CLAUDE.md` - プロジェクト設計・アーキテクチャ
 
 ### テストデータ
-- `/workspaces/prance-communication-platform/apps/web/scripts/seed-test-data.ts`
-
-### 未デプロイLambda関数
-- `infrastructure/lambda/scenarios/update/index.ts`
-- `infrastructure/lambda/scenarios/delete/index.ts`
-- `infrastructure/lambda/avatars/update/index.ts`
-- `infrastructure/lambda/avatars/delete/index.ts`
-- `infrastructure/lambda/avatars/clone/index.ts`
+- `apps/web/scripts/seed-test-data.ts` - テストデータ作成スクリプト
 
 ---
 
@@ -142,30 +123,37 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 | タスク | 推定時間 | 優先度 | ステータス |
 |--------|---------|-------|----------|
-| Sessions APIバグ修正デプロイ | 10-15分 | 🔴 最優先 | コード完了 |
-| 管理画面UI拡張 | 1-1.5時間 | 🟡 中 | 未着手 |
+| ~~Sessions APIバグ修正~~ | 10-15分 | 🔴 最優先 | ✅ 完了 |
+| ~~UPDATE/DELETE API実装~~ | 1-2時間 | 🔴 最優先 | ✅ 完了 |
+| 管理画面UI拡張 | 1-1.5時間 | 🔴 最優先 | ⏳ 次回作業 |
 | セッションプレイヤー実装 | 1-2週間 | 🔵 将来 | 未着手 |
 
-**Phase 1進捗:** 55%完了
-**次のマイルストーン:** Sessions APIデプロイ完了後、60%達成
+**Phase 1進捗:** 60%完了
+**次のマイルストーン:** 管理画面UI拡張完了後、65%達成
 
 ---
 
-## ✅ 前回セッションで完了した作業（2026-03-05）
+## ✅ 前回セッションで完了した作業（2026-03-05 11:32 PM）
 
-### 1. フロントエンドAPIクライアントのリファクタリング
-- エラーハンドリング共通化（`unwrapResponse`/`unwrapVoidResponse`）
-- クエリ文字列構築共通化（`buildQueryString`）
-- 重複コード約110行削除、保守性向上
+### 1. ドキュメント構造の統一
+- `START_HERE.md` - 唯一のエントリーポイント（簡潔、最新状態）
+- `docs/progress/SESSION_HISTORY.md` - 詳細な履歴アーカイブ
+- `docs/progress/ARCHIVE_2026-03-05_session-complete.md` - 本日のセッション詳細
+- ドキュメント参照先の明確化
 
-### 2. Sessions Lambda関数のnull avatarバグ修正
-- `infrastructure/lambda/sessions/list/index.ts` - 修正完了
-- `infrastructure/lambda/sessions/get/index.ts` - 修正完了
-- **デプロイは次回セッションで実施** ← CDK bundling-temp問題により延期
+### 2. Sessions APIバグ修正デプロイ
+- `infrastructure/lambda/sessions/list/index.ts` - null check追加
+- `infrastructure/lambda/sessions/get/index.ts` - null check追加
+- デプロイ完了（74秒）
+- 18関数更新（UPDATE/DELETE API含む）
 
-### 3. カスタムドメイン機能の一時無効化
-- Phase 1ではデフォルトAPI Gateway URLを使用
-- Phase 2で再有効化予定（Task #1作成済み）
+### 3. UPDATE/DELETE API実装デプロイ
+- PUT /api/v1/scenarios/{id} - シナリオ更新
+- DELETE /api/v1/scenarios/{id} - シナリオ削除
+- PUT /api/v1/avatars/{id} - アバター更新
+- DELETE /api/v1/avatars/{id} - アバター削除
+- POST /api/v1/avatars/{id}/clone - アバタークローン
+- 全API動作確認済み
 
 ---
 
