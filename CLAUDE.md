@@ -1,9 +1,9 @@
 # Prance Communication Platform - プロジェクト概要
 
-**バージョン:** 2.0
+**バージョン:** 2.1
 **作成日:** 2026-02-26
-**最終更新:** 2026-03-05
-**ステータス:** Phase 0 完了・Phase 1 開始準備
+**最終更新:** 2026-03-06
+**ステータス:** Phase 1 完了 (100%) ・ Phase 2 準備中
 
 ---
 
@@ -255,36 +255,51 @@ git push origin main
 ### Phase 0: インフラ基盤構築 ✅ 完了 (2026-03-05)
 
 **構築済みインフラ (AWS us-east-1):**
+- NetworkStack - VPC、Subnets、NAT Gateway、Security Groups
+- CognitoStack - User Pool、認証・認可
+- DatabaseStack - Aurora Serverless v2 (PostgreSQL 15.4)
+- StorageStack - S3 Buckets、CloudFront CDN
+- DynamoDBStack - セッション状態、WebSocket接続
+- ApiGatewayStack - REST API、WebSocket API
+- ApiLambdaStack - Lambda関数（20+ functions）
 
-1. ✅ NetworkStack - VPC、Subnets、NAT Gateway、Security Groups
-2. ✅ CognitoStack - User Pool、認証・認可
-3. ✅ DatabaseStack - Aurora Serverless v2 (PostgreSQL 15.4)
-4. ✅ StorageStack - S3 Buckets、CloudFront CDN
-5. ✅ DynamoDBStack - セッション状態、WebSocket接続、ベンチマーク、レート制限
-6. ✅ ApiGatewayStack - REST API、WebSocket API、Cognito Authorizer
-7. ✅ ApiLambdaStack - Lambda関数（Health Check、JWT Authorizer、Register/Login/Me、DBマイグレーション）
+### Phase 1: MVP開発 ✅ 完了 (2026-03-06)
 
-**検証済みAPI:**
+**実装完了機能:**
+- ✅ 認証システム (JWT, Register/Login/Me)
+- ✅ シナリオ管理 (CRUD + Clone)
+- ✅ アバター管理 (CRUD + Clone)
+- ✅ セッション管理 (Create/List/Detail)
+- ✅ 音声会話パイプライン (STT → AI → TTS)
+- ✅ リアルタイムWebSocket通信
+- ✅ 多言語対応 (英語・日本語)
 
-- ✅ POST /api/v1/auth/register (ユーザー登録)
-- ✅ POST /api/v1/auth/login (ログイン)
-- ✅ GET /api/v1/users/me (認証済みユーザー情報取得)
+**音声処理フロー:**
+```
+Browser → WebSocket → Lambda → Azure STT → AWS Bedrock Claude
+→ ElevenLabs TTS → WebSocket → Browser
+```
 
-**API Base URL:** `https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/`
+**技術スタック:**
+- Azure Speech Services (STT)
+- AWS Bedrock Claude Sonnet 4.6 (AI)
+- ElevenLabs eleven_flash_v2_5 (TTS)
+- ffmpeg (WebM→WAV変換)
 
-> 詳細: [SESSION_PROGRESS.md](SESSION_PROGRESS.md)
+> 詳細: [docs/progress/ARCHIVE_2026-03-06_Phase1_Completion.md](docs/progress/ARCHIVE_2026-03-06_Phase1_Completion.md)
 
-### 次のステップ: Phase 1 (MVP開発)
+### 次のステップ: Phase 2 (録画・解析・レポート)
 
-**目標:** 基本的な会話セッションが動作する状態
+**目標:** セッション録画・解析・レポート生成機能の実装
 
-**選択肢:**
+**主要タスク:**
+1. **録画機能** - Canvas API映像合成、MediaRecorder、S3保存
+2. **解析機能** - AWS Rekognition（表情・感情）、音声特徴解析
+3. **レポート生成** - PDFテンプレート、AI改善提案
 
-1. **Option A: フロントエンド開発** - Next.jsアプリ、認証UI、ダッシュボード
-2. **Option B: アバター・会話エンジン** - 3Dアバター、Claude API統合、シナリオ設定
-3. **Option C: 音声・セッション機能** - TTS/STT、リアルタイム通信、録画
+**推定期間:** 4-6週間
 
-> 詳細: [docs/development/IMPLEMENTATION_PHASES.md](docs/development/IMPLEMENTATION_PHASES.md)
+> 詳細: [docs/progress/PHASE_2_PLAN.md](docs/progress/PHASE_2_PLAN.md)
 
 ---
 
@@ -441,5 +456,5 @@ git push origin main
 
 ---
 
-**最終更新:** 2026-03-05
-**次回レビュー予定:** Phase 1 完了時
+**最終更新:** 2026-03-06
+**次回レビュー予定:** Phase 2 完了時
