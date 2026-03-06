@@ -50,6 +50,7 @@
       "search_placeholder": "シナリオを検索...",
       "filter_all": "すべてのカテゴリ",
       "no_results": "シナリオが見つかりません",
+      "loading": "読み込み中...",
       "card": {
         "category": "カテゴリ",
         "language": "言語",
@@ -69,6 +70,7 @@
         "style_realistic": "リアル"
       },
       "no_results": "アバターが見つかりません",
+      "loading": "読み込み中...",
       "card": {
         "type": "タイプ",
         "style": "スタイル",
@@ -126,7 +128,9 @@
       "camera": "カメラ",
       "active": "有効",
       "inactive": "無効",
-      "off": "オフ"
+      "off": "オフ",
+      "recording": "録音中",
+      "audioLevel": "音声レベル"
     },
     "transcript": {
       "title": "会話の文字起こし",
@@ -146,11 +150,14 @@
       "sessionStarted": "セッションが開始されました！話しかけてください。",
       "sessionResumed": "セッションを再開しました！",
       "sessionEnded": "セッションが終了しました",
+      "sessionCompleted": "セッションが正常に完了しました！",
       "testMessageSent": "テストメッセージを送信しました！",
       "connectionTimeout": "接続タイムアウト。もう一度お試しください。",
       "maxAttemptsReached": "最大接続試行回数に達しました。",
       "reconnecting": "接続が切断されました。再接続中...",
-      "authFailed": "認証に失敗しました。再度ログインしてください。"
+      "authFailed": "認証に失敗しました。再度ログインしてください。",
+      "microphoneError": "マイクエラーが発生しました。",
+      "microphonePermissionDenied": "マイクへのアクセスが拒否されました。ブラウザの設定でマイクの許可を有効にしてください。"
     },
     "completed": {
       "title": "セッション完了",
@@ -161,6 +168,17 @@
       "scenario": "シナリオ",
       "avatar": "アバター",
       "category": "カテゴリ"
+    },
+    "details": {
+      "title": "セッション情報",
+      "sessionId": "セッションID",
+      "scenario": "シナリオ",
+      "language": "言語",
+      "created": "作成日時"
     }
+  },
+  "errors": {
+    "loadFailed": "セッションの読み込みに失敗しました",
+    "genericError": "エラーが発生しました"
   }
 }

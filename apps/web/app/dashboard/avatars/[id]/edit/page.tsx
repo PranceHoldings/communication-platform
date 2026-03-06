@@ -99,7 +99,7 @@ export default function EditAvatarPage() {
     return (
       <div className="max-w-3xl mx-auto py-12 text-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        <p className="mt-4 text-gray-500">Loading avatar...</p>
+        <p className="mt-4 text-gray-500">{t('avatars.detail.loading')}</p>
       </div>
     );
   }
@@ -278,7 +278,7 @@ export default function EditAvatarPage() {
             disabled={isSubmitting}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Updating...' : 'Update Avatar'}
+            {isSubmitting ? t('avatars.edit.updating') : t('avatars.edit.submit')}
           </button>
         </div>
       </form>

@@ -89,7 +89,27 @@
     "modelUrl": "Model URL",
     "thumbnailUrl": "Thumbnail URL",
     "tags": "Tags",
-    "createdAt": "Created at"
+    "createdAt": "Created at",
+    "avatarId": "Avatar ID",
+    "type": "Type",
+    "style": "Style",
+    "source": "Source",
+    "visibility": "Visibility",
+    "allowCloning": "Allow Cloning",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "urls": "URLs",
+    "actions": "Actions",
+    "notFound": "Avatar not found",
+    "backToList": "Back to Avatars",
+    "loading": "Loading..."
+  },
+  "edit": {
+    "title": "Edit Avatar",
+    "submit": "Update Avatar",
+    "updating": "Updating...",
+    "success": "Avatar updated successfully",
+    "error": "Failed to update avatar"
   },
   "delete": {
     "confirm": "Delete Avatar",
@@ -110,5 +130,10 @@
     "error": "Failed to clone avatar",
     "notAllowed": "This avatar cannot be cloned",
     "sameOrg": "You cannot clone avatars from your own organization"
+  },
+  "errors": {
+    "loadFailed": "Failed to load avatar",
+    "loadListFailed": "Failed to load avatars",
+    "genericError": "An error occurred"
   }
 }

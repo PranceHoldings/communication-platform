@@ -5,7 +5,8 @@ import { useI18n } from '@/lib/i18n/provider';
 import { Session } from '@/lib/api/sessions';
 import { Avatar } from '@/lib/api/avatars';
 import { Scenario } from '@/lib/api/scenarios';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { useWebSocket, TranscriptMessage, AvatarResponseMessage, ProcessingUpdateMessage, SessionCompleteMessage, ErrorMessage } from '@/hooks/useWebSocket';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { toast } from 'sonner';
 
 type SessionPlayerStatus = 'IDLE' | 'READY' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
@@ -40,7 +41,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   }, []);
 
   // Memoize callbacks to prevent unnecessary re-renders
-  const handleTranscript = useCallback((message) => {
+  const handleTranscript = useCallback((message: TranscriptMessage) => {
     // リアルタイム文字起こし
     if (message.type === 'transcript_partial') {
       // 部分的なトランスクリプト（リアルタイム更新）
@@ -88,7 +89,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     }
   }, []);
 
-  const handleAvatarResponse = useCallback((message) => {
+  const handleAvatarResponse = useCallback((message: AvatarResponseMessage) => {
     // AIアバターの応答
     setTranscript((prev) => [
       ...prev,
@@ -101,18 +102,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     ]);
   }, []);
 
-  const handleProcessingUpdate = useCallback((message) => {
+  const handleProcessingUpdate = useCallback((message: ProcessingUpdateMessage) => {
     // 処理状況の更新（オプション：UI表示用）
     console.log('Processing:', message.stage, message.progress);
   }, []);
 
-  const handleSessionComplete = useCallback((message) => {
+  const handleSessionComplete = useCallback((_message: SessionCompleteMessage) => {
     // セッション完了
     setStatus('COMPLETED');
-    toast.success('Session completed successfully!');
-  }, []);
+    toast.success(t('sessions.player.messages.sessionCompleted'));
+  }, [t]);
 
-  const handleError = useCallback((message) => {
+  const handleError = useCallback((message: ErrorMessage) => {
     // エラー処理
     console.error('WebSocket error:', message);
     toast.error(`Error: ${message.message}`);
@@ -126,6 +127,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     connect,
     disconnect,
     sendUserSpeech,
+    sendAudioChunk,
     endSession,
   } = useWebSocket({
     sessionId: session.id,
@@ -136,6 +138,38 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onProcessingUpdate: handleProcessingUpdate,
     onSessionComplete: handleSessionComplete,
     onError: handleError,
+  });
+
+  // Audio Recorder統合
+  const handleAudioChunk = useCallback(
+    (chunk: Blob, timestamp: number) => {
+      if (isConnected) {
+        // Convert Blob to ArrayBuffer and send via WebSocket
+        chunk.arrayBuffer().then((arrayBuffer) => {
+          sendAudioChunk(arrayBuffer, timestamp);
+        });
+      }
+    },
+    [isConnected, sendAudioChunk]
+  );
+
+  const handleRecordingError = useCallback((error: Error) => {
+    console.error('[SessionPlayer] Recording error:', error);
+    toast.error(t('sessions.player.messages.microphoneError'));
+  }, [t]);
+
+  const {
+    isRecording: isMicRecording,
+    audioLevel,
+    startRecording,
+    stopRecording,
+    pauseRecording,
+    resumeRecording,
+    error: recordingError,
+  } = useAudioRecorder({
+    onAudioChunk: handleAudioChunk,
+    onError: handleRecordingError,
+    timeslice: 250, // 250ms chunks for real-time processing
   });
 
   // セッションが既に完了している場合のみ特別処理
@@ -166,13 +200,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     }
   }, [status, isConnecting, isConnected, token, connect]);
 
-  // WebSocket接続完了時にACTIVE状態に自動遷移
+  // WebSocket接続完了時にACTIVE状態に自動遷移 + 音声録音開始
   useEffect(() => {
     if (isConnected && status === 'READY') {
       setStatus('ACTIVE');
       toast.success(t('sessions.player.messages.sessionStarted'));
+
+      // Start audio recording
+      startRecording().catch((err) => {
+        console.error('[SessionPlayer] Failed to start recording:', err);
+        toast.error(t('sessions.player.messages.microphonePermissionDenied'));
+      });
     }
-  }, [isConnected, status, t]);
+  }, [isConnected, status, t, startRecording]);
 
   // Connection timeout - 30秒以内に接続できない場合はタイムアウト
   useEffect(() => {
@@ -217,23 +257,26 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       // 接続完了後、useEffectで自動的にACTIVE状態に遷移
     } else if (status === 'PAUSED') {
       setStatus('ACTIVE');
-      // セッション再開
+      // セッション再開 + 音声録音再開
+      resumeRecording();
       toast.success(t('sessions.player.messages.sessionResumed'));
-      // TODO: 音声録音再開
     }
   };
 
   const handlePause = () => {
     if (status === 'ACTIVE') {
       setStatus('PAUSED');
+      // 音声録音一時停止
+      pauseRecording();
       toast.info(t('sessions.player.status.paused'));
-      // TODO: 音声録音一時停止
     }
   };
 
   const handleStop = () => {
     if (status === 'ACTIVE' || status === 'PAUSED' || status === 'READY') {
       setStatus('COMPLETED');
+      // 音声録音停止
+      stopRecording();
       // WebSocket経由でセッション終了通知（接続されている場合のみ）
       if (isConnected) {
         endSession();
@@ -241,7 +284,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       // WebSocket切断
       disconnect();
       toast.success(t('sessions.player.messages.sessionEnded'));
-      // TODO: 録画保存
+      // TODO: 録画保存（次のPhaseで実装）
     }
   };
 
@@ -325,24 +368,58 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             )}
           </div>
 
-          {/* マイク・カメラステータス（将来実装） */}
-          <div className="mt-4 flex items-center justify-center space-x-4 text-sm text-gray-600">
-            <div className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {t('sessions.player.avatar.microphone')}: <span className="font-medium ml-1">{status === 'ACTIVE' ? t('sessions.player.avatar.active') : t('sessions.player.avatar.inactive')}</span>
+          {/* マイク・カメラステータス + 音声レベルインジケーター */}
+          <div className="mt-4 space-y-3">
+            {/* マイクステータス */}
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center text-gray-600">
+                <svg className={`w-4 h-4 mr-2 ${isMicRecording ? 'text-red-500' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>{t('sessions.player.avatar.microphone')}:</span>
+              </div>
+              <span className={`font-medium ${isMicRecording ? 'text-red-600' : 'text-gray-500'}`}>
+                {isMicRecording ? t('sessions.player.avatar.recording') : t('sessions.player.avatar.inactive')}
+              </span>
             </div>
-            <div className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-              </svg>
-              {t('sessions.player.avatar.camera')}: <span className="font-medium ml-1">{t('sessions.player.avatar.off')}</span>
+
+            {/* 音声レベルインジケーター */}
+            {isMicRecording && (
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-500">{t('sessions.player.avatar.audioLevel')}:</span>
+                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-500 transition-all duration-100"
+                    style={{ width: `${Math.min(audioLevel * 100, 100)}%` }}
+                  />
+                </div>
+                <span className="text-xs text-gray-500 w-10 text-right">
+                  {Math.round(audioLevel * 100)}%
+                </span>
+              </div>
+            )}
+
+            {/* カメラステータス（将来実装） */}
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                </svg>
+                <span>{t('sessions.player.avatar.camera')}:</span>
+              </div>
+              <span className="font-medium text-gray-500">{t('sessions.player.avatar.off')}</span>
             </div>
+
+            {/* レコーディングエラー表示 */}
+            {recordingError && (
+              <div className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">
+                {recordingError}
+              </div>
+            )}
           </div>
         </div>
 
@@ -539,22 +616,22 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       {/* セッション情報 */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Session Information</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('sessions.details.title')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <p className="text-gray-600">Session ID</p>
+            <p className="text-gray-600">{t('sessions.details.sessionId')}</p>
             <p className="font-mono text-xs mt-1">{session.id}</p>
           </div>
           <div>
-            <p className="text-gray-600">Scenario</p>
+            <p className="text-gray-600">{t('sessions.details.scenario')}</p>
             <p className="font-medium mt-1">{scenario.title}</p>
           </div>
           <div>
-            <p className="text-gray-600">Language</p>
+            <p className="text-gray-600">{t('sessions.details.language')}</p>
             <p className="font-medium mt-1">{scenario.language.toUpperCase()}</p>
           </div>
           <div>
-            <p className="text-gray-600">Created</p>
+            <p className="text-gray-600">{t('sessions.details.created')}</p>
             <p className="font-medium mt-1">{new Date(session.startedAt).toLocaleDateString()}</p>
           </div>
         </div>

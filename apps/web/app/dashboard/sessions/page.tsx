@@ -41,8 +41,8 @@ export default function SessionsPage() {
       setPagination(response.pagination);
     } catch (err) {
       console.error('Sessions API exception:', err);
-      const errorMsg = err instanceof Error ? err.message : 'An error occurred';
-      setError(`Failed to load sessions: ${errorMsg}`);
+      const errorMsg = err instanceof Error ? err.message : t('sessions.errors.genericError');
+      setError(`${t('sessions.errors.loadFailed')}: ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }

@@ -38,8 +38,8 @@ export default function ScenariosPage() {
       setScenarios(response.scenarios);
       setPagination(response.pagination);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'An error occurred';
-      setError(`Failed to load scenarios: ${errorMsg}`);
+      const errorMsg = err instanceof Error ? err.message : t('scenarios.errors.genericError');
+      setError(`${t('scenarios.errors.loadListFailed')}: ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }

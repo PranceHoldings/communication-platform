@@ -50,6 +50,7 @@
       "search_placeholder": "Search scenarios...",
       "filter_all": "All Categories",
       "no_results": "No scenarios found",
+      "loading": "Loading...",
       "card": {
         "category": "Category",
         "language": "Language",
@@ -69,6 +70,7 @@
         "style_realistic": "Realistic"
       },
       "no_results": "No avatars found",
+      "loading": "Loading...",
       "card": {
         "type": "Type",
         "style": "Style",
@@ -126,7 +128,9 @@
       "camera": "Camera",
       "active": "Active",
       "inactive": "Inactive",
-      "off": "Off"
+      "off": "Off",
+      "recording": "Recording",
+      "audioLevel": "Audio Level"
     },
     "transcript": {
       "title": "Conversation Transcript",
@@ -146,11 +150,14 @@
       "sessionStarted": "Session started! You can now speak.",
       "sessionResumed": "Session resumed!",
       "sessionEnded": "Session ended",
+      "sessionCompleted": "Session completed successfully!",
       "testMessageSent": "Test message sent!",
       "connectionTimeout": "Connection timeout. Please try again.",
       "maxAttemptsReached": "Maximum connection attempts reached.",
       "reconnecting": "Connection lost. Reconnecting...",
-      "authFailed": "Authentication failed. Please log in again."
+      "authFailed": "Authentication failed. Please log in again.",
+      "microphoneError": "Microphone error occurred.",
+      "microphonePermissionDenied": "Microphone access denied. Please allow microphone permission in your browser settings."
     },
     "completed": {
       "title": "Session Completed",
@@ -161,6 +168,17 @@
       "scenario": "Scenario",
       "avatar": "Avatar",
       "category": "Category"
+    },
+    "details": {
+      "title": "Session Information",
+      "sessionId": "Session ID",
+      "scenario": "Scenario",
+      "language": "Language",
+      "created": "Created"
     }
+  },
+  "errors": {
+    "loadFailed": "Failed to load sessions",
+    "genericError": "An error occurred"
   }
 }

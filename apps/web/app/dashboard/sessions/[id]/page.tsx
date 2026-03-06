@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { useI18n } from '@/lib/i18n/provider';
 import { getSession, type Session } from '@/lib/api/sessions';
 import { getAvatar, type Avatar } from '@/lib/api/avatars';
 import { getScenario, type Scenario } from '@/lib/api/scenarios';
@@ -10,6 +11,7 @@ import Link from 'next/link';
 
 export default function SessionDetailPage() {
   const params = useParams();
+  const { t } = useI18n();
 
   const [session, setSession] = useState<Session | null>(null);
   const [avatar, setAvatar] = useState<Avatar | null>(null);
@@ -39,7 +41,7 @@ export default function SessionDetailPage() {
       const scenarioData = await getScenario(sessionData.scenarioId);
       setScenario(scenarioData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load session');
+      setError(err instanceof Error ? err.message : t('sessions.detail.notFound'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +52,7 @@ export default function SessionDetailPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-          <p className="text-gray-500">Loading session...</p>
+          <p className="text-gray-500">{t('sessions.detail.loading')}</p>
         </div>
       </div>
     );
@@ -60,13 +62,13 @@ export default function SessionDetailPage() {
     return (
       <div className="space-y-6">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error || 'Session not found'}
+          {error || t('sessions.detail.notFound')}
         </div>
         <Link
           href="/dashboard/sessions"
           className="inline-block px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
         >
-          Back to Sessions
+          {t('sessions.detail.backToList')}
         </Link>
       </div>
     );
@@ -77,7 +79,7 @@ export default function SessionDetailPage() {
       {/* パンくずリスト */}
       <div className="flex items-center text-sm text-gray-600">
         <Link href="/dashboard" className="hover:text-indigo-600">
-          Dashboard
+          {t('sessions.detail.dashboard')}
         </Link>
         <svg className="w-4 h-4 mx-2" fill="currentColor" viewBox="0 0 20 20">
           <path
@@ -87,7 +89,7 @@ export default function SessionDetailPage() {
           />
         </svg>
         <Link href="/dashboard/sessions" className="hover:text-indigo-600">
-          Sessions
+          {t('sessions.list.title')}
         </Link>
         <svg className="w-4 h-4 mx-2" fill="currentColor" viewBox="0 0 20 20">
           <path
@@ -96,7 +98,7 @@ export default function SessionDetailPage() {
             clipRule="evenodd"
           />
         </svg>
-        <span className="text-gray-900 font-medium">Session {sessionId.slice(0, 8)}...</span>
+        <span className="text-gray-900 font-medium">{t('sessions.detail.session')} {sessionId.slice(0, 8)}...</span>
       </div>
 
       {/* SessionPlayerコンポーネント */}

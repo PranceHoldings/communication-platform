@@ -59,7 +59,24 @@
     "delete": "シナリオを削除",
     "config": "設定",
     "createdBy": "作成者",
-    "createdAt": "作成日時"
+    "createdAt": "作成日時",
+    "scenarioId": "シナリオID",
+    "category": "カテゴリ",
+    "language": "言語",
+    "visibility": "公開設定",
+    "created": "作成日",
+    "basicInfo": "基本情報",
+    "actions": "操作",
+    "notFound": "シナリオが見つかりません",
+    "backToList": "シナリオ一覧に戻る",
+    "loading": "読み込み中..."
+  },
+  "edit": {
+    "title": "シナリオを編集",
+    "submit": "シナリオを更新",
+    "updating": "更新中...",
+    "success": "シナリオが正常に更新されました",
+    "error": "シナリオの更新に失敗しました"
   },
   "delete": {
     "confirm": "シナリオを削除",
@@ -70,5 +87,10 @@
     "deleting": "削除中...",
     "success": "シナリオが正常に削除されました",
     "error": "シナリオの削除に失敗しました"
+  },
+  "errors": {
+    "loadFailed": "シナリオの読み込みに失敗しました",
+    "loadListFailed": "シナリオ一覧の読み込みに失敗しました",
+    "genericError": "エラーが発生しました"
   }
 }

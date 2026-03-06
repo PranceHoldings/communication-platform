@@ -79,11 +79,11 @@ export default function EditScenarioPage() {
         configJson: parsedConfig,
       });
 
-      toast.success('Scenario updated successfully');
+      toast.success(t('scenarios.edit.success'));
       router.push(`/dashboard/scenarios/${scenarioId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update scenario');
-      toast.error('Failed to update scenario');
+      setError(err instanceof Error ? err.message : t('scenarios.edit.error'));
+      toast.error(t('scenarios.edit.error'));
       setIsSubmitting(false);
     }
   };
@@ -223,7 +223,7 @@ export default function EditScenarioPage() {
             disabled={isSubmitting}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Updating...' : 'Update Scenario'}
+            {isSubmitting ? t('scenarios.edit.updating') : t('scenarios.edit.submit')}
           </button>
         </div>
       </form>

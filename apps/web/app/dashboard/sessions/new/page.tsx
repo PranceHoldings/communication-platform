@@ -106,6 +106,8 @@ export default function NewSessionPage() {
   };
 
   const handleCreate = async () => {
+    console.log('[NewSession] handleCreate called', { selectedScenario: selectedScenario?.id, selectedAvatar: selectedAvatar?.id });
+
     if (!selectedScenario || !selectedAvatar) {
       setToast({ message: 'Please complete all steps', type: 'warning' });
       return;
@@ -117,11 +119,13 @@ export default function NewSessionPage() {
       try {
         metadataObj = JSON.parse(metadata);
       } catch (err) {
+        console.error('[NewSession] Invalid metadata JSON:', err);
         setToast({ message: t('sessions.new.validation.invalid_metadata'), type: 'error' });
         return;
       }
     }
 
+    console.log('[NewSession] Creating session...', { scenarioId: selectedScenario.id, avatarId: selectedAvatar.id, metadata: metadataObj });
     setCreating(true);
     setToast(null);
     try {
@@ -131,9 +135,13 @@ export default function NewSessionPage() {
         metadata: metadataObj,
       });
 
+      console.log('[NewSession] Session created:', session.id);
+      console.log('[NewSession] Redirecting to:', `/dashboard/sessions/${session.id}`);
+
       // Redirect to session detail page
       router.push(`/dashboard/sessions/${session.id}`);
     } catch (err) {
+      console.error('[NewSession] Failed to create session:', err);
       setToast({ message: err instanceof Error ? err.message : t('sessions.new.error'), type: 'error' });
       setCreating(false);
     }
@@ -199,7 +207,7 @@ export default function NewSessionPage() {
 
           {/* Scenarios Grid */}
           {loading ? (
-            <div className="text-center py-12 text-gray-500">Loading...</div>
+            <div className="text-center py-12 text-gray-500">{t('sessions.new.scenario.loading')}</div>
           ) : filteredScenarios.length === 0 ? (
             <div className="text-center py-12 text-gray-500">{t('sessions.new.scenario.no_results')}</div>
           ) : (
@@ -218,15 +226,15 @@ export default function NewSessionPage() {
                   <div className="space-y-1 text-sm text-gray-600">
                     <div className="flex justify-between">
                       <span className="font-medium">{t('sessions.new.scenario.card.category')}:</span>
-                      <span>{scenario.category}</span>
+                      <span className="capitalize">{scenario.category}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">{t('sessions.new.scenario.card.language')}:</span>
-                      <span>{scenario.language}</span>
+                      <span className="uppercase">{scenario.language}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">{t('sessions.new.scenario.card.visibility')}:</span>
-                      <span>{scenario.visibility}</span>
+                      <span>{t(`scenarios.visibility.${scenario.visibility}`)}</span>
                     </div>
                   </div>
                 </div>
@@ -292,7 +300,7 @@ export default function NewSessionPage() {
 
           {/* Avatars Grid */}
           {loading ? (
-            <div className="text-center py-12 text-gray-500">Loading...</div>
+            <div className="text-center py-12 text-gray-500">{t('sessions.new.avatar.loading')}</div>
           ) : filteredAvatars.length === 0 ? (
             <div className="text-center py-12 text-gray-500">{t('sessions.new.avatar.no_results')}</div>
           ) : (
@@ -324,15 +332,15 @@ export default function NewSessionPage() {
                   <div className="space-y-1 text-xs text-gray-600">
                     <div className="flex justify-between">
                       <span className="font-medium">{t('sessions.new.avatar.card.type')}:</span>
-                      <span>{avatar.type}</span>
+                      <span>{t(`avatars.type.${avatar.type}`)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">{t('sessions.new.avatar.card.style')}:</span>
-                      <span>{avatar.style}</span>
+                      <span>{t(`avatars.style.${avatar.style}`)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">{t('sessions.new.avatar.card.source')}:</span>
-                      <span>{avatar.source}</span>
+                      <span>{t(`avatars.source.${avatar.source}`)}</span>
                     </div>
                   </div>
                 </div>
@@ -370,10 +378,16 @@ export default function NewSessionPage() {
           {/* Selected Summary */}
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div>
-              <span className="font-semibold">Scenario:</span> {selectedScenario?.title}
+              <span className="font-semibold">{t('sessions.new.options.scenario')}:</span> {selectedScenario?.title}
+              <span className="text-gray-600 text-sm ml-2">
+                ({selectedScenario?.category} • {selectedScenario?.language?.toUpperCase()})
+              </span>
             </div>
             <div>
-              <span className="font-semibold">Avatar:</span> {selectedAvatar?.name} ({selectedAvatar?.type})
+              <span className="font-semibold">{t('sessions.new.options.avatar')}:</span> {selectedAvatar?.name}
+              <span className="text-gray-600 text-sm ml-2">
+                ({t(`avatars.style.${selectedAvatar?.style}`)} • {t(`avatars.type.${selectedAvatar?.type}`)})
+              </span>
             </div>
           </div>
 

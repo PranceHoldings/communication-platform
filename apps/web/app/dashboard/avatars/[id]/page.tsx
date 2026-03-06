@@ -48,7 +48,7 @@ export default function AvatarDetailPage() {
       const data = await getAvatar(avatarId);
       setAvatar(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load avatar');
+      setError(err instanceof Error ? err.message : t('avatars.errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -122,13 +122,13 @@ export default function AvatarDetailPage() {
     return (
       <div className="space-y-6">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error || 'Avatar not found'}
+          {error || t('avatars.detail.notFound')}
         </div>
         <button
           onClick={() => router.push('/dashboard/avatars')}
           className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
         >
-          {t('avatars.list.title')}
+          {t('avatars.detail.backToList')}
         </button>
       </div>
     );
@@ -166,7 +166,7 @@ export default function AvatarDetailPage() {
               </span>
             )}
           </div>
-          <p className="text-gray-600 mt-2">Avatar ID: {avatar.id}</p>
+          <p className="text-gray-600 mt-2">{t('avatars.detail.avatarId')}: {avatar.id}</p>
         </div>
       </div>
 
@@ -218,7 +218,7 @@ export default function AvatarDetailPage() {
 
       {/* URLs */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold mb-4">URLs</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('avatars.detail.urls')}</h2>
         <div className="space-y-4">
           <div>
             <span className="text-sm text-gray-600">{t('avatars.detail.modelUrl')}:</span>
@@ -256,7 +256,7 @@ export default function AvatarDetailPage() {
 
       {/* Actions */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold mb-4">Actions</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('avatars.detail.actions')}</h2>
         <div className="space-y-4">
           <div className="flex gap-4">
             {isOwnOrg && (

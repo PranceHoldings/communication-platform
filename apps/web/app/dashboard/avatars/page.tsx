@@ -42,8 +42,8 @@ export default function AvatarsPage() {
       setAvatars(response.avatars);
       setPagination(response.pagination);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'An error occurred';
-      setError(`Failed to load avatars: ${errorMsg}`);
+      const errorMsg = err instanceof Error ? err.message : t('avatars.errors.genericError');
+      setError(`${t('avatars.errors.loadListFailed')}: ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }

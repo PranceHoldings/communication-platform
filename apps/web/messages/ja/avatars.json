@@ -89,7 +89,27 @@
     "modelUrl": "モデルURL",
     "thumbnailUrl": "サムネイルURL",
     "tags": "タグ",
-    "createdAt": "作成日時"
+    "createdAt": "作成日時",
+    "avatarId": "アバターID",
+    "type": "タイプ",
+    "style": "スタイル",
+    "source": "ソース",
+    "visibility": "公開設定",
+    "allowCloning": "複製を許可",
+    "enabled": "有効",
+    "disabled": "無効",
+    "urls": "URL",
+    "actions": "操作",
+    "notFound": "アバターが見つかりません",
+    "backToList": "アバター一覧に戻る",
+    "loading": "読み込み中..."
+  },
+  "edit": {
+    "title": "アバターを編集",
+    "submit": "アバターを更新",
+    "updating": "更新中...",
+    "success": "アバターが正常に更新されました",
+    "error": "アバターの更新に失敗しました"
   },
   "delete": {
     "confirm": "アバターを削除",
@@ -110,5 +130,10 @@
     "error": "アバターの複製に失敗しました",
     "notAllowed": "このアバターは複製できません",
     "sameOrg": "自組織のアバターは複製できません"
+  },
+  "errors": {
+    "loadFailed": "アバターの読み込みに失敗しました",
+    "loadListFailed": "アバター一覧の読み込みに失敗しました",
+    "genericError": "エラーが発生しました"
   }
 }

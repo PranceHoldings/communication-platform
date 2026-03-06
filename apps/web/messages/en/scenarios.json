@@ -59,7 +59,24 @@
     "delete": "Delete Scenario",
     "config": "Configuration",
     "createdBy": "Created by",
-    "createdAt": "Created at"
+    "createdAt": "Created at",
+    "scenarioId": "Scenario ID",
+    "category": "Category",
+    "language": "Language",
+    "visibility": "Visibility",
+    "created": "Created",
+    "basicInfo": "Basic Information",
+    "actions": "Actions",
+    "notFound": "Scenario not found",
+    "backToList": "Back to Scenarios",
+    "loading": "Loading..."
+  },
+  "edit": {
+    "title": "Edit Scenario",
+    "submit": "Update Scenario",
+    "updating": "Updating...",
+    "success": "Scenario updated successfully",
+    "error": "Failed to update scenario"
   },
   "delete": {
     "confirm": "Delete Scenario",
@@ -70,5 +87,10 @@
     "deleting": "Deleting...",
     "success": "Scenario deleted successfully",
     "error": "Failed to delete scenario"
+  },
+  "errors": {
+    "loadFailed": "Failed to load scenario",
+    "loadListFailed": "Failed to load scenarios",
+    "genericError": "An error occurred"
   }
 }
