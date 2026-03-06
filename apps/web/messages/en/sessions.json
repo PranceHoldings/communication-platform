@@ -28,7 +28,12 @@
     "ERROR": "Error"
   },
   "detail": {
-    "minutes": "{count} min"
+    "minutes": "{count} min",
+    "loading": "Loading session...",
+    "notFound": "Session not found",
+    "backToList": "Back to Sessions",
+    "session": "Session",
+    "dashboard": "Dashboard"
   },
   "create": {
     "button": "Create Session"
@@ -74,7 +79,9 @@
       "title": "Session Options",
       "description": "Configure additional settings for your session",
       "metadata": "Session Metadata (optional)",
-      "metadata_placeholder": "Enter JSON metadata..."
+      "metadata_placeholder": "Enter JSON metadata...",
+      "scenario": "Scenario",
+      "avatar": "Avatar"
     },
     "actions": {
       "back": "Back",
@@ -90,5 +97,70 @@
     "creating": "Creating session...",
     "success": "Session created successfully!",
     "error": "Failed to create session"
+  },
+  "player": {
+    "status": {
+      "notStarted": "Not Started",
+      "ready": "Ready",
+      "inProgress": "In Progress",
+      "paused": "Paused",
+      "completed": "Completed",
+      "unknown": "Unknown"
+    },
+    "help": {
+      "startSession": "Click \"Start Session\" to begin the conversation with {avatarName}",
+      "listening": "🎤 Listening... Speak clearly into your microphone"
+    },
+    "actions": {
+      "start": "Start Session",
+      "resume": "Resume",
+      "pause": "Pause",
+      "stop": "Stop",
+      "cancel": "Cancel",
+      "sendTestMessage": "Send Test Message"
+    },
+    "avatar": {
+      "title": "Avatar View",
+      "placeholder": "Avatar will appear here",
+      "microphone": "Microphone",
+      "camera": "Camera",
+      "active": "Active",
+      "inactive": "Inactive",
+      "off": "Off"
+    },
+    "transcript": {
+      "title": "Conversation Transcript",
+      "empty": "No conversation yet",
+      "emptyDescription": "Start the session to begin",
+      "you": "You"
+    },
+    "websocket": {
+      "connecting": "Connecting to session...",
+      "connectingWebSocket": "Connecting to WebSocket...",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "error": "WebSocket connection error"
+    },
+    "messages": {
+      "authRequired": "Authentication required. Please login again.",
+      "sessionStarted": "Session started! You can now speak.",
+      "sessionResumed": "Session resumed!",
+      "sessionEnded": "Session ended",
+      "testMessageSent": "Test message sent!",
+      "connectionTimeout": "Connection timeout. Please try again.",
+      "maxAttemptsReached": "Maximum connection attempts reached.",
+      "reconnecting": "Connection lost. Reconnecting...",
+      "authFailed": "Authentication failed. Please log in again."
+    },
+    "completed": {
+      "title": "Session Completed",
+      "duration": "Duration",
+      "messageCount": "{count} messages"
+    },
+    "info": {
+      "scenario": "Scenario",
+      "avatar": "Avatar",
+      "category": "Category"
+    }
   }
 }

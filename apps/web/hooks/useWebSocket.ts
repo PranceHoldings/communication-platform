@@ -92,8 +92,30 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const reconnectAttempts = useRef(0);
   const MAX_RECONNECT_ATTEMPTS = 5;
 
+  // Store callbacks in refs to keep them stable across renders
+  const onTranscriptRef = useRef(onTranscript);
+  const onAvatarResponseRef = useRef(onAvatarResponse);
+  const onProcessingUpdateRef = useRef(onProcessingUpdate);
+  const onSessionCompleteRef = useRef(onSessionComplete);
+  const onErrorRef = useRef(onError);
+
+  // Update refs on every render so they always point to the latest callbacks
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript;
+    onAvatarResponseRef.current = onAvatarResponse;
+    onProcessingUpdateRef.current = onProcessingUpdate;
+    onSessionCompleteRef.current = onSessionComplete;
+    onErrorRef.current = onError;
+  });
+
   // WebSocket endpoint from environment variable
-  const wsEndpoint = process.env.NEXT_PUBLIC_WS_ENDPOINT || 'wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev';
+  const wsEndpoint = process.env.NEXT_PUBLIC_WS_ENDPOINT || 'ws://localhost:3001';
+
+  // Debug log
+  useEffect(() => {
+    console.log('[useWebSocket] Endpoint configured:', wsEndpoint);
+    console.log('[useWebSocket] Environment:', process.env.NEXT_PUBLIC_WS_ENDPOINT);
+  }, []);
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
@@ -104,24 +126,24 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         switch (message.type) {
           case 'transcript_partial':
           case 'transcript_final':
-            onTranscript?.(message as TranscriptMessage);
+            onTranscriptRef.current?.(message as TranscriptMessage);
             break;
 
           case 'avatar_response':
-            onAvatarResponse?.(message as AvatarResponseMessage);
+            onAvatarResponseRef.current?.(message as AvatarResponseMessage);
             break;
 
           case 'processing_update':
-            onProcessingUpdate?.(message as ProcessingUpdateMessage);
+            onProcessingUpdateRef.current?.(message as ProcessingUpdateMessage);
             break;
 
           case 'session_complete':
-            onSessionComplete?.(message as SessionCompleteMessage);
+            onSessionCompleteRef.current?.(message as SessionCompleteMessage);
             break;
 
           case 'error':
             console.error('WebSocket error message:', message);
-            onError?.(message as ErrorMessage);
+            onErrorRef.current?.(message as ErrorMessage);
             setError((message as ErrorMessage).message);
             break;
 
@@ -142,17 +164,20 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         setError('Failed to parse message');
       }
     },
-    [onTranscript, onAvatarResponse, onProcessingUpdate, onSessionComplete, onError]
+    // Empty dependency array - callbacks accessed via stable refs
+    []
   );
 
   const connect = useCallback(() => {
+    console.log('[useWebSocket] connect() called', { wsEndpoint, token: token ? 'exists' : 'missing', isConnecting });
+
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected');
+      console.log('[useWebSocket] WebSocket already connected');
       return;
     }
 
     if (isConnecting) {
-      console.log('WebSocket connection already in progress');
+      console.log('[useWebSocket] WebSocket connection already in progress');
       return;
     }
 
@@ -162,7 +187,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     try {
       // Include token in query parameters for authentication
       const url = `${wsEndpoint}?token=${encodeURIComponent(token)}`;
-      console.log('Connecting to WebSocket:', wsEndpoint);
+      console.log('[useWebSocket] Connecting to WebSocket:', wsEndpoint);
+      console.log('[useWebSocket] Full URL:', url);
 
       const ws = new WebSocket(url);
       wsRef.current = ws;
@@ -216,7 +242,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       setError(err instanceof Error ? err.message : 'Failed to connect');
       setIsConnecting(false);
     }
-  }, [wsEndpoint, token, sessionId, handleMessage, isConnecting]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wsEndpoint, token, sessionId, handleMessage]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
