@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/provider';
 import { createScenario } from '@/lib/api/scenarios';
+import { locales, defaultLocale } from '@/lib/i18n/config';
 import Link from 'next/link';
 
 export default function NewScenarioPage() {
@@ -16,7 +17,7 @@ export default function NewScenarioPage() {
   // Form fields
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
-  const [language, setLanguage] = useState('ja');
+  const [language, setLanguage] = useState(defaultLocale);
   const [visibility, setVisibility] = useState<'PRIVATE' | 'ORGANIZATION' | 'PUBLIC'>('PRIVATE');
   const [configJson, setConfigJson] = useState('{\n  "duration": 30,\n  "difficulty": "beginner"\n}');
 
@@ -134,8 +135,11 @@ export default function NewScenarioPage() {
               onChange={(e) => setLanguage(e.target.value)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
-              <option value="ja">日本語 (Japanese)</option>
-              <option value="en">English</option>
+              {locales.map((locale) => (
+                <option key={locale} value={locale}>
+                  {t(`languages.${locale}`)}
+                </option>
+              ))}
             </select>
           </div>
 

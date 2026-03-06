@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { defaultLocale } from '@/lib/i18n/config';
 
 /**
  * Tailwind CSSクラス名を結合・マージする
@@ -28,8 +29,9 @@ export function getOptionalEnv(key: string): string | undefined {
 
 /**
  * フォーマット済み日時文字列を返す
+ * デフォルトロケールは lib/i18n/config.ts から自動取得
  */
-export function formatDateTime(date: Date | string, locale = 'ja'): string {
+export function formatDateTime(date: Date | string, locale = defaultLocale): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return new Intl.DateTimeFormat(locale, {
     year: 'numeric',

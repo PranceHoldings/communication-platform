@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/provider';
 import { getScenario, updateScenario } from '@/lib/api/scenarios';
+import { locales, defaultLocale } from '@/lib/i18n/config';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -20,7 +21,7 @@ export default function EditScenarioPage() {
   // Form fields
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
-  const [language, setLanguage] = useState('ja');
+  const [language, setLanguage] = useState(defaultLocale);
   const [visibility, setVisibility] = useState<'PRIVATE' | 'ORGANIZATION' | 'PUBLIC'>('PRIVATE');
   const [configJson, setConfigJson] = useState('');
 
@@ -168,8 +169,11 @@ export default function EditScenarioPage() {
               onChange={(e) => setLanguage(e.target.value)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
-              <option value="ja">{t('common.languages.ja')}</option>
-              <option value="en">{t('common.languages.en')}</option>
+              {locales.map((locale) => (
+                <option key={locale} value={locale}>
+                  {t(`languages.${locale}`)}
+                </option>
+              ))}
             </select>
           </div>
 
