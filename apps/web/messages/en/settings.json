@@ -1,0 +1,26 @@
+{
+  "title": "Settings",
+  "subtitle": "Manage your account settings and preferences",
+  "profile": {
+    "title": "Profile Information",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role"
+  },
+  "preferences": {
+    "title": "Preferences",
+    "emailNotifications": {
+      "title": "Email Notifications",
+      "description": "Receive email updates about your sessions"
+    },
+    "sessionReminders": {
+      "title": "Session Reminders",
+      "description": "Get reminders for scheduled practice sessions"
+    }
+  },
+  "security": {
+    "title": "Security",
+    "changePassword": "Change Password"
+  },
+  "comingSoon": "Profile editing and additional settings will be available soon. Currently showing read-only information."
+}

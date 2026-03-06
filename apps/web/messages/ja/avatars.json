@@ -106,6 +106,8 @@
   },
   "edit": {
     "title": "アバターを編集",
+    "description": "アバター情報を更新",
+    "backToAvatar": "アバターに戻る",
     "submit": "アバターを更新",
     "updating": "更新中...",
     "success": "アバターが正常に更新されました",

@@ -20,6 +20,8 @@ import dashboardEn from '@/messages/en/dashboard.json';
 import sessionsEn from '@/messages/en/sessions.json';
 import scenariosEn from '@/messages/en/scenarios.json';
 import avatarsEn from '@/messages/en/avatars.json';
+import settingsEn from '@/messages/en/settings.json';
+import reportsEn from '@/messages/en/reports.json';
 
 // Import Japanese
 import commonJa from '@/messages/ja/common.json';
@@ -29,6 +31,8 @@ import dashboardJa from '@/messages/ja/dashboard.json';
 import sessionsJa from '@/messages/ja/sessions.json';
 import scenariosJa from '@/messages/ja/scenarios.json';
 import avatarsJa from '@/messages/ja/avatars.json';
+import settingsJa from '@/messages/ja/settings.json';
+import reportsJa from '@/messages/ja/reports.json';
 
 // Add more languages here by importing and adding to messages object
 // Example for Spanish:
@@ -44,6 +48,8 @@ const messages: Record<string, Record<string, any>> = {
     sessions: sessionsEn,
     scenarios: scenariosEn,
     avatars: avatarsEn,
+    settings: settingsEn,
+    reports: reportsEn,
   },
   ja: {
     ...commonJa,
@@ -53,6 +59,8 @@ const messages: Record<string, Record<string, any>> = {
     sessions: sessionsJa,
     scenarios: scenariosJa,
     avatars: avatarsJa,
+    settings: settingsJa,
+    reports: reportsJa,
   },
   // Add more languages here:
   // es: { ...commonEs, ... },

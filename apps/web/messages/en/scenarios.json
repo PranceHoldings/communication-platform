@@ -73,6 +73,10 @@
   },
   "edit": {
     "title": "Edit Scenario",
+    "description": "Update scenario information",
+    "backToScenario": "Back to Scenario",
+    "loading": "Loading scenario...",
+    "configHelp": "Enter scenario configuration as valid JSON. Example: { \"duration\": 30, \"difficulty\": \"beginner\" }",
     "submit": "Update Scenario",
     "updating": "Updating...",
     "success": "Scenario updated successfully",

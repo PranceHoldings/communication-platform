@@ -106,6 +106,8 @@
   },
   "edit": {
     "title": "Edit Avatar",
+    "description": "Update avatar information",
+    "backToAvatar": "Back to Avatar",
     "submit": "Update Avatar",
     "updating": "Updating...",
     "success": "Avatar updated successfully",

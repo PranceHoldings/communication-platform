@@ -73,6 +73,10 @@
   },
   "edit": {
     "title": "シナリオを編集",
+    "description": "シナリオ情報を更新",
+    "backToScenario": "シナリオに戻る",
+    "loading": "シナリオを読み込み中...",
+    "configHelp": "有効なJSON形式でシナリオ設定を入力してください。例: { \"duration\": 30, \"difficulty\": \"beginner\" }",
     "submit": "シナリオを更新",
     "updating": "更新中...",
     "success": "シナリオが正常に更新されました",

@@ -81,12 +81,20 @@
     "recentSessions": {
       "title": "Recent Sessions",
       "noSessions": "No sessions yet. Start your first session!",
-      "viewAll": "View All Sessions",
+      "empty": {
+        "title": "No sessions yet",
+        "description": "Get started by creating your first session."
+      },
+      "newSession": "New Session",
+      "viewAll": "View all",
       "scenario": "Scenario",
       "duration": "Duration",
       "score": "Score",
       "date": "Date",
       "status": {
+        "completed": "Completed",
+        "processing": "Processing",
+        "failed": "Failed",
         "ACTIVE": "Active",
         "PROCESSING": "Processing",
         "COMPLETED": "Completed",

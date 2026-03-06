@@ -3,11 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { useI18n } from '@/lib/i18n/provider';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -27,18 +29,18 @@ export default function SettingsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage your account settings and preferences</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
+          <p className="mt-1 text-sm text-gray-500">{t('settings.subtitle')}</p>
         </div>
 
         {/* Profile Section */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-5 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Profile Information</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t('settings.profile.title')}</h3>
           </div>
           <div className="px-6 py-5 space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
+              <label className="block text-sm font-medium text-gray-700">{t('settings.profile.name')}</label>
               <input
                 type="text"
                 value={user.name}
@@ -48,7 +50,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <label className="block text-sm font-medium text-gray-700">{t('settings.profile.email')}</label>
               <input
                 type="email"
                 value={user.email}
@@ -58,7 +60,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Role</label>
+              <label className="block text-sm font-medium text-gray-700">{t('settings.profile.role')}</label>
               <input
                 type="text"
                 value={user.role}
@@ -72,14 +74,14 @@ export default function SettingsPage() {
         {/* Preferences Section */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-5 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Preferences</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t('settings.preferences.title')}</h3>
           </div>
           <div className="px-6 py-5">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900">Email Notifications</h4>
-                  <p className="text-sm text-gray-500">Receive email updates about your sessions</p>
+                  <h4 className="text-sm font-medium text-gray-900">{t('settings.preferences.emailNotifications.title')}</h4>
+                  <p className="text-sm text-gray-500">{t('settings.preferences.emailNotifications.description')}</p>
                 </div>
                 <button
                   type="button"
@@ -93,8 +95,8 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900">Session Reminders</h4>
-                  <p className="text-sm text-gray-500">Get reminders for scheduled practice sessions</p>
+                  <h4 className="text-sm font-medium text-gray-900">{t('settings.preferences.sessionReminders.title')}</h4>
+                  <p className="text-sm text-gray-500">{t('settings.preferences.sessionReminders.description')}</p>
                 </div>
                 <button
                   type="button"
@@ -112,14 +114,14 @@ export default function SettingsPage() {
         {/* Security Section */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-5 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Security</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t('settings.security.title')}</h3>
           </div>
           <div className="px-6 py-5">
             <button
               type="button"
               className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              Change Password
+              {t('settings.security.changePassword')}
             </button>
           </div>
         </div>
@@ -144,8 +146,7 @@ export default function SettingsPage() {
             </div>
             <div className="ml-3">
               <p className="text-sm text-blue-700">
-                Profile editing and additional settings will be available soon. Currently showing read-only
-                information.
+                {t('settings.comingSoon')}
               </p>
             </div>
           </div>

@@ -1,0 +1,26 @@
+{
+  "title": "設定",
+  "subtitle": "アカウント設定と環境設定を管理します",
+  "profile": {
+    "title": "プロフィール情報",
+    "name": "名前",
+    "email": "メールアドレス",
+    "role": "ロール"
+  },
+  "preferences": {
+    "title": "環境設定",
+    "emailNotifications": {
+      "title": "メール通知",
+      "description": "セッションに関するメール通知を受け取る"
+    },
+    "sessionReminders": {
+      "title": "セッションリマインダー",
+      "description": "予定されている練習セッションのリマインダーを受け取る"
+    }
+  },
+  "security": {
+    "title": "セキュリティ",
+    "changePassword": "パスワードを変更"
+  },
+  "comingSoon": "プロフィール編集とその他の設定は近日公開予定です。現在は読み取り専用の情報を表示しています。"
+}

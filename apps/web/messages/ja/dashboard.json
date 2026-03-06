@@ -81,12 +81,20 @@
     "recentSessions": {
       "title": "最近のセッション",
       "noSessions": "まだセッションがありません。最初のセッションを開始しましょう！",
-      "viewAll": "すべてのセッションを表示",
+      "empty": {
+        "title": "まだセッションがありません",
+        "description": "最初のセッションを作成して始めましょう。"
+      },
+      "newSession": "新規セッション",
+      "viewAll": "すべて表示",
       "scenario": "シナリオ",
       "duration": "所要時間",
       "score": "スコア",
       "date": "日付",
       "status": {
+        "completed": "完了",
+        "processing": "処理中",
+        "failed": "失敗",
         "ACTIVE": "アクティブ",
         "PROCESSING": "処理中",
         "COMPLETED": "完了",

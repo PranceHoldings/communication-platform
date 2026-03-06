@@ -87,7 +87,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200">
         {/* Logo */}
         <div className="flex items-center h-16 px-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-indigo-600">Prance</h1>
+          <h1 className="text-xl font-bold text-indigo-600">{t('common.appNameShort')}</h1>
         </div>
 
         {/* Navigation */}

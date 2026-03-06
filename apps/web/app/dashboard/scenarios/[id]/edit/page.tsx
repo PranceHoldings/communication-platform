@@ -92,7 +92,7 @@ export default function EditScenarioPage() {
     return (
       <div className="max-w-3xl mx-auto py-12 text-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        <p className="mt-4 text-gray-500">Loading scenario...</p>
+        <p className="mt-4 text-gray-500">{t('scenarios.edit.loading')}</p>
       </div>
     );
   }
@@ -108,10 +108,10 @@ export default function EditScenarioPage() {
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Scenario
+          {t('scenarios.edit.backToScenario')}
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 mt-2">Edit Scenario</h1>
-        <p className="mt-1 text-sm text-gray-500">Update scenario information</p>
+        <h1 className="text-2xl font-bold text-gray-900 mt-2">{t('scenarios.edit.title')}</h1>
+        <p className="mt-1 text-sm text-gray-500">{t('scenarios.edit.description')}</p>
       </div>
 
       {/* Error Alert */}
@@ -168,8 +168,8 @@ export default function EditScenarioPage() {
               onChange={(e) => setLanguage(e.target.value)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
-              <option value="ja">日本語 (Japanese)</option>
-              <option value="en">English</option>
+              <option value="ja">{t('common.languages.ja')}</option>
+              <option value="en">{t('common.languages.en')}</option>
             </select>
           </div>
 
@@ -206,7 +206,7 @@ export default function EditScenarioPage() {
             required
           />
           <p className="mt-2 text-sm text-gray-500">
-            Enter scenario configuration as valid JSON. Example: {`{ "duration": 30, "difficulty": "beginner" }`}
+            {t('scenarios.edit.configHelp')}
           </p>
         </div>
 

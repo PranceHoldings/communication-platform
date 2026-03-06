@@ -3,11 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { useI18n } from '@/lib/i18n/provider';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function ReportsPage() {
   const router = useRouter();
   const { isLoading, isAuthenticated } = useAuth();
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -27,9 +29,9 @@ export default function ReportsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            View detailed analysis and reports from your sessions
+            {t('reports.subtitle')}
           </p>
         </div>
 
@@ -47,9 +49,9 @@ export default function ReportsPage() {
               d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Analytics Coming Soon</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">{t('reports.comingSoon.title')}</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Detailed session reports with emotion analysis, transcripts, and performance metrics.
+            {t('reports.comingSoon.description')}
           </p>
         </div>
       </div>

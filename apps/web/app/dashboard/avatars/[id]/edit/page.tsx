@@ -114,10 +114,10 @@ export default function EditAvatarPage() {
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Avatar
+          {t('avatars.edit.backToAvatar')}
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 mt-2">Edit Avatar</h1>
-        <p className="mt-1 text-sm text-gray-500">Update avatar information</p>
+        <h1 className="text-2xl font-bold text-gray-900 mt-2">{t('avatars.edit.title')}</h1>
+        <p className="mt-1 text-sm text-gray-500">{t('avatars.edit.description')}</p>
       </div>
 
       {error && (

@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "Prance Communication Platform",
+    "appNameShort": "Prance",
     "welcome": "Welcome",
     "loading": "Loading...",
     "submit": "Submit",

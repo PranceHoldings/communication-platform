@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n/provider';
 
 interface Session {
   id: string;
@@ -17,24 +18,26 @@ interface RecentSessionsProps {
 }
 
 export default function RecentSessions({ sessions }: RecentSessionsProps) {
+  const { t } = useI18n();
+
   const getStatusBadge = (status: Session['status']) => {
     switch (status) {
       case 'completed':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            Completed
+            {t('dashboard.recentSessions.status.completed')}
           </span>
         );
       case 'processing':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            Processing
+            {t('dashboard.recentSessions.status.processing')}
           </span>
         );
       case 'failed':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            Failed
+            {t('dashboard.recentSessions.status.failed')}
           </span>
         );
     }
@@ -44,7 +47,7 @@ export default function RecentSessions({ sessions }: RecentSessionsProps) {
     return (
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-5 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Recent Sessions</h3>
+          <h3 className="text-lg font-medium text-gray-900">{t('dashboard.recentSessions.title')}</h3>
         </div>
         <div className="px-6 py-12 text-center">
           <svg
@@ -60,8 +63,8 @@ export default function RecentSessions({ sessions }: RecentSessionsProps) {
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No sessions yet</h3>
-          <p className="mt-1 text-sm text-gray-500">Get started by creating your first session.</p>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">{t('dashboard.recentSessions.empty.title')}</h3>
+          <p className="mt-1 text-sm text-gray-500">{t('dashboard.recentSessions.empty.description')}</p>
           <div className="mt-6">
             <Link
               href="/dashboard/sessions/new"
@@ -70,7 +73,7 @@ export default function RecentSessions({ sessions }: RecentSessionsProps) {
               <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              New Session
+              {t('dashboard.recentSessions.newSession')}
             </Link>
           </div>
         </div>
@@ -81,12 +84,12 @@ export default function RecentSessions({ sessions }: RecentSessionsProps) {
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900">Recent Sessions</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t('dashboard.recentSessions.title')}</h3>
         <Link
           href="/dashboard/sessions"
           className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
         >
-          View all
+          {t('dashboard.recentSessions.viewAll')}
         </Link>
       </div>
       <div className="divide-y divide-gray-200">
@@ -128,7 +131,7 @@ export default function RecentSessions({ sessions }: RecentSessionsProps) {
                 {session.score && (
                   <div className="text-right">
                     <div className="text-sm font-medium text-gray-900">{session.score}/100</div>
-                    <div className="text-xs text-gray-500">Score</div>
+                    <div className="text-xs text-gray-500">{t('dashboard.recentSessions.score')}</div>
                   </div>
                 )}
                 <Link
