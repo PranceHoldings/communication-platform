@@ -19,8 +19,66 @@ echo "=============================================="
 ENVIRONMENT="${1:-dev}"
 echo -e "${BLUE}📍 環境: ${ENVIRONMENT}${NC}\n"
 
-# 1. 前提条件チェック
-echo -e "${YELLOW}📋 前提条件をチェック中...${NC}"
+# 1. 環境変数ファイルの同期
+echo -e "${YELLOW}🔐 環境変数ファイルを同期中...${NC}"
+
+# プロジェクトルートの.env.localから infrastructure/.envにコピー
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ENV_LOCAL="${PROJECT_ROOT}/.env.local"
+ENV_INFRA="$(dirname "$0")/.env"
+
+if [ ! -f "$ENV_LOCAL" ]; then
+    echo -e "${RED}❌ エラー: .env.local が見つかりません${NC}"
+    echo -e "   場所: ${ENV_LOCAL}"
+    echo -e "   以下のコマンドで作成してください:"
+    echo -e "   cp ${PROJECT_ROOT}/.env.example ${ENV_LOCAL}"
+    echo -e "   その後、APIキーを設定してください"
+    exit 1
+fi
+
+echo -e "${BLUE}   コピー元: ${ENV_LOCAL}${NC}"
+echo -e "${BLUE}   コピー先: ${ENV_INFRA}${NC}"
+
+# .env.localをinfrastructure/.envにコピー
+cp "$ENV_LOCAL" "$ENV_INFRA"
+echo -e "${GREEN}✅ 環境変数ファイル同期完了${NC}"
+
+# 環境変数を読み込み
+echo -e "${YELLOW}📥 環境変数を読み込み中...${NC}"
+set -a  # 全ての変数を自動的にexport
+source "$ENV_INFRA"
+set +a
+echo -e "${GREEN}✅ 環境変数読み込み完了${NC}"
+
+# 重要なAPIキーの存在確認
+echo -e "\n${YELLOW}🔍 必須APIキーの確認中...${NC}"
+MISSING_KEYS=0
+
+if [ -z "$AZURE_SPEECH_KEY" ] || [ "$AZURE_SPEECH_KEY" = "xxxxx" ]; then
+    echo -e "${RED}❌ AZURE_SPEECH_KEY が設定されていません${NC}"
+    MISSING_KEYS=$((MISSING_KEYS + 1))
+fi
+
+if [ -z "$ELEVENLABS_API_KEY" ] || [ "$ELEVENLABS_API_KEY" = "xxxxx" ]; then
+    echo -e "${RED}❌ ELEVENLABS_API_KEY が設定されていません${NC}"
+    MISSING_KEYS=$((MISSING_KEYS + 1))
+fi
+
+if [ -z "$JWT_SECRET" ] || [ "$JWT_SECRET" = "dev-secret-change-in-production" ]; then
+    echo -e "${YELLOW}⚠️  JWT_SECRET がデフォルト値です（本番環境では変更してください）${NC}"
+fi
+
+if [ $MISSING_KEYS -gt 0 ]; then
+    echo -e "\n${RED}❌ エラー: ${MISSING_KEYS} 個のAPIキーが設定されていません${NC}"
+    echo -e "   ${ENV_LOCAL} を編集してAPIキーを設定してください"
+    echo -e "   詳細: docs/development/API_KEY_MANAGEMENT.md"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ 必須APIキー確認完了${NC}"
+
+# 2. 前提条件チェック
+echo -e "\n${YELLOW}📋 前提条件をチェック中...${NC}"
 
 # AWS CLI確認
 if ! command -v aws &> /dev/null; then

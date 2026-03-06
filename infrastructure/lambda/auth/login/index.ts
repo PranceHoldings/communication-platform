@@ -43,8 +43,21 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // リクエストボディの検証
+    console.log('[DEBUG] Raw event.body:', event.body);
+    console.log('[DEBUG] event.body type:', typeof event.body);
+    console.log('[DEBUG] event.isBase64Encoded:', event.isBase64Encoded);
+
     const body = validateRequestBody(event.body);
+    console.log('[DEBUG] Parsed body:', JSON.stringify(body));
+
     const { email, password }: LoginRequest = body;
+
+    console.log('[DEBUG] Extracted credentials:', {
+      email: email,
+      emailType: typeof email,
+      passwordLength: password?.length,
+      passwordType: typeof password
+    });
 
     // 入力値のバリデーション
     validateRequired(email, 'Email');
@@ -64,12 +77,29 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       },
     });
 
+    console.log('[DEBUG] User found:', {
+      email: user?.email,
+      hasPasswordHash: !!user?.passwordHash,
+      passwordHashLength: user?.passwordHash?.length,
+      passwordHashPrefix: user?.passwordHash?.substring(0, 10)
+    });
+
     if (!user) {
       throw new AuthenticationError('Invalid email or password');
     }
 
+    console.log('[DEBUG] Verifying password:', {
+      inputPasswordLength: password.length,
+      storedHashLength: user.passwordHash.length,
+      inputPasswordPrefix: password.substring(0, 3) + '***',
+      storedHashPrefix: user.passwordHash.substring(0, 10)
+    });
+
     // パスワード検証
     const isPasswordValid = await verifyPassword(password, user.passwordHash);
+
+    console.log('[DEBUG] Password verification result:', isPasswordValid);
+
     if (!isPasswordValid) {
       throw new AuthenticationError('Invalid email or password');
     }

@@ -2,19 +2,42 @@
 
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
+import { locales } from '@/lib/i18n/config';
 
-const languages = [
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-  { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
-  { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文', flag: '🇨🇳' },
-  { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
-  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
-];
+/**
+ * Language metadata for UI display
+ *
+ * IMPORTANT: This list should match the locales in lib/i18n/config.ts
+ * Only languages with complete message files should be included here.
+ *
+ * To add a new language:
+ * 1. Add message files in apps/web/messages/[locale]/
+ * 2. Import in lib/i18n/messages.ts
+ * 3. Update lib/i18n/config.ts locales array
+ * 4. Add metadata entry here
+ */
+const languageMetadata: Record<string, { name: string; nativeName: string; flag: string }> = {
+  en: { name: 'English', nativeName: 'English', flag: '🇺🇸' },
+  ja: { name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
+  'zh-CN': { name: 'Chinese (Simplified)', nativeName: '简体中文', flag: '🇨🇳' },
+  ko: { name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
+  es: { name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
+  fr: { name: 'French', nativeName: 'Français', flag: '🇫🇷' },
+  de: { name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
+};
+
+// Build available languages from config locales
+const languages = locales.map((code) => ({
+  code,
+  ...(languageMetadata[code] || {
+    name: code.toUpperCase(),
+    nativeName: code.toUpperCase(),
+    flag: '🌐',
+  }),
+}));
 
 export default function LanguageSwitcher() {
-  const { locale, setLocale } = useI18n();
+  const { locale, setLocale, t } = useI18n();
   const [isChanging, setIsChanging] = useState(false);
 
   const handleLanguageChange = (newLocale: string) => {
@@ -32,11 +55,11 @@ export default function LanguageSwitcher() {
         onChange={(e) => handleLanguageChange(e.target.value)}
         disabled={isChanging}
         className="block w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-        aria-label="Select language"
+        aria-label={t('common.selectLanguage')}
       >
-        {languages.map((lang) => (
-          <option key={lang.code} value={lang.code}>
-            {lang.flag} {lang.nativeName}
+        {languages.map((language) => (
+          <option key={language.code} value={language.code}>
+            {language.flag} {language.nativeName}
           </option>
         ))}
       </select>

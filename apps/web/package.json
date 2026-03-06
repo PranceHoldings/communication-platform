@@ -3,11 +3,17 @@
   "version": "0.1.0-alpha",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "PORT=3000 next dev",
+    "dev:clean": "bash scripts/dev-clean.sh",
+    "dev:restart": "bash scripts/dev-restart.sh",
+    "dev:ws": "node scripts/mock-websocket-server.js",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:ws\"",
     "build": "next build",
-    "start": "next start",
+    "start": "PORT=3000 next start",
+    "start:clean": "bash scripts/start-clean.sh",
     "lint": "next lint",
-    "clean": "rm -rf .next"
+    "clean": "rm -rf .next",
+    "kill-port": "bash scripts/kill-port.sh"
   },
   "dependencies": {
     "@prance/database": "*",
@@ -51,6 +57,7 @@
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "ws": "^8.19.0"
   }
 }

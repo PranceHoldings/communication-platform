@@ -2,11 +2,13 @@
  * Test Data Seeding Script
  *
  * Creates:
+ * - Test User (test@example.com / Test2026!)
  * - 2 Avatars (1 with cloning allowed, 1 without)
  * - 2 Scenarios (Interview Practice, Customer Support)
  */
 
 import { PrismaClient } from '../../../packages/database/node_modules/.prisma/client/index.js';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -31,16 +33,21 @@ async function main() {
   let user = await prisma.user.findFirst({ where: { orgId: org.id } });
   if (!user) {
     console.log('Creating test user...');
+    const testPassword = 'Test2026!';
+    const hashedPassword = await bcrypt.hash(testPassword, 10);
+
     user = await prisma.user.create({
       data: {
         email: 'test@example.com',
         name: 'Test User',
+        passwordHash: hashedPassword,
         cognitoSub: 'test-cognito-sub-' + Date.now(),
         role: 'CLIENT_ADMIN',
         orgId: org.id,
       },
     });
-    console.log(`✓ Created user: ${user.email} (${user.id})\n`);
+    console.log(`✓ Created user: ${user.email} (${user.id})`);
+    console.log(`  Password: ${testPassword}\n`);
   } else {
     console.log(`Using existing user: ${user.email} (${user.id})\n`);
   }
@@ -154,12 +161,18 @@ Start by calling the support line and explaining your issue with the product.`,
   console.log(`✓ Created: ${scenario2.title} (ID: ${scenario2.id})`);
 
   console.log('\n✅ Test data created successfully!');
+  console.log('\n═══════════════════════════════════════════');
+  console.log('Test User Credentials:');
+  console.log('📧 Email:    test@example.com');
+  console.log('🔐 Password: Test2026!');
+  console.log('═══════════════════════════════════════════');
   console.log('\nSummary:');
   console.log(`- Avatars: ${[avatar1.name, avatar2.name].join(', ')}`);
   console.log(`- Scenarios: ${[scenario1.title, scenario2.title].join(', ')}`);
   console.log('\nYou can now:');
-  console.log('1. View avatars at: http://localhost:3000/dashboard/avatars');
-  console.log('2. Create a session at: http://localhost:3000/dashboard/sessions/new');
+  console.log('1. Login at: http://localhost:3000/login');
+  console.log('2. View avatars at: http://localhost:3000/dashboard/avatars');
+  console.log('3. Create a session at: http://localhost:3000/dashboard/sessions/new');
 }
 
 main()
