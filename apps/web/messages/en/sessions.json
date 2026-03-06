@@ -126,10 +126,12 @@
       "placeholder": "Avatar will appear here",
       "microphone": "Microphone",
       "camera": "Camera",
+      "speaker": "Speaker",
       "active": "Active",
       "inactive": "Inactive",
       "off": "Off",
       "recording": "Recording",
+      "playing": "Playing",
       "audioLevel": "Audio Level"
     },
     "transcript": {
@@ -156,8 +158,11 @@
       "maxAttemptsReached": "Maximum connection attempts reached.",
       "reconnecting": "Connection lost. Reconnecting...",
       "authFailed": "Authentication failed. Please log in again.",
+      "processingAudio": "Processing your recording...",
+      "audioSendError": "Failed to send audio. Please try again.",
       "microphoneError": "Microphone error occurred.",
-      "microphonePermissionDenied": "Microphone access denied. Please allow microphone permission in your browser settings."
+      "microphonePermissionDenied": "Microphone access denied. Please allow microphone permission in your browser settings.",
+      "audioPlaybackError": "Failed to play audio response. Please check your browser settings."
     },
     "completed": {
       "title": "Session Completed",

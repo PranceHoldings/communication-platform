@@ -126,10 +126,12 @@
       "placeholder": "アバターがここに表示されます",
       "microphone": "マイク",
       "camera": "カメラ",
+      "speaker": "スピーカー",
       "active": "有効",
       "inactive": "無効",
       "off": "オフ",
       "recording": "録音中",
+      "playing": "再生中",
       "audioLevel": "音声レベル"
     },
     "transcript": {
@@ -157,7 +159,10 @@
       "reconnecting": "接続が切断されました。再接続中...",
       "authFailed": "認証に失敗しました。再度ログインしてください。",
       "microphoneError": "マイクエラーが発生しました。",
-      "microphonePermissionDenied": "マイクへのアクセスが拒否されました。ブラウザの設定でマイクの許可を有効にしてください。"
+      "microphonePermissionDenied": "マイクへのアクセスが拒否されました。ブラウザの設定でマイクの許可を有効にしてください。",
+      "audioPlaybackError": "音声の再生に失敗しました。ブラウザの設定を確認してください。",
+      "processingAudio": "録音を処理しています...",
+      "audioSendError": "音声の送信に失敗しました。もう一度お試しください。"
     },
     "completed": {
       "title": "セッション完了",

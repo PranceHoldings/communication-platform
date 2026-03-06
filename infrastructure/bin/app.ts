@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
+import { config as dotenvConfig } from 'dotenv';
+import { resolve } from 'path';
 import { NetworkStack } from '../lib/network-stack';
 import { CognitoStack } from '../lib/cognito-stack';
 import { DatabaseStack } from '../lib/database-stack';
@@ -10,6 +12,9 @@ import { ApiLambdaStack } from '../lib/api-lambda-stack';
 import { DnsStack } from '../lib/dns-stack';
 import { CertificateStack } from '../lib/certificate-stack';
 import { getConfig } from '../lib/config';
+
+// Load environment variables from .env file
+dotenvConfig({ path: resolve(__dirname, '../.env') });
 
 const app = new cdk.App();
 
@@ -100,6 +105,7 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   databaseCluster: databaseStack.cluster,
   databaseSecret: databaseStack.secret,
   websocketConnectionsTable: dynamoDBStack.websocketConnectionsTable,
+  recordingsBucket: storageStack.recordingsBucket,
   description: 'Prance Platform - API Gateway, Lambda Functions, and Authorizer',
 });
 
@@ -112,6 +118,7 @@ cognitoStack.addDependency(networkStack);
 apiLambdaStack.addDependency(networkStack);
 apiLambdaStack.addDependency(databaseStack);
 apiLambdaStack.addDependency(dynamoDBStack);
+apiLambdaStack.addDependency(storageStack);
 
 // タグ付け
 cdk.Tags.of(app).add('Project', 'Prance');

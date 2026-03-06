@@ -1,16 +1,67 @@
 /**
  * WebSocket $default Handler
- * Handles all WebSocket messages (route selection)
+ * Handles all WebSocket messages with STT/AI/TTS integration
  */
 
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
-import { ApiGatewayManagementApiClient, PostToConnectionCommand } from '@aws-sdk/client-apigatewaymanagementapi';
+import {
+  ApiGatewayManagementApiClient,
+  PostToConnectionCommand,
+} from '@aws-sdk/client-apigatewaymanagementapi';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
+import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
+import { AudioProcessor } from './audio-processor';
 
 const ENDPOINT = process.env.WEBSOCKET_ENDPOINT!;
+const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE_NAME!;
+const S3_BUCKET = process.env.S3_BUCKET!;
+
+// Environment variables for AI/Audio services
+const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY!;
+const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION!;
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY!;
+const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID!;
+const BEDROCK_REGION = process.env.BEDROCK_REGION || 'us-east-1';
+const BEDROCK_MODEL_ID =
+  process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6';
 
 const apiGateway = new ApiGatewayManagementApiClient({
   endpoint: ENDPOINT,
 });
+
+const ddbClient = new DynamoDBClient({});
+const ddb = DynamoDBDocumentClient.from(ddbClient);
+
+const s3Client = new S3Client({});
+
+// Audio Processor (lazy initialization to avoid errors when API keys are not set)
+let audioProcessor: AudioProcessor | null = null;
+
+function getAudioProcessor(): AudioProcessor {
+  if (!audioProcessor) {
+    // Check if required environment variables are set
+    if (!AZURE_SPEECH_KEY || !ELEVENLABS_API_KEY) {
+      throw new Error('Audio processing API keys not configured. Set AZURE_SPEECH_KEY and ELEVENLABS_API_KEY environment variables.');
+    }
+
+    audioProcessor = new AudioProcessor({
+      azureSpeechKey: AZURE_SPEECH_KEY,
+      azureSpeechRegion: AZURE_SPEECH_REGION,
+      elevenLabsApiKey: ELEVENLABS_API_KEY,
+      elevenLabsVoiceId: ELEVENLABS_VOICE_ID,
+      bedrockRegion: BEDROCK_REGION,
+      bedrockModelId: BEDROCK_MODEL_ID,
+      s3Bucket: S3_BUCKET,
+      language: 'en-US', // TODO: Get from session settings
+    });
+  }
+  return audioProcessor;
+}
 
 interface WebSocketMessage {
   type: string;
@@ -23,6 +74,18 @@ interface WebSocketEvent {
     [key: string]: unknown;
   };
   body?: string;
+  isBase64Encoded?: boolean;
+  [key: string]: unknown;
+}
+
+interface ConnectionData {
+  connectionId: string;
+  sessionId?: string;
+  scenarioPrompt?: string;
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  audioS3Key?: string; // S3 key for accumulated audio chunks
+  audioChunksCount?: number;
+  lastChunkTime?: number;
   [key: string]: unknown;
 }
 
@@ -45,6 +108,9 @@ export const handler = async (
     const message: WebSocketMessage = JSON.parse(body);
     console.log('Received message:', message);
 
+    // Get connection data from DynamoDB
+    const connectionData = await getConnectionData(connectionId);
+
     // Route message based on type
     switch (message.type) {
       case 'ping':
@@ -55,38 +121,172 @@ export const handler = async (
         break;
 
       case 'authenticate':
-        // Already authenticated in $connect, just acknowledge
+        // Store session information in connection data
+        const sessionId = message.session_id as string;
+        await updateConnectionData(connectionId, {
+          sessionId,
+          conversationHistory: [],
+        });
+
         await sendToConnection(connectionId, {
           type: 'authenticated',
-          message: 'Already authenticated',
+          message: 'Session initialized',
+          sessionId,
         });
         break;
 
       case 'audio_chunk':
-        // TODO: Forward to STT service
-        console.log('Audio chunk received:', message);
+        // Handle streaming audio chunks (browser recording)
+        // Audio data is sent as Base64 string
+        const audioData = message.data as string;
+        const timestamp = message.timestamp as number;
+        const audioSessionId = connectionData?.sessionId || 'unknown';
+
+        console.log('Received audio chunk:', {
+          timestamp,
+          dataSize: audioData ? audioData.length : 0,
+          connectionId,
+          sessionId: audioSessionId,
+        });
+
+        // Save audio chunk to S3 (to avoid DynamoDB 400KB limit)
+        const chunkCount = (connectionData?.audioChunksCount || 0) + 1;
+        const chunkKey = `sessions/${audioSessionId}/chunks/${timestamp}-${chunkCount}.webm`;
+
+        try {
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: S3_BUCKET,
+              Key: chunkKey,
+              Body: Buffer.from(audioData, 'base64'),
+              ContentType: 'audio/webm',
+            })
+          );
+
+          console.log('Saved audio chunk to S3:', chunkKey);
+        } catch (error) {
+          console.error('Failed to save audio chunk to S3:', error);
+        }
+
+        await updateConnectionData(connectionId, {
+          lastChunkTime: timestamp,
+          audioChunksCount: chunkCount,
+        });
+
+        // Acknowledge receipt periodically (every 20th chunk to reduce traffic)
+        if (chunkCount % 20 === 0) {
+          await sendToConnection(connectionId, {
+            type: 'processing_update',
+            stage: 'receiving_audio',
+            progress: 0.1,
+            chunksReceived: chunkCount,
+          });
+        }
         break;
 
-      case 'speech_end':
-        // TODO: Process final transcription
-        console.log('Speech end:', message);
+      case 'audio_data':
+        // Process complete audio data (base64 encoded)
+        await handleAudioData(connectionId, message, connectionData);
         break;
 
       case 'user_speech':
-        // TODO: Send to AI for response generation
-        console.log('User speech:', message);
-        await sendToConnection(connectionId, {
-          type: 'processing_update',
-          stage: 'generating_response',
-          progress: 0.5,
-        });
+        // Process text directly (STT already done on client or for testing)
+        await handleUserSpeech(connectionId, message, connectionData);
+        break;
+
+      case 'speech_end':
+        // Currently not used - client sends complete audio_data instead
+        console.log('Speech end:', message);
         break;
 
       case 'session_end':
-        // TODO: Finalize session, generate report
+        // Finalize session and process accumulated audio
         console.log('Session end:', message);
+
+        // Process accumulated audio chunks if any
+        if (connectionData?.audioChunksCount && connectionData.audioChunksCount > 0) {
+          console.log(`Processing ${connectionData.audioChunksCount} accumulated audio chunks from S3`);
+
+          try {
+            await sendToConnection(connectionId, {
+              type: 'processing_update',
+              stage: 'processing_audio',
+              progress: 0.3,
+            });
+
+            // Load and combine audio chunks from S3
+            const sessionId = connectionData.sessionId || 'unknown';
+            const chunksPrefix = `sessions/${sessionId}/chunks/`;
+
+            console.log('Listing audio chunks in S3:', chunksPrefix);
+
+            const listResponse = await s3Client.send(
+              new ListObjectsV2Command({
+                Bucket: S3_BUCKET,
+                Prefix: chunksPrefix,
+              })
+            );
+
+            if (!listResponse.Contents || listResponse.Contents.length === 0) {
+              throw new Error('No audio chunks found in S3');
+            }
+
+            console.log(`Found ${listResponse.Contents.length} chunks in S3`);
+
+            // Sort chunks by timestamp (filename contains timestamp)
+            const sortedChunks = listResponse.Contents.sort((a, b) => {
+              const aKey = a.Key || '';
+              const bKey = b.Key || '';
+              return aKey.localeCompare(bKey);
+            });
+
+            // Download and combine all chunks
+            const audioBuffers: Buffer[] = [];
+            for (const chunk of sortedChunks) {
+              if (!chunk.Key) continue;
+
+              const getResponse = await s3Client.send(
+                new GetObjectCommand({
+                  Bucket: S3_BUCKET,
+                  Key: chunk.Key,
+                })
+              );
+
+              if (getResponse.Body) {
+                const chunkBuffer = await getResponse.Body.transformToByteArray();
+                audioBuffers.push(Buffer.from(chunkBuffer));
+              }
+            }
+
+            const combinedAudioBuffer = Buffer.concat(audioBuffers);
+            console.log('Combined audio size:', combinedAudioBuffer.length, 'bytes');
+
+            await sendToConnection(connectionId, {
+              type: 'processing_update',
+              stage: 'transcribing',
+              progress: 0.5,
+            });
+
+            // Process through STT -> AI -> TTS pipeline
+            await handleAudioProcessing(connectionId, combinedAudioBuffer, connectionData);
+          } catch (error) {
+            console.error('Failed to process accumulated audio:', error);
+            await sendToConnection(connectionId, {
+              type: 'error',
+              code: 'AUDIO_PROCESSING_ERROR',
+              message: 'Failed to process recorded audio',
+            });
+          }
+
+          // Clear audio chunks count after processing
+          await updateConnectionData(connectionId, {
+            audioChunksCount: 0,
+          });
+        }
+
         await sendToConnection(connectionId, {
           type: 'session_complete',
+          sessionId: connectionData?.sessionId,
           message: 'Session ended successfully',
         });
         break;
@@ -128,6 +328,316 @@ export const handler = async (
   }
 };
 
+/**
+ * Handle accumulated audio chunks processing
+ * Process: STT -> AI -> TTS -> Send back to client
+ */
+async function handleAudioProcessing(
+  connectionId: string,
+  audioBuffer: Buffer,
+  connectionData?: ConnectionData
+): Promise<void> {
+  try {
+    const sessionId = connectionData?.sessionId || 'unknown';
+
+    console.log('[handleAudioProcessing] Starting:', {
+      sessionId,
+      audioSize: audioBuffer.length,
+      hasScenarioPrompt: !!connectionData?.scenarioPrompt,
+    });
+
+    // Send processing status
+    await sendToConnection(connectionId, {
+      type: 'processing_update',
+      stage: 'transcribing',
+      progress: 0.33,
+    });
+
+    // Process through STT -> AI -> TTS pipeline
+    const processor = getAudioProcessor();
+    const result = await processor.processAudio({
+      audioData: audioBuffer,
+      sessionId,
+      scenarioPrompt: connectionData?.scenarioPrompt,
+      conversationHistory: connectionData?.conversationHistory || [],
+    });
+
+    // Send transcript (partial result)
+    await sendToConnection(connectionId, {
+      type: 'transcript_final',
+      speaker: 'USER',
+      text: result.transcript,
+      timestamp_start: Date.now(),
+      confidence: 0.95,
+    });
+
+    // Update conversation history
+    const updatedHistory = [
+      ...(connectionData?.conversationHistory || []),
+      { role: 'user', content: result.transcript },
+      { role: 'assistant', content: result.aiResponse },
+    ];
+
+    await updateConnectionData(connectionId, {
+      conversationHistory: updatedHistory,
+    });
+
+    // Send AI response text
+    await sendToConnection(connectionId, {
+      type: 'avatar_response',
+      speaker: 'AI',
+      text: result.aiResponse,
+      timestamp: Date.now(),
+    });
+
+    // Send AI response audio (base64 encoded)
+    await sendToConnection(connectionId, {
+      type: 'audio_response',
+      audio: result.audioResponse.toString('base64'),
+      contentType: result.audioContentType,
+      timestamp: Date.now(),
+    });
+
+    console.log('[handleAudioProcessing] Complete:', {
+      sessionId,
+      transcriptLength: result.transcript.length,
+      responseLength: result.aiResponse.length,
+      audioSize: result.audioResponse.length,
+    });
+  } catch (error) {
+    console.error('[handleAudioProcessing] Error:', error);
+    await sendToConnection(connectionId, {
+      type: 'error',
+      code: 'AUDIO_PROCESSING_ERROR',
+      message: error instanceof Error ? error.message : 'Failed to process audio',
+    });
+  }
+}
+
+/**
+ * Handle audio data message
+ * Process: STT -> AI -> TTS -> Send back to client
+ */
+async function handleAudioData(
+  connectionId: string,
+  message: WebSocketMessage,
+  connectionData?: ConnectionData
+): Promise<void> {
+  try {
+    const audioBase64 = message.audio as string;
+    const sessionId = connectionData?.sessionId || 'unknown';
+
+    if (!audioBase64) {
+      throw new Error('No audio data provided');
+    }
+
+    // Send processing status
+    await sendToConnection(connectionId, {
+      type: 'processing_update',
+      stage: 'transcribing',
+      progress: 0.33,
+    });
+
+    // Decode base64 audio
+    const audioBuffer = Buffer.from(audioBase64, 'base64');
+
+    // Process through STT -> AI -> TTS pipeline
+    const processor = getAudioProcessor();
+    const result = await processor.processAudio({
+      audioData: audioBuffer,
+      sessionId,
+      scenarioPrompt: connectionData?.scenarioPrompt,
+      conversationHistory: connectionData?.conversationHistory || [],
+    });
+
+    // Send transcript (partial result)
+    await sendToConnection(connectionId, {
+      type: 'transcript_final',
+      speaker: 'USER',
+      text: result.transcript,
+      timestamp_start: Date.now(),
+      confidence: 0.95,
+    });
+
+    // Update conversation history
+    const updatedHistory = [
+      ...(connectionData?.conversationHistory || []),
+      { role: 'user', content: result.transcript },
+      { role: 'assistant', content: result.aiResponse },
+    ];
+
+    await updateConnectionData(connectionId, {
+      conversationHistory: updatedHistory,
+    });
+
+    // Send AI response text
+    await sendToConnection(connectionId, {
+      type: 'avatar_response',
+      speaker: 'AI',
+      text: result.aiResponse,
+      timestamp: Date.now(),
+    });
+
+    // Send AI response audio (base64 encoded)
+    await sendToConnection(connectionId, {
+      type: 'audio_response',
+      audio: result.audioResponse.toString('base64'),
+      contentType: result.audioContentType,
+      timestamp: Date.now(),
+    });
+
+    console.log('[handleAudioData] Complete:', {
+      sessionId,
+      transcriptLength: result.transcript.length,
+      responseLength: result.aiResponse.length,
+      audioSize: result.audioResponse.length,
+    });
+  } catch (error) {
+    console.error('[handleAudioData] Error:', error);
+    await sendToConnection(connectionId, {
+      type: 'error',
+      code: 'AUDIO_PROCESSING_ERROR',
+      message: error instanceof Error ? error.message : 'Failed to process audio',
+    });
+  }
+}
+
+/**
+ * Handle user speech message (text only, no STT)
+ * Process: AI -> TTS -> Send back to client
+ */
+async function handleUserSpeech(
+  connectionId: string,
+  message: WebSocketMessage,
+  connectionData?: ConnectionData
+): Promise<void> {
+  try {
+    const text = message.text as string;
+    const sessionId = connectionData?.sessionId || 'unknown';
+
+    if (!text) {
+      throw new Error('No text provided');
+    }
+
+    // Send processing status
+    await sendToConnection(connectionId, {
+      type: 'processing_update',
+      stage: 'generating_response',
+      progress: 0.5,
+    });
+
+    // Process through AI -> TTS pipeline (skip STT)
+    const processor = getAudioProcessor();
+    const result = await processor.processTextMessage(
+      text,
+      sessionId,
+      connectionData?.scenarioPrompt,
+      connectionData?.conversationHistory || []
+    );
+
+    // Update conversation history
+    const updatedHistory = [
+      ...(connectionData?.conversationHistory || []),
+      { role: 'user', content: text },
+      { role: 'assistant', content: result.aiResponse },
+    ];
+
+    await updateConnectionData(connectionId, {
+      conversationHistory: updatedHistory,
+    });
+
+    // Send AI response
+    await sendToConnection(connectionId, {
+      type: 'avatar_response',
+      speaker: 'AI',
+      text: result.aiResponse,
+      timestamp: Date.now(),
+    });
+
+    // Send audio response
+    await sendToConnection(connectionId, {
+      type: 'audio_response',
+      audio: result.audioResponse.toString('base64'),
+      contentType: result.audioContentType,
+      timestamp: Date.now(),
+    });
+
+    console.log('[handleUserSpeech] Complete:', {
+      sessionId,
+      textLength: text.length,
+      responseLength: result.aiResponse.length,
+    });
+  } catch (error) {
+    console.error('[handleUserSpeech] Error:', error);
+    await sendToConnection(connectionId, {
+      type: 'error',
+      code: 'TEXT_PROCESSING_ERROR',
+      message: error instanceof Error ? error.message : 'Failed to process text',
+    });
+  }
+}
+
+/**
+ * Get connection data from DynamoDB
+ */
+async function getConnectionData(
+  connectionId: string
+): Promise<ConnectionData | undefined> {
+  try {
+    const result = await ddb.send(
+      new GetCommand({
+        TableName: CONNECTIONS_TABLE,
+        Key: { connection_id: connectionId },
+      })
+    );
+
+    return result.Item as ConnectionData | undefined;
+  } catch (error) {
+    console.error('Failed to get connection data:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Update connection data in DynamoDB
+ */
+async function updateConnectionData(
+  connectionId: string,
+  data: Partial<ConnectionData>
+): Promise<void> {
+  try {
+    const updateExpression: string[] = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, unknown> = {};
+
+    Object.entries(data).forEach(([key, value], index) => {
+      const attrName = `#attr${index}`;
+      const attrValue = `:val${index}`;
+      updateExpression.push(`${attrName} = ${attrValue}`);
+      expressionAttributeNames[attrName] = key;
+      expressionAttributeValues[attrValue] = value;
+    });
+
+    await ddb.send(
+      new UpdateCommand({
+        TableName: CONNECTIONS_TABLE,
+        Key: { connection_id: connectionId },
+        UpdateExpression: `SET ${updateExpression.join(', ')}`,
+        ExpressionAttributeNames: expressionAttributeNames,
+        ExpressionAttributeValues: expressionAttributeValues,
+      })
+    );
+
+    console.log('Updated connection data:', { connectionId, keys: Object.keys(data) });
+  } catch (error) {
+    console.error('Failed to update connection data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send message to WebSocket client
+ */
 async function sendToConnection(connectionId: string, data: unknown): Promise<void> {
   try {
     await apiGateway.send(
@@ -136,7 +646,7 @@ async function sendToConnection(connectionId: string, data: unknown): Promise<vo
         Data: Buffer.from(JSON.stringify(data)),
       })
     );
-    console.log(`Sent message to connection ${connectionId}:`, data);
+    console.log(`Sent message to connection ${connectionId}:`, { type: (data as any).type });
   } catch (error) {
     console.error(`Failed to send message to connection ${connectionId}:`, error);
     throw error;

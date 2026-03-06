@@ -1,0 +1,20 @@
+{
+  "home": {
+    "title": "Prance Communication Platform",
+    "subtitle": "AI Avatar Communication Platform",
+    "version": "Version: 0.1.0-alpha",
+    "getStarted": {
+      "title": "🚀 Get Started",
+      "description": "Sign in to access your AI avatar communication sessions.",
+      "signIn": "Sign In",
+      "signUp": "Sign Up"
+    },
+    "features": {
+      "title": "Features:",
+      "avatarConversations": "AI Avatar Conversations",
+      "sessionManagement": "Real-time Session Management",
+      "multiLanguage": "Multi-language Support",
+      "customization": "Scenario & Avatar Customization"
+    }
+  }
+}

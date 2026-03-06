@@ -4,6 +4,20 @@
  *
  * NOTE: これらの型はPrismaスキーマと整合性を保つ必要があります
  * スキーマ: packages/database/prisma/schema.prisma
+ *
+ * フィールド名マッピング（API レスポンス時）:
+ * - durationSec → duration (フロントエンド用)
+ * - metadataJson → metadata (フロントエンド用)
+ * - configJson → configJson (変換なし)
+ * - startedAt → createdAt (Session: 互換性のため)
+ * - thumbnailUrl → imageUrl (Session.avatar: 互換性のため)
+ *
+ * データ型変換:
+ * - DateTime (Prisma) → string (API: ISO 8601形式)
+ * - Json (Prisma) → object (API)
+ * - BigInt (Prisma) → number (API)
+ *
+ * 監査レポート: docs/technical/API_SCHEMA_INTEGRITY_AUDIT.md
  */
 
 // ========================================
@@ -55,6 +69,10 @@ export interface User {
   orgId: string; // Aligned with Prisma schema
   createdAt: Date;
   lastLoginAt: Date | null;
+  organization?: {
+    id: string;
+    name: string;
+  };
 }
 
 // ========================================
@@ -74,6 +92,8 @@ export interface Avatar {
   visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
   allowCloning: boolean;
   createdAt: Date;
+  userId: string | null; // Owner user ID
+  orgId: string; // Owner organization ID
 }
 
 // ========================================
@@ -88,6 +108,8 @@ export interface Scenario {
   visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
   configJson: object;
   createdAt: Date;
+  userId: string | null; // Creator user ID
+  orgId: string; // Owner organization ID
 }
 
 // ========================================
@@ -103,8 +125,23 @@ export interface Session {
   status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
   startedAt: Date;
   endedAt: Date | null;
-  durationSec: number | null;
-  metadataJson: object | null;
+  durationSec: number | null; // Database field name
+  metadataJson: object | null; // Database field name
+  // Relation fields (optional, included in API responses with includes)
+  scenario?: {
+    id: string;
+    title: string;
+    category: string;
+  };
+  avatar?: {
+    id: string;
+    name: string;
+    type: string;
+    thumbnailUrl: string | null;
+    modelUrl: string;
+  };
+  recordings?: Recording[];
+  transcripts?: Transcript[];
 }
 
 // ========================================

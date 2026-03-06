@@ -9,6 +9,7 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as path from 'path';
 import { Construct } from 'constructs';
 
@@ -19,6 +20,7 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   databaseCluster: rds.DatabaseCluster;
   databaseSecret: secretsmanager.Secret;
   websocketConnectionsTable: dynamodb.Table;
+  recordingsBucket: s3.Bucket;
 }
 
 export class ApiLambdaStack extends cdk.Stack {
@@ -329,6 +331,8 @@ export class ApiLambdaStack extends cdk.Stack {
               `cp /asset-input/infrastructure/lambda/migrations/migration.sql ${outputDir}/`,
               `cp /asset-input/infrastructure/lambda/migrations/schema-update.sql ${outputDir}/`,
               `cp /asset-input/infrastructure/lambda/migrations/add-allow-cloning.sql ${outputDir}/`,
+              `cp /asset-input/infrastructure/lambda/migrations/create-users.sql ${outputDir}/`,
+              `cp /asset-input/infrastructure/lambda/migrations/update-admin-password.sql ${outputDir}/`,
             ];
           },
           beforeInstall(): string[] {
@@ -638,36 +642,53 @@ export class ApiLambdaStack extends cdk.Stack {
       },
     });
 
-    // WebSocket $default Handler
+    // WebSocket $default Handler (with AI/Audio processing)
     const websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefaultFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      architecture: lambda.Architecture.ARM_64,
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
+      architecture: lambda.Architecture.X86_64, // Using x86_64 for ffmpeg-installer compatibility
+      timeout: cdk.Duration.seconds(90), // Increased for audio conversion + AI processing
+      memorySize: 1536, // Increased for ffmpeg processing
       tracing: lambda.Tracing.ACTIVE,
       logRetention:
         props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
       functionName: `prance-websocket-default-${props.environment}`,
-      description: 'WebSocket $default message handler',
+      description: 'WebSocket $default message handler with STT/AI/TTS',
       entry: path.join(__dirname, '../lambda/websocket/default/index.ts'),
       handler: 'handler',
+      depsLockFilePath: path.join(__dirname, '../lambda/websocket/default/package-lock.json'),
+      projectRoot: path.join(__dirname, '../lambda'),
       environment: {
         ENVIRONMENT: props.environment,
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
         NODE_ENV: props.environment === 'production' ? 'production' : 'development',
         WEBSOCKET_ENDPOINT: `https://${this.webSocketApi.ref}.execute-api.${this.region}.amazonaws.com/${props.environment}`,
+        CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
+        S3_BUCKET: props.recordingsBucket.bucketName,
+        // AI/Audio Service Configuration
+        AZURE_SPEECH_KEY: process.env.AZURE_SPEECH_KEY || '',
+        AZURE_SPEECH_REGION: process.env.AZURE_SPEECH_REGION || 'eastus',
+        ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || '',
+        ELEVENLABS_VOICE_ID: process.env.ELEVENLABS_VOICE_ID || '',
+        ELEVENLABS_MODEL_ID: process.env.ELEVENLABS_MODEL_ID || 'eleven_flash_v2_5',
+        BEDROCK_REGION: process.env.BEDROCK_REGION || this.region,
+        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6',
       },
       bundling: {
         minify: props.environment === 'production',
         sourceMap: true,
         target: 'es2020',
-        externalModules: ['aws-sdk'],
+        externalModules: ['aws-sdk', 'microsoft-cognitiveservices-speech-sdk', '@ffmpeg-installer/ffmpeg'],
+        nodeModules: ['microsoft-cognitiveservices-speech-sdk', '@ffmpeg-installer/ffmpeg', 'fluent-ffmpeg'],
       },
     });
 
     // DynamoDB permissions for WebSocket handlers
     props.websocketConnectionsTable.grantReadWriteData(websocketConnectFunction);
     props.websocketConnectionsTable.grantReadWriteData(websocketDisconnectFunction);
+    props.websocketConnectionsTable.grantReadWriteData(websocketDefaultFunction);
+
+    // S3 permissions for default handler (audio storage)
+    props.recordingsBucket.grantReadWrite(websocketDefaultFunction);
 
     // PostToConnection permission for default handler
     websocketDefaultFunction.addToRolePolicy(
@@ -675,6 +696,19 @@ export class ApiLambdaStack extends cdk.Stack {
         effect: iam.Effect.ALLOW,
         actions: ['execute-api:ManageConnections'],
         resources: [`arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`],
+      })
+    );
+
+    // AWS Bedrock permissions for AI responses
+    // Note: Bedrock cross-region inference profiles may redirect to different regions
+    websocketDefaultFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['bedrock:InvokeModel'],
+        resources: [
+          `arn:aws:bedrock:*::foundation-model/*`,
+          `arn:aws:bedrock:*:${this.account}:inference-profile/*`,
+        ],
       })
     );
 

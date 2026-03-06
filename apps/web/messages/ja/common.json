@@ -39,6 +39,10 @@
     "privacyPolicy": "プライバシーポリシー",
     "termsOfService": "利用規約"
   },
+  "languages": {
+    "ja": "日本語 (Japanese)",
+    "en": "英語 (English)"
+  },
   "navigation": {
     "home": "ホーム",
     "dashboard": "ダッシュボード",

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, ReactNode } from 'react';
+import { LOCALE_COOKIE_NAME, fallbackLocale } from '@/lib/i18n/config';
 
 interface I18nContextType {
   locale: string;
@@ -25,8 +26,15 @@ export function I18nProvider({ children, locale, messages }: I18nProviderProps) 
     for (const k of keys) {
       value = value?.[k];
       if (value === undefined) {
-        console.warn(`Translation missing: ${key} (locale: ${locale})`);
-        return key; // Return key as fallback
+        // Translation key not found - this is expected for incomplete translations
+        if (locale !== fallbackLocale) {
+          console.warn(
+            `[i18n] Translation missing: ${key} (locale: ${locale}), will use ${fallbackLocale} fallback`
+          );
+        } else {
+          console.warn(`[i18n] Translation missing: ${key} (fallback locale: ${fallbackLocale})`);
+        }
+        return key; // Return key as final fallback
       }
     }
 
@@ -42,10 +50,10 @@ export function I18nProvider({ children, locale, messages }: I18nProviderProps) 
   };
 
   const setLocale = (newLocale: string) => {
-    // Set cookie
-    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
+    // Set cookie using centralized cookie name
+    document.cookie = `${LOCALE_COOKIE_NAME}=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
 
-    // Reload page to apply new language
+    // Reload page to apply new locale
     window.location.reload();
   };
 

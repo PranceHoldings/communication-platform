@@ -48,11 +48,19 @@ export interface SessionCompleteMessage {
   report_id?: string;
 }
 
+export interface AudioResponseMessage {
+  type: 'audio_response';
+  audio: string; // Base64 encoded audio data
+  contentType: string;
+  timestamp: number;
+}
+
 interface UseWebSocketOptions {
   sessionId: string;
   token: string;
   onTranscript?: (message: TranscriptMessage) => void;
   onAvatarResponse?: (message: AvatarResponseMessage) => void;
+  onAudioResponse?: (message: AudioResponseMessage) => void;
   onProcessingUpdate?: (message: ProcessingUpdateMessage) => void;
   onSessionComplete?: (message: SessionCompleteMessage) => void;
   onError?: (message: ErrorMessage) => void;
@@ -67,6 +75,7 @@ interface UseWebSocketReturn {
   disconnect: () => void;
   sendMessage: (message: WebSocketMessage) => void;
   sendAudioChunk: (data: ArrayBuffer, timestamp: number) => void;
+  sendAudioData: (audioBlob: Blob) => Promise<void>;
   sendUserSpeech: (text: string, confidence: number) => void;
   sendSpeechEnd: () => void;
   endSession: () => void;
@@ -78,6 +87,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     token,
     onTranscript,
     onAvatarResponse,
+    onAudioResponse,
     onProcessingUpdate,
     onSessionComplete,
     onError,
@@ -95,6 +105,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   // Store callbacks in refs to keep them stable across renders
   const onTranscriptRef = useRef(onTranscript);
   const onAvatarResponseRef = useRef(onAvatarResponse);
+  const onAudioResponseRef = useRef(onAudioResponse);
   const onProcessingUpdateRef = useRef(onProcessingUpdate);
   const onSessionCompleteRef = useRef(onSessionComplete);
   const onErrorRef = useRef(onError);
@@ -103,6 +114,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   useEffect(() => {
     onTranscriptRef.current = onTranscript;
     onAvatarResponseRef.current = onAvatarResponse;
+    onAudioResponseRef.current = onAudioResponse;
     onProcessingUpdateRef.current = onProcessingUpdate;
     onSessionCompleteRef.current = onSessionComplete;
     onErrorRef.current = onError;
@@ -123,28 +135,58 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         const message: WebSocketMessage = JSON.parse(event.data);
         console.log('WebSocket message received:', message);
 
+        // Ignore empty messages
+        if (!message || typeof message !== 'object' || Object.keys(message).length === 0) {
+          console.warn('Received empty or invalid message, ignoring');
+          return;
+        }
+
+        // Handle AWS API Gateway error responses (no type field)
+        if (!message.type && 'message' in message) {
+          console.error('WebSocket server error:', message);
+          const errorMsg = (message as any).message || 'Unknown server error';
+          setError(errorMsg);
+          onErrorRef.current?.({
+            type: 'error',
+            code: 'SERVER_ERROR',
+            message: errorMsg,
+            details: message,
+          });
+          return;
+        }
+
+        // Ignore messages without a type field (likely malformed)
+        if (!message.type) {
+          console.warn('Received message without type field, ignoring:', message);
+          return;
+        }
+
         switch (message.type) {
           case 'transcript_partial':
           case 'transcript_final':
-            onTranscriptRef.current?.(message as TranscriptMessage);
+            onTranscriptRef.current?.(message as unknown as TranscriptMessage);
             break;
 
           case 'avatar_response':
-            onAvatarResponseRef.current?.(message as AvatarResponseMessage);
+            onAvatarResponseRef.current?.(message as unknown as AvatarResponseMessage);
+            break;
+
+          case 'audio_response':
+            onAudioResponseRef.current?.(message as unknown as AudioResponseMessage);
             break;
 
           case 'processing_update':
-            onProcessingUpdateRef.current?.(message as ProcessingUpdateMessage);
+            onProcessingUpdateRef.current?.(message as unknown as ProcessingUpdateMessage);
             break;
 
           case 'session_complete':
-            onSessionCompleteRef.current?.(message as SessionCompleteMessage);
+            onSessionCompleteRef.current?.(message as unknown as SessionCompleteMessage);
             break;
 
           case 'error':
             console.error('WebSocket error message:', message);
-            onErrorRef.current?.(message as ErrorMessage);
-            setError((message as ErrorMessage).message);
+            onErrorRef.current?.(message as unknown as ErrorMessage);
+            setError((message as unknown as ErrorMessage).message);
             break;
 
           case 'pong':
@@ -157,7 +199,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             break;
 
           default:
-            console.warn('Unknown WebSocket message type:', message.type);
+            console.warn('Unknown WebSocket message type:', message.type, message);
         }
       } catch (err) {
         console.error('Failed to parse WebSocket message:', err);
@@ -265,18 +307,63 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
     } else {
-      console.error('WebSocket not connected, cannot send message');
-      setError('Not connected');
+      // Only log warning for non-ping messages during active connection attempts
+      if (message.type !== 'ping') {
+        console.warn('[WebSocket] Cannot send message, WebSocket not connected:', message.type);
+      }
     }
   }, []);
 
   const sendAudioChunk = useCallback(
     (data: ArrayBuffer, timestamp: number) => {
+      // Convert ArrayBuffer to Base64 string for JSON serialization
+      const bytes = new Uint8Array(data);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]!);
+      }
+      const base64 = btoa(binary);
+
       sendMessage({
         type: 'audio_chunk',
-        data,
+        data: base64,
         timestamp,
       });
+    },
+    [sendMessage]
+  );
+
+  const sendAudioData = useCallback(
+    async (audioBlob: Blob): Promise<void> => {
+      try {
+        // Convert Blob to ArrayBuffer
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+
+        // Convert to Base64 string
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]!);
+        }
+        const base64 = btoa(binary);
+
+        console.log('[WebSocket] Sending complete audio data:', {
+          size: audioBlob.size,
+          type: audioBlob.type,
+          base64Length: base64.length,
+        });
+
+        // Send complete audio data
+        sendMessage({
+          type: 'audio_data',
+          audio: base64,
+          contentType: audioBlob.type,
+          timestamp: Date.now(),
+        });
+      } catch (error) {
+        console.error('[WebSocket] Failed to send audio data:', error);
+        throw error;
+      }
     },
     [sendMessage]
   );
@@ -337,6 +424,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     disconnect,
     sendMessage,
     sendAudioChunk,
+    sendAudioData,
     sendUserSpeech,
     sendSpeechEnd,
     endSession,

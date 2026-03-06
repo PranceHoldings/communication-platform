@@ -9,6 +9,7 @@ import { useState, useRef, useCallback } from 'react';
 
 interface UseAudioRecorderOptions {
   onAudioChunk?: (chunk: Blob, timestamp: number) => void;
+  onRecordingComplete?: (audioBlob: Blob) => void;
   onError?: (error: Error) => void;
   mimeType?: string;
   timeslice?: number; // ms between chunks
@@ -28,6 +29,7 @@ interface UseAudioRecorderReturn {
 export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudioRecorderReturn {
   const {
     onAudioChunk,
+    onRecordingComplete,
     onError,
     mimeType = 'audio/webm;codecs=opus',
     timeslice = 250, // Send chunks every 250ms for real-time processing
@@ -43,6 +45,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   // Monitor audio level for UI feedback
   const monitorAudioLevel = useCallback(() => {
@@ -85,24 +88,26 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
 
-      // Check if the browser supports the desired MIME type
+      // Try WAV first (best for Azure Speech Services), then fallbacks
+      const preferredMimeTypes = [
+        'audio/wav',
+        'audio/ogg;codecs=opus', // Azure supports OGG/Opus
+        mimeType,
+        'audio/webm',
+        'audio/mp4',
+      ];
+
       let actualMimeType = mimeType;
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        console.warn(`MIME type ${mimeType} not supported, trying fallbacks...`);
-
-        const fallbacks = [
-          'audio/webm',
-          'audio/ogg;codecs=opus',
-          'audio/mp4',
-        ];
-
-        for (const fallback of fallbacks) {
-          if (MediaRecorder.isTypeSupported(fallback)) {
-            actualMimeType = fallback;
-            console.log(`Using fallback MIME type: ${fallback}`);
-            break;
-          }
+      for (const preferred of preferredMimeTypes) {
+        if (MediaRecorder.isTypeSupported(preferred)) {
+          actualMimeType = preferred;
+          console.log(`[AudioRecorder] Using MIME type: ${preferred}`);
+          break;
         }
+      }
+
+      if (actualMimeType === mimeType && !MediaRecorder.isTypeSupported(mimeType)) {
+        console.warn(`[AudioRecorder] No supported MIME type found, using default`);
       }
 
       // Create MediaRecorder
@@ -113,6 +118,11 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           const timestamp = Date.now();
+
+          // Store chunk for complete recording
+          recordedChunksRef.current.push(event.data);
+
+          // Also send chunk for real-time processing (if needed)
           onAudioChunk?.(event.data, timestamp);
         }
       };
@@ -128,6 +138,22 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         setIsRecording(false);
         setIsPaused(false);
         setAudioLevel(0);
+
+        // Create complete audio blob from all recorded chunks
+        if (recordedChunksRef.current.length > 0) {
+          const completeBlob = new Blob(recordedChunksRef.current, { type: actualMimeType });
+          console.log('[AudioRecorder] Complete recording:', {
+            chunks: recordedChunksRef.current.length,
+            size: completeBlob.size,
+            type: completeBlob.type,
+          });
+
+          // Call completion callback
+          onRecordingComplete?.(completeBlob);
+
+          // Clear recorded chunks
+          recordedChunksRef.current = [];
+        }
 
         // Clean up
         stream.getTracks().forEach((track) => track.stop());
