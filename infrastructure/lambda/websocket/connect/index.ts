@@ -3,7 +3,7 @@
  * Handles initial WebSocket connection and authentication
  */
 
-import { APIGatewayProxyWebsocketEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { verifyToken } from '../../shared/auth/jwt';
@@ -15,8 +15,19 @@ const dynamoDb = DynamoDBDocumentClient.from(
 const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE_NAME!;
 const CONNECTION_TTL = 3600 * 4; // 4 hours
 
+// Extended event type with query string parameters
+interface WebSocketConnectEvent {
+  requestContext: {
+    connectionId: string;
+    [key: string]: unknown;
+  };
+  queryStringParameters?: Record<string, string>;
+  headers?: Record<string, string>;
+  [key: string]: unknown;
+}
+
 export const handler = async (
-  event: APIGatewayProxyWebsocketEventV2
+  event: WebSocketConnectEvent
 ): Promise<APIGatewayProxyResultV2> => {
   console.log('WebSocket Connect Event:', JSON.stringify(event, null, 2));
 
@@ -24,10 +35,11 @@ export const handler = async (
   const timestamp = Date.now();
 
   try {
-    // Extract token from query parameters
+    // Extract token from query parameters or headers
     const token =
       event.queryStringParameters?.token ||
-      event.headers?.Authorization?.replace('Bearer ', '');
+      event.headers?.Authorization?.replace('Bearer ', '') ||
+      event.headers?.authorization?.replace('Bearer ', '');
 
     if (!token) {
       console.error('No token provided');

@@ -3,7 +3,7 @@
  * Handles all WebSocket messages (route selection)
  */
 
-import { APIGatewayProxyWebsocketEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { ApiGatewayManagementApiClient, PostToConnectionCommand } from '@aws-sdk/client-apigatewaymanagementapi';
 
 const ENDPOINT = process.env.WEBSOCKET_ENDPOINT!;
@@ -17,8 +17,17 @@ interface WebSocketMessage {
   [key: string]: unknown;
 }
 
+interface WebSocketEvent {
+  requestContext: {
+    connectionId: string;
+    [key: string]: unknown;
+  };
+  body?: string;
+  [key: string]: unknown;
+}
+
 export const handler = async (
-  event: APIGatewayProxyWebsocketEventV2
+  event: WebSocketEvent
 ): Promise<APIGatewayProxyResultV2> => {
   console.log('WebSocket Default Handler Event:', JSON.stringify(event, null, 2));
 

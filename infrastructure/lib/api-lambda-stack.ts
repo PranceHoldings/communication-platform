@@ -4,9 +4,11 @@ import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as path from 'path';
 import { Construct } from 'constructs';
 
@@ -16,6 +18,7 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   lambdaSecurityGroup: ec2.SecurityGroup;
   databaseCluster: rds.DatabaseCluster;
   databaseSecret: secretsmanager.Secret;
+  websocketConnectionsTable: dynamodb.Table;
 }
 
 export class ApiLambdaStack extends cdk.Stack {
@@ -578,6 +581,103 @@ export class ApiLambdaStack extends cdk.Stack {
       bundling: prismaBundlingConfig,
     });
 
+    // ==================== WebSocket Lambda Functions ====================
+
+    // WebSocket $connect Handler
+    const websocketConnectFunction = new nodejs.NodejsFunction(this, 'WebSocketConnectFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      architecture: lambda.Architecture.ARM_64,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      tracing: lambda.Tracing.ACTIVE,
+      logRetention:
+        props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      functionName: `prance-websocket-connect-${props.environment}`,
+      description: 'WebSocket $connect handler',
+      entry: path.join(__dirname, '../lambda/websocket/connect/index.ts'),
+      handler: 'handler',
+      environment: {
+        ENVIRONMENT: props.environment,
+        LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
+        NODE_ENV: props.environment === 'production' ? 'production' : 'development',
+        JWT_SECRET: process.env.JWT_SECRET || 'development-secret-change-in-production',
+        CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
+      },
+      bundling: {
+        minify: props.environment === 'production',
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk'],
+      },
+    });
+
+    // WebSocket $disconnect Handler
+    const websocketDisconnectFunction = new nodejs.NodejsFunction(this, 'WebSocketDisconnectFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      architecture: lambda.Architecture.ARM_64,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      tracing: lambda.Tracing.ACTIVE,
+      logRetention:
+        props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      functionName: `prance-websocket-disconnect-${props.environment}`,
+      description: 'WebSocket $disconnect handler',
+      entry: path.join(__dirname, '../lambda/websocket/disconnect/index.ts'),
+      handler: 'handler',
+      environment: {
+        ENVIRONMENT: props.environment,
+        LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
+        NODE_ENV: props.environment === 'production' ? 'production' : 'development',
+        CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
+      },
+      bundling: {
+        minify: props.environment === 'production',
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk'],
+      },
+    });
+
+    // WebSocket $default Handler
+    const websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefaultFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      architecture: lambda.Architecture.ARM_64,
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      tracing: lambda.Tracing.ACTIVE,
+      logRetention:
+        props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      functionName: `prance-websocket-default-${props.environment}`,
+      description: 'WebSocket $default message handler',
+      entry: path.join(__dirname, '../lambda/websocket/default/index.ts'),
+      handler: 'handler',
+      environment: {
+        ENVIRONMENT: props.environment,
+        LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
+        NODE_ENV: props.environment === 'production' ? 'production' : 'development',
+        WEBSOCKET_ENDPOINT: `https://${this.webSocketApi.ref}.execute-api.${this.region}.amazonaws.com/${props.environment}`,
+      },
+      bundling: {
+        minify: props.environment === 'production',
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk'],
+      },
+    });
+
+    // DynamoDB permissions for WebSocket handlers
+    props.websocketConnectionsTable.grantReadWriteData(websocketConnectFunction);
+    props.websocketConnectionsTable.grantReadWriteData(websocketDisconnectFunction);
+
+    // PostToConnection permission for default handler
+    websocketDefaultFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['execute-api:ManageConnections'],
+        resources: [`arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`],
+      })
+    );
+
     // ==================== API Gateway統合 ====================
 
     const healthIntegration = new apigateway.LambdaIntegration(this.healthCheckFunction, {
@@ -835,6 +935,91 @@ export class ApiLambdaStack extends cdk.Stack {
     usagePlan.addApiStage({
       stage,
       api: this.restApi,
+    });
+
+    // ==================== WebSocket API Integration ====================
+
+    // WebSocket Lambda Integrations
+    const connectIntegration = new apigatewayv2.CfnIntegration(this, 'ConnectIntegration', {
+      apiId: this.webSocketApi.ref,
+      integrationType: 'AWS_PROXY',
+      integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${websocketConnectFunction.functionArn}/invocations`,
+    });
+
+    const disconnectIntegration = new apigatewayv2.CfnIntegration(this, 'DisconnectIntegration', {
+      apiId: this.webSocketApi.ref,
+      integrationType: 'AWS_PROXY',
+      integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${websocketDisconnectFunction.functionArn}/invocations`,
+    });
+
+    const defaultIntegration = new apigatewayv2.CfnIntegration(this, 'DefaultIntegration', {
+      apiId: this.webSocketApi.ref,
+      integrationType: 'AWS_PROXY',
+      integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${websocketDefaultFunction.functionArn}/invocations`,
+    });
+
+    // WebSocket Routes
+    const connectRoute = new apigatewayv2.CfnRoute(this, 'ConnectRoute', {
+      apiId: this.webSocketApi.ref,
+      routeKey: '$connect',
+      authorizationType: 'NONE', // JWT auth handled in Lambda
+      target: `integrations/${connectIntegration.ref}`,
+    });
+
+    const disconnectRoute = new apigatewayv2.CfnRoute(this, 'DisconnectRoute', {
+      apiId: this.webSocketApi.ref,
+      routeKey: '$disconnect',
+      authorizationType: 'NONE',
+      target: `integrations/${disconnectIntegration.ref}`,
+    });
+
+    const defaultRoute = new apigatewayv2.CfnRoute(this, 'DefaultRoute', {
+      apiId: this.webSocketApi.ref,
+      routeKey: '$default',
+      authorizationType: 'NONE',
+      target: `integrations/${defaultIntegration.ref}`,
+    });
+
+    // WebSocket Deployment
+    const wsDeployment = new apigatewayv2.CfnDeployment(this, 'WebSocketDeployment', {
+      apiId: this.webSocketApi.ref,
+    });
+
+    // Deployment depends on routes
+    wsDeployment.addDependency(connectRoute);
+    wsDeployment.addDependency(disconnectRoute);
+    wsDeployment.addDependency(defaultRoute);
+
+    // WebSocket Stage
+    const wsStage = new apigatewayv2.CfnStage(this, 'WebSocketStage', {
+      apiId: this.webSocketApi.ref,
+      stageName: props.environment,
+      deploymentId: wsDeployment.ref,
+      defaultRouteSettings: {
+        dataTraceEnabled: props.environment !== 'production',
+        loggingLevel: props.environment === 'production' ? 'ERROR' : 'INFO',
+        throttlingBurstLimit: 500,
+        throttlingRateLimit: 1000,
+      },
+    });
+
+    // Lambda invoke permissions for WebSocket API
+    websocketConnectFunction.addPermission('WebSocketConnectPermission', {
+      principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      action: 'lambda:InvokeFunction',
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`,
+    });
+
+    websocketDisconnectFunction.addPermission('WebSocketDisconnectPermission', {
+      principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      action: 'lambda:InvokeFunction',
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`,
+    });
+
+    websocketDefaultFunction.addPermission('WebSocketDefaultPermission', {
+      principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      action: 'lambda:InvokeFunction',
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`,
     });
 
     // ==================== Outputs ====================

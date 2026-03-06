@@ -3,7 +3,7 @@
  * Handles WebSocket disconnection and cleanup
  */
 
-import { APIGatewayProxyWebsocketEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 
@@ -13,8 +13,16 @@ const dynamoDb = DynamoDBDocumentClient.from(
 
 const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE_NAME!;
 
+interface WebSocketEvent {
+  requestContext: {
+    connectionId: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 export const handler = async (
-  event: APIGatewayProxyWebsocketEventV2
+  event: WebSocketEvent
 ): Promise<APIGatewayProxyResultV2> => {
   console.log('WebSocket Disconnect Event:', JSON.stringify(event, null, 2));
 

@@ -99,6 +99,7 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   lambdaSecurityGroup: networkStack.lambdaSecurityGroup,
   databaseCluster: databaseStack.cluster,
   databaseSecret: databaseStack.secret,
+  websocketConnectionsTable: dynamoDBStack.websocketConnectionsTable,
   description: 'Prance Platform - API Gateway, Lambda Functions, and Authorizer',
 });
 
@@ -110,6 +111,7 @@ databaseStack.addDependency(networkStack);
 cognitoStack.addDependency(networkStack);
 apiLambdaStack.addDependency(networkStack);
 apiLambdaStack.addDependency(databaseStack);
+apiLambdaStack.addDependency(dynamoDBStack);
 
 // タグ付け
 cdk.Tags.of(app).add('Project', 'Prance');
