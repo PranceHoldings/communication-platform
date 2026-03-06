@@ -19,7 +19,7 @@ git --version   # 2.x.x
 # AWS CLI v2
 aws --version   # aws-cli/2.x.x
 
-# Docker (オプション - ローカルPostgreSQL用)
+# Docker (CDKデプロイ時のビルドに使用)
 docker --version
 ```
 
@@ -98,43 +98,44 @@ AZURE_SPEECH_REGION=eastus
 # Ready Player Me
 READY_PLAYER_ME_APP_ID=<YOUR_RPM_APP_ID>
 
-# Database (ローカル開発)
-DATABASE_URL="postgresql://postgres:password@localhost:5432/prance_dev"
+# フロントエンド設定（ローカル開発）
+NEXT_PUBLIC_API_URL=https://YOUR_API_GATEWAY_URL/dev/api/v1
+
+# Database (Lambda関数用 - CDKデプロイ後に設定)
+DATABASE_URL="postgresql://postgres:****@YOUR_RDS_ENDPOINT:5432/prance"
 ```
 
-## 🗄️ ステップ3: データベースセットアップ
+**重要:** ローカル開発環境では、データベースはAWS RDS Aurora Serverless v2を使用します。
+ローカルPostgreSQLは使用しません。
 
-### オプションA: Docker PostgreSQL (推奨)
+## 🗄️ ステップ3: データベース確認
 
-```bash
-# PostgreSQLコンテナ起動
-docker run --name prance-postgres \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=prance_dev \
-  -p 5432:5432 \
-  -d postgres:15
+**注意:** データベースはAWS RDS Aurora Serverless v2です。
+ローカルPostgreSQLのセットアップは不要です。
 
-# 起動確認
-docker ps | grep prance-postgres
-```
-
-### オプションB: ローカルPostgreSQL
-
-PostgreSQLをローカルにインストールして、`prance_dev` データベースを作成してください。
-
-### Prismaマイグレーション実行
+### Prisma Client生成
 
 ```bash
 cd packages/database
 
-# Prisma Clientを生成
+# Prisma Clientを生成（型定義のため）
 npx prisma generate
+```
 
-# マイグレーション実行
-npx prisma migrate dev --name init
+### データベース接続テスト
 
-# 確認 (Prisma Studio起動)
-npx prisma studio
+データベースはVPC内にあるため、直接接続できません。
+Lambda経由でテストします：
+
+```bash
+# AWS CLIでLambda関数を使用
+aws lambda invoke \
+  --function-name prance-db-migration-dev \
+  --payload '{"sqlFile":"migration.sql"}' \
+  /tmp/result.json
+
+# 結果確認
+cat /tmp/result.json
 ```
 
 ## ☁️ ステップ4: AWS CDKセットアップ

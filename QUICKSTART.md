@@ -7,17 +7,21 @@
 ## ⚡ 1分チェックリスト
 
 ```bash
-# 1. PostgreSQL起動確認（最重要）
-docker ps | grep prance-postgres
-# → 起動していない場合: docker start prance-postgres
+# 1. Next.js開発サーバー確認
+curl http://localhost:3000
+# → HTML または JSON レスポンスが返ればOK
 
-# 2. データベース接続確認
-docker exec prance-postgres psql -U postgres -d prance_dev -c "SELECT COUNT(*) FROM users;"
-# → 成功すればOK
+# 2. AWS Lambda API確認
+curl https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/health
+# → {"status":"ok"} が返ればOK
 
 # 3. AWS認証確認
 aws sts get-caller-identity
 # → Account: 010438500933 が表示されればOK
+
+# 4. データベース（AWS Aurora）接続確認
+aws lambda list-functions --query "Functions[?contains(FunctionName, 'prance')].FunctionName" | head -5
+# → Lambda関数リストが表示されればOK
 ```
 
 **すべてOKなら開発継続可能！**
@@ -66,43 +70,60 @@ npx cdk init app --language typescript
 ### よく使うコマンド
 
 ```bash
-# データベース操作
-npm run db:generate    # Prisma Client再生成
-npm run db:migrate     # マイグレーション実行
-npm run db:studio      # Prisma Studio起動
-
-# Docker操作
-docker start prance-postgres   # PostgreSQL起動
-docker stop prance-postgres    # PostgreSQL停止
-docker logs prance-postgres    # ログ確認
-
-# プロジェクト操作
-npm run dev           # 開発サーバー起動（実装後）
+# フロントエンド開発
+cd apps/web
+npm run dev           # 開発サーバー起動
 npm run build         # ビルド
-npm run test          # テスト実行
+npm run lint          # Lint実行
+
+# データベース操作（Prisma型定義）
+cd packages/database
+npm run db:generate   # Prisma Client再生成
+
+# バックエンド（Lambda）デプロイ
+cd infrastructure
+npm run deploy        # 全スタックデプロイ
+npm run deploy:dev    # 開発環境のみデプロイ
+
+# AWS Lambda操作
+aws lambda list-functions --query "Functions[?contains(FunctionName, 'prance')].FunctionName"
+aws logs tail /aws/lambda/prance-auth-login-dev --follow
 ```
 
 ---
 
 ## 🆘 トラブル時の対処
 
-### PostgreSQLが起動しない
+### ログインできない
 
 ```bash
-docker start prance-postgres
-# それでもダメなら
-docker rm -f prance-postgres
-docker run -d --name prance-postgres \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=prance_dev \
-  -p 5432:5432 postgres:15
-npm run db:migrate  # テーブル再作成
+# 1. Lambda APIの確認
+curl https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/health
+
+# 2. CloudWatch Logsでエラー確認
+aws logs tail /aws/lambda/prance-auth-login-dev --since 5m
+
+# 3. ユーザーデータの確認（Lambda経由）
+aws lambda invoke \
+  --function-name prance-db-migration-dev \
+  --payload '{"sqlFile":"check-users.sql"}' \
+  /tmp/result.json && cat /tmp/result.json
+```
+
+### Lambda デプロイエラー
+
+```bash
+cd infrastructure
+# cdk.outディレクトリをクリア
+mv cdk.out cdk.out.old-$(date +%s)
+# 再デプロイ
+npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### Prisma Clientエラー
 
 ```bash
+cd packages/database
 npm run db:generate
 ```
 

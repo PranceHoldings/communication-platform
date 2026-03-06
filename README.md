@@ -58,25 +58,48 @@ Pranceは、AIアバターとのリアルタイム会話を通じて面接練習
 
 ## クイックスタート
 
+### ⚠️ 重要：環境アーキテクチャ
+
+**ローカル開発環境でもAWSインフラを使用します。**
+
+```
+localhost:3000 (Next.js) → AWS Lambda API → AWS RDS Aurora
+```
+
+詳細は **[環境アーキテクチャ](docs/development/ENVIRONMENT_ARCHITECTURE.md)** を参照してください。
+
 ### 前提条件
 
 - Node.js 20.x
-- AWS CLI v2
-- Docker Desktop
+- AWS CLI v2（認証設定済み）
 - AWS CDK CLI
+- Docker Desktop（CDKビルド用）
+
+### セットアップ手順
 
 ```bash
-# 依存関係インストール
+# 1. 依存関係インストール
 npm install
 
-# 開発環境セットアップ
-npm run setup:dev
+# 2. 環境変数設定
+cp .env.example .env.local
+# .env.local を編集してAPIキーを設定
 
-# ローカル開発サーバー起動
+# 3. AWS CDKデプロイ（初回のみ）
+cd infrastructure
+npx cdk bootstrap
+npm run deploy
+
+# 4. ローカル開発サーバー起動
+cd ../apps/web
 npm run dev
+# → http://localhost:3000
 ```
 
-詳細は [開発ガイド](docs/DEVELOPMENT_GUIDE.md) を参照してください。
+詳細は以下を参照してください：
+- **[セットアップガイド](SETUP.md)** - 詳細な初期設定手順
+- **[環境アーキテクチャ](docs/development/ENVIRONMENT_ARCHITECTURE.md)** - 環境構成の理解
+- **[APIキー管理](docs/development/API_KEY_MANAGEMENT.md)** - APIキーの一元管理
 
 ## プロジェクト構造
 
