@@ -172,18 +172,27 @@ enum SessionStatus {
 }
 
 model Recording {
-  id          String   @id @default(uuid())
-  sessionId   String   @map("session_id")
-  type        RecordingType
-  s3Url       String   @map("s3_url")
-  cdnUrl      String?  @map("cdn_url")
-  thumbnailUrl String? @map("thumbnail_url")
-  fileSizeBytes BigInt @map("file_size_bytes")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id               String           @id @default(uuid())
+  sessionId        String           @map("session_id")
+  type             RecordingType
+  s3Key            String           @map("s3_key")
+  s3Url            String           @map("s3_url")
+  cdnUrl           String?          @map("cdn_url")
+  thumbnailUrl     String?          @map("thumbnail_url")
+  fileSizeBytes    BigInt           @map("file_size_bytes")
+  durationSec      Int?             @map("duration_sec")
+  format           String?          @default("webm")
+  resolution       String?          @default("1280x720")
+  videoChunksCount Int?             @map("video_chunks_count")
+  processingStatus ProcessingStatus @default(PENDING) @map("processing_status")
+  processedAt      DateTime?        @map("processed_at")
+  errorMessage     String?          @map("error_message")
+  createdAt        DateTime         @default(now()) @map("created_at")
 
-  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session          Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+  @@index([processingStatus])
   @@map("recordings")
 }
 
@@ -191,6 +200,13 @@ enum RecordingType {
   USER
   AVATAR
   COMBINED
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  ERROR
 }
 
 model Transcript {
