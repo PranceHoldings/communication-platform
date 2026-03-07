@@ -1,10 +1,11 @@
 # 次回セッション開始手順（2026-03-07更新）
 
-**最終作業日:** 2026-03-07 14:21 JST
+**最終作業日:** 2026-03-07 15:30 JST
 **Phase 1進捗:** 100%完了 🎉 | **Phase 2進捗:** Task 2.1.2完了、次: Task 2.1.3 🚀
 **最新コミット:** 4cc2fed - 設定値一元管理ルール確立
 **最新デプロイ:** 2026-03-07 14:15 JST - WebSocket Lambda録画処理完了
 **最新プッシュ:** 2026-03-07 14:21 JST - 完了 ✅
+**🔴 重要:** Node.js 20 EOL対応計画完了（2026年4月30日期限）
 
 ---
 
@@ -52,7 +53,39 @@ WebSocket: wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 
 ---
 
-## 📋 次回作業内容（Phase 2 録画機能）
+## 📋 次回作業内容
+
+### 🔴 緊急: Node.js 20 EOL 対応（2026年4月30日期限）
+
+**背景:**
+- AWS Lambda Node.js 20ランタイムが2026年後半に非推奨化予定
+- Node.js 20 EOL: 2026年4月30日（54日後）
+- プロジェクト全体で20+のLambda関数が影響を受ける
+
+**調査完了:**
+- ✅ Node.js 22 LTS (Jod) への移行を推奨
+- ✅ AWS Lambda NODEJS_22_X 利用可能（2025年2月～）
+- ✅ 全依存ツール（AWS SDK, CDK, Prisma, Next.js）の互換性確認済み
+- ✅ 詳細計画書作成: `docs/infrastructure/NODE_EOL_MIGRATION_PLAN.md`
+
+**推定工数:** 2-3週間（テスト含む）
+
+### Option A: Node.js 22移行 Phase 0開始（推奨・1-2日）
+**目標:** 事前準備とバックアップ完了
+
+**作業内容:**
+- [ ] CDKスタック状態をバックアップ
+- [ ] Lambda関数リストを記録
+- [ ] 環境変数をバックアップ
+- [ ] Gitブランチ作成（feature/nodejs22-migration）
+
+**完了条件:**
+- バックアップ完了
+- 移行準備完了
+
+**詳細:** `docs/infrastructure/NODE_EOL_MIGRATION_PLAN.md` 参照
+
+---
 
 ### 🎬 Phase 2.1 録画機能実装の進捗状況
 
@@ -67,7 +100,7 @@ WebSocket: wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 
 **次回のタスク:**
 
-### Option A: Task 2.1.1完了 - SessionPlayer統合（推奨・2時間）
+### Option B: Task 2.1.1完了 - SessionPlayer統合（2時間）
 **目標:** フロントエンド録画機能を完全に動作させる
 
 **残作業:**
@@ -82,7 +115,7 @@ WebSocket: wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 - [ ] 録画中のステータス表示
 - [ ] ブラウザコンソールにビデオチャンクログ表示
 
-### Option B: Task 2.1.3 - 録画再生UI（2-3時間）
+### Option C: Task 2.1.3 - 録画再生UI（2-3時間）
 **目標:** 録画済みセッションの再生機能実装
 
 **実装内容:**
@@ -110,9 +143,33 @@ curl https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/health
 aws sts get-caller-identity  # Account: 010438500933
 ```
 
-### 2. Phase 2 タスク選択
+### 2. タスク選択
 
-#### Option A: 録画機能実装（推奨・2-3週間）
+#### 🔴 Option A: Node.js 22移行（最優先・2-3週間）
+**緊急度:** 高（2026年4月30日 Node.js 20 EOL）
+
+**目標:** AWS Lambda全関数をNode.js 22にアップグレード
+
+**実装内容:**
+- Phase 0: 事前準備・バックアップ（1-2日）
+- Phase 1: 依存関係更新（2-3日）
+- Phase 2: Lambda Runtime更新（1日）
+- Phase 3: 開発環境テスト（3-4日）
+- Phase 4: ステージングテスト（2-3日）
+- Phase 5: 本番デプロイ（段階的・3-5日）
+- Phase 6: 後処理・ドキュメント（1日）
+
+**技術スタック:**
+- lambda.Runtime.NODEJS_22_X
+- AWS SDK v3.800.0+
+- AWS CDK 2.170.0+
+- Node.js 22 LTS (Jod)
+
+**詳細計画:** `docs/infrastructure/NODE_EOL_MIGRATION_PLAN.md`
+
+---
+
+#### Option B: 録画機能実装（2-3週間）
 **目標:** セッション中のアバター映像とユーザーカメラを同時録画
 
 **実装内容:**
@@ -127,7 +184,7 @@ aws sts get-caller-identity  # Account: 010438500933
 - S3 Multipart Upload
 - CloudFront Signed URLs
 
-#### Option B: 解析機能実装（2-3週間）
+#### Option C: 解析機能実装（2-3週間）
 **目標:** セッション中の表情・感情・音声解析
 
 **実装内容:**
@@ -142,7 +199,7 @@ aws sts get-caller-identity  # Account: 010438500933
 - DynamoDB (解析データ保存)
 - Chart.js (可視化)
 
-#### Option C: レポート生成機能（1-2週間）
+#### Option D: レポート生成機能（1-2週間）
 **目標:** セッション結果の自動レポート生成
 
 **実装内容:**
@@ -170,6 +227,7 @@ aws sts get-caller-identity  # Account: 010438500933
 ## 📝 重要なファイル
 
 ### ドキュメント
+- `docs/infrastructure/NODE_EOL_MIGRATION_PLAN.md` - **🔴 Node.js 20 EOL移行計画（緊急）**
 - `docs/development/ENVIRONMENT_ARCHITECTURE.md` - **環境アーキテクチャ定義（必読）**
 - `docs/development/API_KEY_MANAGEMENT.md` - APIキー管理ガイド
 - `docs/progress/SESSION_HISTORY.md` - 詳細な進捗履歴
@@ -223,9 +281,74 @@ aws sts get-caller-identity  # Account: 010438500933
 
 ---
 
-## ✅ 今回セッションで完了した作業（2026-03-07 14:21 JST）
+## ✅ 今回セッションで完了した作業（2026-03-07 15:30 JST）
 
-### 1. Task 2.1.2完了 - Lambda動画処理機能 - ✅ 完了（約3時間）
+### 1. Node.js 20 EOL対応 - 調査・計画完了 - ✅ 完了（約2時間）
+
+**背景:**
+- ユーザーリクエスト: "AWSでNode 20がend of lifeになる。Nodeに限らず、AWS向けに使用するツールの最新のサポート・対応状況を確認して、ローカル環境を対応するための調査を計画して、調査を実行して、対応策の実施計画を立てて、ステップバイステップでのタスクを示して"
+
+**実施内容:**
+- ✅ **現状分析**
+  - プロジェクト全体で20+のLambda関数がNODEJS_20_X使用
+  - infrastructure/lib/api-lambda-stack.ts の6箇所でランタイム定義
+  - AWS SDK v3バージョン混在（3.529.0 - 3.700.0）
+  - ローカル環境は既にNode.js 24.14.0使用（移行不要）
+
+- ✅ **互換性調査**
+  - AWS Lambda NODEJS_22_X: ✅ 利用可能（2025年2月～）
+  - AWS SDK v3: ✅ 全バージョンがNode.js 22対応
+  - AWS CDK 2.120.0: ✅ Node.js 22対応
+  - Next.js 15: ✅ 完全対応
+  - Prisma 5.9.0: ✅ 完全対応
+  - Azure Speech SDK: ✅ Node.js 22対応、Node.js 24は要検証
+  - ffmpeg: ✅ バージョン非依存
+
+- ✅ **リスク評価**
+  - Node.js 20 EOL: 2026年4月30日（54日後）
+  - AWS Lambda非推奨化予測: 2026年6月（85日後）
+  - 新規デプロイ不可予測: 2026年10月（207日後）
+  - 完全サポート終了予測: 2026年12月（268日後）
+  - **結論:** 2026年5月までの移行を強く推奨
+
+- ✅ **移行戦略策定**
+  - ターゲット: Node.js 22 LTS (Jod)（2027年4月までLTS）
+  - 方法: 段階的ロールアウト（Blue-Green Deployment）
+  - Phase 1: 開発環境（1週間監視）
+  - Phase 2: ステージング環境（1週間監視）
+  - Phase 3: 本番環境（段階的・WebSocket → REST API）
+
+- ✅ **詳細計画書作成**
+  - ドキュメント: `docs/infrastructure/NODE_EOL_MIGRATION_PLAN.md`
+  - 6つのPhase、30+のタスク、詳細な実施手順
+  - テスト計画、ロールバック計画、FAQ、チェックリスト完備
+  - 推定工数: 2-3週間（テスト含む）
+
+**主要な発見:**
+- Breaking Changes最小限（Node.js 22での変更は既存コードに影響なし）
+- 全ての依存ツールが既に対応済み
+- AWS SDK v3のバージョン統一が推奨（3.800.0+）
+- Azure Speech SDKはNode.js 24での動作要検証
+
+**成果物:**
+- `docs/infrastructure/NODE_EOL_MIGRATION_PLAN.md`（350行超）
+  - エグゼクティブサマリー
+  - 現状分析（20+のLambda関数リスト）
+  - 調査結果（互換性マトリクス）
+  - リスク評価（タイムライン）
+  - 移行戦略（段階的ロールアウト）
+  - ステップバイステップ実施計画（Phase 0-6）
+  - テスト計画（単体/統合/E2E/負荷/セキュリティ）
+  - ロールバック計画（Level 1-2）
+  - FAQ、参考リンク、チェックリスト
+
+**次のアクション:**
+- Phase 0: 事前準備・バックアップ（1-2日）
+- または: Phase 2録画機能を先に進める（並行作業も可能）
+
+---
+
+### 2. Task 2.1.2完了 - Lambda動画処理機能 - ✅ 完了（約3時間）
 
 **実装内容:**
 - ✅ **WebSocket Lambda録画処理のリファクタリング**
@@ -255,7 +378,7 @@ aws sts get-caller-identity  # Account: 010438500933
 - 7e631f2: WebSocket Lambda録画処理のアーキテクチャ改善
 - e6419bf: Lambda予約環境変数AWS_REGIONの手動設定を削除
 
-### 2. ハードコード値の完全排除 - ✅ 完了（約1.5時間）
+### 3. ハードコード値の完全排除 - ✅ 完了（約1.5時間）
 
 **問題発見:**
 - 言語設定: 'en-US', 'ja-JP', ['ja', 'en']
@@ -292,7 +415,7 @@ aws sts get-caller-identity  # Account: 010438500933
 **コミット:**
 - d01c17f: ハードコード値の完全排除と一元管理の確立
 
-### 3. 設定値一元管理を重要原則として確立 - ✅ 完了（約1時間）
+### 4. 設定値一元管理を重要原則として確立 - ✅ 完了（約1時間）
 
 **ドキュメント追加:**
 - ✅ **CLAUDE.md** - セクション4.5追加
@@ -327,7 +450,7 @@ grep -rn "'en-US'\|'ja-JP'\|'us-east-1'\|'webm'\|'1280x720'" infrastructure/lamb
 **コミット:**
 - 4cc2fed: 設定値の一元管理を重要原則として追加（ハードコード禁止令）
 
-### 4. ローカルPostgreSQL自動起動問題の解決 - ✅ 完了（30分）
+### 5. ローカルPostgreSQL自動起動問題の解決 - ✅ 完了（30分）
 
 **問題発見:**
 - メモリーコンパクト時にPostgreSQLコンテナが自動起動
@@ -341,16 +464,22 @@ grep -rn "'en-US'\|'ja-JP'\|'us-east-1'\|'webm'\|'1280x720'" infrastructure/lamb
   - AWS RDS専用アーキテクチャを明記
 
 **統計サマリー:**
-- コミット数: 4個
+- セッション時間: 約3.5時間（録画機能3時間 + Node.js調査2時間、並行作業）
+- 新規ドキュメント: 1個（NODE_EOL_MIGRATION_PLAN.md - 1,070行）
+- コミット数: 4個（録画機能関連）
 - 変更ファイル: 20個
-- 追加行数: 約680行
+- 追加行数: 約1,750行（録画機能680行 + 調査ドキュメント1,070行）
 - 削除行数: 約85行
 - デプロイ成功: DynamoDB + ApiLambda (90秒)
-- GitHubプッシュ: 完了 ✅
+- GitHubプッシュ: 前回完了 ✅
 
 **Phase 2 進捗:**
 - Task 2.1.2（Lambda動画処理）: **100%完了** 🎉
 - Task 2.1（録画機能実装）: **約65%完了**（推定3週間中）
+
+**Node.js 20 EOL対応:**
+- 調査・計画: **100%完了** 🎉
+- 実装: **0%**（次回Phase 0開始予定）
 
 ---
 
