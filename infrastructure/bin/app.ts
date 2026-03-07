@@ -106,6 +106,7 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   databaseSecret: databaseStack.secret,
   websocketConnectionsTable: dynamoDBStack.websocketConnectionsTable,
   recordingsBucket: storageStack.recordingsBucket,
+  recordingsTable: dynamoDBStack.recordingsTable,
   description: 'Prance Platform - API Gateway, Lambda Functions, and Authorizer',
 });
 

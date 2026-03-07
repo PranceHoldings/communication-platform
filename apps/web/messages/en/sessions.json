@@ -187,19 +187,26 @@
       "stop": "Stop Recording",
       "pause": "Pause Recording",
       "resume": "Resume Recording",
+      "speed": "Speed",
+      "format": "Format",
+      "resolution": "Resolution",
+      "size": "File Size",
+      "duration": "Duration",
       "status": {
         "idle": "Not Recording",
         "recording": "Recording",
         "paused": "Paused",
         "stopped": "Stopped"
       },
-      "duration": "Duration: {duration}",
       "messages": {
         "started": "Recording started",
         "stopped": "Recording stopped",
         "paused": "Recording paused",
         "resumed": "Recording resumed",
-        "error": "Recording error: {error}",
+        "error": "Recording error",
+        "errorUnknown": "An unknown error occurred",
+        "processing": "Processing recording",
+        "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
         "notSupported": "Recording is not supported in your browser"
       }
     }

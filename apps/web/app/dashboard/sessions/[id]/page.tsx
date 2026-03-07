@@ -7,6 +7,7 @@ import { getSession, type Session } from '@/lib/api/sessions';
 import { getAvatar, type Avatar } from '@/lib/api/avatars';
 import { getScenario, type Scenario } from '@/lib/api/scenarios';
 import { SessionPlayer } from '@/components/session-player';
+import { RecordingPlayer, type Recording, type Transcript } from '@/components/session-player/recording-player';
 import Link from 'next/link';
 
 export default function SessionDetailPage() {
@@ -101,8 +102,15 @@ export default function SessionDetailPage() {
         <span className="text-gray-900 font-medium">{t('sessions.detail.session')} {sessionId.slice(0, 8)}...</span>
       </div>
 
-      {/* SessionPlayerコンポーネント */}
-      <SessionPlayer session={session} avatar={avatar} scenario={scenario} />
+      {/* セッションプレイヤー or 録画プレイヤー */}
+      {session.status === 'COMPLETED' && session.recordings && session.recordings.length > 0 ? (
+        <RecordingPlayer
+          recording={session.recordings[0] as Recording}
+          transcripts={(session.transcripts as Transcript[]) || []}
+        />
+      ) : (
+        <SessionPlayer session={session} avatar={avatar} scenario={scenario} />
+      )}
     </div>
   );
 }

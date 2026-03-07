@@ -21,6 +21,7 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   databaseSecret: secretsmanager.Secret;
   websocketConnectionsTable: dynamodb.Table;
   recordingsBucket: s3.Bucket;
+  recordingsTable: dynamodb.Table;
 }
 
 export class ApiLambdaStack extends cdk.Stack {
@@ -666,6 +667,7 @@ export class ApiLambdaStack extends cdk.Stack {
         AWS_REGION: this.region,
         WEBSOCKET_ENDPOINT: `https://${this.webSocketApi.ref}.execute-api.${this.region}.amazonaws.com/${props.environment}`,
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
+        RECORDINGS_TABLE_NAME: props.recordingsTable.tableName,
         S3_BUCKET: props.recordingsBucket.bucketName,
         // AI/Audio Service Configuration
         // デフォルト値は shared/config/defaults.ts で管理
@@ -685,8 +687,28 @@ export class ApiLambdaStack extends cdk.Stack {
         minify: props.environment === 'production',
         sourceMap: true,
         target: 'es2020',
-        externalModules: ['aws-sdk', 'microsoft-cognitiveservices-speech-sdk', '@ffmpeg-installer/ffmpeg'],
+        externalModules: [
+          'aws-sdk',
+          'microsoft-cognitiveservices-speech-sdk',
+          '@ffmpeg-installer/ffmpeg',
+        ],
         nodeModules: ['microsoft-cognitiveservices-speech-sdk', '@ffmpeg-installer/ffmpeg', 'fluent-ffmpeg'],
+        commandHooks: {
+          beforeBundling(inputDir: string, outputDir: string): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            return [
+              // Copy shared modules (AI and Audio processors)
+              `mkdir -p ${outputDir}/shared`,
+              `cp -r /asset-input/shared/ai ${outputDir}/shared/`,
+              `cp -r /asset-input/shared/audio ${outputDir}/shared/`,
+            ];
+          },
+          beforeInstall(): string[] {
+            return [];
+          },
+        },
       },
     });
 
@@ -694,8 +716,9 @@ export class ApiLambdaStack extends cdk.Stack {
     props.websocketConnectionsTable.grantReadWriteData(websocketConnectFunction);
     props.websocketConnectionsTable.grantReadWriteData(websocketDisconnectFunction);
     props.websocketConnectionsTable.grantReadWriteData(websocketDefaultFunction);
+    props.recordingsTable.grantReadWriteData(websocketDefaultFunction);
 
-    // S3 permissions for default handler (audio storage)
+    // S3 permissions for default handler (audio/video storage)
     props.recordingsBucket.grantReadWrite(websocketDefaultFunction);
 
     // PostToConnection permission for default handler

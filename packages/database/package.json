@@ -5,10 +5,10 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "scripts": {
-    "generate": "prisma generate",
-    "migrate": "prisma migrate dev",
-    "studio": "prisma studio",
-    "push": "prisma db push"
+    "generate": "prisma generate"
+  },
+  "comments": {
+    "WARNING": "ローカルPostgreSQLは使用しません。マイグレーションはLambda Migration Function経由でAWS RDSに適用します。"
   },
   "dependencies": {
     "@prisma/client": "^5.9.0"

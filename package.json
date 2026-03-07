@@ -20,8 +20,6 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "setup:dev": "npm install && npm run db:generate",
     "db:generate": "cd packages/database && npx prisma generate",
-    "db:migrate": "cd packages/database && npx prisma migrate dev",
-    "db:studio": "cd packages/database && npx prisma studio",
     "cdk:bootstrap": "cd infrastructure && npx cdk bootstrap",
     "cdk:deploy": "cd infrastructure && npx cdk deploy --all",
     "cdk:destroy": "cd infrastructure && npx cdk destroy --all",

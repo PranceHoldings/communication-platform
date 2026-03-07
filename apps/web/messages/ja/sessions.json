@@ -187,19 +187,26 @@
       "stop": "録画停止",
       "pause": "録画一時停止",
       "resume": "録画再開",
+      "speed": "再生速度",
+      "format": "フォーマット",
+      "resolution": "解像度",
+      "size": "ファイルサイズ",
+      "duration": "再生時間",
       "status": {
         "idle": "録画していません",
         "recording": "録画中",
         "paused": "一時停止中",
         "stopped": "停止"
       },
-      "duration": "録画時間: {duration}",
       "messages": {
         "started": "録画を開始しました",
         "stopped": "録画を停止しました",
         "paused": "録画を一時停止しました",
         "resumed": "録画を再開しました",
-        "error": "録画エラー: {error}",
+        "error": "録画エラー",
+        "errorUnknown": "不明なエラーが発生しました",
+        "processing": "録画を処理中",
+        "processingDescription": "動画の処理が完了するまでお待ちください。数分かかる場合があります。",
         "notSupported": "お使いのブラウザは録画に対応していません"
       }
     }
