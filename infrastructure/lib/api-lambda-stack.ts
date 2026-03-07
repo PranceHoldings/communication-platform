@@ -642,17 +642,18 @@ export class ApiLambdaStack extends cdk.Stack {
       },
     });
 
-    // WebSocket $default Handler (with AI/Audio processing)
+    // WebSocket $default Handler (with AI/Audio/Video processing)
     const websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefaultFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.X86_64, // Using x86_64 for ffmpeg-installer compatibility
-      timeout: cdk.Duration.seconds(90), // Increased for audio conversion + AI processing
-      memorySize: 1536, // Increased for ffmpeg processing
+      timeout: cdk.Duration.seconds(300), // Increased for video processing (5 minutes)
+      memorySize: 3008, // Increased for video processing with ffmpeg
+      ephemeralStorageSize: cdk.Size.gibibytes(10), // Large storage for video chunk processing
       tracing: lambda.Tracing.ACTIVE,
       logRetention:
         props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
       functionName: `prance-websocket-default-${props.environment}`,
-      description: 'WebSocket $default message handler with STT/AI/TTS',
+      description: 'WebSocket $default message handler with STT/AI/TTS/Video processing',
       entry: path.join(__dirname, '../lambda/websocket/default/index.ts'),
       handler: 'handler',
       depsLockFilePath: path.join(__dirname, '../lambda/websocket/default/package-lock.json'),
@@ -672,6 +673,10 @@ export class ApiLambdaStack extends cdk.Stack {
         ELEVENLABS_MODEL_ID: process.env.ELEVENLABS_MODEL_ID || 'eleven_flash_v2_5',
         BEDROCK_REGION: process.env.BEDROCK_REGION || this.region,
         BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6',
+        // CloudFront Configuration (for signed URLs)
+        CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN || '',
+        CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID || '',
+        CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY || '',
       },
       bundling: {
         minify: props.environment === 'production',

@@ -206,6 +206,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     disconnect,
     sendUserSpeech,
     sendAudioChunk,
+    sendVideoChunk,
     endSession,
   } = useWebSocket({
     sessionId: session.id,
@@ -284,18 +285,22 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   // 録画機能 - ビデオチャンクハンドラー
   const handleVideoChunk = useCallback(
-    (chunk: Blob, timestamp: number) => {
+    async (chunk: Blob, timestamp: number) => {
       if (isConnected && status === 'ACTIVE') {
-        // TODO: WebSocketでビデオチャンク送信（Task 2.1.2で実装）
-        // 将来実装: sendVideoChunk(chunk, timestamp);
-        console.log('[SessionPlayer] Video chunk:', {
-          size: chunk.size,
-          timestamp,
-          type: chunk.type
-        });
+        try {
+          // WebSocketでビデオチャンク送信
+          await sendVideoChunk(chunk, timestamp);
+          console.log('[SessionPlayer] Video chunk sent:', {
+            size: chunk.size,
+            timestamp,
+            type: chunk.type
+          });
+        } catch (error) {
+          console.error('[SessionPlayer] Failed to send video chunk:', error);
+        }
       }
     },
-    [isConnected, status]
+    [isConnected, status, sendVideoChunk]
   );
 
   const handleVideoRecordingComplete = useCallback(

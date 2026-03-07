@@ -16,6 +16,7 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
 import { AudioProcessor } from './audio-processor';
+import { VideoProcessor } from './video-processor';
 
 const ENDPOINT = process.env.WEBSOCKET_ENDPOINT!;
 const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE_NAME!;
@@ -63,6 +64,22 @@ function getAudioProcessor(): AudioProcessor {
   return audioProcessor;
 }
 
+// Video Processor (lazy initialization)
+let videoProcessor: VideoProcessor | null = null;
+
+function getVideoProcessor(): VideoProcessor {
+  if (!videoProcessor) {
+    videoProcessor = new VideoProcessor({
+      s3Client,
+      bucket: S3_BUCKET,
+      cloudFrontDomain: process.env.CLOUDFRONT_DOMAIN,
+      cloudFrontKeyPairId: process.env.CLOUDFRONT_KEY_PAIR_ID,
+      cloudFrontPrivateKey: process.env.CLOUDFRONT_PRIVATE_KEY,
+    });
+  }
+  return videoProcessor;
+}
+
 interface WebSocketMessage {
   type: string;
   [key: string]: unknown;
@@ -86,6 +103,8 @@ interface ConnectionData {
   audioS3Key?: string; // S3 key for accumulated audio chunks
   audioChunksCount?: number;
   lastChunkTime?: number;
+  videoChunksCount?: number; // Count of video chunks received
+  lastVideoChunkTime?: number;
   [key: string]: unknown;
 }
 
@@ -180,6 +199,58 @@ export const handler = async (
             stage: 'receiving_audio',
             progress: 0.1,
             chunksReceived: chunkCount,
+          });
+        }
+        break;
+
+      case 'video_chunk':
+        // Handle video recording chunks
+        const videoData = message.data as string;
+        const videoTimestamp = message.timestamp as number;
+        const videoSessionId = connectionData?.sessionId || 'unknown';
+
+        console.log('Received video chunk:', {
+          timestamp: videoTimestamp,
+          dataSize: videoData ? videoData.length : 0,
+          connectionId,
+          sessionId: videoSessionId,
+        });
+
+        // Save video chunk to S3
+        const videoChunkCount = (connectionData?.videoChunksCount || 0) + 1;
+
+        try {
+          const videoBuffer = Buffer.from(videoData, 'base64');
+          const videoProc = getVideoProcessor();
+
+          await videoProc.saveVideoChunk(
+            videoSessionId,
+            videoBuffer,
+            videoTimestamp,
+            videoChunkCount
+          );
+
+          console.log('Saved video chunk to S3:', { sessionId: videoSessionId, chunkCount: videoChunkCount });
+        } catch (error) {
+          console.error('Failed to save video chunk to S3:', error);
+          await sendToConnection(connectionId, {
+            type: 'error',
+            code: 'VIDEO_CHUNK_ERROR',
+            message: 'Failed to save video chunk',
+          });
+        }
+
+        await updateConnectionData(connectionId, {
+          lastVideoChunkTime: videoTimestamp,
+          videoChunksCount: videoChunkCount,
+        });
+
+        // Acknowledge receipt periodically (every 10th chunk to reduce traffic)
+        if (videoChunkCount % 10 === 0) {
+          await sendToConnection(connectionId, {
+            type: 'video_chunk_ack',
+            chunksReceived: videoChunkCount,
+            timestamp: videoTimestamp,
           });
         }
         break;
@@ -281,6 +352,55 @@ export const handler = async (
           // Clear audio chunks count after processing
           await updateConnectionData(connectionId, {
             audioChunksCount: 0,
+          });
+        }
+
+        // Process video chunks if any
+        if (connectionData?.videoChunksCount && connectionData.videoChunksCount > 0) {
+          console.log(`Processing ${connectionData.videoChunksCount} video chunks from S3`);
+
+          try {
+            await sendToConnection(connectionId, {
+              type: 'processing_update',
+              stage: 'processing_video',
+              progress: 0.6,
+            });
+
+            const videoProc = getVideoProcessor();
+            const sessionId = connectionData.sessionId || 'unknown';
+
+            // Combine video chunks using ffmpeg
+            const result = await videoProc.combineChunks(sessionId);
+
+            console.log('Video processing complete:', result);
+
+            await sendToConnection(connectionId, {
+              type: 'processing_update',
+              stage: 'video_ready',
+              progress: 1.0,
+            });
+
+            // Send video URL to client
+            await sendToConnection(connectionId, {
+              type: 'video_ready',
+              videoUrl: result.cloudFrontUrl,
+              videoKey: result.finalVideoKey,
+              videoSize: result.finalVideoSize,
+              processingDuration: result.duration,
+            });
+          } catch (error) {
+            console.error('Failed to process video:', error);
+            await sendToConnection(connectionId, {
+              type: 'error',
+              code: 'VIDEO_PROCESSING_ERROR',
+              message: 'Failed to process video recording',
+              details: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+
+          // Clear video chunks count after processing
+          await updateConnectionData(connectionId, {
+            videoChunksCount: 0,
           });
         }
 

@@ -76,6 +76,7 @@ interface UseWebSocketReturn {
   sendMessage: (message: WebSocketMessage) => void;
   sendAudioChunk: (data: ArrayBuffer, timestamp: number) => void;
   sendAudioData: (audioBlob: Blob) => Promise<void>;
+  sendVideoChunk: (data: Blob, timestamp: number) => Promise<void>;
   sendUserSpeech: (text: string, confidence: number) => void;
   sendSpeechEnd: () => void;
   endSession: () => void;
@@ -196,6 +197,16 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
           case 'authenticated':
             console.log('Authentication confirmed');
+            break;
+
+          case 'video_chunk_ack':
+            // Video chunk acknowledgment
+            console.log('Video chunk acknowledged:', message);
+            break;
+
+          case 'video_ready':
+            // Video processing complete
+            console.log('Video ready:', message);
             break;
 
           default:
@@ -368,6 +379,34 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     [sendMessage]
   );
 
+  const sendVideoChunk = useCallback(
+    async (chunk: Blob, timestamp: number): Promise<void> => {
+      try {
+        // Convert Blob to ArrayBuffer
+        const arrayBuffer = await chunk.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+
+        // Convert to Base64 string
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]!);
+        }
+        const base64 = btoa(binary);
+
+        // Send video chunk
+        sendMessage({
+          type: 'video_chunk',
+          data: base64,
+          timestamp,
+        });
+      } catch (error) {
+        console.error('[WebSocket] Failed to send video chunk:', error);
+        throw error;
+      }
+    },
+    [sendMessage]
+  );
+
   const sendUserSpeech = useCallback(
     (text: string, confidence: number) => {
       sendMessage({
@@ -425,6 +464,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     sendMessage,
     sendAudioChunk,
     sendAudioData,
+    sendVideoChunk,
     sendUserSpeech,
     sendSpeechEnd,
     endSession,
