@@ -177,7 +177,7 @@ export class ElevenLabsTextToSpeech {
         throw new Error(`Failed to get voices: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as { voices?: any[] };
       return data.voices || [];
     } catch (error) {
       console.error('[ElevenLabsTTS] Failed to get voices:', error);
@@ -230,7 +230,13 @@ export class ElevenLabsTextToSpeech {
         throw new Error(`Failed to get usage: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        subscription?: {
+          character_count?: number;
+          character_limit?: number;
+          can_extend_character_limit?: boolean;
+        };
+      };
       return {
         characterCount: data.subscription?.character_count || 0,
         characterLimit: data.subscription?.character_limit || 0,

@@ -19,14 +19,14 @@
     "status": "aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE --query \"StackSummaries[?starts_with(StackName, 'Prance')].{Name:StackName,Status:StackStatus}\" --output table"
   },
   "devDependencies": {
-    "@types/node": "^20.19.35",
-    "aws-cdk": "^2.120.0",
+    "@types/node": "^22.0.0",
+    "aws-cdk": "^2.170.0",
     "dotenv": "^17.3.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {
     "@types/pg": "^8.18.0",
-    "aws-cdk-lib": "^2.120.0",
+    "aws-cdk-lib": "^2.170.0",
     "constructs": "^10.3.0",
     "pg": "^8.20.0"
   }

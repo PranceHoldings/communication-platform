@@ -105,7 +105,7 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // JWT Authorizer Lambda関数（VPC不要、DB接続なし）
     const authorizerFunction = new nodejs.NodejsFunction(this, 'AuthorizerFunction', {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(10), // Authorizerは高速である必要がある
       memorySize: 256,
@@ -155,7 +155,7 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // Lambda共通設定
     const commonLambdaProps = {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64, // Graviton2 (コスト削減)
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
@@ -591,7 +591,7 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // WebSocket $connect Handler
     const websocketConnectFunction = new nodejs.NodejsFunction(this, 'WebSocketConnectFunction', {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
@@ -619,7 +619,7 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // WebSocket $disconnect Handler
     const websocketDisconnectFunction = new nodejs.NodejsFunction(this, 'WebSocketDisconnectFunction', {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
@@ -646,7 +646,7 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // WebSocket $default Handler (with AI/Audio/Video processing)
     const websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefaultFunction', {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.X86_64, // Using x86_64 for ffmpeg-installer compatibility
       timeout: cdk.Duration.seconds(300), // Increased for video processing (5 minutes)
       memorySize: 3008, // Increased for video processing with ffmpeg
