@@ -664,7 +664,7 @@ export class ApiLambdaStack extends cdk.Stack {
         ENVIRONMENT: props.environment,
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
         NODE_ENV: props.environment === 'production' ? 'production' : 'development',
-        AWS_REGION: this.region,
+        // AWS_REGION is automatically set by Lambda runtime - do not override
         WEBSOCKET_ENDPOINT: `https://${this.webSocketApi.ref}.execute-api.${this.region}.amazonaws.com/${props.environment}`,
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
         RECORDINGS_TABLE_NAME: props.recordingsTable.tableName,
