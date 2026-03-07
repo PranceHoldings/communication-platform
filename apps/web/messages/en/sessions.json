@@ -180,6 +180,28 @@
       "scenario": "Scenario",
       "language": "Language",
       "created": "Created"
+    },
+    "recording": {
+      "title": "Recording",
+      "start": "Start Recording",
+      "stop": "Stop Recording",
+      "pause": "Pause Recording",
+      "resume": "Resume Recording",
+      "status": {
+        "idle": "Not Recording",
+        "recording": "Recording",
+        "paused": "Paused",
+        "stopped": "Stopped"
+      },
+      "duration": "Duration: {duration}",
+      "messages": {
+        "started": "Recording started",
+        "stopped": "Recording stopped",
+        "paused": "Recording paused",
+        "resumed": "Recording resumed",
+        "error": "Recording error: {error}",
+        "notSupported": "Recording is not supported in your browser"
+      }
     }
   },
   "errors": {

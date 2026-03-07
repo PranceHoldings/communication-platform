@@ -180,6 +180,28 @@
       "scenario": "シナリオ",
       "language": "言語",
       "created": "作成日時"
+    },
+    "recording": {
+      "title": "録画",
+      "start": "録画開始",
+      "stop": "録画停止",
+      "pause": "録画一時停止",
+      "resume": "録画再開",
+      "status": {
+        "idle": "録画していません",
+        "recording": "録画中",
+        "paused": "一時停止中",
+        "stopped": "停止"
+      },
+      "duration": "録画時間: {duration}",
+      "messages": {
+        "started": "録画を開始しました",
+        "stopped": "録画を停止しました",
+        "paused": "録画を一時停止しました",
+        "resumed": "録画を再開しました",
+        "error": "録画エラー: {error}",
+        "notSupported": "お使いのブラウザは録画に対応していません"
+      }
     }
   },
   "errors": {
