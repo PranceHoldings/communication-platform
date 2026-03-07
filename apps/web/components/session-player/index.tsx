@@ -7,6 +7,8 @@ import { Avatar } from '@/lib/api/avatars';
 import { Scenario } from '@/lib/api/scenarios';
 import { useWebSocket, TranscriptMessage, AvatarResponseMessage, AudioResponseMessage, ProcessingUpdateMessage, SessionCompleteMessage, ErrorMessage } from '@/hooks/useWebSocket';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { useVideoRecorder } from '@/hooks/useVideoRecorder';
+import { VideoComposer } from './video-composer';
 import { toast } from 'sonner';
 
 type SessionPlayerStatus = 'IDLE' | 'READY' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
@@ -35,6 +37,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const disconnectRef = useRef<(() => void) | null>(null);
+
+  // 録画機能用のref
+  const avatarCanvasRef = useRef<HTMLCanvasElement>(null);
+  const userVideoRef = useRef<HTMLVideoElement>(null);
+  const compositeCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // トークン取得
   useEffect(() => {
