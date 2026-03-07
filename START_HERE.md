@@ -1,10 +1,10 @@
 # 次回セッション開始手順（2026-03-07更新）
 
-**最終作業日:** 2026-03-07 21:00 JST
-**Phase 1進捗:** 100%完了 🎉 | **Phase 2進捗:** 開始 - Task 2.1.1 (70%完了) 🚀
-**最新コミット:** 50d30d7
-**最新デプロイ:** 2026-03-06 23:09 JST - ElevenLabs無料プラン対応完了
-**最新プッシュ:** 未実施 - 次回セッションでpush推奨（3コミット保留中）
+**最終作業日:** 2026-03-07 14:21 JST
+**Phase 1進捗:** 100%完了 🎉 | **Phase 2進捗:** Task 2.1.2完了、次: Task 2.1.3 🚀
+**最新コミット:** 4cc2fed - 設定値一元管理ルール確立
+**最新デプロイ:** 2026-03-07 14:15 JST - WebSocket Lambda録画処理完了
+**最新プッシュ:** 2026-03-07 14:21 JST - 完了 ✅
 
 ---
 
@@ -52,30 +52,49 @@ WebSocket: wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 
 ---
 
-## 📋 次回作業内容（Phase 2 - Task 2.1.1 続行）
+## 📋 次回作業内容（Phase 2 録画機能）
 
-### 🎬 現在進行中: 録画機能実装（Task 2.1.1 - 70%完了）
+### 🎬 Phase 2.1 録画機能実装の進捗状況
 
-**次回の作業:** SessionPlayer への録画機能統合を完了させる
+**完了タスク:**
+- ✅ Task 2.1.1: フロントエンド録画機能（70%完了 - SessionPlayer統合が残り）
+- ✅ Task 2.1.2: Lambda動画処理機能（100%完了 🎉）
+  - WebSocket video_chunk処理
+  - ffmpeg動画結合
+  - S3保存・CloudFront URL生成
+  - DynamoDB録画メタデータ管理
+  - ハードコード値完全排除
 
-**詳細手順:** `PHASE2_RECORDING_TODO.md`（Step 3-1 ～ Step 3-5）
-**推定時間:** 約2時間15分
+**次回のタスク:**
 
-**実装ステップ:**
-1. ✅ Step 1: VideoComposer 作成（完了）
-2. ✅ Step 2: useVideoRecorder フック作成（完了）
-3. ⏳ Step 3: SessionPlayer 統合（70%完了）
-   - ⏳ Step 3-1: useVideoRecorder統合（30分）
-   - ⏳ Step 3-2: ユーザーカメラ取得（30分）
-   - ⏳ Step 3-3: 録画ステータスUI（30分）
-   - ⏳ Step 3-4: 録画ボタンUI（30分）
-   - ⏳ Step 3-5: VideoComposer配置（15分）
+### Option A: Task 2.1.1完了 - SessionPlayer統合（推奨・2時間）
+**目標:** フロントエンド録画機能を完全に動作させる
+
+**残作業:**
+- ⏳ Step 3-1: useVideoRecorder統合（30分）
+- ⏳ Step 3-2: ユーザーカメラ取得（30分）
+- ⏳ Step 3-3: 録画ステータスUI（30分）
+- ⏳ Step 3-4: 録画ボタンUI（30分）
 
 **完了条件:**
 - [ ] 録画開始ボタンで録画開始
+- [ ] WebSocketでビデオチャンクが送信される
 - [ ] 録画中のステータス表示
-- [ ] 一時停止・再開が動作
 - [ ] ブラウザコンソールにビデオチャンクログ表示
+
+### Option B: Task 2.1.3 - 録画再生UI（2-3時間）
+**目標:** 録画済みセッションの再生機能実装
+
+**実装内容:**
+- RecordingPlayer コンポーネント（完成済み✅）
+- 動画再生コントロール
+- 字幕同期機能
+- 再生速度調整
+
+**技術スタック:**
+- HTML5 Video API
+- useRef/useState フック
+- DynamoDB録画メタデータ取得
 
 ---
 
@@ -204,7 +223,138 @@ aws sts get-caller-identity  # Account: 010438500933
 
 ---
 
-## ✅ 今回セッションで完了した作業（2026-03-07 18:45 JST）
+## ✅ 今回セッションで完了した作業（2026-03-07 14:21 JST）
+
+### 1. Task 2.1.2完了 - Lambda動画処理機能 - ✅ 完了（約3時間）
+
+**実装内容:**
+- ✅ **WebSocket Lambda録画処理のリファクタリング**
+  - PrismaClient依存を完全削除（Dockerバンドリング問題を根本解決）
+  - 録画メタデータをDynamoDBに保存（RecordingsTable）
+  - video_chunk メッセージハンドリング実装
+  - ffmpeg動画結合処理実装（VideoProcessor）
+
+- ✅ **DynamoDB RecordingsTable追加**
+  - recording_id (PK), session_id (GSI)
+  - 録画メタデータ管理（s3_key, cdn_url, format, resolution等）
+  - processing_status (PENDING/PROCESSING/COMPLETED/ERROR)
+
+- ✅ **VideoProcessor モジュール作成**
+  - saveVideoChunk: S3チャンク保存
+  - combineChunks: ffmpegで動画結合
+  - generateSignedUrl: CloudFront署名付きURL生成
+  - getVideoMetadata: 録画情報取得
+
+- ✅ **RecordingPlayer UIコンポーネント作成**
+  - 動画再生コントロール
+  - 字幕同期機能
+  - 再生速度調整（0.5x - 2.0x）
+  - フルスクリーン対応
+
+**コミット:**
+- 7e631f2: WebSocket Lambda録画処理のアーキテクチャ改善
+- e6419bf: Lambda予約環境変数AWS_REGIONの手動設定を削除
+
+### 2. ハードコード値の完全排除 - ✅ 完了（約1.5時間）
+
+**問題発見:**
+- 言語設定: 'en-US', 'ja-JP', ['ja', 'en']
+- リージョン設定: 'us-east-1'
+- メディアフォーマット: 'webm', '1280x720', 'audio/webm', 'video/webm'
+- 上記が15箇所以上でハードコード
+
+**実装完了:**
+- ✅ **defaults.ts拡張** - 言語・メディア設定追加
+  - LANGUAGE_DEFAULTS (STT_LANGUAGE, SCENARIO_LANGUAGE, SUPPORTED_LANGUAGES)
+  - MEDIA_DEFAULTS (VIDEO_FORMAT, VIDEO_RESOLUTION, AUDIO/VIDEO_CONTENT_TYPE)
+
+- ✅ **WebSocket Lambda関数の改善**
+  - ハードコード削除: 'en-US' → STT_LANGUAGE環境変数
+  - ハードコード削除: 'webm' → VIDEO_FORMAT環境変数
+  - ハードコード削除: '1280x720' → VIDEO_RESOLUTION環境変数
+  - 全ての設定値を環境変数 + デフォルト値パターンに統一
+
+- ✅ **Scenarioモジュールの改善**
+  - 言語バリデーション: LANGUAGE_DEFAULTS.SUPPORTED_LANGUAGES使用
+  - デフォルト言語: LANGUAGE_DEFAULTS.SCENARIO_LANGUAGE使用
+
+- ✅ **.env.example更新**
+  - 言語・メディア設定セクション追加
+  - デフォルト値とサポート値を明記
+
+**削除されたハードコード:**
+- 'en-US' (6箇所) → 環境変数化
+- 'ja' (3箇所) → 定数化
+- ['ja', 'en'] (2箇所) → 定数化
+- 'webm' (15箇所以上) → 環境変数化
+- '1280x720' (2箇所) → 環境変数化
+
+**コミット:**
+- d01c17f: ハードコード値の完全排除と一元管理の確立
+
+### 3. 設定値一元管理を重要原則として確立 - ✅ 完了（約1時間）
+
+**ドキュメント追加:**
+- ✅ **CLAUDE.md** - セクション4.5追加
+  - 🔴 設定値の一元管理（必須）として独立セクション
+  - 対象設定値の明確化
+  - 正しい使用パターンの例示
+  - 検証コマンドの提供
+
+- ✅ **MEMORY.md** - 最重要開発原則セクション追加
+  - 冒頭に「ハードコード禁止令」を配置
+  - 詳細な使用ガイドと検証方法
+  - 対象設定値の具体例
+
+**確立されたルール:**
+```typescript
+// ❌ 禁止
+const language = 'en-US';
+const languages = ['ja', 'en'];
+
+// ✅ 正しい
+import { LANGUAGE_DEFAULTS } from '../../shared/config/defaults';
+const language = process.env.STT_LANGUAGE || LANGUAGE_DEFAULTS.STT_LANGUAGE;
+const languages = LANGUAGE_DEFAULTS.SUPPORTED_LANGUAGES;
+```
+
+**検証コマンド（コミット前必須）:**
+```bash
+# ハードコード検出
+grep -rn "'en-US'\|'ja-JP'\|'us-east-1'\|'webm'\|'1280x720'" infrastructure/lambda --include="*.ts" --exclude="defaults.ts"
+```
+
+**コミット:**
+- 4cc2fed: 設定値の一元管理を重要原則として追加（ハードコード禁止令）
+
+### 4. ローカルPostgreSQL自動起動問題の解決 - ✅ 完了（30分）
+
+**問題発見:**
+- メモリーコンパクト時にPostgreSQLコンテナが自動起動
+- 原因: package.jsonの`db:migrate`と`db:studio`スクリプト
+
+**実装完了:**
+- ✅ package.jsonからローカルPostgreSQL関連スクリプト削除
+  - db:migrate 削除
+  - db:studio 削除
+- ✅ packages/database/package.json のコメント追加
+  - AWS RDS専用アーキテクチャを明記
+
+**統計サマリー:**
+- コミット数: 4個
+- 変更ファイル: 20個
+- 追加行数: 約680行
+- 削除行数: 約85行
+- デプロイ成功: DynamoDB + ApiLambda (90秒)
+- GitHubプッシュ: 完了 ✅
+
+**Phase 2 進捗:**
+- Task 2.1.2（Lambda動画処理）: **100%完了** 🎉
+- Task 2.1（録画機能実装）: **約65%完了**（推定3週間中）
+
+---
+
+## ✅ 前回セッションで完了した作業（2026-03-07 18:45 JST）
 
 ### 1. i18n完全対応 - ✅ 完了（約2時間）
 
