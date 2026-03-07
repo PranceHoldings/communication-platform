@@ -1,24 +1,18 @@
 /**
- * 共通型定義
- * すべてのLambda関数で使用される型
+ * Lambda固有型定義
+ * Lambda関数特有の型（JWT, API Gateway レスポンス等）
  *
- * NOTE: これらの型はPrismaスキーマと整合性を保つ必要があります
- * スキーマ: packages/database/prisma/schema.prisma
- *
- * フィールド名マッピング（API レスポンス時）:
- * - durationSec → duration (フロントエンド用)
- * - metadataJson → metadata (フロントエンド用)
- * - configJson → configJson (変換なし)
- * - startedAt → createdAt (Session: 互換性のため)
- * - thumbnailUrl → imageUrl (Session.avatar: 互換性のため)
- *
- * データ型変換:
- * - DateTime (Prisma) → string (API: ISO 8601形式)
- * - Json (Prisma) → object (API)
- * - BigInt (Prisma) → number (API)
- *
- * 監査レポート: docs/technical/API_SCHEMA_INTEGRITY_AUDIT.md
+ * NOTE: 共有型は @prance/shared からimportしてください
+ * - User, Avatar, Scenario, Session, Recording, Transcript
+ * - エラークラス (AppError, ValidationError, etc.)
+ * - Pagination 型
  */
+
+// ========================================
+// Re-export shared types for convenience
+// ========================================
+
+export * from '@prance/shared';
 
 // ========================================
 // JWT関連
@@ -57,92 +51,6 @@ export interface ErrorResponse {
   };
 }
 
-// ========================================
-// ユーザー関連
-// ========================================
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER';
-  orgId: string; // Aligned with Prisma schema
-  createdAt: Date;
-  lastLoginAt: Date | null;
-  organization?: {
-    id: string;
-    name: string;
-  };
-}
-
-// ========================================
-// アバター関連
-// ========================================
-
-export interface Avatar {
-  id: string;
-  name: string;
-  type: 'TWO_D' | 'THREE_D';
-  style: 'ANIME' | 'REALISTIC';
-  source: 'PRESET' | 'GENERATED' | 'ORG_CUSTOM';
-  thumbnailUrl: string | null;
-  modelUrl: string;
-  configJson: object | null;
-  tags: string[];
-  visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
-  allowCloning: boolean;
-  createdAt: Date;
-  userId: string | null; // Owner user ID
-  orgId: string; // Owner organization ID
-}
-
-// ========================================
-// シナリオ関連
-// ========================================
-
-export interface Scenario {
-  id: string;
-  title: string;
-  category: string;
-  language: string;
-  visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
-  configJson: object;
-  createdAt: Date;
-  userId: string | null; // Creator user ID
-  orgId: string; // Owner organization ID
-}
-
-// ========================================
-// セッション関連
-// ========================================
-
-export interface Session {
-  id: string;
-  userId: string;
-  orgId: string;
-  avatarId: string;
-  scenarioId: string;
-  status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
-  startedAt: Date;
-  endedAt: Date | null;
-  durationSec: number | null; // Database field name
-  metadataJson: object | null; // Database field name
-  // Relation fields (optional, included in API responses with includes)
-  scenario?: {
-    id: string;
-    title: string;
-    category: string;
-  };
-  avatar?: {
-    id: string;
-    name: string;
-    type: string;
-    thumbnailUrl: string | null;
-    modelUrl: string;
-  };
-  recordings?: Recording[];
-  transcripts?: Transcript[];
-}
 
 // ========================================
 // WebSocket関連
@@ -162,85 +70,3 @@ export interface WebSocketMessage {
   };
 }
 
-// ========================================
-// 録画関連
-// ========================================
-
-export interface Recording {
-  id: string;
-  sessionId: string;
-  type: 'USER' | 'AVATAR' | 'COMBINED';
-  s3Url: string;
-  cdnUrl: string | null;
-  thumbnailUrl: string | null;
-  fileSizeBytes: bigint;
-  createdAt: Date;
-}
-
-// ========================================
-// 書き起こし関連
-// ========================================
-
-export interface Transcript {
-  id: string;
-  sessionId: string;
-  speaker: 'AI' | 'USER';
-  text: string;
-  timestampStart: number;
-  timestampEnd: number;
-  confidence: number | null;
-  highlight: 'POSITIVE' | 'NEGATIVE' | 'IMPORTANT' | null;
-}
-
-// ========================================
-// エラー関連
-// ========================================
-
-export class AppError extends Error {
-  constructor(
-    public statusCode: number,
-    public code: string,
-    message: string,
-    public details?: any
-  ) {
-    super(message);
-    this.name = 'AppError';
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
-
-export class AuthenticationError extends AppError {
-  constructor(message = 'Authentication failed') {
-    super(401, 'AUTHENTICATION_ERROR', message);
-  }
-}
-
-export class AuthorizationError extends AppError {
-  constructor(message = 'Access denied') {
-    super(403, 'AUTHORIZATION_ERROR', message);
-  }
-}
-
-export class NotFoundError extends AppError {
-  constructor(resource: string) {
-    super(404, 'NOT_FOUND', `${resource} not found`);
-  }
-}
-
-export class ValidationError extends AppError {
-  constructor(message: string, details?: any) {
-    super(400, 'VALIDATION_ERROR', message, details);
-  }
-}
-
-export class ConflictError extends AppError {
-  constructor(message: string) {
-    super(409, 'CONFLICT', message);
-  }
-}
-
-export class InternalServerError extends AppError {
-  constructor(message = 'Internal server error') {
-    super(500, 'INTERNAL_SERVER_ERROR', message);
-  }
-}

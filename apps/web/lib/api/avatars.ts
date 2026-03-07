@@ -1,16 +1,23 @@
 import { apiClient } from './client';
 import { buildQueryString } from './utils';
+import type {
+  AvatarType,
+  AvatarStyle,
+  AvatarSource,
+  Visibility,
+  PaginationMeta,
+} from '@prance/shared';
 
 export interface Avatar {
   id: string;
   name: string;
-  type: 'TWO_D' | 'THREE_D';
-  style: 'ANIME' | 'REALISTIC';
-  source: 'PRESET' | 'GENERATED' | 'ORG_CUSTOM';
+  type: AvatarType;
+  style: AvatarStyle;
+  source: AvatarSource;
   modelUrl: string;
   thumbnailUrl: string | null;
   tags: string[];
-  visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  visibility: Visibility;
   allowCloning: boolean;
   createdAt: string;
   userId: string | null;
@@ -19,37 +26,32 @@ export interface Avatar {
 
 export interface AvatarListResponse {
   avatars: Avatar[];
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
+  pagination: PaginationMeta;
 }
 
 export interface CreateAvatarRequest {
   name: string;
-  type: 'TWO_D' | 'THREE_D';
-  style: 'ANIME' | 'REALISTIC';
-  source: 'PRESET' | 'GENERATED' | 'ORG_CUSTOM';
+  type: AvatarType;
+  style: AvatarStyle;
+  source: AvatarSource;
   modelUrl: string;
   thumbnailUrl?: string;
   configJson?: Record<string, unknown>;
   tags?: string[];
-  visibility?: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  visibility?: Visibility;
   allowCloning?: boolean;
 }
 
 export interface UpdateAvatarRequest {
   name?: string;
-  type?: 'TWO_D' | 'THREE_D';
-  style?: 'ANIME' | 'REALISTIC';
-  source?: 'PRESET' | 'GENERATED' | 'ORG_CUSTOM';
+  type?: AvatarType;
+  style?: AvatarStyle;
+  source?: AvatarSource;
   modelUrl?: string;
   thumbnailUrl?: string;
   configJson?: Record<string, unknown>;
   tags?: string[];
-  visibility?: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  visibility?: Visibility;
   allowCloning?: boolean;
 }
 
@@ -59,10 +61,10 @@ export interface UpdateAvatarRequest {
 export async function listAvatars(params?: {
   limit?: number;
   offset?: number;
-  type?: 'TWO_D' | 'THREE_D';
-  style?: 'ANIME' | 'REALISTIC';
-  source?: 'PRESET' | 'GENERATED' | 'ORG_CUSTOM';
-  visibility?: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  type?: AvatarType;
+  style?: AvatarStyle;
+  source?: AvatarSource;
+  visibility?: Visibility;
 }): Promise<AvatarListResponse> {
   const url = `/avatars${buildQueryString(params)}`;
   const response = await apiClient.get<AvatarListResponse>(url);

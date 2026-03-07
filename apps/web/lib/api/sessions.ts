@@ -11,12 +11,13 @@
 
 import { apiClient } from './client';
 import { buildQueryString } from './utils';
+import type { SessionStatus, PaginationMeta, Speaker, Highlight } from '@prance/shared';
 
 export interface Session {
   id: string;
   scenarioId: string;
   avatarId: string;
-  status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
+  status: SessionStatus;
   startedAt: string; // セッション開始日時
   endedAt: string | null; // セッション終了日時
   duration: number | null; // 所要時間（秒）- DBでは durationSec
@@ -46,12 +47,12 @@ export interface Session {
   }>;
   transcripts?: Array<{
     id: string;
-    speaker: 'AI' | 'USER';
+    speaker: Speaker;
     text: string;
     timestampStart: number;
     timestampEnd: number;
     confidence: number | null;
-    highlight: 'POSITIVE' | 'NEGATIVE' | 'IMPORTANT' | null;
+    highlight: Highlight | null;
   }>;
 }
 
@@ -64,17 +65,12 @@ export interface CreateSessionRequest {
 export interface ListSessionsRequest {
   limit?: number;
   offset?: number;
-  status?: 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
+  status?: SessionStatus;
 }
 
 export interface ListSessionsResponse {
   sessions: Session[];
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
+  pagination: PaginationMeta;
 }
 
 /**

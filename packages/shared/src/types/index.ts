@@ -144,42 +144,70 @@ export interface Transcript {
 
 export class AppError extends Error {
   constructor(
-    public code: string,
     public statusCode: number,
+    public code: string,
     message: string,
-    public details?: string
+    public details?: any
   ) {
     super(message);
     this.name = 'AppError';
+    Error.captureStackTrace(this, this.constructor);
   }
 }
 
 export class AuthenticationError extends AppError {
-  constructor(message = 'Authentication required') {
-    super('AUTHENTICATION_ERROR', 401, message);
+  constructor(message = 'Authentication failed') {
+    super(401, 'AUTHENTICATION_ERROR', message);
   }
 }
 
 export class AuthorizationError extends AppError {
   constructor(message = 'Access denied') {
-    super('AUTHORIZATION_ERROR', 403, message);
+    super(403, 'AUTHORIZATION_ERROR', message);
   }
 }
 
 export class NotFoundError extends AppError {
-  constructor(resource = 'Resource') {
-    super('NOT_FOUND', 404, `${resource} not found`);
+  constructor(resource: string) {
+    super(404, 'NOT_FOUND', `${resource} not found`);
   }
 }
 
 export class ValidationError extends AppError {
-  constructor(message = 'Validation failed', details?: string) {
-    super('VALIDATION_ERROR', 400, message, details);
+  constructor(message: string, details?: any) {
+    super(400, 'VALIDATION_ERROR', message, details);
   }
 }
 
 export class ConflictError extends AppError {
-  constructor(message = 'Resource already exists') {
-    super('CONFLICT', 409, message);
+  constructor(message: string) {
+    super(409, 'CONFLICT', message);
   }
+}
+
+export class InternalServerError extends AppError {
+  constructor(message = 'Internal server error') {
+    super(500, 'INTERNAL_SERVER_ERROR', message);
+  }
+}
+
+// ============================================================
+// ページネーション
+// ============================================================
+
+export interface PaginationParams {
+  limit: number;
+  offset: number;
+}
+
+export interface PaginationMeta {
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: PaginationMeta;
 }

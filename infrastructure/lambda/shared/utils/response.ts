@@ -2,7 +2,7 @@
  * APIレスポンス生成ユーティリティ
  */
 
-import { APIResponse, SuccessResponse, ErrorResponse, AppError } from '../types';
+import { APIResponse, SuccessResponse, ErrorResponse, AppError, PaginationMeta } from '../types';
 
 /**
  * 共通ヘッダー
@@ -116,14 +116,16 @@ export const paginatedResponse = <T>(
   limit: number,
   offset: number
 ): APIResponse => {
+  const pagination: PaginationMeta = {
+    total,
+    limit,
+    offset,
+    hasMore: offset + limit < total,
+  };
+
   return successResponse({
     items,
-    pagination: {
-      total,
-      limit,
-      offset,
-      hasMore: offset + limit < total,
-    },
+    pagination,
   });
 };
 

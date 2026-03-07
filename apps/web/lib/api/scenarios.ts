@@ -1,26 +1,22 @@
 import { apiClient } from './client';
 import { buildQueryString } from './utils';
+import type { Visibility, PaginationMeta } from '@prance/shared';
 
 export interface Scenario {
   id: string;
   title: string;
   category: string;
   language: string;
-  visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  visibility: Visibility;
   configJson: Record<string, unknown>;
   createdAt: string;
-  userId: string | null; // Optional - Prismaスキーマでは userId? (任意)
+  userId: string | null;
   orgId: string;
 }
 
 export interface ScenarioListResponse {
   scenarios: Scenario[];
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
+  pagination: PaginationMeta;
 }
 
 export interface CreateScenarioRequest {
@@ -28,7 +24,7 @@ export interface CreateScenarioRequest {
   category: string;
   configJson: Record<string, unknown>;
   language?: string;
-  visibility?: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  visibility?: Visibility;
 }
 
 export interface UpdateScenarioRequest {
@@ -36,7 +32,7 @@ export interface UpdateScenarioRequest {
   category?: string;
   configJson?: Record<string, unknown>;
   language?: string;
-  visibility?: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  visibility?: Visibility;
 }
 
 /**
@@ -46,7 +42,7 @@ export async function listScenarios(params?: {
   limit?: number;
   offset?: number;
   category?: string;
-  visibility?: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+  visibility?: Visibility;
 }): Promise<ScenarioListResponse> {
   const url = `/scenarios${buildQueryString(params)}`;
   const response = await apiClient.get<ScenarioListResponse>(url);

@@ -2,7 +2,7 @@
  * バリデーションユーティリティ
  */
 
-import { ValidationError } from '../types';
+import { ValidationError, PaginationParams } from '../types';
 
 /**
  * メールアドレスのバリデーション
@@ -104,11 +104,6 @@ export const validateLength = (
 /**
  * ページネーションパラメータのバリデーション
  */
-export interface PaginationParams {
-  limit: number;
-  offset: number;
-}
-
 export const validatePagination = (
   limit?: string | number,
   offset?: string | number
