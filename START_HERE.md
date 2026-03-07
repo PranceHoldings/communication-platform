@@ -119,6 +119,9 @@ WebSocket: wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 
 ### 1. 環境確認（5分）
 ```bash
+# 環境変数検証（必須）
+./scripts/validate-env.sh
+
 # Next.js開発サーバー確認
 curl http://localhost:3000
 
@@ -128,6 +131,8 @@ curl https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/health
 # AWS認証確認
 aws sts get-caller-identity  # Account: 010438500933
 ```
+
+**⚠️ 重要:** 環境変数検証で失敗した場合は、作業を開始する前に修正してください。
 
 ### 2. タスク選択
 
