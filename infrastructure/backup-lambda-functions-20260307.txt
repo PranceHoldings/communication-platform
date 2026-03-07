@@ -1,0 +1,30 @@
+----------------------------------------------------------------------------------------------
+|                                        ListFunctions                                       |
++------------------------------------------------------------------+-------------+-----------+
+|  prance-auth-register-dev                                        |  nodejs20.x |  $LATEST  |
+|  prance-websocket-default-dev                                    |  nodejs20.x |  $LATEST  |
+|  prance-websocket-connect-dev                                    |  nodejs20.x |  $LATEST  |
+|  prance-health-check-dev                                         |  nodejs20.x |  $LATEST  |
+|  Prance-dev-Storage-CustomS3AutoDeleteObjectsCustom-BGbB3dslQFP9 |  nodejs22.x |  $LATEST  |
+|  prance-sessions-get-dev                                         |  nodejs20.x |  $LATEST  |
+|  prance-sessions-list-dev                                        |  nodejs20.x |  $LATEST  |
+|  prance-sessions-create-dev                                      |  nodejs20.x |  $LATEST  |
+|  prance-websocket-disconnect-dev                                 |  nodejs20.x |  $LATEST  |
+|  prance-authorizer-dev                                           |  nodejs20.x |  $LATEST  |
+|  prance-auth-login-dev                                           |  nodejs20.x |  $LATEST  |
+|  prance-users-me-dev                                             |  nodejs20.x |  $LATEST  |
+|  prance-scenarios-delete-dev                                     |  nodejs20.x |  $LATEST  |
+|  prance-avatars-update-dev                                       |  nodejs20.x |  $LATEST  |
+|  prance-avatars-list-dev                                         |  nodejs20.x |  $LATEST  |
+|  prance-avatars-get-dev                                          |  nodejs20.x |  $LATEST  |
+|  prance-scenarios-create-dev                                     |  nodejs20.x |  $LATEST  |
+|  prance-scenarios-list-dev                                       |  nodejs20.x |  $LATEST  |
+|  Prance-dev-ApiLambda-LogRetentionaae0aa3c5b4d4f87b-4l70OJPdLOn2 |  nodejs22.x |  $LATEST  |
+|  prance-db-migration-dev                                         |  nodejs20.x |  $LATEST  |
+|  prance-scenarios-get-dev                                        |  nodejs20.x |  $LATEST  |
+|  prance-avatars-create-dev                                       |  nodejs20.x |  $LATEST  |
+|  prance-avatars-clone-dev                                        |  nodejs20.x |  $LATEST  |
+|  Prance-dev-Network-CustomVpcRestrictDefaultSGCusto-C3orKD2RSwF8 |  nodejs22.x |  $LATEST  |
+|  prance-scenarios-update-dev                                     |  nodejs20.x |  $LATEST  |
+|  prance-avatars-delete-dev                                       |  nodejs20.x |  $LATEST  |
++------------------------------------------------------------------+-------------+-----------+

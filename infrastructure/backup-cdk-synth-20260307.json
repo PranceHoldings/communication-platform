@@ -1,0 +1,1766 @@
+
+> @prance/infrastructure@0.1.0 cdk
+> cdk synth
+
+[dotenv@17.3.1] injecting env (20) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin#bind is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin#bind is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_dynamodb.TableOptions#pointInTimeRecovery is deprecated.
+  use `pointInTimeRecoverySpecification` instead
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_dynamodb.TableOptions#pointInTimeRecovery is deprecated.
+  use `pointInTimeRecoverySpecification` instead
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_dynamodb.TableOptions#pointInTimeRecovery is deprecated.
+  use `pointInTimeRecoverySpecification` instead
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 1.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#5 CACHED
+
+#6 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#6 CACHED
+
+#7 [ 5/12] RUN npm install --global typescript
+#7 CACHED
+
+#8 [10/12] RUN npm config --global set update-notifier false
+#8 CACHED
+
+#9 [ 4/12] RUN npm install --global bun@1.2.23
+#9 CACHED
+
+#10 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#10 CACHED
+
+#11 [ 2/12] RUN npm install --global yarn@1.22.5
+#11 CACHED
+
+#12 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#12 CACHED
+
+#13 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#13 CACHED
+
+#14 [ 3/12] RUN npm install --global pnpm@7.33.7
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:7e1f6f4f1e0e7c479d0e62507b0c310d09c0ff6055c64bab869125755d24f649 done
+#16 exporting manifest list sha256:9bd10bc260aafce9cdfeac925643076327d5f86b4b6c032a136be5ba74bbc273 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/AuthorizerFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      142.7kb
+  asset-output/index.js.map  264.8kb
+
+⚡ Done in 76ms
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 2/12] RUN npm install --global yarn@1.22.5
+#5 CACHED
+
+#6 [10/12] RUN npm config --global set update-notifier false
+#6 CACHED
+
+#7 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#7 CACHED
+
+#8 [ 5/12] RUN npm install --global typescript
+#8 CACHED
+
+#9 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#9 CACHED
+
+#10 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#10 CACHED
+
+#11 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#11 CACHED
+
+#12 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#12 CACHED
+
+#13 [ 3/12] RUN npm install --global pnpm@7.33.7
+#13 CACHED
+
+#14 [ 4/12] RUN npm install --global bun@1.2.23
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:02fa0fa03691e6643dbb330d14258697b7c2d400d96e84f1de7cb7f035ee21ad done
+#16 exporting manifest list sha256:9fd3551d5b971b5b1c50360694fedafe2eae9332273553412703c4ea4fd6bbd3 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/HealthCheckFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      1.6kb
+  asset-output/index.js.map  1.3kb
+
+⚡ Done in 5ms
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 0.0s done
+#4 DONE 0.0s
+
+#5 [ 2/12] RUN npm install --global yarn@1.22.5
+#5 CACHED
+
+#6 [ 3/12] RUN npm install --global pnpm@7.33.7
+#6 CACHED
+
+#7 [ 4/12] RUN npm install --global bun@1.2.23
+#7 CACHED
+
+#8 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#8 CACHED
+
+#9 [10/12] RUN npm config --global set update-notifier false
+#9 CACHED
+
+#10 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#10 CACHED
+
+#11 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#11 CACHED
+
+#12 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#12 CACHED
+
+#13 [ 5/12] RUN npm install --global typescript
+#13 CACHED
+
+#14 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:94c42ba01fde067b328444f1cddb6e4125a909855910ad4e70e465a4b3ff009b done
+#16 exporting manifest list sha256:3bc9b0a8c44039070e1f5d8d9d641f84367067ab0b20befd899bd139283774b3 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/RegisterFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      192.2kb
+  asset-output/index.js.map  368.3kb
+
+⚡ Done in 34ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 0.0s done
+#4 DONE 0.0s
+
+#5 [ 3/12] RUN npm install --global pnpm@7.33.7
+#5 CACHED
+
+#6 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#6 CACHED
+
+#7 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#7 CACHED
+
+#8 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#8 CACHED
+
+#9 [ 2/12] RUN npm install --global yarn@1.22.5
+#9 CACHED
+
+#10 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#10 CACHED
+
+#11 [10/12] RUN npm config --global set update-notifier false
+#11 CACHED
+
+#12 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#12 CACHED
+
+#13 [ 4/12] RUN npm install --global bun@1.2.23
+#13 CACHED
+
+#14 [ 5/12] RUN npm install --global typescript
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:b23ad955afa356af4446bac29404107624e5bfdf7f551361940bb701183a6900 0.0s done
+#16 exporting manifest list sha256:c900d0629335a5b4bae4be0895e50f0c1aec67052de465cec1e29f422e3e29f9 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/LoginFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      191.8kb
+  asset-output/index.js.map  367.2kb
+
+⚡ Done in 74ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#5 CACHED
+
+#6 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#6 CACHED
+
+#7 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#7 CACHED
+
+#8 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#8 CACHED
+
+#9 [10/12] RUN npm config --global set update-notifier false
+#9 CACHED
+
+#10 [ 3/12] RUN npm install --global pnpm@7.33.7
+#10 CACHED
+
+#11 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#11 CACHED
+
+#12 [ 2/12] RUN npm install --global yarn@1.22.5
+#12 CACHED
+
+#13 [ 4/12] RUN npm install --global bun@1.2.23
+#13 CACHED
+
+#14 [ 5/12] RUN npm install --global typescript
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:a9c5cff27b5a2143e84140c05e75efe13865c003b72c550d74687f4c64122ab0 0.0s done
+#16 exporting manifest list sha256:6db5d79869966684d2cd1ff135fa5d37b61a5f239cccbdd5997be035a98e15eb done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/GetCurrentUserFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      146.3kb
+  asset-output/index.js.map  271.9kb
+
+⚡ Done in 54ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 5/12] RUN npm install --global typescript
+#5 CACHED
+
+#6 [ 3/12] RUN npm install --global pnpm@7.33.7
+#6 CACHED
+
+#7 [ 4/12] RUN npm install --global bun@1.2.23
+#7 CACHED
+
+#8 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#8 CACHED
+
+#9 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#9 CACHED
+
+#10 [10/12] RUN npm config --global set update-notifier false
+#10 CACHED
+
+#11 [ 2/12] RUN npm install --global yarn@1.22.5
+#11 CACHED
+
+#12 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#12 CACHED
+
+#13 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#13 CACHED
+
+#14 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:0ccff7aafd992cfc6c554c6d4992446dcfe54098ac9bdddf24626e590c9349b6 done
+#16 exporting manifest list sha256:0d8138aab1fe1ea22b13a5a6315adb2acf4af46ab5fcda5b57ed270b3655503b done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.0s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/MigrationFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      3.5kb
+  asset-output/index.js.map  4.8kb
+
+⚡ Done in 7ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 0.0s done
+#4 DONE 0.0s
+
+#5 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#5 CACHED
+
+#6 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#6 CACHED
+
+#7 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#7 CACHED
+
+#8 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#8 CACHED
+
+#9 [ 3/12] RUN npm install --global pnpm@7.33.7
+#9 CACHED
+
+#10 [ 5/12] RUN npm install --global typescript
+#10 CACHED
+
+#11 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#11 CACHED
+
+#12 [10/12] RUN npm config --global set update-notifier false
+#12 CACHED
+
+#13 [ 2/12] RUN npm install --global yarn@1.22.5
+#13 CACHED
+
+#14 [ 4/12] RUN npm install --global bun@1.2.23
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:0d73136e625651b7258c1ced42835fa5deca2e1a4acfcdcf5c225b79b7c8a45c done
+#16 exporting manifest list sha256:5578c9301f211a4a30ce47e9ece1783b6cfcd497452e7f0c3ff225340a75581d done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/ListSessionsFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      146.8kb
+  asset-output/index.js.map  272.6kb
+
+⚡ Done in 30ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#5 CACHED
+
+#6 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#6 CACHED
+
+#7 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#7 CACHED
+
+#8 [ 2/12] RUN npm install --global yarn@1.22.5
+#8 CACHED
+
+#9 [ 4/12] RUN npm install --global bun@1.2.23
+#9 CACHED
+
+#10 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#10 CACHED
+
+#11 [10/12] RUN npm config --global set update-notifier false
+#11 CACHED
+
+#12 [ 3/12] RUN npm install --global pnpm@7.33.7
+#12 CACHED
+
+#13 [ 5/12] RUN npm install --global typescript
+#13 CACHED
+
+#14 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:a4dbb0be68b1d0ff1b75a623b7515a444ae9afe63e41c2f83d4c7d5d32d921b6 done
+#16 exporting manifest list sha256:c2aebd5ea3110d764e535a0db9eeeb537d4ce6d332d3ed5cb2b022d7e893743f done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.0s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/CreateSessionFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      147.9kb
+  asset-output/index.js.map  274.2kb
+
+⚡ Done in 28ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 3/12] RUN npm install --global pnpm@7.33.7
+#5 CACHED
+
+#6 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#6 CACHED
+
+#7 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#7 CACHED
+
+#8 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#8 CACHED
+
+#9 [10/12] RUN npm config --global set update-notifier false
+#9 CACHED
+
+#10 [ 5/12] RUN npm install --global typescript
+#10 CACHED
+
+#11 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#11 CACHED
+
+#12 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#12 CACHED
+
+#13 [ 2/12] RUN npm install --global yarn@1.22.5
+#13 CACHED
+
+#14 [ 4/12] RUN npm install --global bun@1.2.23
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:7709ad2f25b9664dab485c1f188468b611d62c7aaf0b73eeec6dd10a9933ea87 done
+#16 exporting manifest list sha256:acd666978f6f8fdf785811f541cc9e737b3931a63bccd1c0172d973072b5f0f5 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/GetSessionFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      147.4kb
+  asset-output/index.js.map  273.3kb
+
+⚡ Done in 28ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [10/12] RUN npm config --global set update-notifier false
+#5 CACHED
+
+#6 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#6 CACHED
+
+#7 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#7 CACHED
+
+#8 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#8 CACHED
+
+#9 [ 4/12] RUN npm install --global bun@1.2.23
+#9 CACHED
+
+#10 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#10 CACHED
+
+#11 [ 5/12] RUN npm install --global typescript
+#11 CACHED
+
+#12 [ 2/12] RUN npm install --global yarn@1.22.5
+#12 CACHED
+
+#13 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#13 CACHED
+
+#14 [ 3/12] RUN npm install --global pnpm@7.33.7
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:1e1526661f4235901504b9185d17d6667215847c0d42ec99cb073641480cf606 done
+#16 exporting manifest list sha256:8552128b0425a63042d09b10b673146fb0b86a1e921de8884abec03f8dcb54bc done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/ListScenariosFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      146.4kb
+  asset-output/index.js.map  272.1kb
+
+⚡ Done in 30ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#5 CACHED
+
+#6 [ 4/12] RUN npm install --global bun@1.2.23
+#6 CACHED
+
+#7 [ 3/12] RUN npm install --global pnpm@7.33.7
+#7 CACHED
+
+#8 [ 2/12] RUN npm install --global yarn@1.22.5
+#8 CACHED
+
+#9 [ 5/12] RUN npm install --global typescript
+#9 CACHED
+
+#10 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#10 CACHED
+
+#11 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#11 CACHED
+
+#12 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#12 CACHED
+
+#13 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#13 CACHED
+
+#14 [10/12] RUN npm config --global set update-notifier false
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:38d24db30e0c0ff9e4b8e2320b23d2c30680dc0ddaf127e7e74573e953fe757c 0.0s done
+#16 exporting manifest list sha256:c135f7763f3a5f7be0151bdeb030abee925ba9374991bf2c77452c5ed9a3a9fc done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/CreateScenarioFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      147.3kb
+  asset-output/index.js.map  278.5kb
+
+⚡ Done in 28ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#5 CACHED
+
+#6 [ 4/12] RUN npm install --global bun@1.2.23
+#6 CACHED
+
+#7 [ 5/12] RUN npm install --global typescript
+#7 CACHED
+
+#8 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#8 CACHED
+
+#9 [ 2/12] RUN npm install --global yarn@1.22.5
+#9 CACHED
+
+#10 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#10 CACHED
+
+#11 [10/12] RUN npm config --global set update-notifier false
+#11 CACHED
+
+#12 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#12 CACHED
+
+#13 [ 3/12] RUN npm install --global pnpm@7.33.7
+#13 CACHED
+
+#14 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:36f17e47cb608b73f371ea439a58a52b839985a59049b40d1a3d65dea6194310 done
+#16 exporting manifest list sha256:f05aa66516a25050c1d68ab95d6f1f2c0f09555a2a3b6103cf0f55b093ced830 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/GetScenarioFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      145.8kb
+  asset-output/index.js.map  270.8kb
+
+⚡ Done in 28ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#5 CACHED
+
+#6 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#6 CACHED
+
+#7 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#7 CACHED
+
+#8 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#8 CACHED
+
+#9 [ 5/12] RUN npm install --global typescript
+#9 CACHED
+
+#10 [10/12] RUN npm config --global set update-notifier false
+#10 CACHED
+
+#11 [ 3/12] RUN npm install --global pnpm@7.33.7
+#11 CACHED
+
+#12 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#12 CACHED
+
+#13 [ 2/12] RUN npm install --global yarn@1.22.5
+#13 CACHED
+
+#14 [ 4/12] RUN npm install --global bun@1.2.23
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:1f7754ade67dc3205f6f0b3539c36e9b3c8ceabf9c6f3225e7e2a7e357360a1f done
+#16 exporting manifest list sha256:9979b7733b398fe1a8cff52d438fdf4f1aab50d142bc964324d4b4f8eff690cd done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/UpdateScenarioFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      147.9kb
+  asset-output/index.js.map  279.8kb
+
+⚡ Done in 29ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.4s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 0.0s done
+#4 DONE 0.0s
+
+#5 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#5 CACHED
+
+#6 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#6 CACHED
+
+#7 [ 4/12] RUN npm install --global bun@1.2.23
+#7 CACHED
+
+#8 [ 5/12] RUN npm install --global typescript
+#8 CACHED
+
+#9 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#9 CACHED
+
+#10 [ 2/12] RUN npm install --global yarn@1.22.5
+#10 CACHED
+
+#11 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#11 CACHED
+
+#12 [ 3/12] RUN npm install --global pnpm@7.33.7
+#12 CACHED
+
+#13 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#13 CACHED
+
+#14 [10/12] RUN npm config --global set update-notifier false
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:026dbb97ee3446044330967a057ec3fd0c6679edab5bc5657311329544060870 0.0s done
+#16 exporting manifest list sha256:c6a397322370eb3e4b7400d342baf1613eb00c11a70fcc760cf8d5e0d45e5674 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/DeleteScenarioFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      145.9kb
+  asset-output/index.js.map  271.0kb
+
+⚡ Done in 29ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 0.0s done
+#4 DONE 0.0s
+
+#5 [ 3/12] RUN npm install --global pnpm@7.33.7
+#5 CACHED
+
+#6 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#6 CACHED
+
+#7 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#7 CACHED
+
+#8 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#8 CACHED
+
+#9 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#9 CACHED
+
+#10 [10/12] RUN npm config --global set update-notifier false
+#10 CACHED
+
+#11 [ 2/12] RUN npm install --global yarn@1.22.5
+#11 CACHED
+
+#12 [ 4/12] RUN npm install --global bun@1.2.23
+#12 CACHED
+
+#13 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#13 CACHED
+
+#14 [ 5/12] RUN npm install --global typescript
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:f5056dfd4bba2bd66714709ff6a829835afdebf0972b641d8a43afc88094597f done
+#16 exporting manifest list sha256:9390829b3aad88e012a9dcd8cbecf1a6807bad86641c7ea59e75679fab6aaab0 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.0s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/ListAvatarsFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      146.9kb
+  asset-output/index.js.map  273.3kb
+
+⚡ Done in 36ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#5 CACHED
+
+#6 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#6 CACHED
+
+#7 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#7 CACHED
+
+#8 [ 5/12] RUN npm install --global typescript
+#8 CACHED
+
+#9 [ 4/12] RUN npm install --global bun@1.2.23
+#9 CACHED
+
+#10 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#10 CACHED
+
+#11 [ 2/12] RUN npm install --global yarn@1.22.5
+#11 CACHED
+
+#12 [ 3/12] RUN npm install --global pnpm@7.33.7
+#12 CACHED
+
+#13 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#13 CACHED
+
+#14 [10/12] RUN npm config --global set update-notifier false
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:0883a91d117c8433c596ae849a30ffb11c84ac76ab21d81ae52d96d319110d9a done
+#16 exporting manifest list sha256:50c1c603a19fd02f0e5c81beb4ad6cfd547c3977f23a3572c77173a2d2c01b02 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.0s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/CreateAvatarFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      147.6kb
+  asset-output/index.js.map  274.3kb
+
+⚡ Done in 26ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#5 CACHED
+
+#6 [10/12] RUN npm config --global set update-notifier false
+#6 CACHED
+
+#7 [ 2/12] RUN npm install --global yarn@1.22.5
+#7 CACHED
+
+#8 [ 3/12] RUN npm install --global pnpm@7.33.7
+#8 CACHED
+
+#9 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#9 CACHED
+
+#10 [ 4/12] RUN npm install --global bun@1.2.23
+#10 CACHED
+
+#11 [ 5/12] RUN npm install --global typescript
+#11 CACHED
+
+#12 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#12 CACHED
+
+#13 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#13 CACHED
+
+#14 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:9a303dd98c04f93dc2e6657b21f3a2b9150365f9ef54cc7446d746e305321509 done
+#16 exporting manifest list sha256:e11068ef2b472c9ebf98ea831c39c049ab357419bb5a7ecf68244b6cca3eff1a done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.0s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/GetAvatarFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      145.9kb
+  asset-output/index.js.map  271.0kb
+
+⚡ Done in 28ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 0.0s done
+#4 DONE 0.0s
+
+#5 [ 5/12] RUN npm install --global typescript
+#5 CACHED
+
+#6 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#6 CACHED
+
+#7 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#7 CACHED
+
+#8 [ 4/12] RUN npm install --global bun@1.2.23
+#8 CACHED
+
+#9 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#9 CACHED
+
+#10 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#10 CACHED
+
+#11 [ 3/12] RUN npm install --global pnpm@7.33.7
+#11 CACHED
+
+#12 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#12 CACHED
+
+#13 [10/12] RUN npm config --global set update-notifier false
+#13 CACHED
+
+#14 [ 2/12] RUN npm install --global yarn@1.22.5
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:214f8799ee8ac578ac6e1e025c40af979015875df7ab6b5d196d6642c3777fd4 done
+#16 exporting manifest list sha256:8af44aca59c0bf1117578d2a514a0a583097a91f4a4a26a1548685a2c93f7709 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.0s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/UpdateAvatarFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      148.6kb
+  asset-output/index.js.map  276.5kb
+
+⚡ Done in 27ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.2s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#5 CACHED
+
+#6 [10/12] RUN npm config --global set update-notifier false
+#6 CACHED
+
+#7 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#7 CACHED
+
+#8 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#8 CACHED
+
+#9 [ 2/12] RUN npm install --global yarn@1.22.5
+#9 CACHED
+
+#10 [ 3/12] RUN npm install --global pnpm@7.33.7
+#10 CACHED
+
+#11 [ 5/12] RUN npm install --global typescript
+#11 CACHED
+
+#12 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#12 CACHED
+
+#13 [ 4/12] RUN npm install --global bun@1.2.23
+#13 CACHED
+
+#14 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:6e077f3992e29a7628572ac378446088b024d135f9298297d29824c9fc6f3cfd done
+#16 exporting manifest list sha256:3d431176bf96d47ab82ca9a5ada51e524f69a4f57898208ef2e0d91c4ff103e2 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.0s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/DeleteAvatarFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      146.3kb
+  asset-output/index.js.map  271.7kb
+
+⚡ Done in 26ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [ 4/12] RUN npm install --global bun@1.2.23
+#5 CACHED
+
+#6 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#6 CACHED
+
+#7 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#7 CACHED
+
+#8 [10/12] RUN npm config --global set update-notifier false
+#8 CACHED
+
+#9 [ 5/12] RUN npm install --global typescript
+#9 CACHED
+
+#10 [ 3/12] RUN npm install --global pnpm@7.33.7
+#10 CACHED
+
+#11 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#11 CACHED
+
+#12 [ 2/12] RUN npm install --global yarn@1.22.5
+#12 CACHED
+
+#13 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#13 CACHED
+
+#14 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:e3a17a7fc9b990e0c2a618c82e21b6f63bf733574c33ac6350073c899f684903 done
+#16 exporting manifest list sha256:6d2d0a06885d10094342a889a67b2e5ca8d0d491c72d048b9aac75db7bfe9a6f done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/CloneAvatarFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      147.2kb
+  asset-output/index.js.map  273.2kb
+
+⚡ Done in 32ms
+
+added 7 packages, and audited 13 packages in 2s
+
+found 0 vulnerabilities
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.8s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 0.0s done
+#4 DONE 0.0s
+
+#5 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#5 CACHED
+
+#6 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#6 CACHED
+
+#7 [ 4/12] RUN npm install --global bun@1.2.23
+#7 CACHED
+
+#8 [ 5/12] RUN npm install --global typescript
+#8 CACHED
+
+#9 [ 3/12] RUN npm install --global pnpm@7.33.7
+#9 CACHED
+
+#10 [ 2/12] RUN npm install --global yarn@1.22.5
+#10 CACHED
+
+#11 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#11 CACHED
+
+#12 [10/12] RUN npm config --global set update-notifier false
+#12 CACHED
+
+#13 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#13 CACHED
+
+#14 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:7eed9c797631c6f37a9bc9868611cf34aa009055eb3742dcf54a6d3402405c9d done
+#16 exporting manifest list sha256:37e2ff8aeda10914a968cb9009af721193e2a9b9a420bb00de7c3d233d7ec094 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 DONE 0.0s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/WebSocketConnectFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      1.3mb ⚠️
+  asset-output/index.js.map  2.0mb
+
+⚡ Done in 267ms
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 done
+#4 DONE 0.0s
+
+#5 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#5 CACHED
+
+#6 [ 2/12] RUN npm install --global yarn@1.22.5
+#6 CACHED
+
+#7 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#7 CACHED
+
+#8 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#8 CACHED
+
+#9 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#9 CACHED
+
+#10 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#10 CACHED
+
+#11 [10/12] RUN npm config --global set update-notifier false
+#11 CACHED
+
+#12 [ 3/12] RUN npm install --global pnpm@7.33.7
+#12 CACHED
+
+#13 [ 4/12] RUN npm install --global bun@1.2.23
+#13 CACHED
+
+#14 [ 5/12] RUN npm install --global typescript
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:823bf7964f71570cde586371de69867c616bedb7570cba72d0f7ce70ad951c4a done
+#16 exporting config sha256:abee64ab1389171d5a793517ebb84a2cce5ac30b1fd3c4d6f9af7be18e3f203b done
+#16 exporting attestation manifest sha256:c89bcc97f341e199f1dce19b67c06bc1aafe58a750829c1d30aa4f743c681768 0.0s done
+#16 exporting manifest list sha256:4cff026d34de76357927ff566dcb5def9ee64c5c867a9f5990fc145bfa1565f9 done
+#16 naming to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest done
+#16 unpacking to docker.io/library/cdk-b4597c39ceebdba72bee0fe2277ca679a60e6028499ce3adf73ff376b18c7feb:latest 0.0s done
+#16 DONE 0.1s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/WebSocketDisconnectFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+
+  asset-output/index.js      1.1mb ⚠️
+  asset-output/index.js.map  1.7mb
+
+⚡ Done in 237ms
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.80kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/sam/build-nodejs20.x:latest
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/12] FROM public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59
+#4 resolve public.ecr.aws/sam/build-nodejs20.x:latest@sha256:d3301ff7749865e674ab5993b2a92a99477407d774c7ef9a7b0eb0337d8fdc59 0.0s done
+#4 DONE 0.0s
+
+#5 [ 7/12] RUN mkdir /tmp/npm-cache &&     chmod -R 777 /tmp/npm-cache &&     npm config --global set cache /tmp/npm-cache
+#5 CACHED
+
+#6 [ 4/12] RUN npm install --global bun@1.2.23
+#6 CACHED
+
+#7 [10/12] RUN npm config --global set update-notifier false
+#7 CACHED
+
+#8 [ 2/12] RUN npm install --global yarn@1.22.5
+#8 CACHED
+
+#9 [ 9/12] RUN mkdir /tmp/pnpm-cache &&     chmod -R 777 /tmp/pnpm-cache &&     pnpm config --global set store-dir /tmp/pnpm-cache
+#9 CACHED
+
+#10 [11/12] RUN /sbin/useradd -u 1000 user && chmod 711 /
+#10 CACHED
+
+#11 [ 6/12] RUN npm install --global --unsafe-perm=true esbuild@0.21
+#11 CACHED
+
+#12 [ 8/12] RUN mkdir /tmp/yarn-cache &&     chmod -R 777 /tmp/yarn-cache &&     yarn config set cache-folder /tmp/yarn-cache
+#12 CACHED
+
+#13 [ 5/12] RUN npm install --global typescript
+#13 CACHED
+
+#14 [ 3/12] RUN npm install --global pnpm@7.33.7
+#14 CACHED
+
+#15 [12/12] RUN mkdir /tmp/bun-cache &&     chmod -R 777 /tmp/bun-cache &&     echo -e "[install.cache]\ndir = "/tmp/bun-cache"\ndisable = true" >> /home/user/.bunfig.toml
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers done
+#16 exporting manifest sha256:4aa48e2ec414c88b4af84cbaa331c43e3f56cb69b65a9c9383b8c836f546cadc done
+#16 exporting config sha256:82a42a370e81fd7bafdd46e3ace79c3b7b3f9478cd7fbd87ca02c3cb552eabef done
+#16 exporting attestation manifest sha256:cb570485e0d5cf4c6ed56b23ae1b3de88c5fae9175f202989b37988ad923441d done
+#16 exporting manifest list sha256:1763dea5736ce2c757598c8bfe64cbefe30853b5f94b028d53527e580a2925b7 done
+#16 naming to docker.io/library/cdk-139b3d513ab5582f3601c3f192757a82f9bfb88d6d4501daf4659297453dff9d:latest done
+#16 DONE 0.0s
+[WARNING] aws-cdk-lib.aws_lambda.FunctionOptions#logRetention is deprecated.
+  use `logGroup` instead
+  This API will be removed in the next major release.
+Bundling asset Prance-dev-ApiLambda/WebSocketDefaultFunction/Code/Stage...
+esbuild cannot run locally. Switching to Docker bundling.
+WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+
+  asset-output/index.js      2.7mb ⚠️
+  asset-output/index.js.map  4.2mb
+
+⚡ Done in 723ms
+npm warn deprecated fluent-ffmpeg@2.1.3: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+
+added 28 packages, and audited 29 packages in 4s
+
+2 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+[Warning at /Prance-dev-ApiLambda] If you are relying on AWS SDK v2 to be present in the Lambda environment already, please explicitly configure a NodeJS runtime of Node 16 or lower. [ack: @aws-cdk/aws-lambda-nodejs:sdkV2NotInRuntime]
+Successfully synthesized to /workspaces/prance-communication-platform/infrastructure/cdk.out
+Supply a stack id (Prance-dev-DNS, Prance-dev-Certificate, Prance-dev-Network, Prance-dev-Cognito, Prance-dev-Database, Prance-dev-Storage, Prance-dev-DynamoDB, Prance-dev-ApiLambda) to display its template.
+30 feature flags are not configured. Run 'cdk flags --unstable=flags' to learn more.

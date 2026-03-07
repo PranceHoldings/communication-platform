@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../asset-input/infrastructure/lambda/health-check/index.ts"],
-  "sourcesContent": ["import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';\n\n/**\n * \u30D8\u30EB\u30B9\u30C1\u30A7\u30C3\u30AFLambda\u95A2\u6570\n * API Gateway\u304B\u3089\u306E\u547C\u3073\u51FA\u3057\u306B\u5BFE\u3057\u3066200 OK\u3092\u8FD4\u3059\n */\nexport const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {\n  console.log('Health check request:', JSON.stringify(event, null, 2));\n\n  return {\n    statusCode: 200,\n    headers: {\n      'Content-Type': 'application/json',\n      'Access-Control-Allow-Origin': '*',\n    },\n    body: JSON.stringify({\n      status: 'healthy',\n      environment: process.env.ENVIRONMENT || 'unknown',\n      timestamp: new Date().toISOString(),\n      version: '0.1.0-alpha',\n    }),\n  };\n};\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAMO,IAAM,UAAU,OAAO,UAAgE;AAC5F,UAAQ,IAAI,yBAAyB,KAAK,UAAU,OAAO,MAAM,CAAC,CAAC;AAEnE,SAAO;AAAA,IACL,YAAY;AAAA,IACZ,SAAS;AAAA,MACP,gBAAgB;AAAA,MAChB,+BAA+B;AAAA,IACjC;AAAA,IACA,MAAM,KAAK,UAAU;AAAA,MACnB,QAAQ;AAAA,MACR,aAAa,QAAQ,IAAI,eAAe;AAAA,MACxC,YAAW,oBAAI,KAAK,GAAE,YAAY;AAAA,MAClC,SAAS;AAAA,IACX,CAAC;AAAA,EACH;AACF;",
-  "names": []
-}

@@ -582,8 +582,8 @@ async function handleAudioProcessing(
     // Update conversation history
     const updatedHistory = [
       ...(connectionData?.conversationHistory || []),
-      { role: 'user', content: result.transcript },
-      { role: 'assistant', content: result.aiResponse },
+      { role: 'user' as const, content: result.transcript },
+      { role: 'assistant' as const, content: result.aiResponse },
     ];
 
     await updateConnectionData(connectionId, {
@@ -670,8 +670,8 @@ async function handleAudioData(
     // Update conversation history
     const updatedHistory = [
       ...(connectionData?.conversationHistory || []),
-      { role: 'user', content: result.transcript },
-      { role: 'assistant', content: result.aiResponse },
+      { role: 'user' as const, content: result.transcript },
+      { role: 'assistant' as const, content: result.aiResponse },
     ];
 
     await updateConnectionData(connectionId, {
@@ -746,8 +746,8 @@ async function handleUserSpeech(
     // Update conversation history
     const updatedHistory = [
       ...(connectionData?.conversationHistory || []),
-      { role: 'user', content: text },
-      { role: 'assistant', content: result.aiResponse },
+      { role: 'user' as const, content: text },
+      { role: 'assistant' as const, content: result.aiResponse },
     ];
 
     await updateConnectionData(connectionId, {
