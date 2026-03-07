@@ -35,6 +35,10 @@ infrastructure/deploy*.log
 .next.backup-*
 .next.old-*
 
+# TypeScript build info
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
 # IDE
 .vscode/
 .idea/
