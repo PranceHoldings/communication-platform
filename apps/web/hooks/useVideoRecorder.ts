@@ -6,7 +6,7 @@ interface UseVideoRecorderOptions {
   /**
    * 録画するCanvasの参照
    */
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
 
   /**
    * 動画チャンクのコールバック（WebSocket送信用）

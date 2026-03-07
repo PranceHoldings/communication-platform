@@ -41,7 +41,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   // 録画機能用のref
   const avatarCanvasRef = useRef<HTMLCanvasElement>(null);
   const userVideoRef = useRef<HTMLVideoElement>(null);
-  const compositeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null); // VideoComposerから受け取ったcanvasを保持（useVideoRecorderに渡す）
 
   // トークン取得
   useEffect(() => {
@@ -282,6 +282,69 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     timeslice: 250, // 250ms chunks for real-time processing
   });
 
+  // 録画機能 - ビデオチャンクハンドラー
+  const handleVideoChunk = useCallback(
+    (chunk: Blob, timestamp: number) => {
+      if (isConnected && status === 'ACTIVE') {
+        // TODO: WebSocketでビデオチャンク送信（Task 2.1.2で実装）
+        // 将来実装: sendVideoChunk(chunk, timestamp);
+        console.log('[SessionPlayer] Video chunk:', {
+          size: chunk.size,
+          timestamp,
+          type: chunk.type
+        });
+      }
+    },
+    [isConnected, status]
+  );
+
+  const handleVideoRecordingComplete = useCallback(
+    (blob: Blob) => {
+      console.log('[SessionPlayer] Video recording complete:', {
+        size: blob.size,
+        type: blob.type,
+        sizeInMB: (blob.size / 1024 / 1024).toFixed(2) + ' MB'
+      });
+      toast.success(t('sessions.player.recording.messages.stopped'));
+    },
+    [t]
+  );
+
+  const handleVideoRecordingError = useCallback(
+    (error: Error) => {
+      console.error('[SessionPlayer] Video recording error:', error);
+      toast.error(t('sessions.player.recording.messages.error', { error: error.message }));
+    },
+    [t]
+  );
+
+  // VideoComposer準備完了ハンドラー
+  const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
+    // VideoComposerから受け取ったcanvasをrefに保存
+    compositeCanvasRef.current = canvas;
+    console.log('[SessionPlayer] Composite canvas ready:', {
+      width: canvas.width,
+      height: canvas.height
+    });
+  }, []);
+
+  // useVideoRecorder統合
+  const {
+    status: recordingStatus,
+    startRecording: startVideoRecording,
+    stopRecording: stopVideoRecording,
+    pauseRecording: pauseVideoRecording,
+    resumeRecording: resumeVideoRecording,
+    duration: recordingDuration,
+    error: videoRecordingError,
+  } = useVideoRecorder({
+    canvasRef: compositeCanvasRef,
+    onChunk: handleVideoChunk,
+    onComplete: handleVideoRecordingComplete,
+    onError: handleVideoRecordingError,
+    chunkInterval: 1000, // 1秒ごと
+  });
+
   // セッションが既に完了している場合のみ特別処理
   useEffect(() => {
     console.log('[SessionPlayer] Session status effect', { sessionStatus: session.status, playerStatus: status, token: token ? 'exists' : 'missing' });
@@ -350,7 +413,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     }
   }, [status]);
 
-  const handleStart = () => {
+  const handleStart = async () => {
     console.log('[SessionPlayer] handleStart called', { token: token ? 'exists' : 'missing', status });
 
     if (!token) {
@@ -361,6 +424,28 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
     if (status === 'IDLE') {
       console.log('[SessionPlayer] Starting WebSocket connection...');
+
+      // ユーザーカメラを取得
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user',
+          },
+          audio: false, // 音声は useAudioRecorder で取得済み
+        });
+
+        if (userVideoRef.current) {
+          userVideoRef.current.srcObject = stream;
+          await userVideoRef.current.play();
+          console.log('[SessionPlayer] User camera started');
+        }
+      } catch (error) {
+        console.error('[SessionPlayer] Failed to get user camera:', error);
+        toast.warning('カメラへのアクセスが拒否されました。録画機能は利用できません。');
+      }
+
       setStatus('READY');
       // WebSocket接続はuseEffectで自動的に開始される（重複呼び出しを防ぐため削除）
       toast.info(t('sessions.player.websocket.connecting'));
@@ -389,12 +474,27 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       // 1. Stop audio recording first
       stopRecording();
 
-      // 2. Send session end notification (if connected)
+      // 2. Stop video recording if active
+      if (recordingStatus === 'recording' || recordingStatus === 'paused') {
+        stopVideoRecording();
+      }
+
+      // 3. Stop user camera
+      if (userVideoRef.current && userVideoRef.current.srcObject) {
+        const stream = userVideoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => {
+          track.stop();
+          console.log('[SessionPlayer] Stopped camera track:', track.kind);
+        });
+        userVideoRef.current.srcObject = null;
+      }
+
+      // 4. Send session end notification (if connected)
       if (isConnected) {
         endSession();
         toast.info(t('sessions.player.messages.processingAudio'));
 
-        // 3. Set timeout to disconnect after 30 seconds if no session_complete received
+        // 5. Set timeout to disconnect after 30 seconds if no session_complete received
         sessionEndTimeoutRef.current = setTimeout(() => {
           console.log('[SessionPlayer] Session end timeout - disconnecting WebSocket');
           if (disconnectRef.current) {
@@ -404,7 +504,6 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       }
 
       toast.success(t('sessions.player.messages.sessionEnded'));
-      // TODO: 録画保存（次のPhaseで実装）
     }
   };
 
@@ -547,10 +646,49 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               </span>
             </div>
 
+            {/* 録画ステータス */}
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center text-gray-600">
+                <svg
+                  className={`w-4 h-4 mr-2 ${
+                    recordingStatus === 'recording' ? 'text-red-500 animate-pulse' : ''
+                  }`}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <circle cx="10" cy="10" r="8" />
+                </svg>
+                <span>{t('sessions.player.recording.title')}:</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`font-medium ${
+                    recordingStatus === 'recording' ? 'text-red-600' : 'text-gray-500'
+                  }`}
+                >
+                  {t(`sessions.player.recording.status.${recordingStatus}`)}
+                </span>
+                {recordingStatus === 'recording' && (
+                  <span className="text-xs text-gray-500">
+                    {t('sessions.player.recording.duration', {
+                      duration: `${Math.floor(recordingDuration / 60)}:${String(recordingDuration % 60).padStart(2, '0')}`,
+                    })}
+                  </span>
+                )}
+              </div>
+            </div>
+
             {/* レコーディングエラー表示 */}
             {recordingError && (
               <div className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">
                 {recordingError}
+              </div>
+            )}
+
+            {/* 録画エラー表示 */}
+            {videoRecordingError && (
+              <div className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">
+                {videoRecordingError.message}
               </div>
             )}
           </div>
@@ -723,6 +861,55 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             </>
           )}
 
+          {/* 録画コントロールボタン */}
+          {status === 'ACTIVE' && (
+            <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+              {recordingStatus === 'idle' && (
+                <button
+                  onClick={startVideoRecording}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="10" r="8" />
+                  </svg>
+                  {t('sessions.player.recording.start')}
+                </button>
+              )}
+              {recordingStatus === 'recording' && (
+                <>
+                  <button
+                    onClick={pauseVideoRecording}
+                    className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {t('sessions.player.recording.pause')}
+                  </button>
+                  <button
+                    onClick={stopVideoRecording}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {t('sessions.player.recording.stop')}
+                  </button>
+                </>
+              )}
+              {recordingStatus === 'paused' && (
+                <>
+                  <button
+                    onClick={resumeVideoRecording}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {t('sessions.player.recording.resume')}
+                  </button>
+                  <button
+                    onClick={stopVideoRecording}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {t('sessions.player.recording.stop')}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           {status === 'COMPLETED' && (
             <div className="text-center py-2">
               <p className="text-lg font-semibold text-gray-700">{t('sessions.player.completed.title')}</p>
@@ -768,6 +955,25 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             <p className="font-medium mt-1">{new Date(session.startedAt).toLocaleDateString()}</p>
           </div>
         </div>
+      </div>
+
+      {/* Hidden要素: 録画用 */}
+      <div className="hidden">
+        {/* アバター用Canvas（将来Three.js統合用） */}
+        <canvas ref={avatarCanvasRef} width={1280} height={720} />
+
+        {/* ユーザーカメラ */}
+        <video ref={userVideoRef} autoPlay playsInline muted />
+
+        {/* VideoComposer - アバター + ユーザーカメラ合成 */}
+        <VideoComposer
+          avatarCanvasRef={avatarCanvasRef}
+          userVideoRef={userVideoRef}
+          layout="picture-in-picture"
+          width={1280}
+          height={720}
+          onCanvasReady={handleCanvasReady}
+        />
       </div>
     </div>
   );
