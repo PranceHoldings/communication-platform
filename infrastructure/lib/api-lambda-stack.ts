@@ -682,6 +682,12 @@ export class ApiLambdaStack extends cdk.Stack {
         CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN || '',
         CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID || '',
         CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY || '',
+        // Language and Media Configuration (デフォルト値はLambda内で管理)
+        STT_LANGUAGE: process.env.STT_LANGUAGE || '',
+        VIDEO_FORMAT: process.env.VIDEO_FORMAT || '',
+        VIDEO_RESOLUTION: process.env.VIDEO_RESOLUTION || '',
+        AUDIO_CONTENT_TYPE: process.env.AUDIO_CONTENT_TYPE || '',
+        VIDEO_CONTENT_TYPE: process.env.VIDEO_CONTENT_TYPE || '',
       },
       bundling: {
         minify: props.environment === 'production',

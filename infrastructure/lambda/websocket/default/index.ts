@@ -22,10 +22,16 @@ import { VideoProcessor } from './video-processor';
 // Default values (centralized configuration)
 // Note: These defaults are defined here instead of importing from shared/config
 // to avoid Docker bundling path resolution issues
+// These values should match those in shared/config/defaults.ts
 const DEFAULT_AWS_REGION = 'us-east-1';
 const DEFAULT_BEDROCK_REGION = 'us-east-1';
 const DEFAULT_BEDROCK_MODEL_ID = 'us.anthropic.claude-sonnet-4-6';
 const DEFAULT_ELEVENLABS_MODEL_ID = 'eleven_flash_v2_5';
+const DEFAULT_STT_LANGUAGE = 'en-US';
+const DEFAULT_VIDEO_FORMAT = 'webm';
+const DEFAULT_VIDEO_RESOLUTION = '1280x720';
+const DEFAULT_AUDIO_CONTENT_TYPE = 'audio/webm';
+const DEFAULT_VIDEO_CONTENT_TYPE = 'video/webm';
 
 // Environment variables (読み取り優先順位: 環境変数 → デフォルト値)
 const ENDPOINT = process.env.WEBSOCKET_ENDPOINT || '';
@@ -47,6 +53,13 @@ const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || DEFAULT_BEDROCK_MODEL_I
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || '';
 const CLOUDFRONT_KEY_PAIR_ID = process.env.CLOUDFRONT_KEY_PAIR_ID || '';
 const CLOUDFRONT_PRIVATE_KEY = process.env.CLOUDFRONT_PRIVATE_KEY || '';
+
+// Language and Media configuration
+const STT_LANGUAGE = process.env.STT_LANGUAGE || DEFAULT_STT_LANGUAGE;
+const VIDEO_FORMAT = process.env.VIDEO_FORMAT || DEFAULT_VIDEO_FORMAT;
+const VIDEO_RESOLUTION = process.env.VIDEO_RESOLUTION || DEFAULT_VIDEO_RESOLUTION;
+const AUDIO_CONTENT_TYPE = process.env.AUDIO_CONTENT_TYPE || DEFAULT_AUDIO_CONTENT_TYPE;
+const VIDEO_CONTENT_TYPE = process.env.VIDEO_CONTENT_TYPE || DEFAULT_VIDEO_CONTENT_TYPE;
 
 const apiGateway = new ApiGatewayManagementApiClient({
   endpoint: ENDPOINT,
@@ -76,7 +89,7 @@ function getAudioProcessor(): AudioProcessor {
       bedrockRegion: BEDROCK_REGION,
       bedrockModelId: BEDROCK_MODEL_ID,
       s3Bucket: S3_BUCKET,
-      language: 'en-US', // TODO: Get from session settings
+      language: STT_LANGUAGE,
     });
   }
   return audioProcessor;
@@ -188,7 +201,7 @@ export const handler = async (
 
         // Save audio chunk to S3 (to avoid DynamoDB 400KB limit)
         const chunkCount = (connectionData?.audioChunksCount || 0) + 1;
-        const chunkKey = `sessions/${audioSessionId}/chunks/${timestamp}-${chunkCount}.webm`;
+        const chunkKey = `sessions/${audioSessionId}/chunks/${timestamp}-${chunkCount}.${VIDEO_FORMAT}`;
 
         try {
           await s3Client.send(
@@ -196,7 +209,7 @@ export const handler = async (
               Bucket: S3_BUCKET,
               Key: chunkKey,
               Body: Buffer.from(audioData, 'base64'),
-              ContentType: 'audio/webm',
+              ContentType: AUDIO_CONTENT_TYPE,
             })
           );
 
@@ -409,12 +422,12 @@ export const handler = async (
                     session_id: sessionId,
                     type: 'COMBINED',
                     s3_key: result.finalVideoKey,
-                    s3_url: `https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${result.finalVideoKey}`,
+                    s3_url: `https://${S3_BUCKET}.s3.${process.env.AWS_REGION || DEFAULT_AWS_REGION}.amazonaws.com/${result.finalVideoKey}`,
                     cdn_url: result.cloudFrontUrl,
                     file_size_bytes: result.finalVideoSize,
                     duration_sec: Math.floor(result.duration / 1000), // Convert ms to seconds
-                    format: 'webm',
-                    resolution: '1280x720',
+                    format: VIDEO_FORMAT,
+                    resolution: VIDEO_RESOLUTION,
                     video_chunks_count: connectionData.videoChunksCount,
                     processing_status: 'COMPLETED',
                     processed_at: new Date().toISOString(),
@@ -450,7 +463,7 @@ export const handler = async (
                     recording_id: recordingId,
                     session_id: sessionId,
                     type: 'COMBINED',
-                    s3_key: `sessions/${sessionId}/recording.webm`,
+                    s3_key: `sessions/${sessionId}/recording.${VIDEO_FORMAT}`,
                     s3_url: '',
                     file_size_bytes: 0,
                     video_chunks_count: connectionData.videoChunksCount || 0,

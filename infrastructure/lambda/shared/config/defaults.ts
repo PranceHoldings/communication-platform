@@ -89,6 +89,50 @@ export const APP_DEFAULTS = {
 } as const;
 
 // ============================================================
+// Language Defaults
+// ============================================================
+
+export const LANGUAGE_DEFAULTS = {
+  // Speech-to-Text (Azure Speech Services形式: en-US, ja-JP)
+  STT_LANGUAGE: 'en-US',
+
+  // シナリオ・コンテンツ言語（ISO 639-1: en, ja）
+  SCENARIO_LANGUAGE: 'ja',
+
+  // サポート言語リスト
+  SUPPORTED_LANGUAGES: ['ja', 'en'] as const,
+
+  // サポートSTT言語リスト（Azure Speech Services）
+  SUPPORTED_STT_LANGUAGES: [
+    'en-US', // English (United States)
+    'ja-JP', // Japanese
+    'zh-CN', // Chinese (Simplified)
+    'es-ES', // Spanish
+    'fr-FR', // French
+    'de-DE', // German
+    'ko-KR', // Korean
+  ] as const,
+} as const;
+
+// ============================================================
+// Media Format Defaults
+// ============================================================
+
+export const MEDIA_DEFAULTS = {
+  // 動画設定
+  VIDEO_FORMAT: 'webm',
+  VIDEO_RESOLUTION: '1280x720',
+  VIDEO_CONTENT_TYPE: 'video/webm',
+
+  // 音声設定
+  AUDIO_FORMAT: 'webm',
+  AUDIO_CONTENT_TYPE: 'audio/webm',
+
+  // 録画設定
+  DEFAULT_CHUNK_DURATION_MS: 250, // MediaRecorderのtimeslice
+} as const;
+
+// ============================================================
 // すべてのデフォルト値を統合
 // ============================================================
 
@@ -102,6 +146,8 @@ export const ALL_DEFAULTS = {
   CLOUDFRONT: CLOUDFRONT_DEFAULTS,
   JWT: JWT_DEFAULTS,
   APP: APP_DEFAULTS,
+  LANGUAGE: LANGUAGE_DEFAULTS,
+  MEDIA: MEDIA_DEFAULTS,
 } as const;
 
 // ============================================================

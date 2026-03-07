@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
+import { LANGUAGE_DEFAULTS } from '../../shared/config/defaults';
 
 /**
  * POST /api/v1/scenarios
@@ -55,8 +56,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Validate language if provided
-    if (language && !['ja', 'en'].includes(language)) {
-      return errorResponse(400, 'Validation Error', 'language must be ja or en');
+    if (language && !LANGUAGE_DEFAULTS.SUPPORTED_LANGUAGES.includes(language)) {
+      return errorResponse(
+        400,
+        'Validation Error',
+        `language must be one of: ${LANGUAGE_DEFAULTS.SUPPORTED_LANGUAGES.join(', ')}`
+      );
     }
 
     // Create scenario
@@ -67,7 +72,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         title,
         category,
         configJson,
-        language: language || 'ja',
+        language: language || LANGUAGE_DEFAULTS.SCENARIO_LANGUAGE,
         visibility: visibility || 'PRIVATE',
       },
       select: {
