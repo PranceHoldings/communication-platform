@@ -89,6 +89,56 @@ check_rds_connection "infrastructure/.env" "infrastructure/.env"
 
 echo ""
 echo "=========================================="
+echo "フロントエンドAPI設定の検証"
+echo "=========================================="
+
+# 4.5. NEXT_PUBLIC_*のlocalhost検出
+check_frontend_config() {
+  local file=$1
+  local name=$2
+
+  if [ ! -f "$file" ]; then
+    return
+  fi
+
+  # NEXT_PUBLIC_API_URLのチェック
+  if grep -q "NEXT_PUBLIC_API_URL.*localhost" "$file"; then
+    echo -e "${RED}❌ ERROR: $name のNEXT_PUBLIC_API_URLがlocalhostを指しています${NC}"
+    echo -e "${RED}   → このプロジェクトはバックエンドが完全AWS構成です${NC}"
+    echo -e "${RED}   → AWS API Gateway URLに変更してください${NC}"
+    grep -n "NEXT_PUBLIC_API_URL.*localhost" "$file"
+    ERRORS=$((ERRORS + 1))
+  else
+    if grep -q "NEXT_PUBLIC_API_URL.*execute-api.*amazonaws\.com" "$file"; then
+      echo -e "${GREEN}✅ $name: NEXT_PUBLIC_API_URL はAWS API Gatewayを指しています${NC}"
+    else
+      echo -e "${YELLOW}⚠️  WARNING: $name にNEXT_PUBLIC_API_URLが見つからないか、形式が不正です${NC}"
+      WARNINGS=$((WARNINGS + 1))
+    fi
+  fi
+
+  # NEXT_PUBLIC_WS_URLのチェック
+  if grep -q "NEXT_PUBLIC_WS_URL.*localhost" "$file"; then
+    echo -e "${RED}❌ ERROR: $name のNEXT_PUBLIC_WS_URLがlocalhostを指しています${NC}"
+    echo -e "${RED}   → このプロジェクトはWebSocketがAWS IoT Core構成です${NC}"
+    echo -e "${RED}   → AWS WebSocket URLに変更してください${NC}"
+    grep -n "NEXT_PUBLIC_WS_URL.*localhost" "$file"
+    ERRORS=$((ERRORS + 1))
+  else
+    if grep -q "NEXT_PUBLIC_WS_URL.*wss://.*execute-api.*amazonaws\.com" "$file"; then
+      echo -e "${GREEN}✅ $name: NEXT_PUBLIC_WS_URL はAWS WebSocketを指しています${NC}"
+    else
+      echo -e "${YELLOW}⚠️  WARNING: $name にNEXT_PUBLIC_WS_URLが見つからないか、形式が不正です${NC}"
+      WARNINGS=$((WARNINGS + 1))
+    fi
+  fi
+}
+
+check_frontend_config ".env.local" ".env.local"
+check_frontend_config "infrastructure/.env" "infrastructure/.env"
+
+echo ""
+echo "=========================================="
 echo "必須環境変数の確認"
 echo "=========================================="
 
@@ -144,11 +194,22 @@ else
   echo -e "${RED}❌ エラーが ${ERRORS} 件、警告が ${WARNINGS} 件あります${NC}"
   echo ""
   echo "修正方法:"
+  echo ""
+  echo "【DATABASE_URL関連】"
   echo "1. AWS RDS接続情報を取得:"
   echo "   aws secretsmanager get-secret-value --secret-id \$(aws cloudformation describe-stacks --stack-name Prance-dev-Database --query 'Stacks[0].Outputs[?OutputKey==\`SecretArn\`].OutputValue' --output text)"
   echo ""
   echo "2. .env.local と infrastructure/.env を更新:"
   echo "   DATABASE_URL=\"postgresql://USERNAME:PASSWORD@RDS_ENDPOINT:5432/prance\""
+  echo ""
+  echo "【フロントエンドAPI設定関連】"
+  echo "3. AWS API Gateway URLを取得（START_HERE.mdを参照）:"
+  echo "   REST API: https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1"
+  echo "   WebSocket: wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev"
+  echo ""
+  echo "4. .env.local と infrastructure/.env を更新:"
+  echo "   NEXT_PUBLIC_API_URL=\"https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1\""
+  echo "   NEXT_PUBLIC_WS_URL=\"wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev\""
   echo ""
   exit 1
 fi
