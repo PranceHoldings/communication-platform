@@ -1,10 +1,10 @@
 # 次回セッション開始手順（2026-03-07更新）
 
-**最終作業日:** 2026-03-07 20:00 JST
-**Phase 1進捗:** 100%完了 🎉 | Phase 2準備完了 ✅
-**最新コミット:** 0c63ebe
+**最終作業日:** 2026-03-07 21:00 JST
+**Phase 1進捗:** 100%完了 🎉 | **Phase 2進捗:** 開始 - Task 2.1.1 (70%完了) 🚀
+**最新コミット:** 50d30d7
 **最新デプロイ:** 2026-03-06 23:09 JST - ElevenLabs無料プラン対応完了
-**最新プッシュ:** 2026-03-07 20:00 JST - 6コミット完了 ✅
+**最新プッシュ:** 未実施 - 次回セッションでpush推奨（3コミット保留中）
 
 ---
 
@@ -52,17 +52,32 @@ WebSocket: wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 
 ---
 
-## 📋 次回作業内容（Phase 2開始準備完了✅）
+## 📋 次回作業内容（Phase 2 - Task 2.1.1 続行）
 
-### 準備状況
-- ✅ Phase 1完了（100%）
-- ✅ i18n完全対応（100%）
-- ✅ Prismaスキーマ準拠徹底
-- ✅ 開発環境整備完了
-- ✅ ドキュメント最新化
-- ✅ コード品質向上
+### 🎬 現在進行中: 録画機能実装（Task 2.1.1 - 70%完了）
 
-**Phase 2開始条件：全て満たしています！**
+**次回の作業:** SessionPlayer への録画機能統合を完了させる
+
+**詳細手順:** `PHASE2_RECORDING_TODO.md`（Step 3-1 ～ Step 3-5）
+**推定時間:** 約2時間15分
+
+**実装ステップ:**
+1. ✅ Step 1: VideoComposer 作成（完了）
+2. ✅ Step 2: useVideoRecorder フック作成（完了）
+3. ⏳ Step 3: SessionPlayer 統合（70%完了）
+   - ⏳ Step 3-1: useVideoRecorder統合（30分）
+   - ⏳ Step 3-2: ユーザーカメラ取得（30分）
+   - ⏳ Step 3-3: 録画ステータスUI（30分）
+   - ⏳ Step 3-4: 録画ボタンUI（30分）
+   - ⏳ Step 3-5: VideoComposer配置（15分）
+
+**完了条件:**
+- [ ] 録画開始ボタンで録画開始
+- [ ] 録画中のステータス表示
+- [ ] 一時停止・再開が動作
+- [ ] ブラウザコンソールにビデオチャンクログ表示
+
+---
 
 ### 1. 環境確認（5分）
 ```bash
@@ -391,15 +406,67 @@ aws sts get-caller-identity  # Account: 010438500933
 **コミット:**
 - c9acf2c: docs: 型定義一元管理の厳守ルールをドキュメント化
 
+### 5. Phase 2 録画機能実装開始 - ⏳ 進行中（約2時間）
+
+**背景:**
+- Phase 1完了（100%）後、Phase 2（録画・解析・レポート）開始
+- Option A（録画機能）を選択して実装開始
+- Task 2.1.1: フロントエンド映像キャプチャ実装
+
+**実装完了:**
+- ✅ **VideoComposer コンポーネント** (`apps/web/components/session-player/video-composer.tsx`)
+  * Canvas APIでアバター + ユーザーカメラを合成
+  * Picture-in-Picture / Side-by-Side レイアウト対応
+  * リアルタイム30FPS描画
+  * requestAnimationFrame による滑らかな描画
+- ✅ **useVideoRecorder フック** (`apps/web/hooks/useVideoRecorder.ts`)
+  * MediaRecorder API統合
+  * WebSocketチャンク送信対応（1秒ごと）
+  * 録画状態管理（idle/recording/paused/stopped）
+  * 録画時間カウンター
+  * ビットレート: 2.5Mbps、フォーマット: video/webm;codecs=vp8,opus
+  * エラーハンドリング完備
+- ✅ **多言語対応** - 録画UI文字列追加
+  * messages/en/sessions.json - recording セクション
+  * messages/ja/sessions.json - recording セクション
+  * 録画ボタン、ステータス、メッセージ等
+- ⏳ **SessionPlayer 統合**（途中まで完了）
+  * import文更新（useVideoRecorder, VideoComposer）
+  * 録画用ref追加（avatarCanvasRef, userVideoRef, compositeCanvasRef）
+  * 次回: useVideoRecorder統合、UI追加（約2時間15分）
+
+**技術詳細:**
+- **Canvas合成:** Picture-in-Picture レイアウトでアバター全画面、ユーザーカメラを右下320x240
+- **MediaRecorder:** 30FPS、2.5Mbpsビットレート、1秒ごとにチャンク送信
+- **非同期処理:** requestAnimationFrame で描画ループ、MediaRecorder でエンコード
+
+**次回作業:**
+- PHASE2_RECORDING_TODO.md に詳細手順を記載
+- Step 3-1 ～ Step 3-5 を実装（推定2時間15分）
+- 完了条件: 録画開始・停止・一時停止が動作、ブラウザコンソールにログ表示
+
+**進捗:**
+- Task 2.1.1 - 70%完了（Step 1,2完了 / Step 3途中）
+- Task 2.1: 録画機能実装 - 約35%完了（推定3週間中1週間相当）
+
+**コミット:**
+- 3a9def1: feat: Phase 2 録画機能の基盤実装（Task 2.1.1 - Step 1 & 2）
+- 50d30d7: wip: Phase 2 録画機能 - SessionPlayer統合開始（Task 2.1.1 - Step 3途中）
+
 ### 統計サマリー
 
-**今回セッション（2026-03-07 19:30）の成果:**
-- コミット数: 9個（前回6個 + 今回3個）
-- 変更ファイル: 63個（前回52個 + 今回11個）
-- 新規ファイル: 21個（前回18個 + 監査レポート1個 + CODING_RULES.md 1個 + START_HERE更新1個）
-- 追加行数: 約2,043行（前回1,330行 + 型定義379行 + ドキュメント334行）
-- 削除行数: 約477行（前回220行 + 型定義253行 + ドキュメント4行）
-- GitHubプッシュ: 未実施（次回推奨）
+**今回セッション（2026-03-07 21:00）の成果:**
+- コミット数: 11個（前回6個 + 今回5個）
+- 変更ファイル: 69個（前回52個 + 今回17個）
+- 新規ファイル: 5個
+  * CODE_DUPLICATION_AUDIT.md（監査レポート）
+  * CODING_RULES.md（クイックリファレンス）
+  * video-composer.tsx（録画機能）
+  * useVideoRecorder.ts（録画機能）
+  * PHASE2_RECORDING_TODO.md（次回作業手順）
+- 追加行数: 約2,791行（型定義379行 + ドキュメント588行 + Phase 2録画機能744行 + START_HERE等更新1,080行）
+- 削除行数: 約1,588行（ビルド成果物1,111行 + 型定義重複253行 + その他224行）
+- GitHubプッシュ: 未実施（次回推奨、3コミット保留中）
 
 **品質向上:**
 - i18n対応率: 85% → 100%
@@ -408,6 +475,10 @@ aws sts get-caller-identity  # Account: 010438500933
 - コードの再利用性・保守性: 大幅向上
 - ドキュメント網羅性: 大幅向上（検証手順、クイックリファレンス追加）
 - コミット前チェックの自動化: 完了（実行可能なコマンド提供）
+
+**Phase 2 進捗:**
+- Task 2.1.1（フロントエンド映像キャプチャ）: **70%完了**
+- Task 2.1（録画機能実装）: **約35%完了**（推定3週間中）
 
 ---
 
