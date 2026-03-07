@@ -17,19 +17,26 @@ import {
 import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
 import { AudioProcessor } from './audio-processor';
 import { VideoProcessor } from './video-processor';
+import { PrismaClient } from '@prisma/client';
+import { CONFIG } from '../shared/config';
 
-const ENDPOINT = process.env.WEBSOCKET_ENDPOINT!;
-const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE_NAME!;
-const S3_BUCKET = process.env.S3_BUCKET!;
+// Initialize Prisma Client
+const prisma = new PrismaClient();
 
-// Environment variables for AI/Audio services
-const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY!;
-const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION!;
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY!;
-const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID!;
-const BEDROCK_REGION = process.env.BEDROCK_REGION || 'us-east-1';
-const BEDROCK_MODEL_ID =
-  process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6';
+// すべての設定値を一元管理された設定モジュールから取得
+const ENDPOINT = CONFIG.WEBSOCKET.ENDPOINT;
+const CONNECTIONS_TABLE = CONFIG.WEBSOCKET.CONNECTIONS_TABLE_NAME;
+const S3_BUCKET = CONFIG.STORAGE.S3_BUCKET;
+const AWS_REGION = CONFIG.AWS.REGION;
+
+// AI/Audio services configuration
+const AZURE_SPEECH_KEY = CONFIG.AZURE_SPEECH.KEY;
+const AZURE_SPEECH_REGION = CONFIG.AZURE_SPEECH.REGION;
+const ELEVENLABS_API_KEY = CONFIG.ELEVENLABS.API_KEY;
+const ELEVENLABS_VOICE_ID = CONFIG.ELEVENLABS.VOICE_ID;
+const ELEVENLABS_MODEL_ID = CONFIG.ELEVENLABS.MODEL_ID;
+const BEDROCK_REGION = CONFIG.BEDROCK.REGION;
+const BEDROCK_MODEL_ID = CONFIG.BEDROCK.MODEL_ID;
 
 const apiGateway = new ApiGatewayManagementApiClient({
   endpoint: ENDPOINT,
@@ -55,6 +62,7 @@ function getAudioProcessor(): AudioProcessor {
       azureSpeechRegion: AZURE_SPEECH_REGION,
       elevenLabsApiKey: ELEVENLABS_API_KEY,
       elevenLabsVoiceId: ELEVENLABS_VOICE_ID,
+      elevenLabsModelId: ELEVENLABS_MODEL_ID,
       bedrockRegion: BEDROCK_REGION,
       bedrockModelId: BEDROCK_MODEL_ID,
       s3Bucket: S3_BUCKET,
@@ -72,9 +80,9 @@ function getVideoProcessor(): VideoProcessor {
     videoProcessor = new VideoProcessor({
       s3Client,
       bucket: S3_BUCKET,
-      cloudFrontDomain: process.env.CLOUDFRONT_DOMAIN,
-      cloudFrontKeyPairId: process.env.CLOUDFRONT_KEY_PAIR_ID,
-      cloudFrontPrivateKey: process.env.CLOUDFRONT_PRIVATE_KEY,
+      cloudFrontDomain: CONFIG.CLOUDFRONT.DOMAIN,
+      cloudFrontKeyPairId: CONFIG.CLOUDFRONT.KEY_PAIR_ID,
+      cloudFrontPrivateKey: CONFIG.CLOUDFRONT.PRIVATE_KEY,
     });
   }
   return videoProcessor;
@@ -380,6 +388,30 @@ export const handler = async (
               progress: 1.0,
             });
 
+            // Save recording to database
+            try {
+              await prisma.recording.create({
+                data: {
+                  sessionId: sessionId,
+                  type: 'COMBINED',
+                  s3Key: result.finalVideoKey,
+                  s3Url: `https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${result.finalVideoKey}`,
+                  cdnUrl: result.cloudFrontUrl,
+                  fileSizeBytes: BigInt(result.finalVideoSize),
+                  durationSec: Math.floor(result.duration / 1000), // Convert ms to seconds
+                  format: 'webm',
+                  resolution: '1280x720',
+                  videoChunksCount: connectionData.videoChunksCount,
+                  processingStatus: 'COMPLETED',
+                  processedAt: new Date(),
+                },
+              });
+              console.log('Recording saved to database:', sessionId);
+            } catch (dbError) {
+              console.error('Failed to save recording to database:', dbError);
+              // Continue even if database save fails - video is already in S3
+            }
+
             // Send video URL to client
             await sendToConnection(connectionId, {
               type: 'video_ready',
@@ -390,6 +422,27 @@ export const handler = async (
             });
           } catch (error) {
             console.error('Failed to process video:', error);
+
+            // Save error status to database
+            try {
+              const sessionId = connectionData.sessionId || 'unknown';
+              await prisma.recording.create({
+                data: {
+                  sessionId: sessionId,
+                  type: 'COMBINED',
+                  s3Key: `sessions/${sessionId}/recording.webm`,
+                  s3Url: '',
+                  fileSizeBytes: BigInt(0),
+                  videoChunksCount: connectionData.videoChunksCount,
+                  processingStatus: 'ERROR',
+                  errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                },
+              });
+              console.log('Recording error saved to database:', sessionId);
+            } catch (dbError) {
+              console.error('Failed to save recording error to database:', dbError);
+            }
+
             await sendToConnection(connectionId, {
               type: 'error',
               code: 'VIDEO_PROCESSING_ERROR',

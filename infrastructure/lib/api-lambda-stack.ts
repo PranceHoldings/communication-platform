@@ -333,6 +333,7 @@ export class ApiLambdaStack extends cdk.Stack {
               `cp /asset-input/infrastructure/lambda/migrations/add-allow-cloning.sql ${outputDir}/`,
               `cp /asset-input/infrastructure/lambda/migrations/create-users.sql ${outputDir}/`,
               `cp /asset-input/infrastructure/lambda/migrations/update-admin-password.sql ${outputDir}/`,
+              `cp /asset-input/infrastructure/lambda/migrations/add-recording-video-fields.sql ${outputDir}/`,
             ];
           },
           beforeInstall(): string[] {
@@ -662,17 +663,19 @@ export class ApiLambdaStack extends cdk.Stack {
         ENVIRONMENT: props.environment,
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
         NODE_ENV: props.environment === 'production' ? 'production' : 'development',
+        AWS_REGION: this.region,
         WEBSOCKET_ENDPOINT: `https://${this.webSocketApi.ref}.execute-api.${this.region}.amazonaws.com/${props.environment}`,
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
         S3_BUCKET: props.recordingsBucket.bucketName,
         // AI/Audio Service Configuration
+        // デフォルト値は shared/config/defaults.ts で管理
         AZURE_SPEECH_KEY: process.env.AZURE_SPEECH_KEY || '',
-        AZURE_SPEECH_REGION: process.env.AZURE_SPEECH_REGION || 'eastus',
+        AZURE_SPEECH_REGION: process.env.AZURE_SPEECH_REGION || '',
         ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || '',
         ELEVENLABS_VOICE_ID: process.env.ELEVENLABS_VOICE_ID || '',
-        ELEVENLABS_MODEL_ID: process.env.ELEVENLABS_MODEL_ID || 'eleven_flash_v2_5',
-        BEDROCK_REGION: process.env.BEDROCK_REGION || this.region,
-        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6',
+        ELEVENLABS_MODEL_ID: process.env.ELEVENLABS_MODEL_ID || '',
+        BEDROCK_REGION: process.env.BEDROCK_REGION || '',
+        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || '',
         // CloudFront Configuration (for signed URLs)
         CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN || '',
         CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID || '',

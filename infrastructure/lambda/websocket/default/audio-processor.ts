@@ -14,6 +14,7 @@ export interface AudioProcessorConfig {
   azureSpeechRegion: string;
   elevenLabsApiKey: string;
   elevenLabsVoiceId: string;
+  elevenLabsModelId?: string;
   bedrockRegion: string;
   bedrockModelId: string;
   s3Bucket: string;
@@ -53,7 +54,7 @@ export class AudioProcessor {
     this.tts = new ElevenLabsTextToSpeech({
       apiKey: config.elevenLabsApiKey,
       voiceId: config.elevenLabsVoiceId,
-      modelId: process.env.ELEVENLABS_MODEL_ID || 'eleven_flash_v2_5',
+      modelId: config.elevenLabsModelId,
     });
 
     // Initialize AI

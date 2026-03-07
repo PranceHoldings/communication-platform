@@ -34,7 +34,8 @@ export class ElevenLabsTextToSpeech {
   constructor(private options: ElevenLabsTTSConfig) {
     this.apiKey = options.apiKey;
     this.voiceId = options.voiceId;
-    this.modelId = options.modelId || 'eleven_turbo_v2_5'; // Latest fast model
+    // デフォルト値は shared/config/defaults.ts (ELEVENLABS_DEFAULTS.MODEL_ID) で管理
+    this.modelId = options.modelId || 'eleven_flash_v2_5';
   }
 
   /**
