@@ -18,12 +18,13 @@ import { ConflictError, ValidationError, JWTPayload } from '../../shared/types';
 
 /**
  * リクエストボディの型定義
+ * IMPORTANT: フィールド名はPrismaスキーマと完全一致させること
  */
 interface RegisterRequest {
   email: string;
   password: string;
   name: string;
-  organizationId?: string;
+  orgId?: string;  // Prisma: User.orgId
 }
 
 /**
@@ -58,7 +59,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     // リクエストボディの検証
     const body = validateRequestBody(event.body);
-    const { email, password, name, organizationId }: RegisterRequest = body;
+    const { email, password, name, orgId }: RegisterRequest = body;
 
     // 入力値のバリデーション
     validateRequired(email, 'Email');
@@ -80,10 +81,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const passwordHash = await hashPassword(password);
 
     // 組織の確認（招待の場合は既存組織に参加、自己登録の場合は新規組織作成）
-    let finalOrganizationId = organizationId;
-    if (organizationId) {
+    let finalOrgId = orgId;
+    if (orgId) {
       const organization = await prisma.organization.findUnique({
-        where: { id: organizationId },
+        where: { id: orgId },
       });
 
       if (!organization) {
@@ -96,7 +97,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
           name: `${name}'s Organization`,
         },
       });
-      finalOrganizationId = defaultOrganization.id;
+      finalOrgId = defaultOrganization.id;
     }
 
     // ユーザー作成
@@ -105,9 +106,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         email,
         passwordHash,
         name,
-        role: organizationId ? 'CLIENT_USER' : 'CLIENT_ADMIN', // Invited users are CLIENT_USER, self-registered are CLIENT_ADMIN
+        role: orgId ? 'CLIENT_USER' : 'CLIENT_ADMIN', // Invited users are CLIENT_USER, self-registered are CLIENT_ADMIN
         organization: {
-          connect: { id: finalOrganizationId! },
+          connect: { id: finalOrgId! },
         },
       },
       select: {

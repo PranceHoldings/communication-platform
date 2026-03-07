@@ -254,6 +254,63 @@ grep -r "import.*useI18n.*from.*@/lib/i18n" apps/web --count
 - 結果を目視確認
 - 疑わしい箇所は必ず確認
 
+#### 6. Prismaスキーマ準拠（必須）
+
+**データベース関連コード作成時の必須確認:**
+
+```bash
+# 1. Prismaスキーマファイルを開いて該当モデルを確認
+cat packages/database/prisma/schema.prisma | grep -A 15 "model User\|model Session\|model Avatar\|model Scenario"
+
+# 2. フィールド名の確認（よくある間違いを検出）
+grep -rn "organizationId\|organization_id" infrastructure/lambda apps/web/lib --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v ".prisma"
+
+# 3. Enum値の確認
+grep -rn "ACTIVE\|PROCESSING\|COMPLETED\|ERROR" infrastructure/lambda apps/web/lib --include="*.ts" --include="*.tsx" | grep -v node_modules | head -20
+```
+
+**命名規則（厳守）:**
+
+| Prismaフィールド名 | 使用箇所 | ❌ 間違いやすい例 |
+|-------------------|---------|-----------------|
+| `orgId` | User, Session, Avatar, Scenario | organizationId, organization_id |
+| `userId` | Session, Avatar | user_id, creator_id |
+| `scenarioId` | Session | scenario_id |
+| `avatarId` | Session | avatar_id |
+| `startedAt` | Session | started_at, startTime |
+| `endedAt` | Session | ended_at, endTime |
+| `durationSec` | Session | duration_sec, duration |
+| `passwordHash` | User | password_hash |
+| `cognitoSub` | User | cognito_sub |
+
+**Enum値（完全一致必須）:**
+- UserRole: `SUPER_ADMIN`, `CLIENT_ADMIN`, `CLIENT_USER`
+- SessionStatus: `ACTIVE`, `PROCESSING`, `COMPLETED`, `ERROR`
+- AvatarType: `TWO_D`, `THREE_D` (アンダースコアあり)
+- AvatarStyle: `ANIME`, `REALISTIC`
+- Visibility: `PRIVATE`, `ORGANIZATION`, `PUBLIC`
+
+**型定義の例:**
+```typescript
+// ✅ 正しい - Prismaと完全一致
+interface CreateSessionRequest {
+  scenarioId: string;  // Prisma: scenarioId
+  avatarId?: string;   // Prisma: avatarId
+}
+
+// ❌ 間違い
+interface CreateSessionRequest {
+  scenario_id: string;     // snake_caseは使わない
+  organizationId: string;  // Prismaでは orgId
+}
+```
+
+**検証基準:**
+- ✅ Prisma Clientで定義されたフィールド名と完全一致（camelCase）
+- ✅ API型定義もPrismaフィールド名と一致
+- ✅ Enum値が大文字・アンダースコアを含め完全一致
+- ✅ `@map()` で定義されたDB名（snake_case）は使用しない
+
 ### 開発ワークフロー
 
 ```bash

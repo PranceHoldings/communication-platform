@@ -83,14 +83,15 @@ export const getUserFromEvent = (
 ): JWTPayload | null => {
   try {
     // Lambda Authorizerがある場合は、そこからユーザー情報を取得
+    // IMPORTANT: Authorizer context field names must match Prisma schema
     if (event.requestContext?.authorizer) {
       const auth = event.requestContext.authorizer;
-      if (auth.userId && auth.email && auth.role && auth.organizationId) {
+      if (auth.userId && auth.email && auth.role && auth.orgId) {
         return {
           userId: auth.userId,
           email: auth.email,
           role: auth.role as 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER',
-          orgId: auth.organizationId, // API Gateway context field mapped to internal schema
+          orgId: auth.orgId, // Prisma: User.orgId
         };
       }
     }

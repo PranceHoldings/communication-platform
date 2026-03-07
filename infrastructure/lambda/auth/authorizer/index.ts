@@ -85,11 +85,12 @@ export const handler = async (
     const wildcard = `arn:aws:execute-api:${region}:${awsAccountId}:${restApiId}/${stage}/*/*`;
 
     // Generate Allow policy with authentication context
+    // IMPORTANT: Context field names should match Prisma schema (orgId, not organizationId)
     return generatePolicy(decoded.userId, 'Allow', wildcard, {
       userId: decoded.userId,
       email: decoded.email,
       role: decoded.role,
-      organizationId: decoded.orgId, // API Gateway context field
+      orgId: decoded.orgId, // Prisma: User.orgId
     });
   } catch (error) {
     console.error('Authorization failed:', error);
