@@ -311,6 +311,134 @@ interface CreateSessionRequest {
 - ✅ Enum値が大文字・アンダースコアを含め完全一致
 - ✅ `@map()` で定義されたDB名（snake_case）は使用しない
 
+#### 7. 型定義の一元管理（必須）
+
+**重要原則: Don't Repeat Yourself (DRY)**
+
+すべての共有型定義は `packages/shared/src/types/index.ts` に一元管理されています。
+**絶対に他の場所で重複定義してはいけません。**
+
+**型定義が必要な場合の必須確認:**
+
+```bash
+# 1. 共有パッケージに既に存在するか確認
+grep -n "^export.*User\|^export.*Avatar\|^export.*Session\|^export.*Scenario" packages/shared/src/types/index.ts
+
+# 2. 重複定義がないか検出
+grep -rn "^export interface User {" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" | grep -v node_modules
+
+# 3. インライン型定義（'PRIVATE' | 'ORGANIZATION' | 'PUBLIC'）を検出
+grep -rn "'PRIVATE'.*|.*'ORGANIZATION'.*|.*'PUBLIC'" apps/web/lib infrastructure/lambda --include="*.ts" | grep -v node_modules | grep -v "from '@prance/shared'"
+```
+
+**一元管理されている型（packages/shared/src/types/index.ts）:**
+
+| カテゴリ | 型名 | 用途 |
+|---------|------|------|
+| **Entity** | User, Avatar, Scenario, Session, Recording, Transcript, Organization | データモデル |
+| **Enum** | UserRole, AvatarType, AvatarStyle, AvatarSource, Visibility, SessionStatus, RecordingType, Speaker, Highlight | 列挙型 |
+| **Pagination** | PaginationParams, PaginationMeta, PaginatedResponse | ページネーション |
+| **Error** | AppError, AuthenticationError, AuthorizationError, NotFoundError, ValidationError, ConflictError, InternalServerError | エラー処理 |
+
+**正しい使用方法:**
+
+```typescript
+// ✅ 正しい - 共有パッケージからimport
+import type { User, Avatar, Visibility, PaginationMeta } from '@prance/shared';
+
+export interface AvatarListResponse {
+  avatars: Avatar[];         // 共有型を使用
+  pagination: PaginationMeta; // 共有型を使用
+}
+
+export interface CreateAvatarRequest {
+  name: string;
+  visibility?: Visibility;   // 共有Enumを使用
+}
+```
+
+```typescript
+// ❌ 間違い - 重複定義
+export interface Avatar {
+  id: string;
+  name: string;
+  type: 'TWO_D' | 'THREE_D';  // 共有型があるのに再定義
+  // ...
+}
+
+export interface AvatarListResponse {
+  avatars: Avatar[];
+  pagination: {               // PaginationMetaがあるのに再定義
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+```
+
+**Lambda関数での使用:**
+
+Lambda関数の `infrastructure/lambda/shared/types/index.ts` は共有型を **re-export** しています：
+
+```typescript
+// infrastructure/lambda/shared/types/index.ts
+export * from '@prance/shared';  // 全共有型を再エクスポート
+
+// Lambda固有型のみここに定義
+export interface JWTPayload { ... }
+export interface APIResponse { ... }
+```
+
+Lambda関数では通常通り `'../shared/types'` からimportできます：
+
+```typescript
+// ✅ Lambda関数内
+import { User, Avatar, ValidationError } from '../shared/types';
+```
+
+**コミット前の必須チェック:**
+
+1. **重複定義がないか確認:**
+   ```bash
+   # Entity型の重複
+   grep -rn "^export interface \(User\|Avatar\|Scenario\|Session\)" apps/web infrastructure/lambda --include="*.ts" | grep -v node_modules | grep -v "packages/shared"
+
+   # Enum型の重複（インライン定義）
+   grep -rn "'TWO_D'.*|.*'THREE_D'" apps/web infrastructure/lambda --include="*.ts" | grep -v node_modules | grep -v "from '@prance/shared'"
+   ```
+
+2. **共有型を使用しているか確認:**
+   ```bash
+   # 新しく追加したファイルで共有型をimportしているか
+   git diff --cached --name-only | grep "\.ts$" | xargs grep -l "interface.*Request\|interface.*Response"
+   ```
+
+3. **結果が空ならOK、何か検出されたら共有型に移行すること**
+
+**新しい共有型を追加する場合:**
+
+1. `packages/shared/src/types/index.ts` に追加
+2. `npm run build` で shared パッケージをビルド
+3. 他の場所から import して使用
+4. 既存の重複定義があれば削除
+
+**よくある間違いと教訓:**
+
+| 間違いパターン | 発生理由 | 修正方法 |
+|--------------|---------|---------|
+| 同じ型を3箇所で定義 | 共有パッケージの存在を知らなかった | 共有型を使用、重複削除 |
+| インライン型定義 `'PRIVATE' \| 'PUBLIC'` | 面倒だから直接書いた | 共有Enum型をimport |
+| Pagination構造を各ファイルで定義 | コピペで対応 | PaginationMetaを使用 |
+
+**効果:**
+- ✅ 型変更時に1箇所修正するだけで全体に反映
+- ✅ 型の不整合によるバグを防止
+- ✅ コードの保守性・再利用性が向上
+- ✅ TypeScript型推論が正確になる
+
+**監査レポート:** [CODE_DUPLICATION_AUDIT.md](CODE_DUPLICATION_AUDIT.md)
+
 ### 開発ワークフロー
 
 ```bash

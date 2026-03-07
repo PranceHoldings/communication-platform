@@ -26,10 +26,13 @@ Pranceは、AIアバターとのリアルタイム会話を通じて面接練習
 
 **必読ドキュメント**:
 
-1. **[外部ツールセットアップ](docs/EXTERNAL_TOOLS_SETUP.md)** ⭐ - API登録・キー取得の完全ガイド
-2. **[リリースプラン](docs/RELEASE_PLAN.md)** - どの機能をいつリリースするか
-3. **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各機能の詳細仕様（ユーザーストーリー、UI、API、受け入れ基準）
-4. **[実装プラン](docs/IMPLEMENTATION_PLAN.md)** - 技術的な実装手順
+1. **[START_HERE.md](START_HERE.md)** ⭐⭐⭐ - 次回セッション開始手順（最優先）
+2. **[CODING_RULES.md](CODING_RULES.md)** ⭐⭐ - コミット前チェックリスト（必須）
+3. **[CLAUDE.md](CLAUDE.md)** ⭐ - プロジェクト概要・開発ガイドライン
+4. **[外部ツールセットアップ](docs/EXTERNAL_TOOLS_SETUP.md)** - API登録・キー取得の完全ガイド
+5. **[リリースプラン](docs/RELEASE_PLAN.md)** - どの機能をいつリリースするか
+6. **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各機能の詳細仕様（ユーザーストーリー、UI、API、受け入れ基準）
+7. **[実装プラン](docs/IMPLEMENTATION_PLAN.md)** - 技術的な実装手順
 
 **開発開始の流れ**:
 
