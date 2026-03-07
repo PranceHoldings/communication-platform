@@ -8,21 +8,6 @@ import type {
   PaginationMeta,
 } from '@prance/shared';
 
-export interface Avatar {
-  id: string;
-  name: string;
-  type: AvatarType;
-  style: AvatarStyle;
-  source: AvatarSource;
-  modelUrl: string;
-  thumbnailUrl: string | null;
-  tags: string[];
-  visibility: Visibility;
-  allowCloning: boolean;
-  createdAt: string;
-  userId: string | null;
-  orgId: string;
-}
 
 export interface AvatarListResponse {
   avatars: Avatar[];

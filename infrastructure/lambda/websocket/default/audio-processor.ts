@@ -3,6 +3,7 @@
  * Handles STT -> AI -> TTS flow
  */
 
+import { LANGUAGE_DEFAULTS } from '../../shared/config/defaults';
 import { AzureSpeechToText } from '../../shared/audio/stt-azure';
 import { ElevenLabsTextToSpeech } from '../../shared/audio/tts-elevenlabs';
 import { BedrockAI } from '../../shared/ai/bedrock';
@@ -47,7 +48,7 @@ export class AudioProcessor {
     this.stt = new AzureSpeechToText({
       subscriptionKey: config.azureSpeechKey,
       region: config.azureSpeechRegion,
-      language: config.language || 'en-US',
+      language: config.language || LANGUAGE_DEFAULTS.STT_LANGUAGE,
     });
 
     // Initialize TTS
@@ -114,7 +115,7 @@ export class AudioProcessor {
       });
 
       // Step 5: Save response audio to S3 (for debugging/audit)
-      await this.saveAudioToS3(ttsResult.audio, sessionId, 'output');
+      await this.saveAudioToS3(ttsResult.audio, sessionId, 'output', ttsResult.contentType);
 
       console.log('[AudioProcessor] Pipeline complete:', {
         transcriptLength: transcript.length,
@@ -155,11 +156,16 @@ export class AudioProcessor {
       // Get ffmpeg path from environment variable or fallback to installed version
       const ffmpegPath = process.env.FFMPEG_PATH || require('@ffmpeg-installer/ffmpeg').path;
 
-      // Convert to WAV (16kHz, mono, 16-bit PCM)
-      const command = `${ffmpegPath} -i ${inputFile} -acodec pcm_s16le -ar 16000 -ac 1 ${outputFile}`;
+      // Convert to WAV (16kHz, mono, 16-bit PCM) with volume boost for better speech recognition
+      // Note: volume=3.0 amplifies audio by 3x to improve Azure STT detection
+      const command = `${ffmpegPath} -i ${inputFile} -af "volume=3.0" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
 
       console.log('[AudioProcessor] Converting audio with ffmpeg:', command);
-      await execAsync(command);
+      const { stdout, stderr } = await execAsync(command);
+
+      if (stderr && !stderr.includes('Output #0')) {
+        console.warn('[AudioProcessor] ffmpeg stderr:', stderr);
+      }
 
       // Read output file
       const wavBuffer = fs.readFileSync(outputFile);
@@ -199,8 +205,8 @@ export class AudioProcessor {
     // Check if WebM format
     else if (audioData.slice(0, 4).toString('hex').startsWith('1a45dfa3')) {
       console.log('[AudioProcessor] Detected WebM format, converting to WAV');
-      audioFormat = 'webm';
-      wavBuffer = await this.convertToWav(audioData, 'webm');
+      audioFormat = 'unknown';
+      wavBuffer = await this.convertToWav(audioData, 'unknown');
     }
     // Check if OGG format
     else if (audioData.slice(0, 4).toString() === 'OggS') {
@@ -210,8 +216,8 @@ export class AudioProcessor {
     }
     else {
       console.log('[AudioProcessor] Unknown audio format, assuming WebM');
-      audioFormat = 'webm';
-      wavBuffer = await this.convertToWav(audioData, 'webm');
+      audioFormat = 'unknown';
+      wavBuffer = await this.convertToWav(audioData, 'unknown');
     }
 
     // Save audio as temporary WAV file
@@ -257,10 +263,22 @@ export class AudioProcessor {
   private async saveAudioToS3(
     audioData: Buffer,
     sessionId: string,
-    type: 'input' | 'output'
+    type: 'input' | 'output',
+    contentType: string = 'audio/webm'
   ): Promise<string> {
     const timestamp = Date.now();
-    const key = `sessions/${sessionId}/audio/${type}-${timestamp}.webm`;
+
+    // Determine file extension based on content type
+    let extension = 'webm';
+    if (contentType.includes('mpeg') || contentType.includes('mp3')) {
+      extension = 'mp3';
+    } else if (contentType.includes('wav')) {
+      extension = 'wav';
+    } else if (contentType.includes('ogg')) {
+      extension = 'ogg';
+    }
+
+    const key = `sessions/${sessionId}/audio/${type}-${timestamp}.${extension}`;
 
     try {
       await this.s3.send(
@@ -268,11 +286,15 @@ export class AudioProcessor {
           Bucket: this.s3Bucket,
           Key: key,
           Body: audioData,
-          ContentType: 'audio/webm',
+          ContentType: contentType,
         })
       );
 
-      console.log(`[AudioProcessor] Saved ${type} audio to S3:`, key);
+      console.log(`[AudioProcessor] Saved ${type} audio to S3:`, {
+        key,
+        contentType,
+        size: audioData.length,
+      });
       return key;
     } catch (error) {
       console.error(`[AudioProcessor] Failed to save ${type} audio:`, error);

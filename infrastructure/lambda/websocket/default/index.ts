@@ -15,7 +15,7 @@ import {
   UpdateCommand,
   PutCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { AudioProcessor } from './audio-processor';
 import { VideoProcessor } from './video-processor';
 
@@ -136,6 +136,7 @@ interface ConnectionData {
   lastChunkTime?: number;
   videoChunksCount?: number; // Count of video chunks received
   lastVideoChunkTime?: number;
+  // Note: videoChunkParts removed - parts are stored directly in S3 to avoid DynamoDB 400KB limit
   [key: string]: unknown;
 }
 
@@ -172,7 +173,7 @@ export const handler = async (
 
       case 'authenticate':
         // Store session information in connection data
-        const sessionId = message.session_id as string;
+        const sessionId = message.sessionId as string;
         await updateConnectionData(connectionId, {
           sessionId,
           conversationHistory: [],
@@ -201,7 +202,7 @@ export const handler = async (
 
         // Save audio chunk to S3 (to avoid DynamoDB 400KB limit)
         const chunkCount = (connectionData?.audioChunksCount || 0) + 1;
-        const chunkKey = `sessions/${audioSessionId}/chunks/${timestamp}-${chunkCount}.${VIDEO_FORMAT}`;
+        const chunkKey = `sessions/${audioSessionId}/audio-chunks/${timestamp}-${chunkCount}.${VIDEO_FORMAT}`;
 
         try {
           await s3Client.send(
@@ -234,8 +235,150 @@ export const handler = async (
         }
         break;
 
+      case 'video_chunk_part':
+        // Handle split video chunk parts (to overcome 32KB WebSocket limit)
+        const chunkId = message.chunkId as string;
+        const partIndex = message.partIndex as number;
+        const totalParts = message.totalParts as number;
+        const partData = message.data as string;
+        const partTimestamp = message.timestamp as number;
+        const partSessionId = connectionData?.sessionId || 'unknown';
+
+        console.log('Received video chunk part:', {
+          chunkId,
+          partIndex,
+          totalParts,
+          dataSize: partData ? partData.length : 0,
+          timestamp: partTimestamp,
+          sessionId: partSessionId,
+        });
+
+        try {
+          // Save this part directly to S3 (avoid DynamoDB 400KB limit)
+          const partKey = `sessions/${partSessionId}/chunks/temp/${chunkId}/part-${partIndex}.bin`;
+          const partBuffer = Buffer.from(partData, 'base64');
+
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: S3_BUCKET,
+              Key: partKey,
+              Body: partBuffer,
+              ContentType: 'application/octet-stream',
+              Metadata: {
+                chunkId,
+                partIndex: partIndex.toString(),
+                totalParts: totalParts.toString(),
+                timestamp: partTimestamp.toString(),
+              },
+            })
+          );
+
+          console.log(`Saved part ${partIndex + 1}/${totalParts} to S3:`, partKey);
+
+          // Check if all parts received by listing S3 objects
+          const listResponse = await s3Client.send(
+            new ListObjectsV2Command({
+              Bucket: S3_BUCKET,
+              Prefix: `sessions/${partSessionId}/chunks/temp/${chunkId}/`,
+            })
+          );
+
+          const receivedParts = listResponse.Contents?.length || 0;
+          console.log(`Received ${receivedParts}/${totalParts} parts for chunk ${chunkId}`);
+
+          if (receivedParts === totalParts) {
+            // All parts received, reassemble and save to S3
+            console.log(`All parts received for chunk ${chunkId}, reassembling...`);
+
+            // Download all parts in order
+            const partBuffers: Buffer[] = [];
+            for (let i = 0; i < totalParts; i++) {
+              const partKey = `sessions/${partSessionId}/chunks/temp/${chunkId}/part-${i}.bin`;
+              const getResponse = await s3Client.send(
+                new GetObjectCommand({
+                  Bucket: S3_BUCKET,
+                  Key: partKey,
+                })
+              );
+
+              if (getResponse.Body) {
+                const chunkBuffer = await getResponse.Body.transformToByteArray();
+                partBuffers.push(Buffer.from(chunkBuffer));
+              } else {
+                throw new Error(`Missing part ${i} for chunk ${chunkId}`);
+              }
+            }
+
+            // Concatenate all parts
+            const videoBuffer = Buffer.concat(partBuffers);
+
+            console.log(`Reassembled video chunk:`, {
+              chunkId,
+              totalParts,
+              combinedSize: videoBuffer.length,
+            });
+
+            // Save final video chunk to S3
+            const videoChunkCount = (connectionData?.videoChunksCount || 0) + 1;
+            const videoProc = getVideoProcessor();
+
+            await videoProc.saveVideoChunk(
+              partSessionId,
+              videoBuffer,
+              partTimestamp,
+              videoChunkCount
+            );
+
+            console.log('Saved reassembled video chunk to S3:', {
+              sessionId: partSessionId,
+              chunkCount: videoChunkCount,
+              chunkId,
+            });
+
+            // Clean up temporary parts from S3
+            for (let i = 0; i < totalParts; i++) {
+              const partKey = `sessions/${partSessionId}/chunks/temp/${chunkId}/part-${i}.bin`;
+              try {
+                await s3Client.send(
+                  new DeleteObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: partKey,
+                  })
+                );
+              } catch (cleanupError) {
+                console.warn(`Failed to clean up part ${i}:`, cleanupError);
+              }
+            }
+
+            // Update connection data (only counters, no large data)
+            await updateConnectionData(connectionId, {
+              lastVideoChunkTime: partTimestamp,
+              videoChunksCount: videoChunkCount,
+            });
+
+            // Send acknowledgment
+            await sendToConnection(connectionId, {
+              type: 'video_chunk_ack',
+              chunkId,
+              chunksReceived: videoChunkCount,
+              timestamp: partTimestamp,
+            });
+          }
+          // If not all parts received yet, do nothing (no DynamoDB update needed)
+        } catch (error) {
+          console.error('Failed to process video chunk part:', error);
+          await sendToConnection(connectionId, {
+            type: 'error',
+            code: 'VIDEO_CHUNK_PART_ERROR',
+            message: 'Failed to process video chunk part',
+            chunkId,
+            partIndex,
+          });
+        }
+        break;
+
       case 'video_chunk':
-        // Handle video recording chunks
+        // Handle video recording chunks (legacy - for backward compatibility)
         const videoData = message.data as string;
         const videoTimestamp = message.timestamp as number;
         const videoSessionId = connectionData?.sessionId || 'unknown';
@@ -318,7 +461,7 @@ export const handler = async (
 
             // Load and combine audio chunks from S3
             const sessionId = connectionData.sessionId || 'unknown';
-            const chunksPrefix = `sessions/${sessionId}/chunks/`;
+            const chunksPrefix = `sessions/${sessionId}/audio-chunks/`;
 
             console.log('Listing audio chunks in S3:', chunksPrefix);
 
@@ -419,7 +562,7 @@ export const handler = async (
                   TableName: RECORDINGS_TABLE,
                   Item: {
                     recording_id: recordingId,
-                    session_id: sessionId,
+                    sessionId: sessionId,
                     type: 'COMBINED',
                     s3_key: result.finalVideoKey,
                     s3_url: `https://${S3_BUCKET}.s3.${process.env.AWS_REGION || DEFAULT_AWS_REGION}.amazonaws.com/${result.finalVideoKey}`,
@@ -461,7 +604,7 @@ export const handler = async (
                   TableName: RECORDINGS_TABLE,
                   Item: {
                     recording_id: recordingId,
-                    session_id: sessionId,
+                    sessionId: sessionId,
                     type: 'COMBINED',
                     s3_key: `sessions/${sessionId}/recording.${VIDEO_FORMAT}`,
                     s3_url: '',
@@ -598,12 +741,28 @@ async function handleAudioProcessing(
       timestamp: Date.now(),
     });
 
-    // Send AI response audio (base64 encoded)
+    // Upload AI response audio to S3 (to avoid WebSocket 32KB limit)
+    const audioTimestamp = Date.now();
+    const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm'}`;
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: audioKey,
+        Body: result.audioResponse,
+        ContentType: result.audioContentType,
+      })
+    );
+
+    console.log('[handleAudioProcessing] Uploaded audio to S3:', audioKey);
+
+    // Send AI response audio URL (instead of base64 data)
     await sendToConnection(connectionId, {
       type: 'audio_response',
-      audio: result.audioResponse.toString('base64'),
+      audioUrl: `https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${audioKey}`,
+      audioKey,
       contentType: result.audioContentType,
-      timestamp: Date.now(),
+      timestamp: audioTimestamp,
     });
 
     console.log('[handleAudioProcessing] Complete:', {
@@ -686,12 +845,28 @@ async function handleAudioData(
       timestamp: Date.now(),
     });
 
-    // Send AI response audio (base64 encoded)
+    // Upload AI response audio to S3 (to avoid WebSocket 32KB limit)
+    const audioTimestamp = Date.now();
+    const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm'}`;
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: audioKey,
+        Body: result.audioResponse,
+        ContentType: result.audioContentType,
+      })
+    );
+
+    console.log('[handleAudioProcessing] Uploaded audio to S3:', audioKey);
+
+    // Send AI response audio URL (instead of base64 data)
     await sendToConnection(connectionId, {
       type: 'audio_response',
-      audio: result.audioResponse.toString('base64'),
+      audioUrl: `https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${audioKey}`,
+      audioKey,
       contentType: result.audioContentType,
-      timestamp: Date.now(),
+      timestamp: audioTimestamp,
     });
 
     console.log('[handleAudioData] Complete:', {

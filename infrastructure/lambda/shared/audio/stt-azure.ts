@@ -1,3 +1,4 @@
+import { LANGUAGE_DEFAULTS } from '../config/defaults';
 /**
  * Azure Speech Services - Speech-to-Text Integration
  * Real-time audio transcription using Azure Cognitive Services
@@ -30,7 +31,7 @@ export class AzureSpeechToText {
     );
 
     // Set language (default: en-US)
-    this.config.speechRecognitionLanguage = options.language || 'en-US';
+    this.config.speechRecognitionLanguage = options.language || LANGUAGE_DEFAULTS.STT_LANGUAGE;
 
     // Enable detailed results
     this.config.outputFormat = sdk.OutputFormat.Detailed;
@@ -171,14 +172,29 @@ export class AzureSpeechToText {
   async recognizeFromFile(audioFilePath: string): Promise<TranscriptResult> {
     return new Promise((resolve, reject) => {
       try {
-        const audioConfig = sdk.AudioConfig.fromWavFileInput(
-          require('fs').readFileSync(audioFilePath)
-        );
+        const fs = require('fs');
+        const audioBuffer = fs.readFileSync(audioFilePath);
 
+        // Log audio file details for debugging
+        console.log('[AzureSTT] Audio file details:', {
+          path: audioFilePath,
+          size: audioBuffer.length,
+          header: audioBuffer.slice(0, 12).toString('hex'),
+        });
+
+        const audioConfig = sdk.AudioConfig.fromWavFileInput(audioBuffer);
         const recognizer = new sdk.SpeechRecognizer(this.config, audioConfig);
 
         recognizer.recognizeOnceAsync(
           (result) => {
+            console.log('[AzureSTT] Recognition result:', {
+              reason: result.reason,
+              reasonText: sdk.ResultReason[result.reason],
+              text: result.text,
+              duration: result.duration,
+              offset: result.offset,
+            });
+
             if (result.reason === sdk.ResultReason.RecognizedSpeech) {
               resolve({
                 text: result.text,
@@ -187,8 +203,29 @@ export class AzureSpeechToText {
                 offset: result.offset,
                 duration: result.duration,
               });
+            } else if (result.reason === sdk.ResultReason.NoMatch) {
+              const noMatchDetails = sdk.NoMatchDetails.fromResult(result);
+              reject(
+                new Error(
+                  `No speech recognized. Reason: ${sdk.NoMatchReason[noMatchDetails.reason]}. ` +
+                  `This typically means the audio contains no detectable speech, ` +
+                  `the speech is too quiet, or the audio format is incompatible.`
+                )
+              );
+            } else if (result.reason === sdk.ResultReason.Canceled) {
+              const cancellation = sdk.CancellationDetails.fromResult(result);
+              reject(
+                new Error(
+                  `Recognition canceled. Reason: ${sdk.CancellationReason[cancellation.reason]}. ` +
+                  `Error: ${cancellation.errorDetails}`
+                )
+              );
             } else {
-              reject(new Error(`Recognition failed: ${result.reason}`));
+              reject(
+                new Error(
+                  `Recognition failed with reason: ${sdk.ResultReason[result.reason]} (${result.reason})`
+                )
+              );
             }
             recognizer.close();
           },

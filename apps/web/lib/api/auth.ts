@@ -1,16 +1,10 @@
+import type { User } from '@prance/shared';
 /**
  * Authentication API
  */
 
 import { apiClient, ApiResponse } from './client';
 
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  orgId?: string; // Aligned with Prisma schema
-}
 
 export interface AuthTokens {
   accessToken: string;

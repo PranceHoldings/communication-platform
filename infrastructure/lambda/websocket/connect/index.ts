@@ -68,7 +68,7 @@ export const handler = async (
         TableName: CONNECTIONS_TABLE,
         Item: {
           connection_id: connectionId,
-          user_id: userId,
+          userId: userId,
           org_id: orgId,
           connected_at: timestamp,
           ttl: Math.floor(timestamp / 1000) + CONNECTION_TTL,

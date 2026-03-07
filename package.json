@@ -24,7 +24,12 @@
     "cdk:deploy": "cd infrastructure && npx cdk deploy --all",
     "cdk:destroy": "cd infrastructure && npx cdk destroy --all",
     "deploy:staging": "npm run build && npm run cdk:deploy -- -c environment=staging",
-    "deploy:production": "npm run build && npm run cdk:deploy -- -c environment=production"
+    "deploy:production": "npm run build && npm run cdk:deploy -- -c environment=production",
+    "consistency:check": "bash scripts/detect-inconsistencies.sh",
+    "consistency:fix": "bash scripts/fix-inconsistencies.sh",
+    "consistency:validate": "ts-node scripts/validate-consistency.ts",
+    "pre-commit": "npm run consistency:validate && npm run lint && npm run typecheck",
+    "env:validate": "bash scripts/validate-env.sh"
   },
   "devDependencies": {
     "@types/node": "^22.19.15",
