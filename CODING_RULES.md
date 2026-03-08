@@ -127,7 +127,63 @@ grep -rn "\.match(/.*\\\d\+.*/);" infrastructure/lambda apps/web --include="*.ts
 
 ---
 
-## ✅ 6. PRレビュー観点（プルリクエスト作成時）
+### ✅ 6. 言語コードのハードコード（言語・設定値を追加・変更した場合）
+
+```bash
+# 言語コードのハードコード検出
+grep -rn "'ja-JP'\|'en-US'\|'zh-CN'\|'zh-TW'" infrastructure/lambda --include="*.ts" --exclude="language-config.ts" --exclude="defaults.ts"
+
+# 言語配列リテラルの検出
+grep -rn "\['ja', 'en'\]\|\['ja-JP', 'en-US'\]" infrastructure/lambda --include="*.ts" --exclude="language-config.ts" --exclude="defaults.ts"
+
+# リージョン・メディアフォーマットのハードコード検出
+grep -rn "'us-east-1'\|'eastus'\|'webm'\|'1280x720'" infrastructure/lambda --include="*.ts" --exclude="defaults.ts"
+```
+
+**期待結果:** defaults.ts と language-config.ts 以外には結果なし
+
+**必須確認:**
+
+- 言語コード（'ja', 'en', 'ja-JP', 'en-US'等）をハードコードしていないか？
+- リージョン（'us-east-1', 'eastus'等）をハードコードしていないか？
+- メディアフォーマット（'webm', '1280x720'等）をハードコードしていないか？
+- `LANGUAGE_DEFAULTS` または `language-config.ts` の関数を使用しているか？
+
+**正しい使用例:**
+
+```typescript
+// ❌ 禁止
+const language = 'ja-JP';
+const languages = ['ja', 'en'];
+const region = 'us-east-1';
+const format = 'webm';
+
+// ✅ 正しい
+import { LANGUAGE_DEFAULTS, MEDIA_DEFAULTS } from '../../shared/config/defaults';
+import { getLanguagePriority } from '../../shared/config/language-config';
+
+const language = process.env.STT_LANGUAGE || LANGUAGE_DEFAULTS.STT_LANGUAGE;
+const languages = getLanguagePriority(scenarioLanguage);
+const region = process.env.AWS_REGION || AWS_DEFAULTS.REGION;
+const format = process.env.VIDEO_FORMAT || MEDIA_DEFAULTS.VIDEO_FORMAT;
+```
+
+**なぜハードコードが問題か:**
+
+1. **変更時の修正漏れ** - 複数箇所に散らばった設定値を見落とす
+2. **新言語追加の困難** - コード全体を修正する必要がある
+3. **環境ごとの設定変更が困難** - 本番と開発で異なる値を使いにくい
+4. **スーパー管理者UIでの動的変更不可** - Phase 2以降の拡張性が失われる
+
+**実際に起きた問題（2026-03-08）:**
+
+- 言語コードが infrastructure/lambda 内の複数ファイルにハードコード
+- 新言語追加時にすべてのファイルを修正する必要があった
+- → language-config.ts による一元管理で根本解決
+
+---
+
+## ✅ 7. PRレビュー観点（プルリクエスト作成時）
 
 ```bash
 # レビュー前の自己チェック

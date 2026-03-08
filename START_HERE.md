@@ -1,9 +1,9 @@
 # 次回セッション開始手順（2026-03-08更新）
 
-**最終作業日:** 2026-03-08 21:00 JST
+**最終作業日:** 2026-03-08 23:35 JST
 **Phase 1進捗:** 100%完了 🎉 | **Phase 2進捗:** 録画機能実装完了・デプロイ環境整備完了 ✅
-**最新コミット:** b1d7fe4 - 音声文字起こし修正（MediaRecorder timeslice削除）
-**最新デプロイ:** 2026-03-08 10:25:01 JST - Lambda v1.1.0（ffmpeg統合完了・全20+ Lambda関数更新）
+**最新コミット:** fe4a75e - リソースファイルベース言語設定システム実装
+**最新デプロイ:** 2026-03-08 23:30 JST - Lambda v1.1.0（言語設定システム・全20+ Lambda関数更新）
 
 ---
 
@@ -343,6 +343,89 @@ aws logs tail /aws/lambda/prance-websocket-default-dev --follow | grep -E "Audio
 
 **結論:**
 今回の修正（timeslice削除）は正しい対策。WebMコンテナフォーマットの仕様に基づく根本解決。
+
+---
+
+## ✅ 今回セッションで完了した作業（2026-03-08 23:35 JST）
+
+### リソースファイルベース言語設定システム実装 ✅（Phase 1.5）
+
+**目的:** 言語コードのハードコード問題を根本解決し、新言語追加をコード変更不要にする
+
+**実装内容:**
+
+1. ✅ **言語定義の一元管理**
+   - `infrastructure/lambda/shared/config/language-config.ts` (366行)
+   - `packages/shared/src/language/index.ts` (366行)
+   - LANGUAGES配列による宣言的な言語定義
+   - ハードコードされたLANGUAGE_MAP完全削除
+
+2. ✅ **サポート言語の拡張**
+   - Phase 1: 日本語・英語（2言語）
+   - 実装完了: **10言語、24地域バリアント**
+     - 日本語 (ja), 英語 (en), 簡体字中国語 (zh-CN), 繁体字中国語 (zh-TW)
+     - 韓国語 (ko), スペイン語 (es), ポルトガル語 (pt), フランス語 (fr)
+     - ドイツ語 (de), イタリア語 (it)
+
+3. ✅ **中国語の特殊処理**
+   - zh-CN (簡体字) と zh-TW (繁体字) を **完全に別言語** として扱う
+   - `getLanguagePriority('zh-CN')` → `['zh-CN', 'en-US', 'ja-JP']`
+   - `getLanguagePriority('zh-TW')` → `['zh-TW', 'zh-HK', 'en-US', 'ja-JP']`
+   - zh-CNの優先リストにzh-TWは含まれない（別言語のため）
+
+4. ✅ **主要機能**
+   - `normalizeLanguageCode()`: ISO 639-1 → BCP-47 変換
+   - `getLanguagePriority()`: 自動検出優先順位生成
+   - `getBaseLanguageCode()`: BCP-47 → ISO 639-1
+   - `getSupportedLanguages()`: サポート言語リスト取得
+   - `getSupportedSTTCodes()`: 全STTコード取得
+
+5. ✅ **新言語追加フロー（コード変更不要）**
+   ```typescript
+   // Step 1: LANGUAGES配列に追加
+   {
+     languageCode: 'vi',
+     sttCode: 'vi-VN',
+     displayName: 'Tiếng Việt',
+     regionalVariants: [...]
+   }
+
+   // Step 2: apps/web/messages/vi.json 作成
+   // Step 3: デプロイ → 自動反映
+   ```
+
+**デプロイ結果:**
+
+- **時刻:** 2026-03-08 23:30 JST
+- **コミット:** fe4a75e
+- **Lambda関数:** 全20+ 関数更新
+- **Status:** ✅ UPDATE_COMPLETE
+- **Prismaバージョン:** 5.9.0に統一
+
+**効果:**
+
+- ✅ 言語コードのハードコード完全削除
+- ✅ 新言語追加時にコード変更不要
+- ✅ STT自動検出の優先順位を動的生成
+- ✅ 中国語バリアントの正しい処理
+- ✅ 10言語・24地域バリアント対応
+
+**関連ファイル:**
+
+```
+infrastructure/lambda/shared/config/language-config.ts  # 言語定義（366行）
+infrastructure/lambda/shared/config/defaults.ts         # 更新
+infrastructure/lambda/websocket/default/audio-processor.ts  # scenarioLanguage対応
+infrastructure/lambda/websocket/default/index.ts        # シナリオ言語取得
+packages/shared/src/language/index.ts                   # 同一実装（shared用）
+apps/web/messages/en.json, ja.json                      # UIリソース
+```
+
+**次のステップ:**
+
+- 音声セッションテストで言語自動検出を確認
+- 日本語シナリオ → 日本語STT優先
+- 英語シナリオ → 英語STT優先（US, GB, AU, CA）
 
 ---
 
