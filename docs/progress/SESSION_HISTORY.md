@@ -1486,3 +1486,202 @@ toast.error('Failed to perform operation');
 
 **Phase 1進捗率:** 約50%完了（CRUD基盤・テストデータ完成）
 **次の目標:** UPDATE/DELETE API実装 → CRUD完全実装 → セッションプレイヤー
+
+---
+
+## 📅 セッション履歴: 2026-03-08
+
+### セッション: 音声文字起こし問題修正
+
+**日時:** 2026-03-08 19:00 - 21:00 JST（約2時間）
+**目標:** 音声文字起こしが動作しない問題の調査・修正
+**結果:** ✅ 根本原因特定・修正完了（テスト待ち）
+**コミット:** b1d7fe4
+
+---
+
+#### 問題の発見
+
+**ユーザー報告:**
+- 音声で話しているのに文字起こしが表示されない
+- UI上のエラーはなし
+- 音声レベルインジケーターは正常に動作
+
+**CloudWatch Logs分析:**
+```
+[AudioProcessor] Audio analysis: {
+  durationSeconds: "0.00",
+  sampleCount: 13,        ← ★ 異常に少ない
+  peakLevel: "0.0001",
+  rmsLevel: "0.0000",
+  hasSpeech: false
+}
+
+[AzureSTT] Recognition result: {
+  reason: 0,
+  reasonText: 'NoMatch',  ← ★ 認識失敗
+  text: ''
+}
+```
+
+**判明した事実:**
+- ✅ ブラウザから362,629バイトの音声データが送信されている
+- ✅ S3に正常に保存されている
+- ✅ ffmpegでWAVファイル（718,158バイト）を生成
+- ❌ WAVファイルの中身がほぼ空（13サンプル = 0.00秒）
+
+---
+
+#### 根本原因特定
+
+**原因: MediaRecorder timesliceによるWebM断片化**
+
+1. **MediaRecorder with timeslice (250ms):**
+   - 各チャンクが独立したEBMLヘッダーとメタデータを持つ
+   - 各チャンクは単体で再生可能なWebMファイル
+
+2. **単純なBlob連結:**
+   - 複数のEBMLヘッダーが混在した無効なWebMファイルになる
+
+3. **ffmpegの動作:**
+   - 最初のEBMLヘッダーを読み取る
+   - 最初のチャンク（250ms ≈ 13サンプル）のみ処理
+   - 2つ目のヘッダーを検出→読み取り終了
+
+4. **Azure STTの判定:**
+   - 0.00秒の音声データ
+   - "NoMatch" - 音声として認識できない
+
+**技術詳細:** `docs/development/AUDIO_TIMESLICE_FIX.md`
+
+---
+
+#### 修正内容
+
+**1. useAudioRecorder.ts - timeslice削除**
+
+```typescript
+// Before
+mediaRecorder.start(timeslice); // 250ms
+
+// After
+mediaRecorder.start(); // timesliceなし
+```
+
+**効果:**
+- 録音停止時に完全な単一のWebMファイルを取得
+- ffmpegが全データを正しく読み取れる
+
+**2. SessionPlayer - onAudioChunkコールバック削除**
+
+```typescript
+// Before
+const { ... } = useAudioRecorder({
+  onAudioChunk: handleAudioChunk,
+  timeslice: 250,
+});
+
+// After
+const { ... } = useAudioRecorder({
+  onRecordingComplete: handleRecordingComplete,
+  // timeslice削除
+});
+```
+
+**3. isAuthenticatedRef追加**
+
+- WebSocket認証タイミング問題を修正
+- `isAuthenticatedRef`で最新の認証状態を取得
+
+---
+
+#### リグレッション調査
+
+**ユーザーの疑問:**
+> 「以前は動いていたのになぜまた同じ問題が起きたのか？」
+
+**git履歴分析結果:**
+
+| コミット | 日付         | timeslice状態 |
+| -------- | ------------ | ------------- |
+| 649a735  | 初回作成     | 存在（250ms） |
+| 2e44696  | Phase 1完了  | 存在（250ms） |
+| 8e1a17c  | リファクタリング | 存在（250ms） |
+| 5ff5871  | コード品質改善 | 存在（250ms） |
+| b1d7fe4  | 今回修正     | **削除**      |
+
+**結論:**
+- ✅ timesliceは最初から存在していた
+- ✅ git履歴上、timesliceが削除されたことは一度もない
+- ✅ **今回が初めての削除**
+
+**なぜPhase 1完了時は「動いていた」のか？**
+
+仮説:
+1. **短い発話のみテスト** - 5-10秒の発話では断片化の影響が小さい
+2. **別の問題でマスク** - チャンク順序バグ等の修正後に顕在化
+3. **ローカル環境の修正未コミット** - git履歴に記録なし
+
+---
+
+#### 次のアクション
+
+**テスト手順:**
+
+```bash
+# 1. ブラウザ完全リフレッシュ（必須）
+Ctrl+Shift+R (Windows/Linux)
+Cmd+Shift+R (Mac)
+
+# 2. 音声セッションテスト（30秒以上話す）
+
+# 3. CloudWatch Logs確認
+aws logs tail /aws/lambda/prance-websocket-default-dev --follow | \
+  grep -E "Audio analysis|sampleCount|Recognition result"
+```
+
+**期待される結果:**
+- sampleCount: 数千〜数万（13ではない）
+- Recognition result: 'RecognizedSpeech'（'NoMatch'ではない）
+- トランスクリプト表示
+- AI応答・音声再生
+
+---
+
+#### 重要な教訓
+
+**1. MediaRecorder API仕様の正しい理解**
+- timesliceは**ライブストリーミング用**
+- 各チャンクは独立した完全なコンテナファイル
+- 録音完了後の一括処理には不要
+
+**2. ユーザーの観察を重視する**
+> 「UI上では音声インディケーターがちゃんと動いていて認識されている。」
+
+この指摘により、音声データ自体は正常で、処理ロジックに問題があることが判明。
+
+**3. 実データを確認する**
+- CloudWatch Logsでサンプル数確認
+- S3ファイルサイズ確認
+- WAVファイル分析
+- WebMファイル構造の理解
+
+**4. リグレッション防止**
+- E2Eテスト自動化（短い発話・通常・長い発話）
+- CloudWatch Logsモニタリング
+- Azure STT成功率アラート
+
+---
+
+#### 関連ドキュメント
+
+- 📋 詳細修正内容: `docs/development/AUDIO_TIMESLICE_FIX.md`
+- 📋 音声診断: `docs/development/AUDIO_ISSUE_DIAGNOSIS.md`
+- 📋 チャンク順序バグ: `docs/development/AUDIO_CHUNK_SORTING_BUG.md`
+- 📋 Phase 1完了記録: `docs/progress/ARCHIVE_2026-03-06_Phase1_Completion.md`
+
+---
+
+**Phase 1進捗率:** 100%完了 ✅
+**Phase 2進捗率:** 録画機能完了・解析機能準備中
+**次の目標:** 音声テスト完了 → Task 2.2 解析機能実装

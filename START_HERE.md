@@ -1,8 +1,8 @@
 # 次回セッション開始手順（2026-03-08更新）
 
-**最終作業日:** 2026-03-08 10:30 JST
+**最終作業日:** 2026-03-08 21:00 JST
 **Phase 1進捗:** 100%完了 🎉 | **Phase 2進捗:** 録画機能実装完了・デプロイ環境整備完了 ✅
-**最新コミット:** （次回コミット予定）
+**最新コミット:** b1d7fe4 - 音声文字起こし修正（MediaRecorder timeslice削除）
 **最新デプロイ:** 2026-03-08 10:25:01 JST - Lambda v1.1.0（ffmpeg統合完了・全20+ Lambda関数更新）
 
 ---
@@ -269,7 +269,84 @@ grep -rn "organizationId" infrastructure/lambda apps/web/lib --include="*.ts"
 
 ---
 
-## ✅ 今回セッションで完了した作業（2026-03-08 10:30 JST）
+## 🔊 音声文字起こし問題修正完了（2026-03-08 21:00 JST）
+
+### ✅ 問題と解決
+
+**問題:**
+- ユーザーが音声で話しているのに文字起こしが表示されない
+- UI上のエラーはなし
+- CloudWatch Logsで「13サンプル（0.00秒）」という異常な音声データを確認
+- Azure STT: "No speech recognized. Reason: NotRecognized"
+
+**根本原因:**
+MediaRecorderの`timeslice`パラメータ（250ms）により、WebMコンテナが断片化：
+- 各チャンクが独立したEBMLヘッダーとメタデータを持つ
+- 単純なBlob連結では、複数のヘッダーが混在した無効なWebMファイルになる
+- ffmpegは最初のチャンクのみ読み取り、残りを無視（→13サンプル）
+- Azure STTが音声として認識できない
+
+**解決策:**
+```typescript
+// Before: timesliceで断片化されたチャンクを生成
+mediaRecorder.start(timeslice); // 250ms
+
+// After: 録音停止時に完全なWebM blobを取得
+mediaRecorder.start(); // timesliceなし
+```
+
+**実装内容:**
+1. ✅ `useAudioRecorder.ts`: timesliceパラメータ削除、完全なblob取得
+2. ✅ `SessionPlayer`: onAudioChunkコールバック削除（不要になった）
+3. ✅ `isAuthenticatedRef`追加で認証タイミング問題も修正
+
+**コミット:** b1d7fe4
+
+**次回の必須アクション:**
+```bash
+# 1. ブラウザ完全リフレッシュ（キャッシュクリア）
+Ctrl+Shift+R (Windows/Linux) または Cmd+Shift+R (Mac)
+
+# 2. 音声セッションテスト（30秒以上話す）
+
+# 3. CloudWatch Logsで確認
+aws logs tail /aws/lambda/prance-websocket-default-dev --follow | grep -E "Audio analysis|sampleCount|Recognition result"
+
+# 期待される結果:
+# - sampleCount: 数千〜数万（13ではない）
+# - Recognition result: reasonText: 'RecognizedSpeech'（NoMatchではない）
+```
+
+**ドキュメント:**
+- 📋 詳細: `docs/development/AUDIO_TIMESLICE_FIX.md`
+
+### リグレッション調査結果
+
+**ユーザーの疑問:** 「以前は動いていたのになぜまた同じ問題が起きたのか？」
+
+**調査結果:**
+1. ✅ git履歴を完全分析
+   - Phase 1完了時（2026-03-06, commit 2e44696）: timeslice=250が**存在**
+   - 全コミット履歴: timesliceは**常に存在**
+   - 今回（commit b1d7fe4）: timesliceを**初めて削除**
+
+2. ✅ Phase 1完了時の動作記録確認
+   - `docs/progress/ARCHIVE_2026-03-06_Phase1_Completion.md`
+   - 音声会話パイプラインが正常動作していた記録あり
+
+3. 🔍 矛盾の説明
+   - **仮説1:** Phase 1完了時は短い発話（5-10秒）のみテストしていた可能性
+     - 短い発話: 断片化の影響が小さく、問題が顕在化しにくい
+     - 長い発話（30秒+）: 断片化により13サンプル問題が明確に発生
+   - **仮説2:** 以前のテストでは別の問題（チャンク順序バグ等）でマスクされていた
+   - **仮説3:** ローカル環境で修正していたがコミットしなかった（git履歴にない）
+
+**結論:**
+今回の修正（timeslice削除）は正しい対策。WebMコンテナフォーマットの仕様に基づく根本解決。
+
+---
+
+## ✅ 前回セッションで完了した作業（2026-03-08 10:30 JST）
 
 ### デプロイ環境整備完了 ✅（Critical）
 
