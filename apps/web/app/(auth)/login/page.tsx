@@ -33,8 +33,8 @@ export default function LoginPage() {
       // 認証情報を保存
       authApi.saveAuthData(response.data.user, response.data.tokens);
 
-      // 認証コンテキストを更新
-      refreshUser();
+      // 認証コンテキストを更新（完了を待つ）
+      await refreshUser();
 
       // ダッシュボードにリダイレクト
       router.push('/dashboard');
@@ -98,6 +98,11 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isLoading) {
+                    void handleSubmit(e as unknown as React.FormEvent);
+                  }
+                }}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 placeholder={t('auth.login.passwordPlaceholder')}
               />

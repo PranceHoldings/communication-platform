@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/provider';
 import { listScenarios, type Scenario } from '@/lib/api/scenarios';
-import { listAvatars, type Avatar } from '@/lib/api/avatars';
+import type { Avatar } from '@prance/shared';
+import { listAvatars } from '@/lib/api/avatars';
 import { createSession } from '@/lib/api/sessions';
 import Toast from '@/components/Toast';
 

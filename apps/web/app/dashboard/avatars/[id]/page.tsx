@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/provider';
-import { getAvatar, deleteAvatar, cloneAvatar, type Avatar } from '@/lib/api/avatars';
+import type { Avatar } from '@prance/shared';
+import { getAvatar, deleteAvatar, cloneAvatar } from '@/lib/api/avatars';
 import { authApi } from '@/lib/api/auth';
 import Link from 'next/link';
 import { ConfirmDialog } from '@/components/confirm-dialog';

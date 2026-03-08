@@ -72,6 +72,7 @@ export interface Avatar {
   configJson?: Record<string, unknown>;
   tags: string[];
   visibility: Visibility;
+  allowCloning: boolean;
   createdAt: Date;
 }
 
@@ -211,3 +212,196 @@ export interface PaginatedResponse<T> {
   items: T[];
   pagination: PaginationMeta;
 }
+
+// ============================================================
+// WebSocket Messages（フロントエンド・バックエンド共有型）
+// ============================================================
+
+/**
+ * WebSocketメッセージのベース型
+ */
+export interface WebSocketMessageBase {
+  type: string;
+  timestamp?: number;
+}
+
+/**
+ * 認証メッセージ（クライアント → サーバー）
+ */
+export interface AuthenticateMessage extends WebSocketMessageBase {
+  type: 'authenticate';
+  sessionId: string;
+}
+
+/**
+ * 認証完了メッセージ（サーバー → クライアント）
+ */
+export interface AuthenticatedMessage extends WebSocketMessageBase {
+  type: 'authenticated';
+  message: string;
+  sessionId: string;
+}
+
+/**
+ * 音声チャンクメッセージ（クライアント → サーバー）
+ */
+export interface AudioChunkMessage extends WebSocketMessageBase {
+  type: 'audio_chunk';
+  data: string; // Base64 encoded
+  timestamp: number;
+}
+
+/**
+ * ビデオチャンクパートメッセージ（クライアント → サーバー）
+ */
+export interface VideoChunkPartMessage extends WebSocketMessageBase {
+  type: 'video_chunk_part';
+  chunkId: string;
+  partIndex: number;
+  totalParts: number;
+  data: string; // Base64 encoded
+  timestamp: number;
+}
+
+/**
+ * ビデオチャンク確認メッセージ（サーバー → クライアント）
+ */
+export interface VideoChunkAckMessage extends WebSocketMessageBase {
+  type: 'video_chunk_ack';
+  chunkId?: string;
+  chunksReceived: number;
+  timestamp: number;
+}
+
+/**
+ * トランスクリプトメッセージ（サーバー → クライアント）
+ */
+export interface TranscriptMessage extends WebSocketMessageBase {
+  type: 'transcript_partial' | 'transcript_final';
+  speaker: Speaker;
+  text: string;
+  timestamp_start?: number;
+  confidence?: number;
+}
+
+/**
+ * アバター応答メッセージ（サーバー → クライアント）
+ */
+export interface AvatarResponseMessage extends WebSocketMessageBase {
+  type: 'avatar_response';
+  speaker: 'AI';
+  text: string;
+  timestamp: number;
+}
+
+/**
+ * 音声応答メッセージ（サーバー → クライアント）
+ */
+export interface AudioResponseMessage extends WebSocketMessageBase {
+  type: 'audio_response';
+  audioUrl?: string;
+  audio?: string; // Base64 encoded (legacy)
+  audioKey?: string;
+  contentType: string;
+  timestamp: number;
+}
+
+/**
+ * 処理状況更新メッセージ（サーバー → クライアント）
+ */
+export interface ProcessingUpdateMessage extends WebSocketMessageBase {
+  type: 'processing_update';
+  stage: string;
+  progress: number;
+  chunksReceived?: number;
+}
+
+/**
+ * ビデオ準備完了メッセージ（サーバー → クライアント）
+ */
+export interface VideoReadyMessage extends WebSocketMessageBase {
+  type: 'video_ready';
+  videoUrl: string;
+  videoKey: string;
+  videoSize: number;
+  processingDuration: number;
+}
+
+/**
+ * セッション完了メッセージ（サーバー → クライアント）
+ */
+export interface SessionCompleteMessage extends WebSocketMessageBase {
+  type: 'session_complete';
+  sessionId?: string;
+  message: string;
+}
+
+/**
+ * エラーメッセージ（サーバー → クライアント）
+ */
+export interface ErrorMessage extends WebSocketMessageBase {
+  type: 'error';
+  code: string;
+  message: string;
+  details?: string;
+  chunkId?: string;
+  partIndex?: number;
+}
+
+/**
+ * セッション終了メッセージ（クライアント → サーバー）
+ */
+export interface SessionEndMessage extends WebSocketMessageBase {
+  type: 'session_end';
+}
+
+/**
+ * ユーザー発話メッセージ（クライアント → サーバー）
+ */
+export interface UserSpeechMessage extends WebSocketMessageBase {
+  type: 'user_speech';
+  text: string;
+  timestamp: number;
+  confidence: number;
+}
+
+/**
+ * Pingメッセージ（クライアント → サーバー）
+ */
+export interface PingMessage extends WebSocketMessageBase {
+  type: 'ping';
+}
+
+/**
+ * Pongメッセージ（サーバー → クライアント）
+ */
+export interface PongMessage extends WebSocketMessageBase {
+  type: 'pong';
+  timestamp: number;
+}
+
+/**
+ * クライアントからサーバーへのメッセージ（Union型）
+ */
+export type ClientToServerMessage =
+  | AuthenticateMessage
+  | AudioChunkMessage
+  | VideoChunkPartMessage
+  | SessionEndMessage
+  | UserSpeechMessage
+  | PingMessage;
+
+/**
+ * サーバーからクライアントへのメッセージ（Union型）
+ */
+export type ServerToClientMessage =
+  | AuthenticatedMessage
+  | VideoChunkAckMessage
+  | TranscriptMessage
+  | AvatarResponseMessage
+  | AudioResponseMessage
+  | ProcessingUpdateMessage
+  | VideoReadyMessage
+  | SessionCompleteMessage
+  | ErrorMessage
+  | PongMessage;

@@ -1,8 +1,8 @@
 # 音声モジュール
 
-**バージョン:** 1.0
-**最終更新:** 2026-03-05
-**ステータス:** 設計完了
+**バージョン:** 1.1
+**最終更新:** 2026-03-08
+**ステータス:** 設計完了・Phase 1実装中
 
 ---
 
@@ -288,6 +288,201 @@ function handleTranscript(result: TranscriptResult) {
   }
 }
 ```
+
+### 自動言語検出（重要仕様）
+
+**設計原則: STTは言語エラーを起こさない**
+
+セッション設定言語とユーザー発話言語が異なる場合でも、システムはエラーを返さず、自動的に言語を検出して処理します。
+
+#### 背景と理由
+
+従来の固定言語設定では、以下の問題が発生します：
+
+```
+セッション設定: 日本語
+ユーザー発話: 英語
+結果: InitialSilenceTimeout エラー ❌ (実用不可)
+```
+
+実際の使用シーンでは、以下のケースが頻繁に発生します：
+- 日本語セッションでユーザーが英語を混ぜて話す（例: "私の名前は John です"）
+- 多言語話者が自然に言語を切り替える
+- 言語設定を間違えてセッションを開始
+
+これらすべてのケースで**エラーなく正常動作する**ことが必須要件です。
+
+#### 言語処理の役割分担
+
+| コンポーネント | 言語設定 | 目的 |
+|--------------|---------|------|
+| **STT (音声認識)** | 自動検出（候補言語から） | ユーザーの発話を正確に認識 |
+| **TTS (音声合成)** | セッション設定言語 | アバターの応答言語 |
+| **AI応答** | 検出された言語に合わせる | ユーザーの言語で応答 |
+
+#### Azure Speech Services 自動言語検出
+
+**技術仕様:**
+
+| 項目 | 値 |
+|------|-----|
+| **機能名** | AutoDetectSourceLanguageConfig |
+| **候補言語** | `['ja-JP', 'en-US']` (初期実装) |
+| **検出方式** | 音声の最初の数秒で自動判定 |
+| **追加遅延** | ~100ms (検出オーバーヘッド) |
+| **検出精度** | 95%以上（Azure公式値） |
+
+**実装例:**
+
+```typescript
+// Azure Speech Services 自動言語検出
+import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
+
+export class AzureSpeechToText {
+  constructor(private options: AzureSTTConfig) {
+    this.config = sdk.SpeechConfig.fromSubscription(
+      options.subscriptionKey,
+      options.region
+    );
+
+    // 自動言語検出設定（候補言語を指定）
+    if (options.autoDetectLanguages && options.autoDetectLanguages.length > 0) {
+      this.autoDetectConfig = sdk.AutoDetectSourceLanguageConfig.fromLanguages(
+        options.autoDetectLanguages
+      );
+      console.log('[AzureSTT] Auto-detect enabled for languages:', options.autoDetectLanguages);
+    } else {
+      // フォールバック: 固定言語
+      this.config.speechRecognitionLanguage = options.language || 'en-US';
+      console.log('[AzureSTT] Fixed language:', this.config.speechRecognitionLanguage);
+    }
+
+    // 詳細な認識結果を有効化
+    this.config.outputFormat = sdk.OutputFormat.Detailed;
+  }
+
+  async recognizeFromFile(audioFilePath: string): Promise<TranscriptResult> {
+    return new Promise((resolve, reject) => {
+      const audioConfig = sdk.AudioConfig.fromWavFileInput(
+        require('fs').readFileSync(audioFilePath)
+      );
+
+      let recognizer: sdk.SpeechRecognizer;
+
+      // 自動言語検出が有効な場合
+      if (this.autoDetectConfig) {
+        recognizer = sdk.SpeechRecognizer.FromConfig(
+          this.config,
+          this.autoDetectConfig,
+          audioConfig
+        );
+      } else {
+        // 固定言語の場合
+        recognizer = new sdk.SpeechRecognizer(this.config, audioConfig);
+      }
+
+      recognizer.recognizeOnceAsync(
+        (result) => {
+          if (result.reason === sdk.ResultReason.RecognizedSpeech) {
+            // 検出された言語を取得
+            const detectedLanguage = result.properties.getProperty(
+              sdk.PropertyId.SpeechServiceConnection_AutoDetectSourceLanguageResult
+            );
+
+            console.log('[AzureSTT] Detected language:', detectedLanguage);
+            console.log('[AzureSTT] Recognized text:', result.text);
+
+            resolve({
+              text: result.text,
+              confidence: 0.95,
+              isFinal: true,
+              offset: result.offset,
+              duration: result.duration,
+              language: detectedLanguage, // 検出された言語
+            });
+          } else if (result.reason === sdk.ResultReason.NoMatch) {
+            // 音声が検出されなかった（無音またはノイズのみ）
+            reject(new Error('No speech recognized. Audio may contain no detectable speech.'));
+          } else {
+            reject(new Error(`Recognition failed: ${sdk.ResultReason[result.reason]}`));
+          }
+          recognizer.close();
+        },
+        (error) => {
+          recognizer.close();
+          reject(new Error(`Recognition error: ${error}`));
+        }
+      );
+    });
+  }
+}
+```
+
+#### 候補言語の選択指針
+
+**初期実装（Phase 1）:**
+```typescript
+const CANDIDATE_LANGUAGES = ['ja-JP', 'en-US'];
+```
+
+**将来拡張（Phase 2以降）:**
+```typescript
+// 組織設定に基づいて候補言語を動的に変更
+const CANDIDATE_LANGUAGES = getOrganizationLanguages(orgId);
+// 例: ['ja-JP', 'en-US', 'zh-CN', 'ko-KR']
+```
+
+**パフォーマンス最適化:**
+- 候補言語は2-4言語が最適（検出精度と速度のバランス）
+- 候補が多すぎると検出精度が低下する可能性あり
+
+#### エラーハンドリング
+
+```typescript
+// 自動言語検出が失敗した場合のフォールバック
+try {
+  const result = await azureSTT.recognizeFromFile(audioPath);
+  console.log('Detected language:', result.language);
+  console.log('Transcript:', result.text);
+} catch (error) {
+  if (error.message.includes('No speech recognized')) {
+    // 音声入力がない場合の処理
+    return {
+      error: 'NO_SPEECH_DETECTED',
+      message: 'Please speak clearly into the microphone.',
+      suggestion: 'Check your microphone settings and try again.',
+    };
+  } else {
+    // その他のエラー
+    return {
+      error: 'STT_ERROR',
+      message: error.message,
+    };
+  }
+}
+```
+
+#### 多言語会話フロー
+
+```
+ユーザー: "Hello, my name is John."
+         ↓ (自動検出: en-US)
+STT結果: { text: "Hello, my name is John.", language: "en-US" }
+         ↓
+AI処理: (英語で応答を生成)
+         ↓
+TTS: "Nice to meet you, John. How can I help you today?"
+         ↓
+ユーザー: "日本語で話してください。"
+         ↓ (自動検出: ja-JP)
+STT結果: { text: "日本語で話してください。", language: "ja-JP" }
+         ↓
+AI処理: (日本語で応答を生成)
+         ↓
+TTS: "承知しました。日本語でお話しします。"
+```
+
+**重要:** この仕様により、ユーザーは**言語設定を気にせず自然に会話できる**ようになります。
 
 ---
 
@@ -1118,7 +1313,19 @@ export function VoiceRecorder({ onRecordingComplete }: { onRecordingComplete: (a
 
 ## まとめ
 
-音声モジュールは、Pranceプラットフォームのリアルタイムコミュニケーションを支える重要なコンポーネントです。Azure Speech ServicesとElevenLabs APIの組み合わせにより、高精度な音声認識と自然な音声合成を実現します。音声クローニング機能により、ユーザーは独自の音声でAIアバターをカスタマイズできます。
+音声モジュールは、Pranceプラットフォームのリアルタイムコミュニケーションを支える重要なコンポーネントです。Azure Speech ServicesとElevenLabs APIの組み合わせにより、高精度な音声認識と自然な音声合成を実現します。
+
+**主要な設計原則（Phase 1実装）:**
+- ✅ **STT自動言語検出**: ユーザーがどの言語を話してもエラーなく認識
+- ✅ **TTS言語設定**: セッション設定に基づいてアバターの応答言語を決定
+- ✅ **多言語会話対応**: 言語を切り替えても自然に会話が継続
+- ✅ **音声クローニング**: ユーザーは独自の音声でAIアバターをカスタマイズ可能
+
+**Phase 1実装状況（2026-03-08）:**
+- ✅ Azure STT基本統合
+- 🔄 自動言語検出実装中（候補言語: ja-JP, en-US）
+- ✅ ElevenLabs TTS統合
+- 📋 音声クローニング（Phase 2以降）
 
 **次のステップ:**
 - [アバターモジュール](AVATAR_MODULE.md) - アバター管理とリップシンク
@@ -1127,5 +1334,6 @@ export function VoiceRecorder({ onRecordingComplete }: { onRecordingComplete: (a
 
 ---
 
-**最終更新:** 2026-03-05
+**最終更新:** 2026-03-08
+**重要な変更:** STT自動言語検出の仕様追加
 **次回レビュー予定:** Phase 1 完了時

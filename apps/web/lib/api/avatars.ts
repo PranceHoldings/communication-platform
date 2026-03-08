@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import { buildQueryString } from './utils';
 import type {
+  Avatar,
   AvatarType,
   AvatarStyle,
   AvatarSource,
@@ -8,6 +9,8 @@ import type {
   PaginationMeta,
 } from '@prance/shared';
 
+// Re-export Avatar type for convenience
+export type { Avatar };
 
 export interface AvatarListResponse {
   avatars: Avatar[];

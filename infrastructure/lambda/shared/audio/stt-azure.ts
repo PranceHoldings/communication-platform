@@ -9,7 +9,8 @@ import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
 export interface AzureSTTConfig {
   subscriptionKey: string;
   region: string;
-  language?: string;
+  language?: string; // Deprecated: 固定言語設定（後方互換性のため残す）
+  autoDetectLanguages?: string[]; // 自動言語検出候補（推奨: ['ja-JP', 'en-US']）
 }
 
 export interface TranscriptResult {
@@ -18,10 +19,12 @@ export interface TranscriptResult {
   isFinal: boolean;
   offset: number;
   duration: number;
+  language?: string; // 検出された言語（自動言語検出使用時のみ）
 }
 
 export class AzureSpeechToText {
   private config: sdk.SpeechConfig;
+  private autoDetectConfig?: sdk.AutoDetectSourceLanguageConfig;
   private recognizer?: sdk.SpeechRecognizer;
 
   constructor(private options: AzureSTTConfig) {
@@ -30,8 +33,17 @@ export class AzureSpeechToText {
       options.region
     );
 
-    // Set language (default: en-US)
-    this.config.speechRecognitionLanguage = options.language || LANGUAGE_DEFAULTS.STT_LANGUAGE;
+    // 自動言語検出設定（推奨）
+    if (options.autoDetectLanguages && options.autoDetectLanguages.length > 0) {
+      this.autoDetectConfig = sdk.AutoDetectSourceLanguageConfig.fromLanguages(
+        options.autoDetectLanguages
+      );
+      console.log('[AzureSTT] Auto-detect enabled for languages:', options.autoDetectLanguages);
+    } else {
+      // フォールバック: 固定言語設定（非推奨）
+      this.config.speechRecognitionLanguage = options.language || LANGUAGE_DEFAULTS.STT_LANGUAGE;
+      console.log('[AzureSTT] Fixed language mode:', this.config.speechRecognitionLanguage);
+    }
 
     // Enable detailed results
     this.config.outputFormat = sdk.OutputFormat.Detailed;
@@ -39,7 +51,20 @@ export class AzureSpeechToText {
     // Enable profanity filtering
     this.config.setProfanity(sdk.ProfanityOption.Masked);
 
-    console.log('[AzureSTT] Configured for language:', this.config.speechRecognitionLanguage);
+    // 🔧 初期サイレンスタイムアウトを延長（5秒 → 15秒）
+    // 理由: ユーザーがマイクの許可後に話し始めるまでの時間を確保
+    this.config.setProperty(
+      sdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs,
+      '15000'
+    );
+    console.log('[AzureSTT] InitialSilenceTimeout set to 15000ms');
+
+    // 🔧 エンドサイレンスタイムアウトを延長（デフォルト → 2秒）
+    // 理由: ユーザーの発話終了を正確に検出
+    this.config.setProperty(
+      sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs,
+      '2000'
+    );
   }
 
   /**
@@ -183,16 +208,39 @@ export class AzureSpeechToText {
         });
 
         const audioConfig = sdk.AudioConfig.fromWavFileInput(audioBuffer);
-        const recognizer = new sdk.SpeechRecognizer(this.config, audioConfig);
+
+        let recognizer: sdk.SpeechRecognizer;
+
+        // 自動言語検出が有効な場合
+        if (this.autoDetectConfig) {
+          recognizer = sdk.SpeechRecognizer.FromConfig(
+            this.config,
+            this.autoDetectConfig,
+            audioConfig
+          );
+        } else {
+          // 固定言語の場合
+          recognizer = new sdk.SpeechRecognizer(this.config, audioConfig);
+        }
 
         recognizer.recognizeOnceAsync(
           (result) => {
+            // 検出された言語を取得（自動言語検出使用時のみ）
+            // 注意: Azure Speech SDK v1.41では、結果から検出された言語を取得するための
+            // 公式PropertyIdが存在しないため、ログ出力のみに使用
+            // result.properties には内部的に言語情報が含まれる可能性があるが、
+            // 標準APIでは公開されていない（Phase 2で調査予定）
+            const detectedLanguage = this.autoDetectConfig
+              ? 'auto-detected' // PropertyIdが存在しないため、プレースホルダー
+              : undefined;
+
             console.log('[AzureSTT] Recognition result:', {
               reason: result.reason,
               reasonText: sdk.ResultReason[result.reason],
               text: result.text,
               duration: result.duration,
               offset: result.offset,
+              detectedLanguage: detectedLanguage || 'N/A',
             });
 
             if (result.reason === sdk.ResultReason.RecognizedSpeech) {
@@ -202,6 +250,7 @@ export class AzureSpeechToText {
                 isFinal: true,
                 offset: result.offset,
                 duration: result.duration,
+                language: detectedLanguage, // 検出された言語
               });
             } else if (result.reason === sdk.ResultReason.NoMatch) {
               const noMatchDetails = sdk.NoMatchDetails.fromResult(result);

@@ -45,18 +45,26 @@ docs/modules/
 
 ```
 docs/development/
-├── IMPLEMENTATION_PHASES.md   # 実装フェーズ計画
-├── API_DESIGN.md              # API設計
-├── DATABASE_DESIGN.md         # データベース設計
-├── API_KEY_MANAGEMENT.md      # APIキー管理
-└── ENVIRONMENT_ARCHITECTURE.md # 環境アーキテクチャ
+├── IMPLEMENTATION_PHASES.md      # 実装フェーズ計画
+├── API_DESIGN.md                 # API設計
+├── DATABASE_DESIGN.md            # データベース設計
+├── API_KEY_MANAGEMENT.md         # APIキー管理
+├── ENVIRONMENT_ARCHITECTURE.md   # 環境アーキテクチャ
+├── DEVELOPMENT_WORKFLOW.md       # 開発ワークフロー完全ガイド ⭐NEW
+├── CODE_DUPLICATION_AUDIT.md     # コード重複監査レポート
+├── CONSISTENCY_GUIDELINES.md     # 整合性ガイドライン
+├── CHUNK_SORTING_REFACTORING.md  # DRY原則実例
+└── その他15ファイル（音声・録画処理、多言語対応等）
 ```
 
 ### インフラ構成
 
 ```
 docs/infrastructure/
-└── AWS_SERVERLESS.md          # AWSサーバーレス詳細
+├── AWS_SERVERLESS.md          # AWSサーバーレス詳細
+├── DOMAIN_SETUP_SUMMARY.md    # ドメイン設定サマリー
+├── NODE22_MIGRATION_REPORT.md # Node.js 22移行完了記録
+└── NODE_EOL_MIGRATION_PLAN.md # Node.js移行計画
 ```
 
 ### 進捗管理
@@ -65,16 +73,28 @@ docs/infrastructure/
 docs/progress/
 ├── SESSION_HISTORY.md                      # 全セッション詳細履歴
 ├── ARCHIVE_2026-03-06_Phase1_Completion.md # Phase 1完了記録
-└── PHASE_2_PLAN.md                         # Phase 2詳細プラン
+├── ARCHIVE_2026-03-05_session-complete.md  # 過去セッション記録
+├── PHASE_2_PLAN.md                         # Phase 2詳細プラン
+├── PHASE2_RECORDING_TODO.md                # Phase 2録画機能TODO
+├── SESSION_SUMMARY_2026-03-08.md           # 最新セッションサマリー
+├── STT_AUTO_LANGUAGE_DETECTION_PLAN.md     # STT自動言語検出プラン
+└── WEBSOCKET_CDK_INTEGRATION.md            # WebSocket統合記録
 ```
 
 ### リファレンス
 
 ```
 docs/reference/
-├── TECH_STACK.md              # 技術スタック詳細
-├── FAQ.md                     # よくある質問
-└── GLOSSARY.md                # 用語集
+├── TECH_STACK.md                       # 技術スタック詳細
+├── FAQ.md                              # よくある質問
+├── GLOSSARY.md                         # 用語集
+├── CLAUDE.en.md                        # プロジェクト概要（英語版）
+├── BUSINESS_OVERVIEW.md                # ビジネス概要
+├── EXTERNAL_TOOLS_SETUP.md             # 外部ツールセットアップ
+├── AUTH_COMPARISON_CLERK_VS_COGNITO.md # 認証サービス比較
+├── AWS_MIGRATION_ANALYSIS.md           # AWS移行分析
+├── AZURE_SETUP_CHECKLIST.md            # Azureセットアップ
+└── CLIENT_PRESENTATION.md              # クライアントプレゼン
 ```
 
 ### 運用ガイド
@@ -82,11 +102,16 @@ docs/reference/
 ```
 docs/
 ├── CICD.md                    # CI/CD
-├── CODING_STANDARDS.md        # コーディング規約
 ├── DEPLOYMENT.md              # デプロイ手順
 ├── OPERATIONS_GUIDE.md        # 運用ガイド
-└── SECURITY.md                # セキュリティ
+├── SECURITY.md                # セキュリティ
+├── QUICKSTART.md              # クイックスタート（作業再開）
+└── SETUP.md                   # セットアップガイド（初回）
 ```
+
+**注意:** コーディング規約は以下に統合されました：
+- **[CODING_RULES.md](../CODING_RULES.md)** - 実践的クイックリファレンス（ルート）
+- **[DEVELOPMENT_WORKFLOW.md](development/DEVELOPMENT_WORKFLOW.md)** - 包括的開発ガイド
 
 ---
 

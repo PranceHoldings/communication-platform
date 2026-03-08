@@ -67,3 +67,6 @@ prisma/migrations/
 *.tmp
 .cache/
 *.backup-*
+apps/web/.next.broken-*
+node_modules.broken-*
+*.backup

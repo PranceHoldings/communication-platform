@@ -1,4 +1,8 @@
 {
+  "hosted-zone:account=010438500933:domainName=platform.prance.co.jp:region=us-east-1": {
+    "Id": "/hostedzone/Z072442027JY82JZ14ZI5",
+    "Name": "platform.prance.co.jp."
+  },
   "availability-zones:account=010438500933:region=us-east-1": [
     "us-east-1a",
     "us-east-1b",
@@ -6,13 +10,5 @@
     "us-east-1d",
     "us-east-1e",
     "us-east-1f"
-  ],
-  "hosted-zone:account=010438500933:domainName=prance.co.jp:region=us-east-1": {
-    "Id": "/hostedzone/Z04519173E0N5PERQ89R3",
-    "Name": "prance.co.jp."
-  },
-  "hosted-zone:account=010438500933:domainName=platform.prance.co.jp:region=us-east-1": {
-    "Id": "/hostedzone/Z072442027JY82JZ14ZI5",
-    "Name": "platform.prance.co.jp."
-  }
+  ]
 }

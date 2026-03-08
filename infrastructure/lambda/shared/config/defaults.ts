@@ -93,25 +93,62 @@ export const APP_DEFAULTS = {
 // ============================================================
 
 export const LANGUAGE_DEFAULTS = {
-  // Speech-to-Text (Azure Speech Services形式: en-US, ja-JP)
-  STT_LANGUAGE: 'en-US',
+  // ============================================================
+  // Phase 1: 最小限のデフォルト値（フォールバック用）
+  // ============================================================
 
-  // シナリオ・コンテンツ言語（ISO 639-1: en, ja）
-  SCENARIO_LANGUAGE: 'ja',
+  // STT固定言語（非推奨・後方互換性のみ）
+  STT_LANGUAGE: 'en-US', // Deprecated: 自動言語検出を使用すること
 
-  // サポート言語リスト
-  SUPPORTED_LANGUAGES: ['ja', 'en'] as const,
+  // STT自動言語検出デフォルト候補（Phase 1: 日本語・英語のみ）
+  // 注意: これはフォールバック値です。実際の候補言語は以下から取得すべき:
+  //   1. 環境変数 STT_AUTO_DETECT_LANGUAGES（カンマ区切り）
+  //   2. 組織設定（Phase 2以降）
+  //   3. システムに登録された言語リソースから動的生成（Phase 2以降）
+  STT_AUTO_DETECT_LANGUAGES_DEFAULT: ['ja-JP', 'en-US'] as const,
 
-  // サポートSTT言語リスト（Azure Speech Services）
-  SUPPORTED_STT_LANGUAGES: [
-    'en-US', // English (United States)
-    'ja-JP', // Japanese
-    'zh-CN', // Chinese (Simplified)
-    'es-ES', // Spanish
-    'fr-FR', // French
-    'de-DE', // German
-    'ko-KR', // Korean
-  ] as const,
+  // サポートされている言語コード（Phase 1）
+  // 注意: STT_AUTO_DETECT_LANGUAGES_DEFAULTを参照（DRY原則）
+  get SUPPORTED_LANGUAGES() {
+    return this.STT_AUTO_DETECT_LANGUAGES_DEFAULT;
+  },
+
+  // デフォルトのシナリオ言語
+  // 注意: 最初のサポート言語から自動的に決定（DRY原則）
+  get SCENARIO_LANGUAGE() {
+    // 'ja-JP' -> 'ja' に変換
+    return this.STT_AUTO_DETECT_LANGUAGES_DEFAULT[0].split('-')[0];
+  },
+
+  // ============================================================
+  // Phase 2以降の実装方針（重要）
+  // ============================================================
+  //
+  // 新言語追加時の正しいフロー:
+  // 1. 言語リソースファイル追加: apps/web/messages/{code}.json
+  // 2. リソースファイルにメタデータ含める:
+  //    {
+  //      "meta": {
+  //        "languageCode": "zh",
+  //        "sttCode": "zh-CN",
+  //        "displayName": "中文"
+  //      },
+  //      "common": { ... }
+  //    }
+  // 3. このファイルは変更しない（ハードコード禁止）
+  // 4. システムが自動的に言語を認識
+  //
+  // または:
+  // 1. スーパー管理者UIから言語リソースをアップロード
+  // 2. S3に保存 + CloudFront経由で配信
+  // 3. 1-5分でホットデプロイ（リビルド不要）
+  //
+  // STT候補言語の決定方法（Phase 2以降）:
+  // - デフォルト: システムに登録されたすべての言語
+  // - 組織設定: 組織が選択した言語のみ（パフォーマンス最適化）
+  // - 推奨: 2-4言語（Azure自動検出の精度が最適）
+  //
+  // ============================================================
 } as const;
 
 // ============================================================

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
-import { listAvatars, type Avatar } from '@/lib/api/avatars';
+import type { Avatar } from '@prance/shared';
+import { listAvatars } from '@/lib/api/avatars';
 import { authApi } from '@/lib/api/auth';
 import Link from 'next/link';
 

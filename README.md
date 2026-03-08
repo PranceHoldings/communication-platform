@@ -29,10 +29,8 @@ Pranceは、AIアバターとのリアルタイム会話を通じて面接練習
 1. **[START_HERE.md](START_HERE.md)** ⭐⭐⭐ - 次回セッション開始手順（最優先）
 2. **[CODING_RULES.md](CODING_RULES.md)** ⭐⭐ - コミット前チェックリスト（必須）
 3. **[CLAUDE.md](CLAUDE.md)** ⭐ - プロジェクト概要・開発ガイドライン
-4. **[外部ツールセットアップ](docs/EXTERNAL_TOOLS_SETUP.md)** - API登録・キー取得の完全ガイド
-5. **[リリースプラン](docs/RELEASE_PLAN.md)** - どの機能をいつリリースするか
-6. **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各機能の詳細仕様（ユーザーストーリー、UI、API、受け入れ基準）
-7. **[実装プラン](docs/IMPLEMENTATION_PLAN.md)** - 技術的な実装手順
+4. **[開発ワークフロー](docs/development/DEVELOPMENT_WORKFLOW.md)** - Claude Code活用・包括的ガイド
+5. **[外部ツールセットアップ](docs/reference/EXTERNAL_TOOLS_SETUP.md)** - API登録・キー取得の完全ガイド
 
 **開発開始の流れ**:
 
@@ -100,7 +98,8 @@ npm run dev
 ```
 
 詳細は以下を参照してください：
-- **[セットアップガイド](SETUP.md)** - 詳細な初期設定手順
+- **[セットアップガイド](docs/SETUP.md)** - 詳細な初期設定手順
+- **[クイックスタート](docs/QUICKSTART.md)** - 作業再開手順
 - **[環境アーキテクチャ](docs/development/ENVIRONMENT_ARCHITECTURE.md)** - 環境構成の理解
 - **[APIキー管理](docs/development/API_KEY_MANAGEMENT.md)** - APIキーの一元管理
 
@@ -141,9 +140,12 @@ npm run deploy:production
 
 ## ドキュメント
 
-### 🔧 セットアップ
+### 🔧 セットアップ・開発
 
-- **[外部ツールセットアップ](docs/EXTERNAL_TOOLS_SETUP.md)** ⭐ - API登録・キー取得の完全ガイド（1,492行）
+- **[セットアップガイド](docs/SETUP.md)** - 初回環境構築手順
+- **[クイックスタート](docs/QUICKSTART.md)** - 作業再開手順（1分チェックリスト）
+- **[開発ワークフロー](docs/development/DEVELOPMENT_WORKFLOW.md)** ⭐ - Claude Code活用・包括的開発ガイド
+- **[外部ツールセットアップ](docs/reference/EXTERNAL_TOOLS_SETUP.md)** - API登録・キー取得の完全ガイド
   - AI・会話サービス（Claude、OpenAI、Gemini）
   - 音声サービス（ElevenLabs、Azure Speech）
   - 画像・感情解析（Azure Face、MediaPipe）
@@ -153,23 +155,27 @@ npm run deploy:production
 
 ### 📋 プロジェクト管理
 
-- **[リリースプラン](docs/RELEASE_PLAN.md)** - 段階的リリース戦略（Alpha → Beta → v1.0 → v2.0）
-- **[機能ロードマップ](docs/FEATURE_ROADMAP.md)** - 各リリース段階の詳細機能仕様（2,117行）
-- [実装プラン](docs/IMPLEMENTATION_PLAN.md) - 技術的実装計画（フェーズ分け）
-- [プロジェクト構造](docs/PROJECT_STRUCTURE.md) - コードベース構成
+- **[進捗記録](docs/progress/)** - セッション履歴・Phase完了記録
+  - [SESSION_HISTORY.md](docs/progress/SESSION_HISTORY.md) - 全セッション詳細
+  - [PHASE_2_PLAN.md](docs/progress/PHASE_2_PLAN.md) - Phase 2詳細プラン
+- [実装フェーズ](docs/development/IMPLEMENTATION_PHASES.md) - 技術的実装計画
 
 ### 🏗️ 技術ドキュメント
 
-- [アーキテクチャ](docs/ARCHITECTURE.md) - AWSサーバーレスアーキテクチャ
-- [データベース設計](docs/DATABASE_DESIGN.md) - Aurora/DynamoDBスキーマ
-- [API仕様](docs/API_SPECIFICATION.md) - RESTful API + WebSocket仕様
-- [開発ガイド](docs/DEVELOPMENT_GUIDE.md) - Claude Code開発ガイド
+- [システムアーキテクチャ](docs/architecture/SYSTEM_ARCHITECTURE.md) - AWSサーバーレス全体構成
+- [マルチテナント設計](docs/architecture/MULTITENANCY.md) - 3階層ユーザーロール
+- [データベース設計](docs/development/DATABASE_DESIGN.md) - Aurora/DynamoDBスキーマ
+- [API設計](docs/development/API_DESIGN.md) - RESTful API + WebSocket仕様
+- [AWS詳細](docs/infrastructure/AWS_SERVERLESS.md) - インフラ構成詳細
 - [CI/CDガイド](docs/CICD.md) - GitHub Actions + AWS CDK
 
-### 💼 ビジネスドキュメント
+### 💼 リファレンス
 
-- [ビジネス概要](docs/BUSINESS_OVERVIEW.md) - ビジネスモデル・市場分析
-- [CLAUDE.md](CLAUDE.md) - 完全プロジェクト仕様書（240KB）
+- [技術スタック](docs/reference/TECH_STACK.md) - 使用技術詳細
+- [FAQ](docs/reference/FAQ.md) - よくある質問
+- [用語集](docs/reference/GLOSSARY.md) - 専門用語解説
+- [ビジネス概要](docs/reference/BUSINESS_OVERVIEW.md) - ビジネスモデル・市場分析
+- [CLAUDE.md](CLAUDE.md) - 完全プロジェクト仕様書
 
 ### 🔐 運用・セキュリティ
 

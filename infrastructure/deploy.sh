@@ -205,7 +205,26 @@ aws cloudformation list-stacks \
   --output table \
   --region ${AWS_REGION}
 
-# 8. 完了メッセージ
+# 8. Lambda関数のバージョン確認
+echo -e "\n${YELLOW}🔍 Lambda関数のバージョンを確認中...${NC}"
+
+# WebSocket Lambda関数のバージョンを確認
+WEBSOCKET_FUNCTION="prance-websocket-default-${ENVIRONMENT}"
+LOCAL_VERSION=$(cat lambda/websocket/default/package.json | grep '"version"' | sed 's/.*"version": "\(.*\)".*/\1/')
+
+echo -e "${BLUE}📦 ローカルバージョン:${NC} ${LOCAL_VERSION}"
+
+# Lambda関数情報を取得
+FUNCTION_INFO=$(aws lambda get-function --function-name ${WEBSOCKET_FUNCTION} --query 'Configuration.LastModified' --output text 2>/dev/null || echo "NOT_FOUND")
+
+if [ "$FUNCTION_INFO" = "NOT_FOUND" ]; then
+  echo -e "${YELLOW}⚠️  Lambda関数が見つかりません: ${WEBSOCKET_FUNCTION}${NC}"
+else
+  echo -e "${GREEN}✅ Lambda関数更新完了: ${FUNCTION_INFO}${NC}"
+  echo -e "${YELLOW}   テストリクエスト送信後にCloudWatch Logsで実行中のバージョンを確認してください${NC}"
+fi
+
+# 9. 完了メッセージ
 echo -e "\n${GREEN}✅ デプロイ完了！${NC}"
 echo -e "${BLUE}=============================================="
 echo -e "🎉 Prance Platform が正常にデプロイされました"

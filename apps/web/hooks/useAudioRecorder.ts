@@ -56,7 +56,13 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
     // Calculate average volume (0-1)
     const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-    setAudioLevel(average / 255);
+    const normalizedLevel = average / 255;
+    setAudioLevel(normalizedLevel);
+
+    // Log when audio level is detected (for debugging)
+    if (normalizedLevel > 0.05) {
+      console.log('[AudioRecorder] Audio level detected:', normalizedLevel.toFixed(3));
+    }
 
     animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
   }, []);
@@ -71,11 +77,28 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 16000, // 16kHz is standard for speech recognition
+          // Note: Don't specify sampleRate - let browser use its default (usually 48kHz)
+          // ffmpeg will convert to 16kHz on the backend for Azure STT
         },
       });
 
       streamRef.current = stream;
+
+      // Log stream details for debugging
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length > 0) {
+        const settings = audioTracks[0].getSettings();
+        console.log('[AudioRecorder] Audio track settings:', {
+          deviceId: settings.deviceId,
+          sampleRate: settings.sampleRate,
+          channelCount: settings.channelCount,
+          echoCancellation: settings.echoCancellation,
+          noiseSuppression: settings.noiseSuppression,
+          autoGainControl: settings.autoGainControl,
+        });
+      } else {
+        console.warn('[AudioRecorder] No audio tracks found in stream!');
+      }
 
       // Set up audio context for level monitoring
       const audioContext = new AudioContext();
@@ -116,14 +139,34 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       });
 
       mediaRecorder.ondataavailable = (event) => {
+        console.log('[AudioRecorder] ondataavailable event fired:', {
+          dataSize: event.data.size,
+          type: event.data.type,
+          timestamp: Date.now(),
+        });
+
         if (event.data.size > 0) {
           const timestamp = Date.now();
 
           // Store chunk for complete recording
           recordedChunksRef.current.push(event.data);
 
+          console.log('[AudioRecorder] Audio chunk captured:', {
+            size: event.data.size,
+            type: event.data.type,
+            timestamp,
+            totalChunks: recordedChunksRef.current.length,
+          });
+
           // Also send chunk for real-time processing (if needed)
-          onAudioChunk?.(event.data, timestamp);
+          if (onAudioChunk) {
+            console.log('[AudioRecorder] Calling onAudioChunk callback');
+            onAudioChunk(event.data, timestamp);
+          } else {
+            console.warn('[AudioRecorder] onAudioChunk callback not provided');
+          }
+        } else {
+          console.warn('[AudioRecorder] ondataavailable fired but data.size is 0');
         }
       };
 
@@ -167,9 +210,21 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
       mediaRecorderRef.current = mediaRecorder;
 
+      console.log('[AudioRecorder] Starting MediaRecorder with timeslice:', {
+        timeslice,
+        mimeType: actualMimeType,
+        state: mediaRecorder.state,
+        hasOnDataAvailable: !!mediaRecorder.ondataavailable,
+      });
+
       // Start recording with timeslice for real-time chunks
       mediaRecorder.start(timeslice);
       setIsRecording(true);
+
+      console.log('[AudioRecorder] MediaRecorder started:', {
+        state: mediaRecorder.state,
+        timeslice,
+      });
 
       // Start audio level monitoring
       monitorAudioLevel();
@@ -178,6 +233,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         mimeType: actualMimeType,
         timeslice,
         sampleRate: audioContext.sampleRate,
+        recorderState: mediaRecorder.state,
       });
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to start recording');

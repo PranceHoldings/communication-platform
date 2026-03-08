@@ -645,9 +645,12 @@ export class ApiLambdaStack extends cdk.Stack {
     });
 
     // WebSocket $default Handler (with AI/Audio/Video processing)
+    // Note: We now use ffmpeg-static npm package instead of Lambda Layer
+    // This provides better compatibility with ARM64 architecture and simplifies deployment
+
     const websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefaultFunction', {
       runtime: lambda.Runtime.NODEJS_22_X,
-      architecture: lambda.Architecture.X86_64, // Using x86_64 for ffmpeg-installer compatibility
+      architecture: lambda.Architecture.ARM_64, // Using ARM64 for Graviton2 cost savings + dev env compatibility
       timeout: cdk.Duration.seconds(300), // Increased for video processing (5 minutes)
       memorySize: 3008, // Increased for video processing with ffmpeg
       ephemeralStorageSize: cdk.Size.gibibytes(10), // Large storage for video chunk processing
@@ -669,6 +672,8 @@ export class ApiLambdaStack extends cdk.Stack {
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
         RECORDINGS_TABLE_NAME: props.recordingsTable.tableName,
         S3_BUCKET: props.recordingsBucket.bucketName,
+        // ffmpeg path - will use ffmpeg-static package (auto-detected at runtime)
+        // FFMPEG_PATH is optional; if not set, will fallback to ffmpeg-static
         // AI/Audio Service Configuration
         // デフォルト値は shared/config/defaults.ts で管理
         AZURE_SPEECH_KEY: process.env.AZURE_SPEECH_KEY || '',
@@ -695,10 +700,12 @@ export class ApiLambdaStack extends cdk.Stack {
         target: 'es2020',
         externalModules: [
           'aws-sdk',
+          '@aws-sdk/*',
+          '@smithy/*',
           'microsoft-cognitiveservices-speech-sdk',
-          '@ffmpeg-installer/ffmpeg',
+          'ffmpeg-static',
         ],
-        nodeModules: ['microsoft-cognitiveservices-speech-sdk', '@ffmpeg-installer/ffmpeg', 'fluent-ffmpeg'],
+        nodeModules: ['microsoft-cognitiveservices-speech-sdk', 'ffmpeg-static'],
         commandHooks: {
           beforeBundling(inputDir: string, outputDir: string): string[] {
             return [];
