@@ -40,7 +40,7 @@ const DEFAULT_AWS_REGION = 'us-east-1';
 const DEFAULT_BEDROCK_REGION = 'us-east-1';
 const DEFAULT_BEDROCK_MODEL_ID = 'us.anthropic.claude-sonnet-4-6';
 const DEFAULT_ELEVENLABS_MODEL_ID = 'eleven_flash_v2_5';
-const DEFAULT_STT_LANGUAGE = 'en-US'; // Deprecated: 自動言語検出を使用すること
+const DEFAULT_STT_LANGUAGE = 'ja-JP'; // Deprecated: 自動言語検出を使用すること
 const DEFAULT_STT_AUTO_DETECT_LANGUAGES = ['ja-JP', 'en-US']; // Phase 1デフォルト
 const DEFAULT_VIDEO_FORMAT = 'webm';
 const DEFAULT_VIDEO_RESOLUTION = '1280x720';
@@ -203,6 +203,7 @@ interface ConnectionData {
   connectionId: string;
   sessionId?: string;
   scenarioPrompt?: string;
+  scenarioLanguage?: string; // Scenario language ('ja', 'en', etc.) for STT/TTS
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
   audioS3Key?: string; // S3 key for accumulated audio chunks
   audioChunksCount?: number;
@@ -249,9 +250,33 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
       case 'authenticate':
         // Store session information in connection data
         const sessionId = message.sessionId as string;
+
+        // Fetch scenario language from database
+        let scenarioLanguage = 'ja'; // Default
+        try {
+          const { PrismaClient } = await import('@prisma/client');
+          const prisma = new PrismaClient();
+
+          const session = await prisma.session.findUnique({
+            where: { id: sessionId },
+            include: { scenario: true },
+          });
+
+          if (session?.scenario?.language) {
+            scenarioLanguage = session.scenario.language;
+            console.log('[authenticate] Scenario language:', scenarioLanguage);
+          }
+
+          await prisma.$disconnect();
+        } catch (error) {
+          console.error('[authenticate] Failed to fetch scenario language:', error);
+          // Continue with default language
+        }
+
         await updateConnectionData(connectionId, {
           sessionId,
           conversationHistory: [],
+          scenarioLanguage, // Store language for audio processing
         });
 
         await sendToConnection(connectionId, {
@@ -1152,6 +1177,7 @@ async function handleAudioProcessing(
       sessionId,
       audioSize: audioBuffer.length,
       hasScenarioPrompt: !!connectionData?.scenarioPrompt,
+      scenarioLanguage: connectionData?.scenarioLanguage,
     });
 
     // Send processing status
@@ -1167,6 +1193,7 @@ async function handleAudioProcessing(
       audioData: audioBuffer,
       sessionId,
       scenarioPrompt: connectionData?.scenarioPrompt,
+      scenarioLanguage: connectionData?.scenarioLanguage, // Pass scenario language for STT priority
       conversationHistory: connectionData?.conversationHistory || [],
     });
 

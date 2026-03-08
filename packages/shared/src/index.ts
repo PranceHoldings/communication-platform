@@ -7,6 +7,9 @@
 // Export all types
 export * from './types';
 
+// Export language configuration
+export * from './language';
+
 // Export utilities (will be implemented later)
 // export * from './utils';
 

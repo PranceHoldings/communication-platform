@@ -12,7 +12,62 @@
 // Re-export shared types for convenience
 // ========================================
 
-export * from '@prance/shared';
+// Note: @prance/shared cannot be imported in Lambda bundling context
+// All shared types that Lambda needs should be defined here or copied
+// For language types, see ../config/language-config.ts
+
+// ========================================
+// Error Types (copied from @prance/shared)
+// ========================================
+
+export class AppError extends Error {
+  constructor(
+    public statusCode: number,
+    public code: string,
+    message: string,
+    public details?: any
+  ) {
+    super(message);
+    this.name = 'AppError';
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+export class AuthenticationError extends AppError {
+  constructor(message = 'Authentication failed') {
+    super(401, 'AUTHENTICATION_ERROR', message);
+  }
+}
+
+export class AuthorizationError extends AppError {
+  constructor(message = 'Access denied') {
+    super(403, 'AUTHORIZATION_ERROR', message);
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(resource: string) {
+    super(404, 'NOT_FOUND', `${resource} not found`);
+  }
+}
+
+export class ValidationError extends AppError {
+  constructor(message: string, details?: any) {
+    super(400, 'VALIDATION_ERROR', message, details);
+  }
+}
+
+export class ConflictError extends AppError {
+  constructor(message: string) {
+    super(409, 'CONFLICT', message);
+  }
+}
+
+export class InternalServerError extends AppError {
+  constructor(message = 'Internal server error', details?: any) {
+    super(500, 'INTERNAL_SERVER_ERROR', message, details);
+  }
+}
 
 // ========================================
 // JWT関連

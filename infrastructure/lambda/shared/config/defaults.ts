@@ -91,64 +91,59 @@ export const APP_DEFAULTS = {
 // ============================================================
 // Language Defaults
 // ============================================================
+//
+// 注意: より詳細な言語設定は language-config.ts を参照してください
+// - normalizeLanguageCode(): 言語コード正規化（'ja' → 'ja-JP'）
+// - getLanguagePriority(): 自動検出の優先順位リスト取得
+// - LANGUAGE_MAP: ISO 639-1 → BCP-47 マッピング
+// - REGIONAL_PRIORITY: 地域別優先順位
+// ============================================================
 
 export const LANGUAGE_DEFAULTS = {
   // ============================================================
-  // Phase 1: 最小限のデフォルト値（フォールバック用）
+  // 言語設定（@prance/shared から動的に取得）
+  // ============================================================
+  //
+  // 重要: 言語設定は packages/shared/src/language/index.ts で一元管理されています。
+  //
+  // 新言語追加時のフロー:
+  // 1. packages/shared/src/language/index.ts の LANGUAGES 配列に追加
+  // 2. apps/web/messages/{languageCode}.json を作成（UI翻訳用）
+  // 3. デプロイ - コード変更不要！
+  //
+  // Phase 2以降:
+  // - スーパー管理者UIから言語リソースをアップロード
+  // - S3に保存 + CloudFront経由で配信
+  // - 1-5分でホットデプロイ（リビルド不要）
+  //
   // ============================================================
 
   // STT固定言語（非推奨・後方互換性のみ）
-  STT_LANGUAGE: 'en-US', // Deprecated: 自動言語検出を使用すること
+  // 注意: 実際の使用では getLanguagePriority(scenarioLanguage) を使用すること
+  STT_LANGUAGE: 'ja-JP', // Deprecated: 自動言語検出を使用
 
-  // STT自動言語検出デフォルト候補（Phase 1: 日本語・英語のみ）
-  // 注意: これはフォールバック値です。実際の候補言語は以下から取得すべき:
-  //   1. 環境変数 STT_AUTO_DETECT_LANGUAGES（カンマ区切り）
-  //   2. 組織設定（Phase 2以降）
-  //   3. システムに登録された言語リソースから動的生成（Phase 2以降）
-  STT_AUTO_DETECT_LANGUAGES_DEFAULT: ['ja-JP', 'en-US'] as const,
+  // デフォルトフォールバック言語（@prance/shared から取得）
+  // 動的取得: import { DEFAULT_FALLBACK_LANGUAGES } from '@prance/shared'
+  get STT_AUTO_DETECT_LANGUAGES_DEFAULT() {
+    // NOTE: この getter は後方互換性のため
+    // 実際の使用では language-config.ts の DEFAULT_FALLBACK_LANGUAGES を直接 import すること
+    return ['ja-JP', 'en-US'] as const;
+  },
 
-  // サポートされている言語コード（Phase 1）
-  // 注意: STT_AUTO_DETECT_LANGUAGES_DEFAULTを参照（DRY原則）
+  // サポートされている言語コード（@prance/shared から動的取得）
+  // 実際の使用: import { getSupportedSTTCodes } from '@prance/shared'
   get SUPPORTED_LANGUAGES() {
+    // NOTE: この getter は後方互換性のため
+    // 実際の実装では getSupportedSTTCodes() を使用すること
     return this.STT_AUTO_DETECT_LANGUAGES_DEFAULT;
   },
 
   // デフォルトのシナリオ言語
-  // 注意: 最初のサポート言語から自動的に決定（DRY原則）
+  // 実際の使用: import { getBaseLanguageCode } from '@prance/shared'
   get SCENARIO_LANGUAGE() {
-    // 'ja-JP' -> 'ja' に変換
-    return this.STT_AUTO_DETECT_LANGUAGES_DEFAULT[0].split('-')[0];
+    // NOTE: この getter は後方互換性のため
+    return 'ja';
   },
-
-  // ============================================================
-  // Phase 2以降の実装方針（重要）
-  // ============================================================
-  //
-  // 新言語追加時の正しいフロー:
-  // 1. 言語リソースファイル追加: apps/web/messages/{code}.json
-  // 2. リソースファイルにメタデータ含める:
-  //    {
-  //      "meta": {
-  //        "languageCode": "zh",
-  //        "sttCode": "zh-CN",
-  //        "displayName": "中文"
-  //      },
-  //      "common": { ... }
-  //    }
-  // 3. このファイルは変更しない（ハードコード禁止）
-  // 4. システムが自動的に言語を認識
-  //
-  // または:
-  // 1. スーパー管理者UIから言語リソースをアップロード
-  // 2. S3に保存 + CloudFront経由で配信
-  // 3. 1-5分でホットデプロイ（リビルド不要）
-  //
-  // STT候補言語の決定方法（Phase 2以降）:
-  // - デフォルト: システムに登録されたすべての言語
-  // - 組織設定: 組織が選択した言語のみ（パフォーマンス最適化）
-  // - 推奨: 2-4言語（Azure自動検出の精度が最適）
-  //
-  // ============================================================
 } as const;
 
 // ============================================================

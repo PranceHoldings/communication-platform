@@ -27,6 +27,7 @@ export interface ProcessAudioOptions {
   audioData: Buffer;
   sessionId: string;
   scenarioPrompt?: string;
+  scenarioLanguage?: string; // Scenario language ('ja', 'en', etc.) for STT priority
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
 
@@ -75,12 +76,14 @@ export class AudioProcessor {
    * Process audio through complete STT -> AI -> TTS pipeline
    */
   async processAudio(options: ProcessAudioOptions): Promise<ProcessAudioResult> {
-    const { audioData, sessionId, scenarioPrompt, conversationHistory = [] } = options;
+    const { audioData, sessionId, scenarioPrompt, scenarioLanguage, conversationHistory = [] } =
+      options;
 
     console.log('[AudioProcessor] Starting pipeline:', {
       sessionId,
       audioSize: audioData.length,
       hasScenarioPrompt: !!scenarioPrompt,
+      scenarioLanguage,
       historyLength: conversationHistory.length,
     });
 
@@ -89,7 +92,7 @@ export class AudioProcessor {
       const audioKey = await this.saveAudioToS3(audioData, sessionId, 'input');
 
       // Step 2: Transcribe audio using Azure STT
-      const transcript = await this.transcribeAudio(audioData);
+      const transcript = await this.transcribeAudio(audioData, scenarioLanguage);
 
       if (!transcript || transcript.trim().length === 0) {
         throw new Error('No speech detected in audio');
@@ -291,7 +294,7 @@ export class AudioProcessor {
   /**
    * Transcribe audio using Azure Speech Services
    */
-  private async transcribeAudio(audioData: Buffer): Promise<string> {
+  private async transcribeAudio(audioData: Buffer, scenarioLanguage?: string): Promise<string> {
     const fs = await import('fs');
 
     // Detect audio format from buffer header
@@ -345,8 +348,34 @@ export class AudioProcessor {
     fs.writeFileSync(tempFile, wavBuffer);
 
     try {
-      const result = await this.stt.recognizeFromFile(tempFile);
-      return result.text;
+      // 言語に基づいて自動検出の優先順位を調整
+      // scenarioLanguageが指定されている場合は、その言語を優先
+      if (scenarioLanguage) {
+        const { getLanguagePriority } = await import('../../shared/config/language-config');
+
+        // シナリオ言語に基づいた優先順位リストを取得
+        const autoDetectLanguages = getLanguagePriority(scenarioLanguage);
+
+        // シナリオ言語を優先した自動検出設定で一時的なSTTインスタンスを作成
+        console.log('[AudioProcessor] Using scenario language-based STT:', {
+          scenarioLanguage,
+          autoDetectLanguages,
+        });
+
+        const { AzureSpeechToText } = await import('../../shared/audio/stt-azure');
+        const tempSTT = new AzureSpeechToText({
+          subscriptionKey: this.config.azureSpeechKey,
+          region: this.config.azureSpeechRegion,
+          autoDetectLanguages, // 言語設定ファイルから取得した優先順位リスト
+        });
+
+        const result = await tempSTT.recognizeFromFile(tempFile);
+        return result.text;
+      } else {
+        // シナリオ言語が指定されていない場合はデフォルトのSTTを使用
+        const result = await this.stt.recognizeFromFile(tempFile);
+        return result.text;
+      }
     } finally {
       // Clean up temp file
       fs.unlinkSync(tempFile);
