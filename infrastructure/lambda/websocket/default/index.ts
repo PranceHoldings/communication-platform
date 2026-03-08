@@ -209,6 +209,8 @@ interface ConnectionData {
   lastChunkTime?: number;
   videoChunksCount?: number; // Count of video chunks received
   lastVideoChunkTime?: number;
+  audioProcessingInProgress?: boolean; // Flag set by audio_data_part when lock is acquired
+  currentAudioChunkId?: string | null; // ChunkId currently being processed
   sessionEndReceived?: boolean; // Flag to indicate session_end was received while audio_data_part was processing
   // Note: videoChunkParts removed - parts are stored directly in S3 to avoid DynamoDB 400KB limit
   [key: string]: unknown;
@@ -678,6 +680,12 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                 })
               );
               console.log(`Lock acquired for chunk ${audioChunkId}, proceeding with processing`);
+
+              // Mark that audio processing is in progress
+              await updateConnectionData(connectionId, {
+                audioProcessingInProgress: true,
+                currentAudioChunkId: audioChunkId,
+              });
             } catch (error: any) {
               if (error.name === 'ConditionalCheckFailedException') {
                 console.log(
@@ -783,13 +791,13 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
             // Only perform cleanup if processing succeeded
             if (audioProcessingSuccess) {
-              // Reset audio chunks count to prevent re-processing in session_end
+              // Clear audio processing flags
               await updateConnectionData(connectionId, {
                 audioChunksCount: 0,
+                audioProcessingInProgress: false,
+                currentAudioChunkId: null,
               });
-              console.log(
-                '[audio_data_part] Reset audioChunksCount to prevent duplicate processing in session_end'
-              );
+              console.log('[audio_data_part] Audio processing complete, cleared flags');
 
               // Check if session_end was received while we were processing
               const updatedConnectionData = await getConnectionData(connectionId);
@@ -1070,11 +1078,12 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         }
 
         // Check if audio processing is still in progress
-        // audio_data_part sets audioChunksCount to 0 when complete
+        // audio_data_part sets audioProcessingInProgress flag when lock is acquired
         const currentConnectionData = await getConnectionData(connectionId);
 
-        if (currentConnectionData?.audioChunksCount && currentConnectionData.audioChunksCount > 0) {
+        if (currentConnectionData?.audioProcessingInProgress) {
           console.log('[session_end] Audio processing still in progress, marking session_end_received flag');
+          console.log('[session_end] Current audio chunk:', currentConnectionData.currentAudioChunkId);
           // Mark that session_end was received, audio_data_part will send session_complete when done
           await updateConnectionData(connectionId, {
             sessionEndReceived: true,
