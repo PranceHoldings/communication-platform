@@ -209,6 +209,7 @@ interface ConnectionData {
   lastChunkTime?: number;
   videoChunksCount?: number; // Count of video chunks received
   lastVideoChunkTime?: number;
+  sessionEndReceived?: boolean; // Flag to indicate session_end was received while audio_data_part was processing
   // Note: videoChunkParts removed - parts are stored directly in S3 to avoid DynamoDB 400KB limit
   [key: string]: unknown;
 }
@@ -790,6 +791,18 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                 '[audio_data_part] Reset audioChunksCount to prevent duplicate processing in session_end'
               );
 
+              // Check if session_end was received while we were processing
+              const updatedConnectionData = await getConnectionData(connectionId);
+              if (updatedConnectionData?.sessionEndReceived) {
+                console.log('[audio_data_part] session_end was received, sending session_complete now');
+                // Audio processing is complete and session_end was waiting for us
+                await sendToConnection(connectionId, {
+                  type: 'session_complete',
+                  sessionId: audioDataSessionId,
+                  message: 'Session ended successfully',
+                });
+              }
+
               // Delete audio-chunks from S3 to prevent session_end from re-processing
               try {
                 const chunksPrefix = `sessions/${audioDataSessionId}/audio-chunks/`;
@@ -1056,11 +1069,25 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           });
         }
 
-        await sendToConnection(connectionId, {
-          type: 'session_complete',
-          sessionId: connectionData?.sessionId,
-          message: 'Session ended successfully',
-        });
+        // Check if audio processing is still in progress
+        // audio_data_part sets audioChunksCount to 0 when complete
+        const currentConnectionData = await getConnectionData(connectionId);
+
+        if (currentConnectionData?.audioChunksCount && currentConnectionData.audioChunksCount > 0) {
+          console.log('[session_end] Audio processing still in progress, marking session_end_received flag');
+          // Mark that session_end was received, audio_data_part will send session_complete when done
+          await updateConnectionData(connectionId, {
+            sessionEndReceived: true,
+          });
+        } else {
+          // Audio processing is complete (or was never started), send session_complete now
+          console.log('[session_end] Audio processing complete or not started, sending session_complete');
+          await sendToConnection(connectionId, {
+            type: 'session_complete',
+            sessionId: connectionData?.sessionId,
+            message: 'Session ended successfully',
+          });
+        }
         break;
 
       default:

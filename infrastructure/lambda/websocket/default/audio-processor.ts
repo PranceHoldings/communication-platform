@@ -170,9 +170,9 @@ export class AudioProcessor {
       console.log('[AudioProcessor] Using ffmpeg path:', ffmpegPath);
 
       // Convert to WAV (16kHz, mono, 16-bit PCM) with volume boost for better speech recognition
-      // Note: volume=10.0 amplifies audio by 10x to improve Azure STT detection
-      // Also apply dynamic audio compression to normalize levels
-      const command = `${ffmpegPath} -i ${inputFile} -af "volume=10.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
+      // Note: volume=3.0 amplifies audio by 3x (10.0 was too high and caused clipping)
+      // Apply dynamic compression, then limit to prevent clipping
+      const command = `${ffmpegPath} -i ${inputFile} -af "volume=3.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000,alimiter=limit=0.9" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
 
       console.log('[AudioProcessor] Converting audio with ffmpeg:', command);
       const { stdout, stderr } = await execAsync(command);
@@ -211,19 +211,64 @@ export class AudioProcessor {
     rmsLevel: number;
     hasSpeech: boolean;
   }> {
-    // WAV header parsing
-    // Offset 40: data chunk, next 4 bytes = data size
-    const dataSize = wavBuffer.readUInt32LE(40);
+    // 🔍 DEBUG: Log WAV header structure
+    console.log('[AudioProcessor] WAV buffer analysis:', {
+      totalSize: wavBuffer.length,
+      header: wavBuffer.slice(0, 12).toString('ascii'),
+      headerHex: wavBuffer.slice(0, 12).toString('hex'),
+      offset0_11: wavBuffer.slice(0, 12).toString('hex'),
+      offset12_35: wavBuffer.slice(12, 36).toString('hex'),
+      offset36_43: wavBuffer.slice(36, 44).toString('hex'),
+      offset44_51: wavBuffer.slice(44, 52).toString('hex'),
+    });
+
+    // WAV header parsing - Find "data" chunk dynamically
+    let dataOffset = -1;
+    let dataSize = 0;
+
+    // Search for "data" chunk (0x64617461 = "data" in ASCII)
+    for (let i = 12; i < wavBuffer.length - 8; i++) {
+      if (
+        wavBuffer[i] === 0x64 &&     // 'd'
+        wavBuffer[i + 1] === 0x61 &&  // 'a'
+        wavBuffer[i + 2] === 0x74 &&  // 't'
+        wavBuffer[i + 3] === 0x61      // 'a'
+      ) {
+        dataOffset = i + 8; // Data starts 8 bytes after "data" (4 bytes ID + 4 bytes size)
+        dataSize = wavBuffer.readUInt32LE(i + 4);
+        console.log('[AudioProcessor] Found "data" chunk:', {
+          offset: i,
+          dataOffset,
+          dataSize,
+        });
+        break;
+      }
+    }
+
+    if (dataOffset === -1) {
+      console.error('[AudioProcessor] "data" chunk not found in WAV file');
+      throw new Error('Invalid WAV file: "data" chunk not found');
+    }
+
     const sampleCount = dataSize / 2; // 16-bit = 2 bytes per sample
     const sampleRate = wavBuffer.readUInt32LE(24);
     const durationSeconds = sampleCount / sampleRate;
 
-    // Analyze audio samples (starting at offset 44)
+    console.log('[AudioProcessor] WAV analysis:', {
+      sampleRate,
+      dataSize,
+      sampleCount,
+      durationSeconds,
+      dataOffset,
+    });
+
+    // Analyze audio samples (starting at dataOffset)
     let peakLevel = 0;
     let sumSquares = 0;
 
-    for (let i = 44; i < wavBuffer.length; i += 2) {
-      const sample = wavBuffer.readInt16LE(i);
+    const maxSamples = Math.min(dataSize / 2, (wavBuffer.length - dataOffset) / 2);
+    for (let i = 0; i < maxSamples; i++) {
+      const sample = wavBuffer.readInt16LE(dataOffset + i * 2);
       const normalizedSample = Math.abs(sample) / 32768.0; // Normalize to 0.0-1.0
       peakLevel = Math.max(peakLevel, normalizedSample);
       sumSquares += normalizedSample * normalizedSample;
