@@ -12,7 +12,6 @@ interface UseAudioRecorderOptions {
   onRecordingComplete?: (audioBlob: Blob) => void;
   onError?: (error: Error) => void;
   mimeType?: string;
-  timeslice?: number; // ms between chunks
 }
 
 interface UseAudioRecorderReturn {
@@ -32,7 +31,6 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     onRecordingComplete,
     onError,
     mimeType = 'audio/webm;codecs=opus',
-    timeslice = 250, // Send chunks every 250ms for real-time processing
   } = options;
 
   const [isRecording, setIsRecording] = useState(false);
@@ -239,7 +237,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       onError?.(error);
       throw error;
     }
-  }, [mimeType, timeslice, onAudioChunk, onError, monitorAudioLevel]);
+  }, [mimeType, onAudioChunk, onError, monitorAudioLevel]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
