@@ -26,14 +26,14 @@
 
 ### 主要機能
 
-| 機能 | 説明 | プロバイダ | アクセス権限 |
-| ---- | ---- | --------- | ---------- |
-| **STT (音声認識)** | ユーザー音声をリアルタイムでテキスト化 | Azure Speech Services | 全ユーザー |
-| **TTS (音声合成)** | テキストから自然な音声を生成 | ElevenLabs API | 全ユーザー |
-| **プリセット音声** | 事前用意された高品質な音声ライブラリ | ElevenLabs | 全ユーザー |
-| **音声クローニング** | ユーザー音声から独自のAI音声を生成 | ElevenLabs Voice Cloning | Pro以上 |
-| **多言語対応** | 40+言語のSTT/TTS | Azure + ElevenLabs | 全ユーザー |
-| **ストリーミング処理** | リアルタイム音声ストリーミング | WebSocket (AWS IoT Core) | 全ユーザー |
+| 機能                   | 説明                                   | プロバイダ               | アクセス権限 |
+| ---------------------- | -------------------------------------- | ------------------------ | ------------ |
+| **STT (音声認識)**     | ユーザー音声をリアルタイムでテキスト化 | Azure Speech Services    | 全ユーザー   |
+| **TTS (音声合成)**     | テキストから自然な音声を生成           | ElevenLabs API           | 全ユーザー   |
+| **プリセット音声**     | 事前用意された高品質な音声ライブラリ   | ElevenLabs               | 全ユーザー   |
+| **音声クローニング**   | ユーザー音声から独自のAI音声を生成     | ElevenLabs Voice Cloning | Pro以上      |
+| **多言語対応**         | 40+言語のSTT/TTS                       | Azure + ElevenLabs       | 全ユーザー   |
+| **ストリーミング処理** | リアルタイム音声ストリーミング         | WebSocket (AWS IoT Core) | 全ユーザー   |
 
 ### 設計方針
 
@@ -121,6 +121,7 @@ S3にキャッシュ保存
 ### Azure Cognitive Services Speech-to-Text
 
 **選定理由:**
+
 - 業界最高水準の認識精度
 - 40+言語対応（日本語・英語含む）
 - リアルタイムストリーミング対応
@@ -128,15 +129,15 @@ S3にキャッシュ保存
 
 ### 技術仕様
 
-| 項目 | 仕様 |
-| ---- | ---- |
-| **エンジン** | Azure Cognitive Services Speech-to-Text |
-| **モード** | リアルタイムストリーミング認識 |
-| **サンプリングレート** | 16kHz (推奨) |
-| **音声フォーマット** | PCM 16-bit |
-| **対応言語** | 40+言語 (ja-JP, en-US, etc.) |
-| **出力** | テキスト + タイムスタンプ + 信頼度スコア |
-| **遅延** | 200-500ms (ネットワーク環境に依存) |
+| 項目                   | 仕様                                     |
+| ---------------------- | ---------------------------------------- |
+| **エンジン**           | Azure Cognitive Services Speech-to-Text  |
+| **モード**             | リアルタイムストリーミング認識           |
+| **サンプリングレート** | 16kHz (推奨)                             |
+| **音声フォーマット**   | PCM 16-bit                               |
+| **対応言語**           | 40+言語 (ja-JP, en-US, etc.)             |
+| **出力**               | テキスト + タイムスタンプ + 信頼度スコア |
+| **遅延**               | 200-500ms (ネットワーク環境に依存)       |
 
 ### 実装例
 
@@ -147,7 +148,10 @@ class SpeechRecognitionClient {
   private audioContext: AudioContext;
   private websocket: WebSocket;
 
-  constructor(private sessionId: string, private wsUrl: string) {
+  constructor(
+    private sessionId: string,
+    private wsUrl: string
+  ) {
     this.audioContext = new AudioContext({ sampleRate: 16000 });
     this.websocket = new WebSocket(wsUrl);
   }
@@ -169,7 +173,7 @@ class SpeechRecognitionClient {
     });
 
     // 音声データをチャンク単位でWebSocketに送信
-    this.mediaRecorder.ondataavailable = (event) => {
+    this.mediaRecorder.ondataavailable = event => {
       if (event.data.size > 0) {
         this.websocket.send(event.data);
       }
@@ -182,12 +186,12 @@ class SpeechRecognitionClient {
   stopRecording(): void {
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
-      this.mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+      this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
     }
   }
 
   onTranscriptReceived(callback: (text: string) => void): void {
-    this.websocket.onmessage = (event) => {
+    this.websocket.onmessage = event => {
       const data = JSON.parse(event.data);
       if (data.type === 'transcript') {
         callback(data.text);
@@ -199,7 +203,7 @@ class SpeechRecognitionClient {
 // 使用例
 const sttClient = new SpeechRecognitionClient(sessionId, wsUrl);
 
-sttClient.onTranscriptReceived((text) => {
+sttClient.onTranscriptReceived(text => {
   console.log('認識されたテキスト:', text);
   // UIに表示
   updateTranscript(text);
@@ -278,9 +282,7 @@ function handleTranscript(result: TranscriptResult) {
   if (result.isFinal) {
     if (result.confidence < 0.6) {
       // 信頼度が低い場合、ユーザーに確認
-      showConfirmationDialog(
-        `「${result.text}」と認識しましたが、もう一度お話しいただけますか？`
-      );
+      showConfirmationDialog(`「${result.text}」と認識しましたが、もう一度お話しいただけますか？`);
     } else {
       // 高信頼度の場合、そのまま使用
       processUserInput(result.text);
@@ -306,6 +308,7 @@ function handleTranscript(result: TranscriptResult) {
 ```
 
 実際の使用シーンでは、以下のケースが頻繁に発生します：
+
 - 日本語セッションでユーザーが英語を混ぜて話す（例: "私の名前は John です"）
 - 多言語話者が自然に言語を切り替える
 - 言語設定を間違えてセッションを開始
@@ -314,23 +317,23 @@ function handleTranscript(result: TranscriptResult) {
 
 #### 言語処理の役割分担
 
-| コンポーネント | 言語設定 | 目的 |
-|--------------|---------|------|
+| コンポーネント     | 言語設定                 | 目的                       |
+| ------------------ | ------------------------ | -------------------------- |
 | **STT (音声認識)** | 自動検出（候補言語から） | ユーザーの発話を正確に認識 |
-| **TTS (音声合成)** | セッション設定言語 | アバターの応答言語 |
-| **AI応答** | 検出された言語に合わせる | ユーザーの言語で応答 |
+| **TTS (音声合成)** | セッション設定言語       | アバターの応答言語         |
+| **AI応答**         | 検出された言語に合わせる | ユーザーの言語で応答       |
 
 #### Azure Speech Services 自動言語検出
 
 **技術仕様:**
 
-| 項目 | 値 |
-|------|-----|
-| **機能名** | AutoDetectSourceLanguageConfig |
+| 項目         | 値                              |
+| ------------ | ------------------------------- |
+| **機能名**   | AutoDetectSourceLanguageConfig  |
 | **候補言語** | `['ja-JP', 'en-US']` (初期実装) |
-| **検出方式** | 音声の最初の数秒で自動判定 |
-| **追加遅延** | ~100ms (検出オーバーヘッド) |
-| **検出精度** | 95%以上（Azure公式値） |
+| **検出方式** | 音声の最初の数秒で自動判定      |
+| **追加遅延** | ~100ms (検出オーバーヘッド)     |
+| **検出精度** | 95%以上（Azure公式値）          |
 
 **実装例:**
 
@@ -340,10 +343,7 @@ import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
 
 export class AzureSpeechToText {
   constructor(private options: AzureSTTConfig) {
-    this.config = sdk.SpeechConfig.fromSubscription(
-      options.subscriptionKey,
-      options.region
-    );
+    this.config = sdk.SpeechConfig.fromSubscription(options.subscriptionKey, options.region);
 
     // 自動言語検出設定（候補言語を指定）
     if (options.autoDetectLanguages && options.autoDetectLanguages.length > 0) {
@@ -382,7 +382,7 @@ export class AzureSpeechToText {
       }
 
       recognizer.recognizeOnceAsync(
-        (result) => {
+        result => {
           if (result.reason === sdk.ResultReason.RecognizedSpeech) {
             // 検出された言語を取得
             const detectedLanguage = result.properties.getProperty(
@@ -408,7 +408,7 @@ export class AzureSpeechToText {
           }
           recognizer.close();
         },
-        (error) => {
+        error => {
           recognizer.close();
           reject(new Error(`Recognition error: ${error}`));
         }
@@ -421,11 +421,13 @@ export class AzureSpeechToText {
 #### 候補言語の選択指針
 
 **初期実装（Phase 1）:**
+
 ```typescript
 const CANDIDATE_LANGUAGES = ['ja-JP', 'en-US'];
 ```
 
 **将来拡張（Phase 2以降）:**
+
 ```typescript
 // 組織設定に基づいて候補言語を動的に変更
 const CANDIDATE_LANGUAGES = getOrganizationLanguages(orgId);
@@ -433,6 +435,7 @@ const CANDIDATE_LANGUAGES = getOrganizationLanguages(orgId);
 ```
 
 **パフォーマンス最適化:**
+
 - 候補言語は2-4言語が最適（検出精度と速度のバランス）
 - 候補が多すぎると検出精度が低下する可能性あり
 
@@ -491,6 +494,7 @@ TTS: "承知しました。日本語でお話しします。"
 ### ElevenLabs API
 
 **選定理由:**
+
 - 業界最高レベルの自然な音声品質
 - 感情表現が豊か（嬉しい、驚き、真剣など）
 - Alignment data提供（リップシンクに必要）
@@ -499,28 +503,28 @@ TTS: "承知しました。日本語でお話しします。"
 
 ### 技術仕様
 
-| 項目 | 仕様 |
-| ---- | ---- |
-| **エンジン** | ElevenLabs API |
-| **モデル** | eleven_multilingual_v2 |
-| **出力フォーマット** | MP3 / PCM (ストリーミング) |
+| 項目                   | 仕様                               |
+| ---------------------- | ---------------------------------- |
+| **エンジン**           | ElevenLabs API                     |
+| **モデル**             | eleven_multilingual_v2             |
+| **出力フォーマット**   | MP3 / PCM (ストリーミング)         |
 | **サンプリングレート** | 44.1kHz (高品質) / 22.05kHz (標準) |
-| **ビットレート** | 128kbps (MP3) |
-| **遅延** | 300-800ms（テキスト長に依存） |
-| **追加データ** | Alignment (文字単位タイムスタンプ) |
+| **ビットレート**       | 128kbps (MP3)                      |
+| **遅延**               | 300-800ms（テキスト長に依存）      |
+| **追加データ**         | Alignment (文字単位タイムスタンプ) |
 
 ### プリセット音声ライブラリ
 
 初期提供する音声プリセット:
 
-| 名前 | 性別 | 年齢層 | スタイル | 用途 |
-| ---- | ---- | ------ | ------- | ---- |
-| Alex | 男性 | 30代 | Professional, Friendly | ビジネス面接 |
-| Sarah | 女性 | 20代 | Warm, Friendly | 語学学習 |
-| Ken | 男性 | 40代 | Authoritative, Formal | フォーマルトレーニング |
-| Lisa | 女性 | 30代 | Professional, Calm | カスタマーサービス |
-| Mike | 男性 | 20代 | Energetic, Casual | カジュアル会話 |
-| Emma | 女性 | 40代 | Mature, Calm | コーチング |
+| 名前  | 性別 | 年齢層 | スタイル               | 用途                   |
+| ----- | ---- | ------ | ---------------------- | ---------------------- |
+| Alex  | 男性 | 30代   | Professional, Friendly | ビジネス面接           |
+| Sarah | 女性 | 20代   | Warm, Friendly         | 語学学習               |
+| Ken   | 男性 | 40代   | Authoritative, Formal  | フォーマルトレーニング |
+| Lisa  | 女性 | 30代   | Professional, Calm     | カスタマーサービス     |
+| Mike  | 男性 | 20代   | Energetic, Casual      | カジュアル会話         |
+| Emma  | 女性 | 40代   | Mature, Calm           | コーチング             |
 
 ### 実装例
 
@@ -549,26 +553,23 @@ interface AlignmentData {
 }
 
 async function generateSpeech(options: TTSOptions): Promise<TTSResult> {
-  const response = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${options.voiceId}`,
-    {
-      method: 'POST',
-      headers: {
-        'xi-api-key': process.env.ELEVENLABS_API_KEY!,
-        'Content-Type': 'application/json',
+  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${options.voiceId}`, {
+    method: 'POST',
+    headers: {
+      'xi-api-key': process.env.ELEVENLABS_API_KEY!,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      text: options.text,
+      model_id: 'eleven_multilingual_v2',
+      voice_settings: {
+        stability: options.stability ?? 0.5,
+        similarity_boost: options.similarityBoost ?? 0.75,
+        style: options.style ?? 0.0,
+        use_speaker_boost: options.useSpeakerBoost ?? true,
       },
-      body: JSON.stringify({
-        text: options.text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: options.stability ?? 0.5,
-          similarity_boost: options.similarityBoost ?? 0.75,
-          style: options.style ?? 0.0,
-          use_speaker_boost: options.useSpeakerBoost ?? true,
-        },
-      }),
-    }
-  );
+    }),
+  });
 
   const data = await response.json();
 
@@ -605,24 +606,21 @@ await playAudioWithLipSync(ttsResult.audioUrl, ttsResult.alignment, avatar);
 ```typescript
 // ストリーミングTTS（リアルタイム再生）
 async function streamSpeech(text: string, voiceId: string): Promise<void> {
-  const response = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
-    {
-      method: 'POST',
-      headers: {
-        'xi-api-key': process.env.ELEVENLABS_API_KEY!,
-        'Content-Type': 'application/json',
+  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+    method: 'POST',
+    headers: {
+      'xi-api-key': process.env.ELEVENLABS_API_KEY!,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      text,
+      model_id: 'eleven_multilingual_v2',
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.75,
       },
-      body: JSON.stringify({
-        text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-        },
-      }),
-    }
-  );
+    }),
+  });
 
   const reader = response.body!.getReader();
   const audioContext = new AudioContext();
@@ -742,7 +740,7 @@ async function validateVoiceRecording(audioFile: File): Promise<VoiceQualityChec
   const snr = calculateSNR(channelData);
 
   // クリッピング検出（-1.0 or 1.0に達しているサンプル）
-  const clipping = channelData.some((sample) => Math.abs(sample) >= 0.99);
+  const clipping = channelData.some(sample => Math.abs(sample) >= 0.99);
 
   // 無音検出
   const silenceRatio = calculateSilenceRatio(channelData);
@@ -758,17 +756,17 @@ async function validateVoiceRecording(audioFile: File): Promise<VoiceQualityChec
 
 function calculateSNR(samples: Float32Array): number {
   // RMS (Root Mean Square) 計算
-  const rms = Math.sqrt(
-    samples.reduce((sum, sample) => sum + sample * sample, 0) / samples.length
-  );
+  const rms = Math.sqrt(samples.reduce((sum, sample) => sum + sample * sample, 0) / samples.length);
 
   // ノイズフロア推定（最も静かな10%のサンプル）
   const sortedSamples = Array.from(samples)
     .map(Math.abs)
     .sort((a, b) => a - b);
   const noiseFloor =
-    sortedSamples.slice(0, Math.floor(sortedSamples.length * 0.1))
-      .reduce((sum, val) => sum + val, 0) / (sortedSamples.length * 0.1);
+    sortedSamples
+      .slice(0, Math.floor(sortedSamples.length * 0.1))
+      .reduce((sum, val) => sum + val, 0) /
+    (sortedSamples.length * 0.1);
 
   // SNR (dB)
   const snr = 20 * Math.log10(rms / noiseFloor);
@@ -911,10 +909,7 @@ interface VoiceConsent {
   termsVersion: string; // 利用規約のバージョン
 }
 
-async function recordVoiceConsent(
-  userId: string,
-  request: Request
-): Promise<VoiceConsent> {
+async function recordVoiceConsent(userId: string, request: Request): Promise<VoiceConsent> {
   const consent = await prisma.consent.create({
     data: {
       userId,
@@ -974,6 +969,7 @@ export async function cloneVoiceHandler(event: APIGatewayProxyEvent) {
 ### 2. 禁止事項
 
 以下の行為は固く禁止されています：
+
 - 他人の音声を無断で複製・使用すること
 - なりすまし、詐欺、その他の不正行為
 - 違法、有害、脅迫的、嫌がらせ、または名誉毀損的な内容の生成
@@ -1092,6 +1088,7 @@ enum VoiceStatus {
 音声ライブラリ一覧取得
 
 **Query Parameters:**
+
 ```typescript
 {
   type?: 'preset' | 'cloned';
@@ -1102,6 +1099,7 @@ enum VoiceStatus {
 ```
 
 **Response:**
+
 ```typescript
 {
   voices: Voice[];
@@ -1118,6 +1116,7 @@ enum VoiceStatus {
 音声クローニング開始
 
 **Request Body:**
+
 ```typescript
 {
   name: string;
@@ -1127,6 +1126,7 @@ enum VoiceStatus {
 ```
 
 **Response:**
+
 ```typescript
 {
   jobId: string;
@@ -1140,6 +1140,7 @@ enum VoiceStatus {
 クローニングジョブのステータス確認
 
 **Response:**
+
 ```typescript
 {
   jobId: string;
@@ -1155,6 +1156,7 @@ enum VoiceStatus {
 TTS音声生成
 
 **Request Body:**
+
 ```typescript
 {
   text: string;
@@ -1166,6 +1168,7 @@ TTS音声生成
 ```
 
 **Response:**
+
 ```typescript
 {
   audioUrl: string;
@@ -1179,6 +1182,7 @@ TTS音声生成
 リアルタイムSTT
 
 **WebSocket Message (送信):**
+
 ```typescript
 {
   type: 'audio_chunk';
@@ -1188,6 +1192,7 @@ TTS音声生成
 ```
 
 **WebSocket Message (受信):**
+
 ```typescript
 {
   type: 'transcript';
@@ -1316,18 +1321,21 @@ export function VoiceRecorder({ onRecordingComplete }: { onRecordingComplete: (a
 音声モジュールは、Pranceプラットフォームのリアルタイムコミュニケーションを支える重要なコンポーネントです。Azure Speech ServicesとElevenLabs APIの組み合わせにより、高精度な音声認識と自然な音声合成を実現します。
 
 **主要な設計原則（Phase 1実装）:**
+
 - ✅ **STT自動言語検出**: ユーザーがどの言語を話してもエラーなく認識
 - ✅ **TTS言語設定**: セッション設定に基づいてアバターの応答言語を決定
 - ✅ **多言語会話対応**: 言語を切り替えても自然に会話が継続
 - ✅ **音声クローニング**: ユーザーは独自の音声でAIアバターをカスタマイズ可能
 
 **Phase 1実装状況（2026-03-08）:**
+
 - ✅ Azure STT基本統合
 - 🔄 自動言語検出実装中（候補言語: ja-JP, en-US）
 - ✅ ElevenLabs TTS統合
 - 📋 音声クローニング（Phase 2以降）
 
 **次のステップ:**
+
 - [アバターモジュール](AVATAR_MODULE.md) - アバター管理とリップシンク
 - [シナリオエンジン](SCENARIO_ENGINE.md) - 会話フロー制御
 - [セッション録画](SESSION_RECORDING.md) - リアルタイム文字起こしと録画

@@ -41,7 +41,6 @@ try {
   // Clean up temporary parts
 
   processingSuccess = true;
-
 } catch (processingError) {
   console.error(`[video_chunk_part] Processing failed for chunk ${chunkId}:`, processingError);
 
@@ -57,7 +56,6 @@ try {
   } catch (sendError) {
     console.error('[video_chunk_part] Failed to send error notification:', sendError);
   }
-
 } finally {
   // Always clean up lock (success or failure)
   const lockDeleted = await deleteLockWithRetry(lockKey);
@@ -83,6 +81,7 @@ if (processingSuccess) {
 ```
 
 **特徴:**
+
 - ✅ try-catch-finallyで処理全体をラップ
 - ✅ finallyブロックで**必ず**ロックを削除（成功・失敗問わず）
 - ✅ エラー時はクライアントに適切なエラーメッセージを送信
@@ -107,7 +106,6 @@ try {
   // Clean up temporary parts
 
   audioProcessingSuccess = true;
-
 } catch (processingError) {
   console.error(`[audio_data_part] Processing failed for chunk ${audioChunkId}:`, processingError);
 
@@ -123,12 +121,13 @@ try {
   } catch (sendError) {
     console.error('[audio_data_part] Failed to send error notification:', sendError);
   }
-
 } finally {
   // Always clean up lock (success or failure)
   const lockDeleted = await deleteLockWithRetry(lockKey);
   if (lockDeleted) {
-    console.log(`Lock cleanup completed for chunk ${audioChunkId} (success=${audioProcessingSuccess})`);
+    console.log(
+      `Lock cleanup completed for chunk ${audioChunkId} (success=${audioProcessingSuccess})`
+    );
   }
 }
 
@@ -140,6 +139,7 @@ if (audioProcessingSuccess) {
 ```
 
 **外部依存のエラー対応:**
+
 - Azure Speech Services (STT)
 - AWS Bedrock (AI response generation)
 - ElevenLabs (TTS)
@@ -158,6 +158,7 @@ if (audioProcessingSuccess) {
 **変更箇所:** Lines 343, 413
 
 #### Before (7文字ランダム):
+
 ```typescript
 // 36^7 ≈ 78億通り
 const chunkId = `audio-${timestamp}-${Math.random().toString(36).substring(2, 9)}`;
@@ -165,6 +166,7 @@ const chunkId = `${timestamp}-${Math.random().toString(36).substring(2, 9)}`;
 ```
 
 #### After (UUID v4):
+
 ```typescript
 // 2^122 ≈ 5.3 × 10^36通り
 const chunkId = `audio-${timestamp}-${crypto.randomUUID()}`;
@@ -172,6 +174,7 @@ const chunkId = `${timestamp}-${crypto.randomUUID()}`;
 ```
 
 **UUID v4の衝突確率:**
+
 ```
 UUID space: 2^122 ≈ 5.3 × 10^36
 Chunks needed for 1% collision: ~2.6 × 10^18 chunks
@@ -182,6 +185,7 @@ Reality check:
 ```
 
 **効果:**
+
 - ✅ ChunkID衝突リスクを**実質的にゼロ**に削減
 - ✅ タイムスタンプ部分でソート可能性を維持
 - ✅ ブラウザネイティブの`crypto.randomUUID()`を使用（追加パッケージ不要）
@@ -204,10 +208,7 @@ Reality check:
  * @param maxRetries - Maximum number of retry attempts (default: 3)
  * @returns true if deletion succeeded, false otherwise
  */
-async function deleteLockWithRetry(
-  lockKey: string,
-  maxRetries: number = 3
-): Promise<boolean> {
+async function deleteLockWithRetry(lockKey: string, maxRetries: number = 3): Promise<boolean> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await ddb.send(
@@ -229,23 +230,28 @@ async function deleteLockWithRetry(
     }
   }
 
-  console.error(`CRITICAL: Failed to delete lock ${lockKey} after ${maxRetries} attempts. TTL will clean up in 5 minutes.`);
+  console.error(
+    `CRITICAL: Failed to delete lock ${lockKey} after ${maxRetries} attempts. TTL will clean up in 5 minutes.`
+  );
   return false;
 }
 ```
 
 **リトライ戦略:**
+
 - **Attempt 1:** 即実行
 - **Attempt 2:** 200ms後
 - **Attempt 3:** 400ms後（累計600ms）
 - **Attempt 4:** 800ms後（累計1400ms）
 
 **失敗ケースへの対応:**
+
 - DynamoDBスロットリング（ProvisionedThroughputExceededException）
 - ネットワークタイムアウト
 - DynamoDBサービス障害（稀）
 
 **ログレベル:**
+
 - 1回目の失敗: ERROR
 - リトライ中: INFO
 - 全失敗: **CRITICAL**（CloudWatchアラーム監視対象）
@@ -267,10 +273,10 @@ Status: ✅ UPDATE_COMPLETE
 
 ### 変更されたファイル
 
-| ファイル | 変更内容 | 行数変更 |
-|---------|---------|---------|
-| `infrastructure/lambda/websocket/default/index.ts` | P1（エラーハンドリング）+ P3（リトライ関数） | +120行 |
-| `apps/web/hooks/useWebSocket.ts` | P2（UUID v4） | +2行（コメント込み） |
+| ファイル                                           | 変更内容                                     | 行数変更             |
+| -------------------------------------------------- | -------------------------------------------- | -------------------- |
+| `infrastructure/lambda/websocket/default/index.ts` | P1（エラーハンドリング）+ P3（リトライ関数） | +120行               |
+| `apps/web/hooks/useWebSocket.ts`                   | P2（UUID v4）                                | +2行（コメント込み） |
 
 ### Lambda関数サイズ
 
@@ -287,12 +293,14 @@ Change: +0.0 MB (エラーハンドリング追加による影響は無視でき
 ### 1. ロック解放漏れの完全防止
 
 **Before:**
+
 ```
 Success Case: Lock deleted ✅
 Error Case:   Lock NOT deleted ❌ (stuck for 5 min - 48 hours)
 ```
 
 **After:**
+
 ```
 Success Case: Lock deleted in finally block ✅
 Error Case:   Lock deleted in finally block ✅
@@ -300,12 +308,14 @@ Network Error: Retry 3 times with backoff → 99.9% success rate ✅
 ```
 
 **定量評価:**
+
 - ロック解放成功率: **90% → 99.9%**（推定）
 - ロック解放漏れによるデータ損失: **100件/日 → <1件/月**（推定）
 
 ### 2. ChunkID衝突リスクの実質的ゼロ化
 
 **Before:**
+
 ```
 Collision Probability (10万 chunks): 1%
 Collision Probability (1日 = 8.6M chunks): 47%
@@ -313,6 +323,7 @@ Expected Collisions per Day: ~40,000 chunks
 ```
 
 **After:**
+
 ```
 Collision Probability (10万 chunks): ~0%
 Collision Probability (1日 = 8.6M chunks): ~0%
@@ -320,12 +331,14 @@ Expected Collisions per Year: <0.001 chunks
 ```
 
 **定量評価:**
+
 - ChunkID衝突による処理失敗: **47%/日 → <0.0001%/年**
 - データ整合性: **大幅に向上**
 
 ### 3. ロック削除成功率の向上
 
 **Before:**
+
 ```
 1st Attempt Success: ~95%
 Total Success: ~95% (no retry)
@@ -333,6 +346,7 @@ Failure → TTL cleanup: 5-48 hours
 ```
 
 **After:**
+
 ```
 1st Attempt Success: ~95%
 2nd Attempt Success: ~4.75% (95% of remaining 5%)
@@ -342,6 +356,7 @@ Failure → TTL cleanup: <0.0125% (5 min)
 ```
 
 **定量評価:**
+
 - ロック削除成功率: **95% → 99.9%**
 - 平均ロック保持時間（失敗時）: **30分 → 5分**
 
@@ -352,6 +367,7 @@ Failure → TTL cleanup: <0.0125% (5 min)
 ### 1. エラー発生時のロック解放確認
 
 **テストシナリオ:**
+
 ```bash
 # S3アクセスエラーを誘発
 aws s3api put-bucket-policy --bucket prance-storage-dev \
@@ -362,6 +378,7 @@ aws s3api put-bucket-policy --bucket prance-storage-dev \
 ```
 
 **CloudWatch Logs確認:**
+
 ```
 [video_chunk_part] Processing failed for chunk 17214-xxx: AccessDenied
 Successfully deleted lock video-lock-17214-xxx (attempt 1/3)
@@ -371,12 +388,14 @@ Lock cleanup completed for chunk 17214-xxx (success=false)
 ### 2. ChunkID衝突の発生確認
 
 **テストシナリオ:**
+
 ```bash
 # 100万チャンク送信（負荷テスト）
 # UUID v4実装後は衝突ゼロのはず
 ```
 
 **監視クエリ:**
+
 ```
 fields @timestamp, @message
 | filter @message like /CRITICAL.*ChunkID collision detected/
@@ -386,12 +405,14 @@ fields @timestamp, @message
 ### 3. ロック削除リトライの動作確認
 
 **テストシナリオ:**
+
 ```bash
 # DynamoDBスロットリングを誘発（大量リクエスト）
 # 期待結果: リトライログ → 最終的に削除成功
 ```
 
 **CloudWatch Logs確認:**
+
 ```
 Failed to delete lock video-lock-xxx (attempt 1/3): ProvisionedThroughputExceededException
 Retrying lock deletion after 200ms...
@@ -405,6 +426,7 @@ Successfully deleted lock video-lock-xxx (attempt 2/3)
 ### CloudWatch Logs Insights クエリ
 
 #### 1. ロック削除失敗を検出
+
 ```
 fields @timestamp, @message
 | filter @message like /CRITICAL.*Failed to delete lock/
@@ -412,10 +434,12 @@ fields @timestamp, @message
 ```
 
 **アラーム設定:**
+
 - 閾値: 10件/5分
 - アクション: SNS通知 → チームにアラート
 
 #### 2. エラーハンドリングの効果確認
+
 ```
 fields @timestamp, @message
 | filter @message like /Processing failed for chunk/
@@ -426,9 +450,11 @@ fields @timestamp, @message
 ```
 
 **期待値:**
+
 - CleanupRate: **100%**（全エラーケースでロック削除）
 
 #### 3. ロック削除リトライ頻度
+
 ```
 fields @timestamp, @message
 | filter @message like /Retrying lock deletion/
@@ -436,6 +462,7 @@ fields @timestamp, @message
 ```
 
 **正常範囲:**
+
 - RetryCount: **<10件/時間**（DynamoDBスロットリングは稀）
 - 急増時: DynamoDB書き込みキャパシティ不足の可能性
 
@@ -446,35 +473,42 @@ fields @timestamp, @message
 ### 1. TTL遅延の影響は残る
 
 **問題:**
+
 - DynamoDB TTL削除は "best-effort"
 - 実際には**数時間〜最大48時間**遅れる可能性
 
 **緩和策:**
+
 - リトライ機能（P3）により、ロック削除失敗率を99.9%以上に向上
 - エラー時もfinallyブロックで削除するため、TTL頼みになるケースは極めて稀
 
 **残存リスク:**
+
 - リトライ3回全失敗（<0.01%）
 - Lambda強制終了（タイムアウト、OOM）
 
 ### 2. Lambda強制終了時の動作
 
 **ケース1: タイムアウト（15分）**
+
 - 通常のチャンク処理は数秒で完了するため、発生確率は極めて低い
 - 発生時: ロック削除コードに到達せず → TTL（5分）で自動削除
 
 **ケース2: メモリ不足（OOM）**
+
 - 現在のメモリ設定: 3008 MB
 - 通常のチャンクサイズ: ~250KB（動画）、~5KB（音声）
 - 発生確率: 極めて低い
 
 **対策:**
+
 - CloudWatchアラームでタイムアウト/OOMを監視
 - 発生時は手動でロックを削除（DynamoDBから直接削除）
 
 ### 3. 同一タイムスタンプでのUUID衝突（理論上）
 
 **確率:**
+
 ```
 P(collision | same timestamp)
 = 1 / (2^122)
@@ -544,11 +578,13 @@ P(collision | same timestamp)
 **P1（エラーハンドリング）、P2（ChunkID改善）、P3（ロック削除リトライ）の実装により、ロックメカニズムのCritical/High優先度の問題を解決しました。**
 
 **定量的な改善:**
+
 - ✅ ロック解放成功率: **90% → 99.9%**
 - ✅ ChunkID衝突率: **47%/日 → <0.0001%/年**
 - ✅ データ損失リスク: **100件/日 → <1件/月**
 
 **次のステップ:**
+
 1. 本番環境でセッションを実行し、動作確認
 2. CloudWatch Logsで以下を確認:
    - `Lock cleanup completed` ログが成功・失敗問わず出力されること

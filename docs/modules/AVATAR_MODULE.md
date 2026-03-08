@@ -26,15 +26,15 @@
 
 ### 主要機能
 
-| 機能 | 説明 | アクセス権限 |
-| ---- | ---- | ---------- |
-| **プリセットアバター選択** | 事前用意された2D/3Dアバターから選択 | 全ユーザー |
-| **画像からのアバター生成** | ユーザーアップロード画像から2D/3Dアバターを生成 | Pro以上 |
-| **カスタムアバターライブラリ** | 生成したアバターを保存・再利用 | Pro以上 |
-| **組織専用アバター** | 管理者が組織メンバー向けにカスタムプリセットを追加 | 組織管理者 |
-| **アバタークローニング** | 他組織が公開したアバターを自組織にコピー | 全ユーザー（公開+クローニング許可） |
-| **リップシンク** | 音声に合わせた口の動きの同期 | 全ユーザー |
-| **表情制御** | AIの感情状態に応じた表情変化 | 全ユーザー |
+| 機能                           | 説明                                               | アクセス権限                        |
+| ------------------------------ | -------------------------------------------------- | ----------------------------------- |
+| **プリセットアバター選択**     | 事前用意された2D/3Dアバターから選択                | 全ユーザー                          |
+| **画像からのアバター生成**     | ユーザーアップロード画像から2D/3Dアバターを生成    | Pro以上                             |
+| **カスタムアバターライブラリ** | 生成したアバターを保存・再利用                     | Pro以上                             |
+| **組織専用アバター**           | 管理者が組織メンバー向けにカスタムプリセットを追加 | 組織管理者                          |
+| **アバタークローニング**       | 他組織が公開したアバターを自組織にコピー           | 全ユーザー（公開+クローニング許可） |
+| **リップシンク**               | 音声に合わせた口の動きの同期                       | 全ユーザー                          |
+| **表情制御**                   | AIの感情状態に応じた表情変化                       | 全ユーザー                          |
 
 ### 設計方針
 
@@ -49,24 +49,26 @@
 
 ### サポートするアバタータイプ
 
-| タイプ | ソース | 生成方法 | レンダリング | アクセス権限 |
-| ---------------------- | ---------------------------- | ------------------------------------------ | ---------------------- | ---------- |
-| **2Dアニメ（プリセット）** | Live2D既製モデル | ライブラリから選択 | Canvas 2D / Live2D SDK | 全ユーザー |
-| **2Dアニメ（画像生成）** | ユーザーアップロード画像 | AnimeGANスタイル変換 + 顔ランドマーク駆動 | Canvas 2D | Pro以上 |
-| **3Dリアル（プリセット）** | Ready Player Me標準モデル | ライブラリから選択 | Three.js / WebGL | 全ユーザー |
-| **3Dリアル（画像生成）** | ユーザーアップロード画像 | RPM Photo Capture API | Three.js / WebGL | Pro以上 |
+| タイプ                     | ソース                    | 生成方法                                  | レンダリング           | アクセス権限 |
+| -------------------------- | ------------------------- | ----------------------------------------- | ---------------------- | ------------ |
+| **2Dアニメ（プリセット）** | Live2D既製モデル          | ライブラリから選択                        | Canvas 2D / Live2D SDK | 全ユーザー   |
+| **2Dアニメ（画像生成）**   | ユーザーアップロード画像  | AnimeGANスタイル変換 + 顔ランドマーク駆動 | Canvas 2D              | Pro以上      |
+| **3Dリアル（プリセット）** | Ready Player Me標準モデル | ライブラリから選択                        | Three.js / WebGL       | 全ユーザー   |
+| **3Dリアル（画像生成）**   | ユーザーアップロード画像  | RPM Photo Capture API                     | Three.js / WebGL       | Pro以上      |
 
 ### 各タイプの特徴
 
 #### 2Dアニメ（プリセット）
 
 **特徴:**
+
 - Live2D Cubism SDK 5を使用
 - 軽量（1モデルあたり1-3MB）
 - アニメ風のキャラクター表現
 - 表情パラメータで豊かな表現が可能
 
 **用途:**
+
 - カジュアルな会話練習
 - 語学学習
 - エンターテインメント
@@ -76,26 +78,31 @@
 #### 2Dアニメ（画像生成）
 
 **特徴:**
+
 - ユーザーの顔写真をアニメ風に変換
 - AnimeGANv2でスタイル変換
 - MediaPipeで顔パーツを検出し、Live2Dパラメータにマッピング
 
 **用途:**
+
 - パーソナライズされた学習体験
 - ブランドマスコットキャラクターの再現
 
 **制限:**
+
 - Pro以上のプラン
 - 生成時間: 約30-60秒
 
 #### 3Dリアル（プリセット）
 
 **特徴:**
+
 - Ready Player Me標準モデル（GLB形式）
 - フォトリアルな表現
 - ARKit 52 Blendshapesで詳細な表情制御
 
 **用途:**
+
 - ビジネス面接練習
 - フォーマルなトレーニング
 - プロフェッショナルな印象が必要なシナリオ
@@ -105,15 +112,18 @@
 #### 3Dリアル（画像生成）
 
 **特徴:**
+
 - Ready Player Me Photo Capture APIを利用
 - ユーザーの顔写真から3Dモデル生成
 - 高品質なフォトリアルアバター
 
 **用途:**
+
 - 実際の面接官やトレーナーを再現
 - 企業ブランドに合わせたカスタマイズ
 
 **制限:**
+
 - Pro以上のプラン
 - 生成時間: 約60-120秒
 
@@ -228,6 +238,7 @@
 ```
 
 **設定可能な項目:**
+
 - アバター名、タイプ、スタイル
 - タグ（検索用）
 - カテゴリ（面接、語学、カスタマーサービス等）
@@ -267,6 +278,7 @@
 #### 1. 画像アップロード・品質チェック
 
 **要件:**
+
 - **ファイル形式:** JPG, PNG, HEIC
 - **ファイルサイズ:** 最大10MB
 - **推奨解像度:** 512x512px以上
@@ -274,6 +286,7 @@
 - **照明:** 明るく、影が少ない
 
 **品質チェック項目:**
+
 ```typescript
 interface ImageQualityCheck {
   hasFace: boolean; // 顔が検出されたか
@@ -287,6 +300,7 @@ interface ImageQualityCheck {
 ```
 
 **エラーメッセージ例:**
+
 - "顔が検出されませんでした。正面を向いた明るい写真をアップロードしてください。"
 - "複数の顔が検出されました。1人だけが写っている写真を選択してください。"
 - "画像が暗すぎます。明るい場所で撮影した写真を使用してください。"
@@ -302,12 +316,12 @@ async function generate2DAnimeAvatar(imageUrl: string): Promise<AvatarAsset> {
   // Step 2: AnimeGANv2でスタイル変換
   const animeStyleImage = await animeGANConvert(foregroundImage, {
     style: 'paprika', // shinkai / paprika / hayao
-    faceEnhance: true
+    faceEnhance: true,
   });
 
   // Step 3: 顔パーツマスク生成
   const faceParts = await extractFaceParts(animeStyleImage, {
-    parts: ['eyes', 'mouth', 'eyebrows', 'nose']
+    parts: ['eyes', 'mouth', 'eyebrows', 'nose'],
   });
 
   // Step 4: Live2Dパラメータマッピング
@@ -317,13 +331,13 @@ async function generate2DAnimeAvatar(imageUrl: string): Promise<AvatarAsset> {
   const modelFile = await generateLive2DModel({
     baseImage: animeStyleImage,
     parts: faceParts,
-    params: live2dParams
+    params: live2dParams,
   });
 
   // S3にアップロード
   const assetUrl = await uploadToS3(modelFile, {
     bucket: 'prance-avatars',
-    path: `custom/2d/${userId}/${avatarId}/`
+    path: `custom/2d/${userId}/${avatarId}/`,
   });
 
   return {
@@ -333,8 +347,8 @@ async function generate2DAnimeAvatar(imageUrl: string): Promise<AvatarAsset> {
     metadata: {
       generationTime: Date.now(),
       style: 'anime',
-      faceParts
-    }
+      faceParts,
+    },
   };
 }
 ```
@@ -348,15 +362,15 @@ async function generate3DRealisticAvatar(imageUrl: string): Promise<AvatarAsset>
   const rpmResponse = await fetch('https://api.readyplayer.me/v2/avatars', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${RPM_API_KEY}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${RPM_API_KEY}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       image: imageUrl,
       bodyType: 'halfbody', // fullbody / halfbody
       gender: 'auto', // 自動検出
-      useHands: false
-    })
+      useHands: false,
+    }),
   });
 
   const { avatarUrl } = await rpmResponse.json();
@@ -367,7 +381,7 @@ async function generate3DRealisticAvatar(imageUrl: string): Promise<AvatarAsset>
   // S3にアップロード
   const assetUrl = await uploadToS3(glbModel, {
     bucket: 'prance-avatars',
-    path: `custom/3d/${userId}/${avatarId}/model.glb`
+    path: `custom/3d/${userId}/${avatarId}/model.glb`,
   });
 
   return {
@@ -377,8 +391,8 @@ async function generate3DRealisticAvatar(imageUrl: string): Promise<AvatarAsset>
     metadata: {
       generationTime: Date.now(),
       format: 'glb',
-      blendshapes: 'arkit52'
-    }
+      blendshapes: 'arkit52',
+    },
   };
 }
 ```
@@ -421,21 +435,21 @@ async function generate3DRealisticAvatar(imageUrl: string): Promise<AvatarAsset>
 ```typescript
 // Viseme（口の形）の定義
 const visemeShapes = {
-  'sil': { mouthOpenY: 0.0 },    // 無音
-  'PP': { mouthOpenY: 0.0 },      // p, b, m
-  'FF': { mouthOpenY: 0.1 },      // f, v
-  'TH': { mouthOpenY: 0.2 },      // th
-  'DD': { mouthOpenY: 0.3 },      // t, d
-  'kk': { mouthOpenY: 0.2 },      // k, g
-  'CH': { mouthOpenY: 0.3 },      // ch, j, sh
-  'SS': { mouthOpenY: 0.2 },      // s, z
-  'nn': { mouthOpenY: 0.3 },      // n, l
-  'RR': { mouthOpenY: 0.2 },      // r
-  'aa': { mouthOpenY: 0.6 },      // a (father)
-  'E': { mouthOpenY: 0.4 },       // e (bed)
-  'I': { mouthOpenY: 0.3 },       // i (seat)
-  'O': { mouthOpenY: 0.5 },       // o (boat)
-  'U': { mouthOpenY: 0.3 }        // u (boot)
+  sil: { mouthOpenY: 0.0 }, // 無音
+  PP: { mouthOpenY: 0.0 }, // p, b, m
+  FF: { mouthOpenY: 0.1 }, // f, v
+  TH: { mouthOpenY: 0.2 }, // th
+  DD: { mouthOpenY: 0.3 }, // t, d
+  kk: { mouthOpenY: 0.2 }, // k, g
+  CH: { mouthOpenY: 0.3 }, // ch, j, sh
+  SS: { mouthOpenY: 0.2 }, // s, z
+  nn: { mouthOpenY: 0.3 }, // n, l
+  RR: { mouthOpenY: 0.2 }, // r
+  aa: { mouthOpenY: 0.6 }, // a (father)
+  E: { mouthOpenY: 0.4 }, // e (bed)
+  I: { mouthOpenY: 0.3 }, // i (seat)
+  O: { mouthOpenY: 0.5 }, // o (boat)
+  U: { mouthOpenY: 0.3 }, // u (boot)
 };
 
 // ElevenLabs APIからのAlignment data
@@ -479,9 +493,16 @@ class LipSyncController {
   private getVisemeFromChar(char: string): string {
     // 文字からVisemeへのマッピング（簡易版）
     const visemeMap: Record<string, string> = {
-      'a': 'aa', 'e': 'E', 'i': 'I', 'o': 'O', 'u': 'U',
-      'p': 'PP', 'b': 'PP', 'm': 'PP',
-      'f': 'FF', 'v': 'FF',
+      a: 'aa',
+      e: 'E',
+      i: 'I',
+      o: 'O',
+      u: 'U',
+      p: 'PP',
+      b: 'PP',
+      m: 'PP',
+      f: 'FF',
+      v: 'FF',
       // ... その他のマッピング
     };
     return visemeMap[char.toLowerCase()] || 'sil';
@@ -503,14 +524,14 @@ class LipSyncController {
 ```typescript
 // ARKit Blendshapesの主要パラメータ
 interface ARKitBlendshapes {
-  jawOpen: number;           // 顎の開き (0.0 - 1.0)
-  mouthClose: number;        // 口を閉じる
-  mouthFunnel: number;       // 口をすぼめる (o, u)
-  mouthPucker: number;       // 口を突き出す
-  mouthSmileLeft: number;    // 左口角を上げる
-  mouthSmileRight: number;   // 右口角を上げる
-  mouthLeft: number;         // 口を左に
-  mouthRight: number;        // 口を右に
+  jawOpen: number; // 顎の開き (0.0 - 1.0)
+  mouthClose: number; // 口を閉じる
+  mouthFunnel: number; // 口をすぼめる (o, u)
+  mouthPucker: number; // 口を突き出す
+  mouthSmileLeft: number; // 左口角を上げる
+  mouthSmileRight: number; // 右口角を上げる
+  mouthLeft: number; // 口を左に
+  mouthRight: number; // 口を右に
   // ... 52種類のパラメータ
 }
 
@@ -554,11 +575,11 @@ class LipSync3DController {
   private getBlendshapesFromChar(char: string): Partial<ARKitBlendshapes> {
     // 文字からBlendshapes値へのマッピング
     const blendshapeMap: Record<string, Partial<ARKitBlendshapes>> = {
-      'a': { jawOpen: 0.6, mouthClose: 0.0 },
-      'e': { jawOpen: 0.4, mouthSmileLeft: 0.3, mouthSmileRight: 0.3 },
-      'i': { jawOpen: 0.3, mouthSmileLeft: 0.5, mouthSmileRight: 0.5 },
-      'o': { jawOpen: 0.5, mouthFunnel: 0.6 },
-      'u': { jawOpen: 0.3, mouthFunnel: 0.7, mouthPucker: 0.5 },
+      a: { jawOpen: 0.6, mouthClose: 0.0 },
+      e: { jawOpen: 0.4, mouthSmileLeft: 0.3, mouthSmileRight: 0.3 },
+      i: { jawOpen: 0.3, mouthSmileLeft: 0.5, mouthSmileRight: 0.5 },
+      o: { jawOpen: 0.5, mouthFunnel: 0.6 },
+      u: { jawOpen: 0.3, mouthFunnel: 0.7, mouthPucker: 0.5 },
       // ... その他のマッピング
     };
     return blendshapeMap[char.toLowerCase()] || { jawOpen: 0.0 };
@@ -592,38 +613,34 @@ ElevenLabs `/v1/text-to-speech` APIレスポンスには、音声とテキスト
 interface ElevenLabsResponse {
   audio_base64: string; // MP3音声データ（Base64エンコード）
   alignment: {
-    characters: ['H', 'e', 'l', 'l', 'o'],
-    character_start_times_seconds: [0.0, 0.1, 0.2, 0.3, 0.4],
-    character_end_times_seconds: [0.1, 0.2, 0.3, 0.4, 0.5]
+    characters: ['H', 'e', 'l', 'l', 'o'];
+    character_start_times_seconds: [0.0, 0.1, 0.2, 0.3, 0.4];
+    character_end_times_seconds: [0.1, 0.2, 0.3, 0.4, 0.5];
   };
   normalized_alignment: {
-    characters: ['H', 'e', 'l', 'l', 'o'],
-    character_start_times_seconds: [0.0, 0.1, 0.2, 0.3, 0.4],
-    character_end_times_seconds: [0.1, 0.2, 0.3, 0.4, 0.5]
+    characters: ['H', 'e', 'l', 'l', 'o'];
+    character_start_times_seconds: [0.0, 0.1, 0.2, 0.3, 0.4];
+    character_end_times_seconds: [0.1, 0.2, 0.3, 0.4, 0.5];
   };
 }
 
 // Alignment dataを使ったリップシンク
-async function performLipSync(
-  text: string,
-  voiceId: string,
-  avatar: Avatar
-): Promise<void> {
+async function performLipSync(text: string, voiceId: string, avatar: Avatar): Promise<void> {
   // ElevenLabs APIコール
   const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/{voice_id}', {
     method: 'POST',
     headers: {
       'xi-api-key': process.env.ELEVENLABS_API_KEY,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       text,
       model_id: 'eleven_multilingual_v2',
       voice_settings: {
         stability: 0.5,
-        similarity_boost: 0.75
-      }
-    })
+        similarity_boost: 0.75,
+      },
+    }),
   });
 
   const data: ElevenLabsResponse = await response.json();
@@ -633,15 +650,10 @@ async function performLipSync(
   const audioUrl = URL.createObjectURL(audioBlob);
 
   // リップシンク実行
-  const lipSyncController = avatar.type === '2d'
-    ? new LipSyncController()
-    : new LipSync3DController();
+  const lipSyncController =
+    avatar.type === '2d' ? new LipSyncController() : new LipSync3DController();
 
-  await lipSyncController.syncLipsWithAudio(
-    audioUrl,
-    data.alignment,
-    avatar
-  );
+  await lipSyncController.syncLipsWithAudio(audioUrl, data.alignment, avatar);
 }
 ```
 
@@ -656,13 +668,13 @@ AIの感情状態や会話の文脈に応じて、アバターの表情を動的
 ```typescript
 // 感情状態の定義
 type EmotionState =
-  | 'neutral'      // 通常
-  | 'happy'        // 嬉しい
-  | 'confused'     // 困惑
-  | 'serious'      // 真剣
-  | 'surprised'    // 驚き
-  | 'concerned'    // 心配
-  | 'thinking';    // 考え中
+  | 'neutral' // 通常
+  | 'happy' // 嬉しい
+  | 'confused' // 困惑
+  | 'serious' // 真剣
+  | 'surprised' // 驚き
+  | 'concerned' // 心配
+  | 'thinking'; // 考え中
 
 // 感情状態からアバターパラメータへのマッピング
 const emotionToExpression: Record<EmotionState, AvatarParams> = {
@@ -670,52 +682,52 @@ const emotionToExpression: Record<EmotionState, AvatarParams> = {
     mouthSmile: 0.0,
     eyeWide: 0.0,
     browRaise: 0.0,
-    headTilt: 0.0
+    headTilt: 0.0,
   },
   happy: {
     mouthSmile: 0.8,
     eyeWide: 0.3,
     browRaise: 0.1,
-    headTilt: 2.0
+    headTilt: 2.0,
   },
   confused: {
     mouthSmile: 0.0,
     eyeWide: 0.2,
     browRaise: 0.5,
-    headTilt: -3.0
+    headTilt: -3.0,
   },
   serious: {
     mouthSmile: 0.0,
     eyeWide: 0.0,
     browRaise: -0.3,
-    headTilt: 0.0
+    headTilt: 0.0,
   },
   surprised: {
     mouthSmile: 0.2,
     eyeWide: 0.9,
     browRaise: 0.8,
-    headTilt: 0.0
+    headTilt: 0.0,
   },
   concerned: {
     mouthSmile: -0.2,
     eyeWide: 0.1,
     browRaise: -0.4,
-    headTilt: -2.0
+    headTilt: -2.0,
   },
   thinking: {
     mouthSmile: 0.0,
     eyeWide: 0.0,
     browRaise: 0.2,
-    headTilt: 5.0 // 少し上を向く
-  }
+    headTilt: 5.0, // 少し上を向く
+  },
 };
 
 // 表情パラメータの型定義
 interface AvatarParams {
-  mouthSmile: number;    // -1.0 (下がる) ~ 1.0 (上がる)
-  eyeWide: number;       // 0.0 (通常) ~ 1.0 (見開く)
-  browRaise: number;     // -1.0 (下がる) ~ 1.0 (上がる)
-  headTilt: number;      // 度数 (-30 ~ 30)
+  mouthSmile: number; // -1.0 (下がる) ~ 1.0 (上がる)
+  eyeWide: number; // 0.0 (通常) ~ 1.0 (見開く)
+  browRaise: number; // -1.0 (下がる) ~ 1.0 (上がる)
+  headTilt: number; // 度数 (-30 ~ 30)
 }
 ```
 
@@ -770,9 +782,12 @@ class ExpressionController {
    * まばたきの自動制御
    */
   startBlinking(avatar: Avatar): void {
-    setInterval(() => {
-      this.blink(avatar);
-    }, 3000 + Math.random() * 2000); // 3-5秒ごと
+    setInterval(
+      () => {
+        this.blink(avatar);
+      },
+      3000 + Math.random() * 2000
+    ); // 3-5秒ごと
   }
 
   private async blink(avatar: Avatar): Promise<void> {
@@ -798,12 +813,8 @@ class ExpressionController {
     }, 16); // 60fps
   }
 
-  private animateToParams(
-    avatar: Avatar,
-    params: AvatarParams,
-    duration: number
-  ): Promise<void> {
-    return new Promise((resolve) => {
+  private animateToParams(avatar: Avatar, params: AvatarParams, duration: number): Promise<void> {
+    return new Promise(resolve => {
       // GSAPでスムーズなアニメーション
       gsap.to(avatar.currentParams, {
         ...params,
@@ -812,7 +823,7 @@ class ExpressionController {
         onUpdate: () => {
           avatar.applyParams(avatar.currentParams);
         },
-        onComplete: resolve
+        onComplete: resolve,
       });
     });
   }
@@ -906,11 +917,7 @@ type AvatarType =
   | '3d_realistic_preset'
   | '3d_realistic_custom';
 
-type AvatarStyle =
-  | 'business'
-  | 'casual'
-  | 'friendly'
-  | 'formal';
+type AvatarStyle = 'business' | 'casual' | 'friendly' | 'formal';
 
 interface AvatarMetadata {
   format: 'live2d' | 'glb'; // ファイル形式
@@ -998,6 +1005,7 @@ enum AvatarVisibility {
 プリセットアバター一覧を取得
 
 **Query Parameters:**
+
 ```typescript
 {
   type?: AvatarType; // フィルター: タイプ
@@ -1010,6 +1018,7 @@ enum AvatarVisibility {
 ```
 
 **Response:**
+
 ```typescript
 {
   avatars: Avatar[];
@@ -1027,6 +1036,7 @@ enum AvatarVisibility {
 カスタムアバター生成
 
 **Request Body:**
+
 ```typescript
 {
   imageUrl: string; // アップロードした画像のURL
@@ -1038,6 +1048,7 @@ enum AvatarVisibility {
 ```
 
 **Response:**
+
 ```typescript
 {
   jobId: string; // 生成ジョブID
@@ -1051,6 +1062,7 @@ enum AvatarVisibility {
 生成ジョブのステータス確認
 
 **Response:**
+
 ```typescript
 {
   jobId: string;
@@ -1066,6 +1078,7 @@ enum AvatarVisibility {
 特定アバターの詳細取得
 
 **Response:**
+
 ```typescript
 {
   avatar: Avatar;
@@ -1077,6 +1090,7 @@ enum AvatarVisibility {
 カスタムアバターの削除
 
 **Response:**
+
 ```typescript
 {
   success: boolean;
@@ -1271,21 +1285,23 @@ import { generateAvatarSchema } from './validation';
 
 const stepfunctions = new StepFunctions();
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   try {
     // リクエストボディ検証
     const body = JSON.parse(event.body || '{}');
     const validatedBody = generateAvatarSchema.parse(body);
 
     // Step Functionsでアバター生成ワークフロー開始
-    const execution = await stepfunctions.startExecution({
-      stateMachineArn: process.env.AVATAR_GENERATION_STATE_MACHINE_ARN!,
-      input: JSON.stringify({
-        userId: event.requestContext.authorizer?.userId,
-        organizationId: event.requestContext.authorizer?.organizationId,
-        ...validatedBody,
-      }),
-    }).promise();
+    const execution = await stepfunctions
+      .startExecution({
+        stateMachineArn: process.env.AVATAR_GENERATION_STATE_MACHINE_ARN!,
+        input: JSON.stringify({
+          userId: event.requestContext.authorizer?.userId,
+          organizationId: event.requestContext.authorizer?.organizationId,
+          ...validatedBody,
+        }),
+      })
+      .promise();
 
     return {
       statusCode: 202,
@@ -1393,6 +1409,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 アバターモジュールは、Pranceプラットフォームのユーザー体験の中核を担います。2D/3Dの多様なアバタータイプ、画像からのカスタム生成、リアルタイムリップシンク、感情に応じた表情変化により、リアルで魅力的なAI会話体験を提供します。
 
 **次のステップ:**
+
 - [音声モジュール](VOICE_MODULE.md) - TTS/STT、音声クローニング
 - [シナリオエンジン](SCENARIO_ENGINE.md) - 会話フロー制御
 - [セッション録画](SESSION_RECORDING.md) - 録画・再生機能

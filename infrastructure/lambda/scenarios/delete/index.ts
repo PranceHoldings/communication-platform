@@ -8,7 +8,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  *
  * Delete a scenario
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Delete scenario request:', JSON.stringify(event, null, 2));
 
   try {
@@ -42,7 +42,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Access control: Only allow deleting own organization's scenarios
     // SUPER_ADMIN can delete any, others can only delete their org's scenarios
     if (user.role !== 'SUPER_ADMIN' && existingScenario.orgId !== user.orgId) {
-      return errorResponse(403, 'Access denied: You can only delete scenarios from your organization');
+      return errorResponse(
+        403,
+        'Access denied: You can only delete scenarios from your organization'
+      );
     }
 
     // Delete scenario (no session check - sessions will simply not display deleted scenarios)
@@ -58,6 +61,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   } catch (error) {
     console.error('Error deleting scenario:', error);
-    return errorResponse(500, 'Failed to delete scenario', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to delete scenario',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

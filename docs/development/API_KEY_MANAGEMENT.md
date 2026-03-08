@@ -27,12 +27,14 @@
 ### 1. APIキーの保存場所
 
 **✅ 正しい:**
+
 ```bash
 # プロジェクトルートの.env.localに保存
 /workspaces/prance-communication-platform/.env.local
 ```
 
 **❌ 間違い:**
+
 ```bash
 # 複数の場所に分散して保存（禁止）
 infrastructure/.env
@@ -45,6 +47,7 @@ packages/*/. env
 **自動化されています！** `.env.local`から`infrastructure/.env`へのコピーは自動実行されます。
 
 #### オプションA: deploy.sh を使用（推奨）
+
 ```bash
 cd /workspaces/prance-communication-platform/infrastructure
 
@@ -56,6 +59,7 @@ npm run deploy:dev
 ```
 
 #### オプションB: npm scripts を使用
+
 ```bash
 cd /workspaces/prance-communication-platform/infrastructure
 
@@ -64,6 +68,7 @@ npm run deploy
 ```
 
 #### オプションC: CDK直接実行
+
 ```bash
 cd /workspaces/prance-communication-platform/infrastructure
 
@@ -75,6 +80,7 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **自動化の仕組み:**
+
 1. `deploy.sh` → 冒頭で自動的に`.env.local`をコピー
 2. `npm run deploy` → `predeploy`フックで`sync-env.js`を実行
 3. `scripts/sync-env.js` → コピー + APIキー検証
@@ -82,6 +88,7 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ### 3. 新しいAPIキーの追加
 
 **手順:**
+
 ```bash
 # 1. プロジェクトルートの.env.localに追加
 echo "NEW_API_KEY=your-key-value" >> .env.local
@@ -114,18 +121,21 @@ npm run deploy
 ## 🔐 管理されるAPIキー一覧
 
 ### Azure Speech Services（STT）
+
 ```bash
 AZURE_SPEECH_KEY=your-azure-speech-key
 AZURE_SPEECH_REGION=eastus
 ```
 
 ### ElevenLabs（TTS）
+
 ```bash
 ELEVENLABS_API_KEY=your-elevenlabs-api-key
 ELEVENLABS_VOICE_ID=your-voice-id
 ```
 
 ### AWS Bedrock（AI）
+
 ```bash
 BEDROCK_REGION=us-east-1
 BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-6
@@ -133,11 +143,13 @@ BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-6
 ```
 
 ### データベース
+
 ```bash
 DATABASE_URL="postgresql://postgres:password@localhost:5432/prance_dev"
 ```
 
 ### JWT認証
+
 ```bash
 JWT_SECRET=dev-secret-change-in-production-use-long-random-string
 JWT_ACCESS_TOKEN_EXPIRES_IN=24h
@@ -145,6 +157,7 @@ JWT_REFRESH_TOKEN_EXPIRES_IN=30d
 ```
 
 ### Ready Player Me（将来）
+
 ```bash
 READY_PLAYER_ME_APP_ID=your-app-id
 ```
@@ -156,6 +169,7 @@ READY_PLAYER_ME_APP_ID=your-app-id
 ### 1. Git管理
 
 **`.gitignore`で保護:**
+
 ```gitignore
 # Environment variables (IMPORTANT: Never commit API keys)
 .env
@@ -165,6 +179,7 @@ infrastructure/.env
 ```
 
 **確認:**
+
 ```bash
 # .env.localがgit管理外であることを確認
 git status | grep ".env.local"
@@ -181,6 +196,7 @@ chmod 600 .env.local
 ### 3. 本番環境
 
 **本番環境ではAWS Secrets Managerを使用:**
+
 ```bash
 # 開発環境: .env.local
 # 本番環境: AWS Secrets Manager

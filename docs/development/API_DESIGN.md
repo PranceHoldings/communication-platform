@@ -1114,7 +1114,7 @@ ws.onopen = () => {
 
 ```javascript
 {
-  type: 'session_end'
+  type: 'session_end';
 }
 ```
 

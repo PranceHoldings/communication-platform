@@ -8,7 +8,11 @@ import { prisma } from '../../shared/database/prisma';
 import { verifyPassword } from '../../shared/auth/password';
 import { generateTokenPair } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
-import { validateRequestBody, validateEmail, validateRequired } from '../../shared/utils/validation';
+import {
+  validateRequestBody,
+  validateEmail,
+  validateRequired,
+} from '../../shared/utils/validation';
 import { AuthenticationError, JWTPayload } from '../../shared/types';
 
 /**
@@ -56,7 +60,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       email: email,
       emailType: typeof email,
       passwordLength: password?.length,
-      passwordType: typeof password
+      passwordType: typeof password,
     });
 
     // 入力値のバリデーション
@@ -81,7 +85,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       email: user?.email,
       hasPasswordHash: !!user?.passwordHash,
       passwordHashLength: user?.passwordHash?.length,
-      passwordHashPrefix: user?.passwordHash?.substring(0, 10)
+      passwordHashPrefix: user?.passwordHash?.substring(0, 10),
     });
 
     if (!user) {
@@ -92,7 +96,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       inputPasswordLength: password.length,
       storedHashLength: user.passwordHash.length,
       inputPasswordPrefix: password.substring(0, 3) + '***',
-      storedHashPrefix: user.passwordHash.substring(0, 10)
+      storedHashPrefix: user.passwordHash.substring(0, 10),
     });
 
     // パスワード検証

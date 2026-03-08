@@ -51,7 +51,6 @@ export interface ErrorResponse {
   };
 }
 
-
 // ========================================
 // WebSocket関連
 // ========================================
@@ -69,4 +68,3 @@ export interface WebSocketMessage {
     visemeData: object;
   };
 }
-

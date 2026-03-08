@@ -3,8 +3,8 @@
 export interface EnvironmentConfig {
   environment: string;
   domain: {
-    root: string;              // prance.co.jp (お名前.comで管理)
-    platform: string;          // platform.prance.co.jp (Route 53で管理) ★NEW
+    root: string; // prance.co.jp (お名前.comで管理)
+    platform: string; // platform.prance.co.jp (Route 53で管理) ★NEW
     subdomain: string;
     fullDomain: string;
   };

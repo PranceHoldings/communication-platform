@@ -36,6 +36,7 @@ aws route53 get-hosted-zone \
 ```
 
 **出力例:**
+
 ```
 -------------------------------------
 |          NameServers              |
@@ -98,6 +99,7 @@ open https://dev.platform.prance.co.jp
 **原因:** Route 53ホストゾーンが作成されていない
 
 **解決:**
+
 ```bash
 # ホストゾーン作成
 aws route53 create-hosted-zone \
@@ -110,6 +112,7 @@ aws route53 create-hosted-zone \
 **原因:** DNS変更が浸透していない
 
 **解決:**
+
 ```bash
 # DNSの浸透を確認
 dig prance.co.jp NS +short
@@ -124,6 +127,7 @@ dig prance.co.jp NS +short
 **原因:** CloudFrontの配信が完了していない
 
 **解決:**
+
 ```bash
 # ステータス確認
 aws cloudformation describe-stacks \
@@ -172,17 +176,20 @@ npm run deploy:production
 ## ✅ チェックリスト
 
 ### 事前準備
+
 - [ ] AWS CLI インストール済み
 - [ ] AWS認証設定済み (`aws configure`)
 - [ ] お名前.comアカウントにログイン可能
 
 ### Route 53 設定
+
 - [ ] ホストゾーン作成完了
 - [ ] ネームサーバー4つ取得済み
 - [ ] お名前.comでネームサーバー変更完了
 - [ ] DNS変更の浸透確認（`dig NS prance.co.jp +short`）
 
 ### デプロイ
+
 - [ ] 開発環境デプロイ完了
 - [ ] SSL証明書が ISSUED ステータス
 - [ ] CloudFrontが CREATE_COMPLETE

@@ -11,11 +11,13 @@
 このチェックリストは、新言語を追加する際に**すべての項目を確認**してください。
 
 **チェック方法:**
+
 - [ ] 未完了
 - [x] 完了
 - [~] 該当なし（スキップ）
 
 **Phase 1現状:**
+
 - サポート言語: 英語（en）、日本語（ja）
 - STT自動検出: ja-JP, en-US
 - ハードコード: 最小限のデフォルト値のみ
@@ -27,6 +29,7 @@
 ### 1. 言語追加時の理想フロー
 
 **開発者が言語を追加する場合:**
+
 ```
 1. apps/web/messages/{code}.json を作成
 2. メタデータを含める（languageCode, sttCode, displayName）
@@ -36,6 +39,7 @@
 ```
 
 **スーパー管理者がUIから言語を追加する場合:**
+
 ```
 1. 管理画面で「言語追加」
 2. 言語コード、STTコード、表示名を入力
@@ -78,6 +82,7 @@
 ### B. データベース設計（オプション）
 
 - [ ] **B.1** `languages` テーブル作成（データベース管理を選択した場合）
+
   ```prisma
   model Language {
     id          String   @id @default(uuid())
@@ -109,6 +114,7 @@
 ### C. 言語リソースファイル構造
 
 - [ ] **C.1** メタデータセクションを各言語ファイルに追加
+
   ```json
   // apps/web/messages/ja.json
   {
@@ -146,9 +152,9 @@
     ```typescript
     {
       languages: [
-        { code: "ja", sttCode: "ja-JP", displayName: "日本語", enabled: true },
-        { code: "en", sttCode: "en-US", displayName: "English", enabled: true }
-      ]
+        { code: 'ja', sttCode: 'ja-JP', displayName: '日本語', enabled: true },
+        { code: 'en', sttCode: 'en-US', displayName: 'English', enabled: true },
+      ];
     }
     ```
 
@@ -160,6 +166,7 @@
 #### D.2 STT自動言語検出の動的化
 
 - [ ] **D.2.1** `getAvailableSTTLanguages()` 関数実装
+
   ```typescript
   // infrastructure/lambda/shared/language/get-available-languages.ts
   export async function getAvailableSTTLanguages(): Promise<string[]> {
@@ -170,6 +177,7 @@
   ```
 
 - [ ] **D.2.2** AudioProcessor初期化時に動的取得
+
   ```typescript
   // infrastructure/lambda/websocket/default/index.ts
   async function getAudioProcessor(): Promise<AudioProcessor> {
@@ -193,6 +201,7 @@
 #### D.3 組織ごとの言語設定（オプション）
 
 - [ ] **D.3.1** `organizations` テーブルに `settings` JSON追加
+
   ```json
   {
     "enabledLanguages": ["ja", "en", "zh"],
@@ -214,6 +223,7 @@
 #### E.1 言語選択UI
 
 - [ ] **E.1.1** 動的言語リスト取得
+
   ```typescript
   // apps/web/lib/api/languages.ts
   export async function getAvailableLanguages(): Promise<Language[]> {
@@ -223,6 +233,7 @@
   ```
 
 - [ ] **E.1.2** 言語選択コンポーネント更新
+
   ```typescript
   // apps/web/components/language-selector.tsx
   const { data: languages } = useQuery('languages', getAvailableLanguages);
@@ -246,6 +257,7 @@
 #### E.2 i18n設定の動的化
 
 - [ ] **E.2.1** Middleware更新
+
   ```typescript
   // apps/web/middleware.ts
   // 静的なlocales配列を削除
@@ -253,6 +265,7 @@
   ```
 
 - [ ] **E.2.2** next-intl設定更新
+
   ```typescript
   // apps/web/i18n/config.ts
   export async function getI18nConfig() {
@@ -310,6 +323,7 @@
 #### G.2 環境変数
 
 - [ ] **G.2.1** 新環境変数追加
+
   ```bash
   # .env / infrastructure/.env
   LANGUAGE_RESOURCES_S3_BUCKET=prance-language-resources-dev
@@ -324,6 +338,7 @@
 #### G.3 デプロイメント
 
 - [ ] **G.3.1** デプロイスクリプト更新
+
   ```bash
   # scripts/deploy-language-resources.sh
   # 1. 言語リソースファイルをS3にアップロード
@@ -461,18 +476,22 @@
 ## 📊 進捗管理
 
 ### Phase 2.1: 基盤実装（2-3週間）
+
 - [ ] A. アーキテクチャ設計
 - [ ] B. データベース設計
 - [ ] C. 言語リソースファイル構造
 - [ ] D. バックエンド実装
 
 ### Phase 2.2: フロントエンド実装（1-2週間）
+
 - [ ] E. フロントエンド実装
 
 ### Phase 2.3: 管理UI（1-2週間）
+
 - [ ] F. スーパー管理者UI
 
 ### Phase 2.4: インフラ＆テスト（1週間）
+
 - [ ] G. インフラストラクチャ
 - [ ] H. テスト
 - [ ] I. ドキュメント

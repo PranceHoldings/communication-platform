@@ -17,6 +17,7 @@
 ### 1. Lambda関数のffmpeg完全欠落（Critical）
 
 **症状:**
+
 ```
 ERROR: /var/task/ffmpeg: No such file or directory
 - AUDIO_PROCESSING_ERROR: 音声変換（WebM→WAV）100%失敗
@@ -24,6 +25,7 @@ ERROR: /var/task/ffmpeg: No such file or directory
 ```
 
 **根本原因:**
+
 - `package.json`には`ffmpeg-static@^5.3.0`記載あり
 - しかし実際のデプロイパッケージには含まれていなかった
 - Lambda関数のnode_modulesが破損していた
@@ -31,15 +33,18 @@ ERROR: /var/task/ffmpeg: No such file or directory
 ### 2. Next.js開発サーバー: 500エラー
 
 **症状:**
+
 - `curl http://localhost:3000` → 500エラー
 - `next`バイナリが欠落
 
 **原因:**
+
 - プロジェクトルートのnode_modulesが不完全
 
 ### 3. CDK実行不可（Exit 221エラー）
 
 **症状:**
+
 ```bash
 $ cdk --version
 Exit code 221
@@ -47,17 +52,20 @@ Resource deadlock avoided
 ```
 
 **原因:**
+
 - node_modulesのファイルシステムデッドロック
 - 実行パスの問題
 
 ### 4. Prismaクライアント未生成
 
 **症状:**
+
 ```
 cp: cannot stat '/asset-input/packages/database/node_modules/.prisma/client'
 ```
 
 **原因:**
+
 - `npx prisma generate`が実行されていなかった
 
 ---
@@ -67,6 +75,7 @@ cp: cannot stat '/asset-input/packages/database/node_modules/.prisma/client'
 ### Phase 1: 環境診断（09:30-09:45）
 
 1. **環境状態確認**
+
    ```bash
    curl http://localhost:3000                    # → 500
    curl https://.../dev/api/v1/health           # → {"status":"healthy"}
@@ -142,6 +151,7 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **デプロイプロセス:**
+
 - 20+ Lambda関数のDockerバンドリング: 約20分
 - CloudFormation更新: 約3分
 - 合計所要時間: 約23分
@@ -151,6 +161,7 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never
 ### Phase 6: デプロイ検証（10:25-10:30）
 
 1. **Lambda関数情報確認**
+
    ```
    Function: prance-websocket-default-dev
    Last Modified: 2026-03-08T10:25:01
@@ -159,6 +170,7 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never
    ```
 
 2. **ffmpeg確認**
+
    ```bash
    # デプロイパッケージをダウンロード
    aws lambda get-function --function-name prance-websocket-default-dev
@@ -169,6 +181,7 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never
    ```
 
 3. **Lambda起動確認**
+
    ```bash
    aws lambda invoke --function-name prance-websocket-default-dev --payload '{}'
 
@@ -180,14 +193,14 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never
 
 ## 📊 修復結果サマリー
 
-| 問題 | 修復前 | 修復後 | ステータス |
-|------|--------|--------|-----------|
-| Next.js開発サーバー | 500エラー | 200 OK | ✅ 解決 |
-| CDK実行 | Exit 221 | 正常動作 | ✅ 解決 |
-| Prismaクライアント | 未生成 | v5.22.0生成 | ✅ 解決 |
-| Lambda ffmpeg | 欠落 | 51.1 MB バンドル済み | ✅ 解決 |
-| 音声処理 | 100%失敗 | 動作可能 | ✅ 解決 |
-| 録画処理 | 100%失敗 | 動作可能 | ✅ 解決 |
+| 問題                | 修復前    | 修復後               | ステータス |
+| ------------------- | --------- | -------------------- | ---------- |
+| Next.js開発サーバー | 500エラー | 200 OK               | ✅ 解決    |
+| CDK実行             | Exit 221  | 正常動作             | ✅ 解決    |
+| Prismaクライアント  | 未生成    | v5.22.0生成          | ✅ 解決    |
+| Lambda ffmpeg       | 欠落      | 51.1 MB バンドル済み | ✅ 解決    |
+| 音声処理            | 100%失敗  | 動作可能             | ✅ 解決    |
+| 録画処理            | 100%失敗  | 動作可能             | ✅ 解決    |
 
 ---
 
@@ -215,6 +228,7 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never
 ### 1. Lambda node_modulesの除外
 
 **実装:**
+
 ```bash
 # infrastructure/lambda/*/node_modules を.gitignoreに追加
 echo "infrastructure/lambda/*/node_modules" >> .gitignore
@@ -226,6 +240,7 @@ echo "infrastructure/lambda/*/package-lock.json" >> .gitignore
 ### 2. デプロイ前の自動クリーンアップ
 
 **infrastructure/deploy.sh に追加:**
+
 ```bash
 # Lambda関数のnode_modulesをクリーン（CDKに任せる）
 echo "Cleaning Lambda node_modules..."
@@ -235,12 +250,14 @@ find lambda -name "node_modules" -type d -exec rm -rf {} + 2>/dev/null || true
 ### 3. デプロイ後の自動検証
 
 **実装済み:**
+
 - `./scripts/check-lambda-version.sh`
 - デプロイ後に必ず実行
 
 ### 4. CI/CDパイプラインでの検証
 
 **将来実装予定:**
+
 - GitHub Actions / AWS CodePipeline
 - デプロイ後のhealth check
 - 音声・録画処理の統合テスト自動実行
@@ -269,6 +286,7 @@ find lambda -name "node_modules" -type d -exec rm -rf {} + 2>/dev/null || true
 ### immediate（今すぐ）
 
 1. **統合テスト実行**
+
    ```bash
    # ブラウザでログイン
    # セッション開始

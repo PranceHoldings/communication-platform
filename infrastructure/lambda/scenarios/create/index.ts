@@ -18,7 +18,7 @@ import { LANGUAGE_DEFAULTS } from '../../shared/config/defaults';
  *   "visibility": "PRIVATE" | "ORGANIZATION" | "PUBLIC" (optional, default: "PRIVATE")
  * }
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Create scenario request:', JSON.stringify(event, null, 2));
 
   try {
@@ -52,7 +52,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate visibility if provided
     if (visibility && !['PRIVATE', 'ORGANIZATION', 'PUBLIC'].includes(visibility)) {
-      return errorResponse(400, 'Validation Error', 'visibility must be PRIVATE, ORGANIZATION, or PUBLIC');
+      return errorResponse(
+        400,
+        'Validation Error',
+        'visibility must be PRIVATE, ORGANIZATION, or PUBLIC'
+      );
     }
 
     // Validate language if provided
@@ -92,6 +96,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return successResponse(scenario, 201);
   } catch (error) {
     console.error('Error creating scenario:', error);
-    return errorResponse(500, 'Failed to create scenario', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to create scenario',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

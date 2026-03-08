@@ -55,24 +55,24 @@ A **[Multi-tenant](docs/GLOSSARY.md#multi-tenant-マルチテナント) SaaS** p
 
 ### Key Features Summary
 
-| Category | Features |
-| -------- | -------- |
-| **Architecture** | Multi-tenant SaaS, 3-tier user roles, AWS Serverless ★ |
-| **Subscription** | Plan management (Free/Pro/Enterprise), flexible UI configuration, Stripe integration ready ★ |
-| **Avatar** | 2D/3D presets, user image generation, anime/realistic styles, UI selection system ★ |
-| **Voice** | Preset selection, voice file upload, real-time recording, voice cloning |
-| **Conversation AI** | Scenario-based autonomous conversation, multi-provider support (Claude/GPT-4/Gemini, etc.) ★ |
-| **AI Management** | Prompt template management, provider switching, cost management (admin-only) ★ |
-| **Recording** | Simultaneous recording, composition, and playback of avatar + user camera footage |
-| **Transcript** | Timestamped, synchronized clickable transcript with video |
-| **Analysis** | Facial expression, emotion, non-verbal behavior analysis, voice feature analysis |
-| **Reports** | Automated report generation with customizable templates |
-| **Benchmark** | Profile comparison, growth tracking, personalized improvement suggestions ★ |
-| **External API** | API key management, hierarchical rate limiting, Webhooks, OpenAPI specification ★ |
-| **Multi-language** | Japanese & English (initial), future multilingual expansion, UI/Scenario/Report support ★ |
-| **ATS Integration** | Support for 6 major domestic and international providers, candidate sync, result export, Webhook integration ★ |
-| **Plugin System** | Extensible architecture, SDK provided, marketplace (future) ★ |
-| **Platform Management** | Tenant management, global settings, overall monitoring (Super Admin) ★ |
+| Category                | Features                                                                                                       |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Architecture**        | Multi-tenant SaaS, 3-tier user roles, AWS Serverless ★                                                         |
+| **Subscription**        | Plan management (Free/Pro/Enterprise), flexible UI configuration, Stripe integration ready ★                   |
+| **Avatar**              | 2D/3D presets, user image generation, anime/realistic styles, UI selection system ★                            |
+| **Voice**               | Preset selection, voice file upload, real-time recording, voice cloning                                        |
+| **Conversation AI**     | Scenario-based autonomous conversation, multi-provider support (Claude/GPT-4/Gemini, etc.) ★                   |
+| **AI Management**       | Prompt template management, provider switching, cost management (admin-only) ★                                 |
+| **Recording**           | Simultaneous recording, composition, and playback of avatar + user camera footage                              |
+| **Transcript**          | Timestamped, synchronized clickable transcript with video                                                      |
+| **Analysis**            | Facial expression, emotion, non-verbal behavior analysis, voice feature analysis                               |
+| **Reports**             | Automated report generation with customizable templates                                                        |
+| **Benchmark**           | Profile comparison, growth tracking, personalized improvement suggestions ★                                    |
+| **External API**        | API key management, hierarchical rate limiting, Webhooks, OpenAPI specification ★                              |
+| **Multi-language**      | Japanese & English (initial), future multilingual expansion, UI/Scenario/Report support ★                      |
+| **ATS Integration**     | Support for 6 major domestic and international providers, candidate sync, result export, Webhook integration ★ |
+| **Plugin System**       | Extensible architecture, SDK provided, marketplace (future) ★                                                  |
+| **Platform Management** | Tenant management, global settings, overall monitoring (Super Admin) ★                                         |
 
 ★ = v2.0 new/enhanced features
 
@@ -282,6 +282,7 @@ Survey Designer → Obtain conversation logs, emotional data, and summary report
 ---
 
 _[Translation continues - This is the first portion of the document. The complete English translation is being created progressively...]_
+
 ### Real-time Communication Flow (Serverless)
 
 ```
@@ -349,12 +350,12 @@ Browser                 IoT Core + Lambda              External API
 
 #### Avatar Types and Generation Methods
 
-| Type | Source | Generation Method | Rendering | Access Rights |
-| ---------------------- | ---------------------------- | ------------------------------------------ | ---------------------- | ---------- |
-| 2D Anime (Preset) | Live2D ready-made models | Select from library | Canvas 2D / Live2D SDK | All users |
-| 2D Anime (From Image) | User upload | AnimeGAN style conversion + facial landmark driven | Canvas 2D | Pro and above |
-| 3D Realistic (Preset) | Ready Player Me standard models | Select from library | Three.js / WebGL | All users |
-| 3D Realistic (From Image) | User upload | RPM Photo Capture API | Three.js / WebGL | Pro and above |
+| Type                      | Source                          | Generation Method                                  | Rendering              | Access Rights |
+| ------------------------- | ------------------------------- | -------------------------------------------------- | ---------------------- | ------------- |
+| 2D Anime (Preset)         | Live2D ready-made models        | Select from library                                | Canvas 2D / Live2D SDK | All users     |
+| 2D Anime (From Image)     | User upload                     | AnimeGAN style conversion + facial landmark driven | Canvas 2D              | Pro and above |
+| 3D Realistic (Preset)     | Ready Player Me standard models | Select from library                                | Three.js / WebGL       | All users     |
+| 3D Realistic (From Image) | User upload                     | RPM Photo Capture API                              | Three.js / WebGL       | Pro and above |
 
 #### Avatar Selection UI (For End Users)
 
@@ -555,4 +556,3 @@ scenario:
 
   report_template_id: 'tpl_interview_standard'
 ```
-

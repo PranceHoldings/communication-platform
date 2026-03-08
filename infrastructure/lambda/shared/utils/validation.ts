@@ -59,27 +59,16 @@ export const validateUUID = (value: string, fieldName = 'ID'): void => {
 /**
  * 列挙値のバリデーション
  */
-export const validateEnum = <T>(
-  value: T,
-  allowedValues: T[],
-  fieldName: string
-): void => {
+export const validateEnum = <T>(value: T, allowedValues: T[], fieldName: string): void => {
   if (!allowedValues.includes(value)) {
-    throw new ValidationError(
-      `${fieldName} must be one of: ${allowedValues.join(', ')}`
-    );
+    throw new ValidationError(`${fieldName} must be one of: ${allowedValues.join(', ')}`);
   }
 };
 
 /**
  * 数値範囲のバリデーション
  */
-export const validateRange = (
-  value: number,
-  min: number,
-  max: number,
-  fieldName: string
-): void => {
+export const validateRange = (value: number, min: number, max: number, fieldName: string): void => {
   if (value < min || value > max) {
     throw new ValidationError(`${fieldName} must be between ${min} and ${max}`);
   }
@@ -95,9 +84,7 @@ export const validateLength = (
   fieldName: string
 ): void => {
   if (value.length < min || value.length > max) {
-    throw new ValidationError(
-      `${fieldName} must be between ${min} and ${max} characters`
-    );
+    throw new ValidationError(`${fieldName} must be between ${min} and ${max} characters`);
   }
 };
 

@@ -62,8 +62,8 @@ export default function CreateAvatarPage() {
     try {
       const tagsArray = formData.tags
         .split(',')
-        .map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0);
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
 
       const avatar = await createAvatar({
         name: formData.name.trim(),
@@ -89,10 +89,10 @@ export default function CreateAvatarPage() {
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error for this field
     if (errors[field]) {
-      setErrors((prev) => {
+      setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -109,7 +109,12 @@ export default function CreateAvatarPage() {
           className="text-sm text-indigo-600 hover:text-indigo-900 mb-2 inline-flex items-center"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           {t('avatars.list.title')}
         </Link>
@@ -135,7 +140,7 @@ export default function CreateAvatarPage() {
               type="text"
               id="name"
               value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
+              onChange={e => handleChange('name', e.target.value)}
               placeholder={t('avatars.create.form.namePlaceholder')}
               className={`block w-full px-3 py-2 border ${
                 errors.name ? 'border-red-300' : 'border-gray-300'
@@ -152,7 +157,7 @@ export default function CreateAvatarPage() {
             <select
               id="type"
               value={formData.type}
-              onChange={(e) => handleChange('type', e.target.value)}
+              onChange={e => handleChange('type', e.target.value)}
               className={`block w-full px-3 py-2 border ${
                 errors.type ? 'border-red-300' : 'border-gray-300'
               } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
@@ -172,7 +177,7 @@ export default function CreateAvatarPage() {
             <select
               id="style"
               value={formData.style}
-              onChange={(e) => handleChange('style', e.target.value)}
+              onChange={e => handleChange('style', e.target.value)}
               className={`block w-full px-3 py-2 border ${
                 errors.style ? 'border-red-300' : 'border-gray-300'
               } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
@@ -192,7 +197,7 @@ export default function CreateAvatarPage() {
             <select
               id="source"
               value={formData.source}
-              onChange={(e) => handleChange('source', e.target.value)}
+              onChange={e => handleChange('source', e.target.value)}
               className={`block w-full px-3 py-2 border ${
                 errors.source ? 'border-red-300' : 'border-gray-300'
               } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
@@ -216,7 +221,7 @@ export default function CreateAvatarPage() {
               type="text"
               id="modelUrl"
               value={formData.modelUrl}
-              onChange={(e) => handleChange('modelUrl', e.target.value)}
+              onChange={e => handleChange('modelUrl', e.target.value)}
               placeholder={t('avatars.create.form.modelUrlPlaceholder')}
               className={`block w-full px-3 py-2 border ${
                 errors.modelUrl ? 'border-red-300' : 'border-gray-300'
@@ -234,7 +239,7 @@ export default function CreateAvatarPage() {
               type="text"
               id="thumbnailUrl"
               value={formData.thumbnailUrl}
-              onChange={(e) => handleChange('thumbnailUrl', e.target.value)}
+              onChange={e => handleChange('thumbnailUrl', e.target.value)}
               placeholder={t('avatars.create.form.thumbnailUrlPlaceholder')}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
@@ -249,13 +254,11 @@ export default function CreateAvatarPage() {
               type="text"
               id="tags"
               value={formData.tags}
-              onChange={(e) => handleChange('tags', e.target.value)}
+              onChange={e => handleChange('tags', e.target.value)}
               placeholder={t('avatars.create.form.tagsPlaceholder')}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
-            <p className="mt-1 text-xs text-gray-500">
-              Separate multiple tags with commas
-            </p>
+            <p className="mt-1 text-xs text-gray-500">Separate multiple tags with commas</p>
           </div>
 
           {/* Allow Cloning */}
@@ -265,7 +268,7 @@ export default function CreateAvatarPage() {
                 type="checkbox"
                 id="allowCloning"
                 checked={formData.allowCloning}
-                onChange={(e) => setFormData((prev) => ({ ...prev, allowCloning: e.target.checked }))}
+                onChange={e => setFormData(prev => ({ ...prev, allowCloning: e.target.checked }))}
                 className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
               />
             </div>

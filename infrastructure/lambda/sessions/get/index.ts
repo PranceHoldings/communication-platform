@@ -8,7 +8,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  *
  * Get session details by ID
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Get session request:', JSON.stringify(event, null, 2));
 
   try {
@@ -115,6 +115,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   } catch (error) {
     console.error('Error getting session:', error);
-    return errorResponse(500, 'Failed to get session', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to get session',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

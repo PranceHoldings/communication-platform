@@ -25,15 +25,15 @@
 
 ### 主要機能
 
-| 機能 | 説明 | アクセス権限 |
-| ---- | ---- | ---------- |
-| **シナリオビルダー** | ノーコードでシナリオを作成・編集 | 全ユーザー |
-| **プリセットシナリオ** | 即座に使える事前定義シナリオ | 全ユーザー |
-| **カスタムシナリオ** | ユーザー独自のシナリオ作成 | 全ユーザー |
-| **組織共有シナリオ** | 組織内でシナリオを共有 | Pro以上 |
-| **System Prompt動的生成** | シナリオ設定からAIプロンプトを自動生成 | 全ユーザー |
-| **会話フロー制御** | トピックの順序、深掘り質問の制御 | 全ユーザー |
-| **評価基準設定** | カスタム評価指標と重み付け | Pro以上 |
+| 機能                      | 説明                                   | アクセス権限 |
+| ------------------------- | -------------------------------------- | ------------ |
+| **シナリオビルダー**      | ノーコードでシナリオを作成・編集       | 全ユーザー   |
+| **プリセットシナリオ**    | 即座に使える事前定義シナリオ           | 全ユーザー   |
+| **カスタムシナリオ**      | ユーザー独自のシナリオ作成             | 全ユーザー   |
+| **組織共有シナリオ**      | 組織内でシナリオを共有                 | Pro以上      |
+| **System Prompt動的生成** | シナリオ設定からAIプロンプトを自動生成 | 全ユーザー   |
+| **会話フロー制御**        | トピックの順序、深掘り質問の制御       | 全ユーザー   |
+| **評価基準設定**          | カスタム評価指標と重み付け             | Pro以上      |
 
 ### 設計方針
 
@@ -480,10 +480,7 @@ interface PromptTemplate {
 }
 
 // プロンプトテンプレート管理API
-async function applyCustomPromptTemplate(
-  scenario: Scenario,
-  templateId?: string
-): Promise<string> {
+async function applyCustomPromptTemplate(scenario: Scenario, templateId?: string): Promise<string> {
   if (templateId) {
     // カスタムテンプレート使用
     const template = await prisma.promptTemplate.findUnique({
@@ -574,8 +571,8 @@ class ConversationController {
       currentTopic,
       currentTopicCovered: isCovered,
       remainingTopics: this.state.pendingTopics.length,
-      progress: this.state.coveredTopics.length /
-                this.scenario.conversation_flow.required_topics.length,
+      progress:
+        this.state.coveredTopics.length / this.scenario.conversation_flow.required_topics.length,
     };
   }
 
@@ -632,8 +629,7 @@ class ConversationController {
    */
   private updateState(userInput: string): void {
     this.state.totalTurns++;
-    this.state.elapsedMinutes =
-      (Date.now() - this.state.startTime.getTime()) / (1000 * 60);
+    this.state.elapsedMinutes = (Date.now() - this.state.startTime.getTime()) / (1000 * 60);
 
     // ユーザーの沈黙カウント
     if (!userInput || userInput.trim().length < 10) {
@@ -823,6 +819,7 @@ enum ScenarioVisibility {
 シナリオ一覧取得
 
 **Query Parameters:**
+
 ```typescript
 {
   category?: ScenarioCategory;
@@ -833,6 +830,7 @@ enum ScenarioVisibility {
 ```
 
 **Response:**
+
 ```typescript
 {
   scenarios: Scenario[];
@@ -849,6 +847,7 @@ enum ScenarioVisibility {
 シナリオ作成
 
 **Request Body:**
+
 ```typescript
 {
   title: string;
@@ -864,6 +863,7 @@ enum ScenarioVisibility {
 ```
 
 **Response:**
+
 ```typescript
 {
   scenario: Scenario;
@@ -875,11 +875,13 @@ enum ScenarioVisibility {
 シナリオ更新
 
 **Request Body:**
+
 ```typescript
-Partial<Scenario>
+Partial<Scenario>;
 ```
 
 **Response:**
+
 ```typescript
 {
   scenario: Scenario;
@@ -891,6 +893,7 @@ Partial<Scenario>
 シナリオ削除
 
 **Response:**
+
 ```typescript
 {
   success: boolean;
@@ -903,6 +906,7 @@ Partial<Scenario>
 シナリオテスト実行
 
 **Request Body:**
+
 ```typescript
 {
   message: string; // テストメッセージ
@@ -910,6 +914,7 @@ Partial<Scenario>
 ```
 
 **Response:**
+
 ```typescript
 {
   aiResponse: string;
@@ -1042,7 +1047,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   try {
     const body = JSON.parse(event.body || '{}');
     const userId = event.requestContext.authorizer?.userId;
@@ -1086,6 +1091,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 シナリオエンジンは、Pranceプラットフォームの多様な用途を実現する柔軟なシステムです。ノーコードのシナリオビルダーにより、誰でも簡単にカスタムシナリオを作成でき、AIアバターの振る舞いを細かく制御できます。
 
 **次のステップ:**
+
 - [アバターモジュール](AVATAR_MODULE.md) - アバター選択とリップシンク
 - [音声モジュール](VOICE_MODULE.md) - TTS/STT統合
 - [セッション録画](SESSION_RECORDING.md) - リアルタイムセッション実行

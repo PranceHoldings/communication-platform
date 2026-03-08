@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/provider';
 import { getAvatar, updateAvatar } from '@/lib/api/avatars';
+import type { Visibility } from '@prance/shared';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -25,7 +26,7 @@ export default function EditAvatarPage() {
   const [modelUrl, setModelUrl] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [tags, setTags] = useState('');
-  const [visibility, setVisibility] = useState<'PRIVATE' | 'ORGANIZATION' | 'PUBLIC'>('PRIVATE');
+  const [visibility, setVisibility] = useState<Visibility>('PRIVATE');
   const [allowCloning, setAllowCloning] = useState(false);
 
   // Load existing avatar data
@@ -71,8 +72,8 @@ export default function EditAvatarPage() {
     try {
       const tagArray = tags
         .split(',')
-        .map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0);
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
 
       await updateAvatar(avatarId, {
         name: name.trim(),
@@ -112,7 +113,12 @@ export default function EditAvatarPage() {
           className="text-sm text-indigo-600 hover:text-indigo-900 mb-4 inline-flex items-center"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           {t('avatars.edit.backToAvatar')}
         </Link>
@@ -126,7 +132,10 @@ export default function EditAvatarPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-lg border border-gray-200 p-6 space-y-6"
+      >
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
             {t('avatars.create.form.name')} *
@@ -135,7 +144,7 @@ export default function EditAvatarPage() {
             type="text"
             id="name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={e => setName(e.target.value)}
             placeholder={t('avatars.create.form.namePlaceholder')}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             required
@@ -150,7 +159,7 @@ export default function EditAvatarPage() {
             <select
               id="type"
               value={type}
-              onChange={(e) => setType(e.target.value as any)}
+              onChange={e => setType(e.target.value as any)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="TWO_D">{t('avatars.type.TWO_D')}</option>
@@ -165,7 +174,7 @@ export default function EditAvatarPage() {
             <select
               id="style"
               value={style}
-              onChange={(e) => setStyle(e.target.value as any)}
+              onChange={e => setStyle(e.target.value as any)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="ANIME">{t('avatars.style.ANIME')}</option>
@@ -181,7 +190,7 @@ export default function EditAvatarPage() {
           <select
             id="source"
             value={source}
-            onChange={(e) => setSource(e.target.value as any)}
+            onChange={e => setSource(e.target.value as any)}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="GENERATED">{t('avatars.source.GENERATED')}</option>
@@ -197,7 +206,7 @@ export default function EditAvatarPage() {
             type="url"
             id="modelUrl"
             value={modelUrl}
-            onChange={(e) => setModelUrl(e.target.value)}
+            onChange={e => setModelUrl(e.target.value)}
             placeholder={t('avatars.create.form.modelUrlPlaceholder')}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             required
@@ -212,7 +221,7 @@ export default function EditAvatarPage() {
             type="url"
             id="thumbnailUrl"
             value={thumbnailUrl}
-            onChange={(e) => setThumbnailUrl(e.target.value)}
+            onChange={e => setThumbnailUrl(e.target.value)}
             placeholder={t('avatars.create.form.thumbnailUrlPlaceholder')}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
@@ -226,7 +235,7 @@ export default function EditAvatarPage() {
             type="text"
             id="tags"
             value={tags}
-            onChange={(e) => setTags(e.target.value)}
+            onChange={e => setTags(e.target.value)}
             placeholder={t('avatars.create.form.tagsPlaceholder')}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
@@ -239,7 +248,7 @@ export default function EditAvatarPage() {
           <select
             id="visibility"
             value={visibility}
-            onChange={(e) => setVisibility(e.target.value as any)}
+            onChange={e => setVisibility(e.target.value as any)}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="PRIVATE">{t('avatars.visibility.PRIVATE')}</option>
@@ -254,7 +263,7 @@ export default function EditAvatarPage() {
               id="allowCloning"
               type="checkbox"
               checked={allowCloning}
-              onChange={(e) => setAllowCloning(e.target.checked)}
+              onChange={e => setAllowCloning(e.target.checked)}
               className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
             />
           </div>

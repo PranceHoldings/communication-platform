@@ -8,23 +8,15 @@ export default async function HomePage() {
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[450px]">
         <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-4xl font-bold tracking-tight">
-            {t('title')}
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            {t('subtitle')}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {t('version')}
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight">{t('title')}</h1>
+          <p className="text-lg text-muted-foreground">{t('subtitle')}</p>
+          <p className="text-sm text-muted-foreground">{t('version')}</p>
         </div>
 
         <div className="grid gap-4">
           <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
             <h2 className="text-xl font-semibold mb-2">{t('getStarted.title')}</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              {t('getStarted.description')}
-            </p>
+            <p className="text-sm text-muted-foreground mb-4">{t('getStarted.description')}</p>
             <div className="flex gap-3">
               <Link
                 href="/login"

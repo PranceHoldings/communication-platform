@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
 import { listScenarios, type Scenario } from '@/lib/api/scenarios';
+import type { Visibility } from '@prance/shared';
 import Link from 'next/link';
 
 export default function ScenariosPage() {
@@ -11,7 +12,7 @@ export default function ScenariosPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [visibilityFilter, setVisibilityFilter] = useState<'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' | ''>('');
+  const [visibilityFilter, setVisibilityFilter] = useState<Visibility | ''>('');
   const [pagination, setPagination] = useState({
     total: 0,
     limit: 20,
@@ -78,18 +79,8 @@ export default function ScenariosPage() {
           href="/dashboard/scenarios/new"
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           {t('scenarios.create.button')}
         </Link>
@@ -105,11 +96,11 @@ export default function ScenariosPage() {
             </label>
             <select
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              onChange={e => setCategoryFilter(e.target.value)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">{t('scenarios.list.filter.all')}</option>
-              {categories.map((category) => (
+              {categories.map(category => (
                 <option key={category} value={category}>
                   {category}
                 </option>
@@ -124,7 +115,7 @@ export default function ScenariosPage() {
             </label>
             <select
               value={visibilityFilter}
-              onChange={(e) => setVisibilityFilter(e.target.value as any)}
+              onChange={e => setVisibilityFilter(e.target.value as any)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">{t('scenarios.list.filter.all')}</option>
@@ -148,12 +139,7 @@ export default function ScenariosPage() {
           </div>
         ) : scenarios.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-            <svg
-              className="w-12 h-12 mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -189,12 +175,10 @@ export default function ScenariosPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {scenarios.map((scenario) => (
+              {scenarios.map(scenario => (
                 <tr key={scenario.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">
-                      {scenario.title}
-                    </div>
+                    <div className="text-sm font-medium text-gray-900">{scenario.title}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{scenario.category}</div>

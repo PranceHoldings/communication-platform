@@ -8,7 +8,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  *
  * Get scenario details by ID
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Get scenario request:', JSON.stringify(event, null, 2));
 
   try {
@@ -46,8 +46,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Verify user has access to this scenario
     // User can access if: same org OR scenario is PUBLIC
-    const hasAccess =
-      scenario.orgId === user.orgId || scenario.visibility === 'PUBLIC';
+    const hasAccess = scenario.orgId === user.orgId || scenario.visibility === 'PUBLIC';
 
     if (!hasAccess) {
       return errorResponse(403, 'Access denied to this scenario');
@@ -58,6 +57,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return successResponse(scenario);
   } catch (error) {
     console.error('Error getting scenario:', error);
-    return errorResponse(500, 'Failed to get scenario', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to get scenario',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

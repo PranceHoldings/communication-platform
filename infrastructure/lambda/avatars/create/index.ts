@@ -22,7 +22,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  *   "allowCloning": boolean (optional, default: false)
  * }
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Create avatar request:', JSON.stringify(event, null, 2));
 
   try {
@@ -34,7 +34,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { name, type, style, source, modelUrl, thumbnailUrl, configJson, tags, visibility, allowCloning } = body;
+    const {
+      name,
+      type,
+      style,
+      source,
+      modelUrl,
+      thumbnailUrl,
+      configJson,
+      tags,
+      visibility,
+      allowCloning,
+    } = body;
 
     // Validate required fields
     if (!name) {
@@ -62,7 +73,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (!['PRESET', 'GENERATED', 'ORG_CUSTOM'].includes(source)) {
-      return errorResponse(400, 'Validation Error', 'source must be PRESET, GENERATED, or ORG_CUSTOM');
+      return errorResponse(
+        400,
+        'Validation Error',
+        'source must be PRESET, GENERATED, or ORG_CUSTOM'
+      );
     }
 
     // Only SUPER_ADMIN can create PRESET avatars
@@ -76,7 +91,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate visibility if provided
     if (visibility && !['PRIVATE', 'ORGANIZATION', 'PUBLIC'].includes(visibility)) {
-      return errorResponse(400, 'Validation Error', 'visibility must be PRIVATE, ORGANIZATION, or PUBLIC');
+      return errorResponse(
+        400,
+        'Validation Error',
+        'visibility must be PRIVATE, ORGANIZATION, or PUBLIC'
+      );
     }
 
     // Validate configJson if provided
@@ -127,6 +146,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return successResponse(avatar, 201);
   } catch (error) {
     console.error('Error creating avatar:', error);
-    return errorResponse(500, 'Failed to create avatar', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to create avatar',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

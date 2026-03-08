@@ -697,11 +697,11 @@ export async function publishMessage(topic: string, message: object) {
 
 **料金:**
 
-| 項目   | 価格            |
-| ------ | --------------- |
-| Input  | $3/1M tokens    |
-| Output | $15/1M tokens   |
-| Context| 200K tokens     |
+| 項目    | 価格          |
+| ------- | ------------- |
+| Input   | $3/1M tokens  |
+| Output  | $15/1M tokens |
+| Context | 200K tokens   |
 
 **SDK:**
 
@@ -717,7 +717,10 @@ import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedroc
 
 const bedrockClient = new BedrockRuntimeClient({ region: 'us-east-1' });
 
-export async function generateAIResponse(systemPrompt: string, userMessage: string): Promise<string> {
+export async function generateAIResponse(
+  systemPrompt: string,
+  userMessage: string
+): Promise<string> {
   const command = new InvokeModelCommand({
     modelId: 'us.anthropic.claude-sonnet-4-6',
     contentType: 'application/json',
@@ -754,13 +757,13 @@ export async function generateAIResponse(systemPrompt: string, userMessage: stri
 
 **料金:**
 
-| プラン      | 月額     | 文字数/月    |
-| ----------- | -------- | ------------ |
-| Free        | $0       | 10,000       |
-| Starter     | $5       | 30,000       |
-| Creator     | $22      | 100,000      |
-| Pro         | $99      | 500,000      |
-| Scale       | $330     | 2,000,000    |
+| プラン  | 月額 | 文字数/月 |
+| ------- | ---- | --------- |
+| Free    | $0   | 10,000    |
+| Starter | $5   | 30,000    |
+| Creator | $22  | 100,000   |
+| Pro     | $99  | 500,000   |
+| Scale   | $330 | 2,000,000 |
 
 **SDK:**
 
@@ -810,10 +813,10 @@ export async function generateSpeech(text: string, voiceId: string): Promise<Buf
 
 **料金:**
 
-| 項目           | 価格 (1時間) |
-| -------------- | ------------ |
-| Standard       | $1.00        |
-| Custom Speech  | $1.40        |
+| 項目          | 価格 (1時間) |
+| ------------- | ------------ |
+| Standard      | $1.00        |
+| Custom Speech | $1.40        |
 
 **SDK:**
 
@@ -839,7 +842,7 @@ export async function transcribeAudio(audioBuffer: Buffer): Promise<string> {
   const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
 
   return new Promise((resolve, reject) => {
-    recognizer.recognizeOnceAsync((result) => {
+    recognizer.recognizeOnceAsync(result => {
       if (result.reason === sdk.ResultReason.RecognizedSpeech) {
         resolve(result.text);
       } else {
@@ -886,7 +889,7 @@ export async function analyzeEmotion(imageBytes: Uint8Array) {
   });
 
   const response = await rekognitionClient.send(command);
-  return response.FaceDetails?.map((face) => face.Emotions);
+  return response.FaceDetails?.map(face => face.Emotions);
 }
 ```
 
@@ -910,11 +913,11 @@ export async function analyzeEmotion(imageBytes: Uint8Array) {
 
 **料金:**
 
-| 項目          | 価格              |
-| ------------- | ----------------- |
-| ACU時間       | $0.12/ACU/hour    |
-| ストレージ    | $0.10/GB/month    |
-| I/O           | $0.20/100万リクエスト |
+| 項目       | 価格                  |
+| ---------- | --------------------- |
+| ACU時間    | $0.12/ACU/hour        |
+| ストレージ | $0.10/GB/month        |
+| I/O        | $0.20/100万リクエスト |
 
 **推定コスト** (平均2 ACU、100GB):
 
@@ -944,11 +947,11 @@ export async function analyzeEmotion(imageBytes: Uint8Array) {
 
 **料金 (オンデマンドモード):**
 
-| 項目          | 価格              |
-| ------------- | ----------------- |
-| 書き込み      | $1.25/100万リクエスト |
-| 読み込み      | $0.25/100万リクエスト |
-| ストレージ    | $0.25/GB/month    |
+| 項目       | 価格                  |
+| ---------- | --------------------- |
+| 書き込み   | $1.25/100万リクエスト |
+| 読み込み   | $0.25/100万リクエスト |
+| ストレージ | $0.25/GB/month        |
 
 **推定コスト** (500万読込、100万書込、10GB):
 
@@ -979,11 +982,11 @@ export async function analyzeEmotion(imageBytes: Uint8Array) {
 
 **料金:**
 
-| 項目                  | 価格              |
-| --------------------- | ----------------- |
-| ElastiCache Serverless| 使用量ベース      |
-| データストレージ      | $0.125/GB/hour    |
-| ECPUs (処理単位)      | $0.0034/ECPU/hour |
+| 項目                   | 価格              |
+| ---------------------- | ----------------- |
+| ElastiCache Serverless | 使用量ベース      |
+| データストレージ       | $0.125/GB/hour    |
+| ECPUs (処理単位)       | $0.0034/ECPU/hour |
 
 **推定コスト** (1GB、平均10 ECPU):
 
@@ -1006,12 +1009,12 @@ export async function analyzeEmotion(imageBytes: Uint8Array) {
 
 **料金:**
 
-| 項目                      | 価格              |
-| ------------------------- | ----------------- |
-| Standard Storage          | $0.023/GB/month   |
-| Intelligent-Tiering (自動)| $0.023 → $0.0125/GB |
-| リクエスト (PUT)          | $0.005/1,000      |
-| データ転送 (インターネット)| $0.09/GB          |
+| 項目                        | 価格                |
+| --------------------------- | ------------------- |
+| Standard Storage            | $0.023/GB/month     |
+| Intelligent-Tiering (自動)  | $0.023 → $0.0125/GB |
+| リクエスト (PUT)            | $0.005/1,000        |
+| データ転送 (インターネット) | $0.09/GB            |
 
 **推定コスト** (1TB保存、10TB転送):
 
@@ -1034,10 +1037,10 @@ export async function analyzeEmotion(imageBytes: Uint8Array) {
 
 **料金:**
 
-| 項目          | 価格 (最初の10TB) |
-| ------------- | ----------------- |
-| データ転送    | $0.085/GB         |
-| リクエスト    | $0.0075/10,000    |
+| 項目       | 価格 (最初の10TB) |
+| ---------- | ----------------- |
+| データ転送 | $0.085/GB         |
+| リクエスト | $0.0075/10,000    |
 
 **推定コスト** (10TB転送):
 
@@ -1230,12 +1233,12 @@ curl -X POST https://api.readyplayer.me/v1/avatars \
 
 **料金:**
 
-| プラン      | 月額     | 生成数/月 |
-| ----------- | -------- | --------- |
-| Free        | $0       | 100       |
-| Indie       | $25      | 1,000     |
-| Studio      | $99      | 10,000    |
-| Enterprise  | Custom   | Unlimited |
+| プラン     | 月額   | 生成数/月 |
+| ---------- | ------ | --------- |
+| Free       | $0     | 100       |
+| Indie      | $25    | 1,000     |
+| Studio     | $99    | 10,000    |
+| Enterprise | Custom | Unlimited |
 
 ---
 
@@ -1256,10 +1259,10 @@ npm install stripe
 
 **料金:**
 
-| 項目          | 価格      |
-| ------------- | --------- |
-| 決済手数料    | 3.6%      |
-| 月額固定費    | $0        |
+| 項目       | 価格 |
+| ---------- | ---- |
+| 決済手数料 | 3.6% |
+| 月額固定費 | $0   |
 
 **使用例:**
 
@@ -1283,14 +1286,14 @@ export async function createSubscription(customerId: string, priceId: string) {
 
 #### 対応ATS (6社)
 
-| ATS名               | APIバージョン | 国内/海外 |
-| ------------------- | ------------- | --------- |
-| **HRMOS**           | v1            | 国内      |
-| **TalentPalette**   | REST API      | 国内      |
-| **Greenhouse**      | Harvest API   | 海外      |
-| **Lever**           | REST API v1   | 海外      |
-| **Workday**         | REST API      | 海外      |
-| **SuccessFactors**  | OData API     | 海外      |
+| ATS名              | APIバージョン | 国内/海外 |
+| ------------------ | ------------- | --------- |
+| **HRMOS**          | v1            | 国内      |
+| **TalentPalette**  | REST API      | 国内      |
+| **Greenhouse**     | Harvest API   | 海外      |
+| **Lever**          | REST API v1   | 海外      |
+| **Workday**        | REST API      | 海外      |
+| **SuccessFactors** | OData API     | 海外      |
 
 **共通機能:**
 
@@ -1411,25 +1414,25 @@ export default defineConfig({
 
 ### 重要なバージョン固定
 
-| パッケージ         | バージョン | 理由                           |
-| ------------------ | ---------- | ------------------------------ |
-| **Next.js**        | 15.1.3     | 安定版、App Router完全サポート |
-| **React**          | 19.0.0     | Server Components対応          |
-| **TypeScript**     | 5.7.2      | 最新機能、型推論強化           |
-| **Prisma**         | 5.22.0     | PostgreSQL 15対応、安定版      |
-| **AWS CDK**        | 2.169.0    | 最新AWSサービス対応            |
-| **Node.js (Lambda)**| 20.x      | LTS、Lambda最新ランタイム      |
+| パッケージ           | バージョン | 理由                           |
+| -------------------- | ---------- | ------------------------------ |
+| **Next.js**          | 15.1.3     | 安定版、App Router完全サポート |
+| **React**            | 19.0.0     | Server Components対応          |
+| **TypeScript**       | 5.7.2      | 最新機能、型推論強化           |
+| **Prisma**           | 5.22.0     | PostgreSQL 15対応、安定版      |
+| **AWS CDK**          | 2.169.0    | 最新AWSサービス対応            |
+| **Node.js (Lambda)** | 20.x       | LTS、Lambda最新ランタイム      |
 
 ### セマンティックバージョニング
 
 ```json
 {
   "dependencies": {
-    "next": "15.1.3",                      // 固定
-    "@aws-sdk/client-bedrock-runtime": "^3.0.0"  // 自動更新許可
+    "next": "15.1.3", // 固定
+    "@aws-sdk/client-bedrock-runtime": "^3.0.0" // 自動更新許可
   },
   "devDependencies": {
-    "@types/node": "^20.0.0"               // 型定義は最新追従
+    "@types/node": "^20.0.0" // 型定義は最新追従
   }
 }
 ```

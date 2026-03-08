@@ -33,6 +33,7 @@ cd /workspaces/prance-communication-platform/packages/database
 ```
 
 **変更内容:**
+
 - [ ] `prisma/schema.prisma` を編集
 - [ ] 変更内容をコミットメッセージに記載予定
 
@@ -43,6 +44,7 @@ npx prisma migrate dev --name <変更内容の簡潔な説明>
 ```
 
 **例:**
+
 ```bash
 npx prisma migrate dev --name add_recording_video_fields
 npx prisma migrate dev --name add_user_profile_fields
@@ -50,6 +52,7 @@ npx prisma migrate dev --name rename_column_old_to_new
 ```
 
 **確認事項:**
+
 - [ ] `prisma/migrations/` に新しいディレクトリが作成された
 - [ ] `migration.sql` が生成された
 - [ ] SQLの内容を目視確認（破壊的変更がないか）
@@ -61,6 +64,7 @@ npx prisma generate
 ```
 
 **確認事項:**
+
 - [ ] `node_modules/.prisma/client/` が更新された
 - [ ] TypeScript型定義が更新された
 
@@ -74,6 +78,7 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 **⏱️ 所要時間:** 約60-90秒
 
 **確認事項:**
+
 - [ ] デプロイが成功（"✅ Prance-dev-ApiLambda"）
 - [ ] エラーログがない
 
@@ -89,6 +94,7 @@ cat /tmp/migration-result.json | jq '.'
 ```
 
 **期待される出力:**
+
 ```json
 {
   "statusCode": 200,
@@ -97,6 +103,7 @@ cat /tmp/migration-result.json | jq '.'
 ```
 
 **確認事項:**
+
 - [ ] `statusCode` が 200
 - [ ] `success` が `true`
 - [ ] エラーメッセージがない
@@ -125,6 +132,7 @@ cat /tmp/test-result.json
 ```
 
 **確認事項:**
+
 - [ ] 500エラーが発生しない
 - [ ] "column does not exist" エラーがない
 
@@ -176,6 +184,7 @@ Tested: ✅"
 ### パターン1: マイグレーション実行忘れ
 
 **症状:**
+
 ```
 ERROR: The column `recordings.s3_key` does not exist in the current database.
 ```
@@ -187,6 +196,7 @@ ERROR: The column `recordings.s3_key` does not exist in the current database.
 ### パターン2: Lambda関数のPrisma Clientが古い
 
 **症状:**
+
 ```
 Lambda logs: "Unknown field: s3_key"
 ```

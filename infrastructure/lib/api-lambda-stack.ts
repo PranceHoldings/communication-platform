@@ -56,7 +56,10 @@ export class ApiLambdaStack extends cdk.Stack {
     // CloudWatch Logs ロググループ
     const restApiLogGroup = new logs.LogGroup(this, 'RestApiLogGroup', {
       logGroupName: `/aws/apigateway/prance-rest-api-${props.environment}`,
-      retention: props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      retention:
+        props.environment === 'production'
+          ? logs.RetentionDays.ONE_MONTH
+          : logs.RetentionDays.ONE_WEEK,
       removalPolicy:
         props.environment === 'production' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
@@ -111,7 +114,9 @@ export class ApiLambdaStack extends cdk.Stack {
       memorySize: 256,
       tracing: lambda.Tracing.ACTIVE,
       logRetention:
-        props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+        props.environment === 'production'
+          ? logs.RetentionDays.ONE_MONTH
+          : logs.RetentionDays.ONE_WEEK,
       functionName: `prance-authorizer-${props.environment}`,
       description: 'JWT Token Authorizer for API Gateway',
       entry: path.join(__dirname, '../lambda/auth/authorizer/index.ts'),
@@ -161,7 +166,9 @@ export class ApiLambdaStack extends cdk.Stack {
       memorySize: 256,
       tracing: lambda.Tracing.ACTIVE, // X-Ray有効化
       logRetention:
-        props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+        props.environment === 'production'
+          ? logs.RetentionDays.ONE_MONTH
+          : logs.RetentionDays.ONE_WEEK,
       environment: commonEnvironment,
     };
 
@@ -597,7 +604,9 @@ export class ApiLambdaStack extends cdk.Stack {
       memorySize: 256,
       tracing: lambda.Tracing.ACTIVE,
       logRetention:
-        props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+        props.environment === 'production'
+          ? logs.RetentionDays.ONE_MONTH
+          : logs.RetentionDays.ONE_WEEK,
       functionName: `prance-websocket-connect-${props.environment}`,
       description: 'WebSocket $connect handler',
       entry: path.join(__dirname, '../lambda/websocket/connect/index.ts'),
@@ -618,31 +627,37 @@ export class ApiLambdaStack extends cdk.Stack {
     });
 
     // WebSocket $disconnect Handler
-    const websocketDisconnectFunction = new nodejs.NodejsFunction(this, 'WebSocketDisconnectFunction', {
-      runtime: lambda.Runtime.NODEJS_22_X,
-      architecture: lambda.Architecture.ARM_64,
-      timeout: cdk.Duration.seconds(10),
-      memorySize: 256,
-      tracing: lambda.Tracing.ACTIVE,
-      logRetention:
-        props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
-      functionName: `prance-websocket-disconnect-${props.environment}`,
-      description: 'WebSocket $disconnect handler',
-      entry: path.join(__dirname, '../lambda/websocket/disconnect/index.ts'),
-      handler: 'handler',
-      environment: {
-        ENVIRONMENT: props.environment,
-        LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
-        NODE_ENV: props.environment === 'production' ? 'production' : 'development',
-        CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
-      },
-      bundling: {
-        minify: props.environment === 'production',
-        sourceMap: true,
-        target: 'es2020',
-        externalModules: ['aws-sdk'],
-      },
-    });
+    const websocketDisconnectFunction = new nodejs.NodejsFunction(
+      this,
+      'WebSocketDisconnectFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_22_X,
+        architecture: lambda.Architecture.ARM_64,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        tracing: lambda.Tracing.ACTIVE,
+        logRetention:
+          props.environment === 'production'
+            ? logs.RetentionDays.ONE_MONTH
+            : logs.RetentionDays.ONE_WEEK,
+        functionName: `prance-websocket-disconnect-${props.environment}`,
+        description: 'WebSocket $disconnect handler',
+        entry: path.join(__dirname, '../lambda/websocket/disconnect/index.ts'),
+        handler: 'handler',
+        environment: {
+          ENVIRONMENT: props.environment,
+          LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
+          NODE_ENV: props.environment === 'production' ? 'production' : 'development',
+          CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
+        },
+        bundling: {
+          minify: props.environment === 'production',
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk'],
+        },
+      }
+    );
 
     // WebSocket $default Handler (with AI/Audio/Video processing)
     // Note: We now use ffmpeg-static npm package instead of Lambda Layer
@@ -656,7 +671,9 @@ export class ApiLambdaStack extends cdk.Stack {
       ephemeralStorageSize: cdk.Size.gibibytes(10), // Large storage for video chunk processing
       tracing: lambda.Tracing.ACTIVE,
       logRetention:
-        props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+        props.environment === 'production'
+          ? logs.RetentionDays.ONE_MONTH
+          : logs.RetentionDays.ONE_WEEK,
       functionName: `prance-websocket-default-${props.environment}`,
       description: 'WebSocket $default message handler with STT/AI/TTS/Video processing',
       entry: path.join(__dirname, '../lambda/websocket/default/index.ts'),
@@ -739,7 +756,9 @@ export class ApiLambdaStack extends cdk.Stack {
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['execute-api:ManageConnections'],
-        resources: [`arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`],
+        resources: [
+          `arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`,
+        ],
       })
     );
 
@@ -773,10 +792,13 @@ export class ApiLambdaStack extends cdk.Stack {
       allowTestInvoke: props.environment !== 'production',
     });
 
-    const getCurrentUserIntegration = new apigateway.LambdaIntegration(this.getCurrentUserFunction, {
-      proxy: true,
-      allowTestInvoke: props.environment !== 'production',
-    });
+    const getCurrentUserIntegration = new apigateway.LambdaIntegration(
+      this.getCurrentUserFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
 
     const listSessionsIntegration = new apigateway.LambdaIntegration(this.listSessionsFunction, {
       proxy: true,
@@ -798,10 +820,13 @@ export class ApiLambdaStack extends cdk.Stack {
       allowTestInvoke: props.environment !== 'production',
     });
 
-    const createScenarioIntegration = new apigateway.LambdaIntegration(this.createScenarioFunction, {
-      proxy: true,
-      allowTestInvoke: props.environment !== 'production',
-    });
+    const createScenarioIntegration = new apigateway.LambdaIntegration(
+      this.createScenarioFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
 
     const getScenarioIntegration = new apigateway.LambdaIntegration(this.getScenarioFunction, {
       proxy: true,
@@ -823,15 +848,21 @@ export class ApiLambdaStack extends cdk.Stack {
       allowTestInvoke: props.environment !== 'production',
     });
 
-    const updateScenarioIntegration = new apigateway.LambdaIntegration(this.updateScenarioFunction, {
-      proxy: true,
-      allowTestInvoke: props.environment !== 'production',
-    });
+    const updateScenarioIntegration = new apigateway.LambdaIntegration(
+      this.updateScenarioFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
 
-    const deleteScenarioIntegration = new apigateway.LambdaIntegration(this.deleteScenarioFunction, {
-      proxy: true,
-      allowTestInvoke: props.environment !== 'production',
-    });
+    const deleteScenarioIntegration = new apigateway.LambdaIntegration(
+      this.deleteScenarioFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
 
     const updateAvatarIntegration = new apigateway.LambdaIntegration(this.updateAvatarFunction, {
       proxy: true,

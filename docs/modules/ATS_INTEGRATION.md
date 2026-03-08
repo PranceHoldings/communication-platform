@@ -24,18 +24,19 @@ ATS連携システムは、主要な採用管理システム（Applicant Trackin
 
 ### 主要機能
 
-| 機能 | 説明 |
-| ---- | ---- |
-| **候補者同期** | ATS→Pranceへの候補者情報自動取り込み |
-| **面接スケジューリング** | 自動セッション作成・招待メール送信 |
-| **結果エクスポート** | 面接結果・レポートをATSへ自動送信 |
-| **Webhook統合** | イベント駆動型の双方向連携 |
-| **アダプターアーキテクチャ** | 各ATSの差異を吸収する抽象化レイヤー |
-| **認証管理** | OAuth2.0/APIキーによる安全な接続 |
+| 機能                         | 説明                                 |
+| ---------------------------- | ------------------------------------ |
+| **候補者同期**               | ATS→Pranceへの候補者情報自動取り込み |
+| **面接スケジューリング**     | 自動セッション作成・招待メール送信   |
+| **結果エクスポート**         | 面接結果・レポートをATSへ自動送信    |
+| **Webhook統合**              | イベント駆動型の双方向連携           |
+| **アダプターアーキテクチャ** | 各ATSの差異を吸収する抽象化レイヤー  |
+| **認証管理**                 | OAuth2.0/APIキーによる安全な接続     |
 
 ### ユースケース
 
 #### シナリオ1: 面接自動化
+
 ```
 1. 候補者がATSで応募
 2. HR担当者がAI面接をスケジュール
@@ -45,6 +46,7 @@ ATS連携システムは、主要な採用管理システム（Applicant Trackin
 ```
 
 #### シナリオ2: 一括スクリーニング
+
 ```
 1. ATSから候補者リスト（50名）をインポート
 2. 一括で面接セッションを作成
@@ -59,31 +61,34 @@ ATS連携システムは、主要な採用管理システム（Applicant Trackin
 
 ### 国内ATS（3社）
 
-| ATS | API対応 | OAuth | Webhook | 優先度 |
-| --- | ------- | ----- | ------- | ------ |
-| **HRMOS採用** | ✅ REST API | ✅ OAuth2.0 | ✅ | 高 |
-| **ジョブカン採用管理** | ✅ REST API | ❌ APIキー | ✅ | 中 |
-| **採用一括かんりくん** | ✅ REST API | ❌ APIキー | ⚠️ 限定的 | 中 |
+| ATS                    | API対応     | OAuth       | Webhook   | 優先度 |
+| ---------------------- | ----------- | ----------- | --------- | ------ |
+| **HRMOS採用**          | ✅ REST API | ✅ OAuth2.0 | ✅        | 高     |
+| **ジョブカン採用管理** | ✅ REST API | ❌ APIキー  | ✅        | 中     |
+| **採用一括かんりくん** | ✅ REST API | ❌ APIキー  | ⚠️ 限定的 | 中     |
 
 ### 海外ATS（3社）
 
-| ATS | API対応 | OAuth | Webhook | 優先度 |
-| --- | ------- | ----- | ------- | ------ |
-| **Greenhouse** | ✅ REST API | ✅ OAuth2.0 | ✅ | 高 |
-| **Lever** | ✅ REST API | ✅ OAuth2.0 | ✅ | 高 |
-| **Workday Recruiting** | ✅ REST API | ✅ OAuth2.0 | ✅ | 中 |
+| ATS                    | API対応     | OAuth       | Webhook | 優先度 |
+| ---------------------- | ----------- | ----------- | ------- | ------ |
+| **Greenhouse**         | ✅ REST API | ✅ OAuth2.0 | ✅      | 高     |
+| **Lever**              | ✅ REST API | ✅ OAuth2.0 | ✅      | 高     |
+| **Workday Recruiting** | ✅ REST API | ✅ OAuth2.0 | ✅      | 中     |
 
 ### 連携優先度
 
 **Phase 1（初期リリース）:**
+
 - Greenhouse（海外No.1シェア）
 - HRMOS採用（国内大手）
 
 **Phase 2（3ヶ月後）:**
+
 - Lever
 - ジョブカン採用管理
 
 **Phase 3（6ヶ月後）:**
+
 - Workday Recruiting
 - 採用一括かんりくん
 
@@ -259,7 +264,7 @@ class GreenhouseAdapter implements ATSAdapter {
 
     const response = await fetch(`${this.apiUrl}/candidates?${params}`, {
       headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
+        Authorization: `Bearer ${this.accessToken}`,
         'On-Behalf-Of': this.config.onBehalfOf,
       },
     });
@@ -282,7 +287,7 @@ class GreenhouseAdapter implements ATSAdapter {
     await fetch(`${this.apiUrl}/candidates/${candidateId}/scorecards`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
+        Authorization: `Bearer ${this.accessToken}`,
         'On-Behalf-Of': this.config.onBehalfOf,
         'Content-Type': 'application/json',
       },
@@ -305,10 +310,7 @@ class GreenhouseAdapter implements ATSAdapter {
       .update(payload)
       .digest('hex');
 
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
   }
 
   parseWebhook(payload: any): WebhookEvent {
@@ -360,7 +362,8 @@ interface ATSConnection {
     autoSync: boolean; // 自動同期有効/無効
     syncInterval: number; // 同期間隔（分）
     defaultScenarioId?: string; // デフォルトシナリオ
-    jobMappings: { // 職種とシナリオのマッピング
+    jobMappings: {
+      // 職種とシナリオのマッピング
       [jobId: string]: string; // scenarioId
     };
   };
@@ -424,7 +427,7 @@ interface Scorecard {
 
 ```typescript
 // Lambda: ATS Webhook Handler
-export const handleATSWebhook: APIGatewayProxyHandler = async (event) => {
+export const handleATSWebhook: APIGatewayProxyHandler = async event => {
   const { atsConnectionId } = event.pathParameters;
 
   // 1. ATS接続情報取得
@@ -462,10 +465,7 @@ export const handleATSWebhook: APIGatewayProxyHandler = async (event) => {
 };
 
 // 候補者ステージ変更処理
-async function handleCandidateStageChanged(
-  connection: ATSConnection,
-  event: WebhookEvent
-) {
+async function handleCandidateStageChanged(connection: ATSConnection, event: WebhookEvent) {
   // ステージ名に"AI Interview"が含まれる場合のみ処理
   if (!event.newStage.toLowerCase().includes('ai interview')) {
     return;
@@ -493,8 +493,8 @@ async function handleCandidateStageChanged(
   });
 
   // 3. シナリオ選択
-  const scenarioId = connection.settings.jobMappings[candidate.jobId] ||
-                     connection.settings.defaultScenarioId;
+  const scenarioId =
+    connection.settings.jobMappings[candidate.jobId] || connection.settings.defaultScenarioId;
 
   // 4. セッション作成
   const session = await prisma.session.create({
@@ -630,7 +630,7 @@ async function syncConnection(connection: ATSConnection) {
 
 ```typescript
 // EventBridge Rule: Session Completed → Lambda
-export const notifyATSSessionCompleted: EventBridgeHandler = async (event) => {
+export const notifyATSSessionCompleted: EventBridgeHandler = async event => {
   const { sessionId } = event.detail;
 
   // 1. セッション情報取得
@@ -651,10 +651,7 @@ export const notifyATSSessionCompleted: EventBridgeHandler = async (event) => {
   }
 
   // 3. ATSアダプター作成
-  const adapter = createAdapter(
-    atsCandidate.atsConnection.atsProvider,
-    atsCandidate.atsConnection
-  );
+  const adapter = createAdapter(atsCandidate.atsConnection.atsProvider, atsCandidate.atsConnection);
 
   // 4. スコアカード作成
   const scorecard: Scorecard = {
@@ -781,5 +778,6 @@ ATS連携システムは、以下の価値を提供します：
 ---
 
 **関連ドキュメント:**
+
 - [外部連携API](EXTERNAL_API.md)
 - [Webhook統合](../development/WEBHOOK.md)

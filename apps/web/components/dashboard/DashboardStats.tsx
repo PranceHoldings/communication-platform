@@ -15,7 +15,7 @@ interface DashboardStatsProps {
 export default function DashboardStats({ stats }: DashboardStatsProps) {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat) => (
+      {stats.map(stat => (
         <div key={stat.name} className="bg-white overflow-hidden rounded-lg shadow">
           <div className="p-6">
             <div className="flex items-center">

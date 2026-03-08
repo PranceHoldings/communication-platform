@@ -36,6 +36,7 @@ grep -rn "organizationId\|organization_id" infrastructure/lambda apps/web/lib --
 **期待結果:** コメント行のみ、または結果なし
 
 **必須確認:**
+
 - `orgId` を使用（organizationIdではない）
 - `userId`, `scenarioId`, `avatarId` などcamelCase
 - Enum値が大文字で完全一致（`ACTIVE`, `TWO_D` 等）
@@ -55,6 +56,7 @@ grep -rn "'TWO_D'.*|.*'THREE_D'\|'PRIVATE'.*|.*'PUBLIC'" apps/web infrastructure
 **期待結果:** 結果なし（packages/shared 以外に定義がない）
 
 **必須確認:**
+
 - 共有型は `packages/shared/src/types/index.ts` からimport
 - 重複定義していない
 - インライン型定義（`'PRIVATE' | 'PUBLIC'`）を使っていない
@@ -74,12 +76,14 @@ grep -rn "^export interface.*Message.*extends WebSocketMessageBase\|^export inte
 **期待結果:** 結果なし
 
 **必須確認:**
+
 - WebSocketメッセージ型は `@prance/shared` からimport
 - フィールド名はキャメルケース（`sessionId`, `chunkId`等）
 - スネークケース（`session_id`, `chunk_id`）は使わない
 - フロントエンドとバックエンドで同じ型を使用
 
 **共有型の場所:**
+
 - `packages/shared/src/types/index.ts` の WebSocket Messages セクション
 - `AuthenticateMessage`, `VideoChunkPartMessage` 等
 
@@ -104,16 +108,19 @@ grep -rn "\.match(/.*\\\d\+.*/);" infrastructure/lambda apps/web --include="*.ts
 **期待結果:** 同じロジックは1箇所のみ
 
 **必須確認:**
+
 - 同じロジックが2箇所以上にないか？
 - 類似したコードを見つけた場合、共通関数化できないか？
 - ファイル名に `utils.ts` または `helpers.ts` を付けた共通モジュールを作成したか？
 
 **共通化の基準:**
+
 - 10行以上の類似ロジック → 共通関数化を検討
 - 30行以上の重複ロジック → **必ず**共通関数化
 - 3箇所以上で同じパターン → **必ず**共通関数化
 
 **実例（今回の改善）:**
+
 - Before: 音声チャンクソート（30行）+ ビデオチャンクソート（30行）= 60行の重複
 - After: `chunk-utils.ts` の共通関数 → 呼び出し3-4行のみ
 - **削減率:** 88%
@@ -155,8 +162,10 @@ git log main..HEAD --oneline
   - 重要な変更をClaude Memoryに記録？
 
 **レビュアーへの依頼事項（PR説明に記載）:**
+
 ```markdown
 ## レビュー観点
+
 - [ ] 共通化の妥当性
 - [ ] エラーハンドリング
 - [ ] テストカバレッジ
@@ -187,14 +196,14 @@ const { t } = useI18n();
 ```typescript
 // ❌ 絶対NG
 interface RegisterRequest {
-  organizationId: string;  // Prismaでは orgId
-  user_id: string;          // snake_caseは使わない
+  organizationId: string; // Prismaでは orgId
+  user_id: string; // snake_caseは使わない
 }
 
 // ✅ 必ずこうする
 interface RegisterRequest {
-  orgId: string;   // Prismaスキーマと一致
-  userId: string;  // camelCase
+  orgId: string; // Prismaスキーマと一致
+  userId: string; // camelCase
 }
 ```
 
@@ -272,12 +281,14 @@ const sortedChunks = sortChunksByTimestampAndIndex(chunks);
 ```
 
 **なぜ重複が問題か:**
+
 1. **修正漏れ** - 片方だけ修正して、もう片方を忘れる
 2. **不整合** - 微妙に異なる実装で、動作が一貫しない
 3. **メンテナンス負荷** - 変更時に複数箇所を修正する必要
 4. **テストコスト** - 同じロジックを複数回テストする必要
 
 **実際に起きた問題（2026-03-08）:**
+
 - 音声チャンクソートを修正したが、ビデオチャンクソートの修正を忘れた
 - ビデオでも同じバグが残っていることをユーザーが指摘
 - → 共通関数化により根本解決
@@ -304,30 +315,25 @@ import type {
 
 ```typescript
 // 共有型は自動的にre-exportされている
-import {
-  User,
-  Avatar,
-  ValidationError,
-  NotFoundError,
-} from '../shared/types';
+import { User, Avatar, ValidationError, NotFoundError } from '../shared/types';
 ```
 
 ---
 
 ## 🔍 よくある間違い一覧
 
-| カテゴリ | ❌ 間違い | ✅ 正しい |
-|---------|----------|----------|
-| **Prisma** | `organizationId` | `orgId` |
-| **Prisma** | `user_id` | `userId` |
-| **Prisma** | `started_at` | `startedAt` |
-| **i18n** | `<h1>Settings</h1>` | `<h1>{t('settings.title')}</h1>` |
-| **i18n** | `placeholder="Name"` | `placeholder={t('common.name')}` |
-| **型定義** | `export interface User { ... }` | `import { User } from '@prance/shared'` |
-| **型定義** | `'PRIVATE' \| 'PUBLIC'` | `import { Visibility } from '@prance/shared'` |
-| **型定義** | `pagination: { total, limit, ... }` | `pagination: PaginationMeta` |
-| **DRY原則** | 同じロジックを2箇所にコピペ | 共通関数を作成して両方で使用 |
-| **DRY原則** | 30行のソートロジックを重複 | `utils.ts` に共通関数化 |
+| カテゴリ    | ❌ 間違い                           | ✅ 正しい                                     |
+| ----------- | ----------------------------------- | --------------------------------------------- |
+| **Prisma**  | `organizationId`                    | `orgId`                                       |
+| **Prisma**  | `user_id`                           | `userId`                                      |
+| **Prisma**  | `started_at`                        | `startedAt`                                   |
+| **i18n**    | `<h1>Settings</h1>`                 | `<h1>{t('settings.title')}</h1>`              |
+| **i18n**    | `placeholder="Name"`                | `placeholder={t('common.name')}`              |
+| **型定義**  | `export interface User { ... }`     | `import { User } from '@prance/shared'`       |
+| **型定義**  | `'PRIVATE' \| 'PUBLIC'`             | `import { Visibility } from '@prance/shared'` |
+| **型定義**  | `pagination: { total, limit, ... }` | `pagination: PaginationMeta`                  |
+| **DRY原則** | 同じロジックを2箇所にコピペ         | 共通関数を作成して両方で使用                  |
+| **DRY原則** | 30行のソートロジックを重複          | `utils.ts` に共通関数化                       |
 
 ---
 
@@ -349,6 +355,7 @@ import {
 4. **レビュー時:** このドキュメントを基準に確認
 
 **覚えておくこと:**
+
 - 「参照して」だけでは不十分 → 具体的なコマンドを実行
 - 「たぶん大丈夫」では不十分 → 必ず検証
 - 過去の失敗から学ぶ → 同じミスを繰り返さない
@@ -356,6 +363,7 @@ import {
 ---
 
 **このルールを守ることで:**
+
 - ✅ バグの早期発見
 - ✅ コードの一貫性向上
 - ✅ チーム開発の効率化
@@ -368,6 +376,7 @@ import {
 ## 🎯 DRY原則（Don't Repeat Yourself）の重要性
 
 **原則:**
+
 > 同じ知識を複数の場所で表現しない
 
 **実践方法:**
@@ -393,11 +402,12 @@ import {
 
 **実例から学ぶ（2026-03-08の改善）:**
 
-| Before（重複あり） | After（共通化） | 効果 |
-|------------------|----------------|------|
-| 音声ソート30行 + ビデオソート30行 | `chunk-utils.ts` 1箇所 | 修正漏れゼロ |
-| 変更時に2箇所修正 | 変更時に1箇所のみ | メンテナンス50%削減 |
-| テスト2セット必要 | テスト1セットのみ | テストコスト50%削減 |
+| Before（重複あり）                | After（共通化）        | 効果                |
+| --------------------------------- | ---------------------- | ------------------- |
+| 音声ソート30行 + ビデオソート30行 | `chunk-utils.ts` 1箇所 | 修正漏れゼロ        |
+| 変更時に2箇所修正                 | 変更時に1箇所のみ      | メンテナンス50%削減 |
+| テスト2セット必要                 | テスト1セットのみ      | テストコスト50%削減 |
 
 **参考資料:**
+
 - [CHUNK_SORTING_REFACTORING.md](docs/development/CHUNK_SORTING_REFACTORING.md) - 実際のリファクタリング事例

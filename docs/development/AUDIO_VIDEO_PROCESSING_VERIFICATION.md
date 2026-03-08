@@ -8,11 +8,13 @@
 ## 🔴 問題の根本原因
 
 ### 今回の失敗
+
 1. **不完全なデプロイ:** esbuildで直接バンドル → ffmpegバイナリが欠落
 2. **アーキテクチャミスマッチ:** ARM64環境でx64パッケージが必要
 3. **CDKビルドプロセスのスキップ:** Docker内でのビルドを回避したため設定が反映されず
 
 ### 再発防止の原則
+
 - ✅ CDKの正規デプロイプロセスを必ず使用
 - ✅ 手動でのzip作成・アップロードは緊急時のみ
 - ✅ デプロイ後の動作確認を必須化
@@ -24,6 +26,7 @@
 ### 1.1 入力データ検証
 
 #### フロントエンド → WebSocket
+
 ```javascript
 // 検証項目
 ✓ MediaRecorder.mimeType: 'audio/webm;codecs=opus'
@@ -40,6 +43,7 @@ console.log('[AudioRecorder] Complete recording:', {
 ```
 
 #### WebSocket → Lambda
+
 ```typescript
 // 検証項目
 ✓ メッセージタイプ: 'audio_data_part'
@@ -56,6 +60,7 @@ CloudWatch Logs:
 ### 1.2 データ変換検証
 
 #### Lambda: Base64 → Buffer
+
 ```typescript
 // 検証項目
 ✓ Buffer.from(base64Data, 'base64')
@@ -70,6 +75,7 @@ console.log('Reassembled complete audio:', {
 ```
 
 #### Lambda: WebM → WAV変換
+
 ```typescript
 // 検証項目
 ✓ 入力フォーマット検出: WebM (0x1a45dfa3)
@@ -93,6 +99,7 @@ console.log('[AudioProcessor] Conversion complete:', {
 ### 2.1 Azure Speech Services (STT)
 
 #### 認証情報確認
+
 ```bash
 # 環境変数検証
 aws lambda get-function-configuration \
@@ -104,6 +111,7 @@ aws lambda get-function-configuration \
 ```
 
 #### API呼び出し検証
+
 ```typescript
 // 検証項目
 ✓ SpeechConfig.fromSubscription(key, region)
@@ -123,6 +131,7 @@ console.log('[AzureSTT] Recognition result:', {
 ### 2.2 AWS Bedrock (AI)
 
 #### 認証情報確認
+
 ```typescript
 // 検証項目
 ✓ IAMロール: Lambda実行ロールにBedrock権限
@@ -140,6 +149,7 @@ console.log('[BedrockAI] Generating response:', {
 ### 2.3 ElevenLabs (TTS)
 
 #### 認証情報確認
+
 ```bash
 # 環境変数検証
 aws lambda get-function-configuration \
@@ -151,6 +161,7 @@ aws lambda get-function-configuration \
 ```
 
 #### API呼び出し検証
+
 ```typescript
 // 検証項目
 ✓ Content-Type: application/json
@@ -172,6 +183,7 @@ console.log('[ElevenLabs] Generated speech:', {
 ### 3.1 ffmpeg検証
 
 #### インストール確認
+
 ```bash
 # Lambda関数内でのパス確認
 aws lambda invoke \
@@ -184,6 +196,7 @@ aws lambda invoke \
 ```
 
 #### バイナリ実行確認
+
 ```typescript
 // 検証スクリプト
 const { execSync } = require('child_process');
@@ -199,6 +212,7 @@ try {
 ```
 
 #### アーキテクチャ一致確認
+
 ```bash
 # Lambda関数アーキテクチャ
 aws lambda get-function-configuration \
@@ -213,6 +227,7 @@ aws lambda get-function-configuration \
 ### 3.2 Azure Speech SDK検証
 
 #### Node.jsバージョン互換性
+
 ```bash
 # Lambda Runtime
 aws lambda get-function-configuration \
@@ -225,6 +240,7 @@ aws lambda get-function-configuration \
 ```
 
 #### ネイティブバイナリ確認
+
 ```typescript
 // 検証項目
 ✓ node_modules/microsoft-cognitiveservices-speech-sdk/distrib/lib/linux_x64/
@@ -238,6 +254,7 @@ aws lambda get-function-configuration \
 ### 4.1 一時ファイル管理
 
 #### /tmp ディレクトリ使用
+
 ```typescript
 // 検証項目
 ✓ 書き込み権限: Lambda /tmp は 512MB まで使用可能
@@ -258,20 +275,22 @@ try {
 ### 4.2 S3保存検証
 
 #### 保存パス命名規則
+
 ```typescript
 // 音声ファイル
-sessions/{sessionId}/audio/input-{timestamp}.webm
-sessions/{sessionId}/audio/ai-response-{timestamp}.mp3
+sessions / { sessionId } / audio / input - { timestamp }.webm;
+sessions / { sessionId } / audio / ai - response - { timestamp }.mp3;
 
 // 動画ファイル
-sessions/{sessionId}/recording.webm
+sessions / { sessionId } / recording.webm;
 
 // 一時チャンク
-sessions/{sessionId}/chunks/temp/audio/{chunkId}/part-{index}.bin
-sessions/{sessionId}/chunks/temp/video/{chunkId}/part-{index}.bin
+sessions / { sessionId } / chunks / temp / audio / { chunkId } / part - { index }.bin;
+sessions / { sessionId } / chunks / temp / video / { chunkId } / part - { index }.bin;
 ```
 
 #### ContentType設定
+
 ```typescript
 // 検証項目
 ✓ audio/webm → WebM音声
@@ -293,6 +312,7 @@ aws s3api head-object \
 ### 5.1 エラーメッセージ明確化
 
 #### 現在の問題
+
 ```typescript
 // ❌ 不明確
 catch (error) {
@@ -306,6 +326,7 @@ catch (error) {
 ```
 
 #### 改善後
+
 ```typescript
 // ✅ 明確
 catch (error) {
@@ -337,6 +358,7 @@ catch (error) {
 ### 5.2 リトライロジック
 
 #### STT失敗時
+
 ```typescript
 // 検証項目
 ✓ InitialSilenceTimeout → 音声なし（リトライ不要）
@@ -429,6 +451,7 @@ aws lambda get-function-configuration \
 ### 7.1 音声処理テスト
 
 #### テストケース1: 日本語短文
+
 ```
 入力: "こんにちは、今日はいい天気ですね"
 期待結果:
@@ -440,6 +463,7 @@ aws lambda get-function-configuration \
 ```
 
 #### テストケース2: 英語短文
+
 ```
 入力: "Hello, how are you today?"
 期待結果:
@@ -451,6 +475,7 @@ aws lambda get-function-configuration \
 ```
 
 #### テストケース3: 長時間録音
+
 ```
 入力: 30秒の日本語会話
 期待結果:
@@ -464,6 +489,7 @@ aws lambda get-function-configuration \
 ### 7.2 動画処理テスト
 
 #### テストケース1: 標準録画
+
 ```
 入力: 15秒のWebM動画（1280x720）
 期待結果:
@@ -475,6 +501,7 @@ aws lambda get-function-configuration \
 ### 7.3 エラーケーステスト
 
 #### テストケース1: 無音録音
+
 ```
 入力: 15秒の無音
 期待結果:
@@ -483,6 +510,7 @@ aws lambda get-function-configuration \
 ```
 
 #### テストケース2: ネットワークエラー
+
 ```
 シミュレーション: Azure STT接続失敗
 期待結果:
@@ -563,6 +591,7 @@ aws lambda get-function-configuration \
 ## 📝 次回エラー発生時の対応手順
 
 1. **CloudWatchログを最初に確認**
+
    ```bash
    aws logs tail /aws/lambda/prance-websocket-default-dev --since 10m
    ```

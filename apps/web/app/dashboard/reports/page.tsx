@@ -30,9 +30,7 @@ export default function ReportsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {t('reports.subtitle')}
-          </p>
+          <p className="mt-1 text-sm text-gray-500">{t('reports.subtitle')}</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-12 text-center">
@@ -49,10 +47,10 @@ export default function ReportsPage() {
               d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">{t('reports.comingSoon.title')}</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {t('reports.comingSoon.description')}
-          </p>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            {t('reports.comingSoon.title')}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">{t('reports.comingSoon.description')}</p>
         </div>
       </div>
     </DashboardLayout>

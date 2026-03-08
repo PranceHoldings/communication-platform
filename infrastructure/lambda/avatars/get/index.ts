@@ -8,7 +8,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  *
  * Get avatar details by ID
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Get avatar request:', JSON.stringify(event, null, 2));
 
   try {
@@ -52,9 +52,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Verify user has access to this avatar
     // User can access if: same org OR avatar is PRESET OR avatar is PUBLIC
     const hasAccess =
-      avatar.orgId === user.orgId ||
-      avatar.source === 'PRESET' ||
-      avatar.visibility === 'PUBLIC';
+      avatar.orgId === user.orgId || avatar.source === 'PRESET' || avatar.visibility === 'PUBLIC';
 
     if (!hasAccess) {
       return errorResponse(403, 'Access denied to this avatar');
@@ -65,6 +63,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return successResponse(avatar);
   } catch (error) {
     console.error('Error getting avatar:', error);
-    return errorResponse(500, 'Failed to get avatar', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to get avatar',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

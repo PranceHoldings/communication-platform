@@ -3,7 +3,12 @@
  * Handles video chunk storage, concatenation, and CloudFront URL generation
  */
 
-import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -109,7 +114,9 @@ export class VideoProcessor {
       console.log('[VideoProcessor] Found chunks:', listResponse.Contents.length);
 
       // Filter and sort chunks using shared utility function
-      const filteredChunks = listResponse.Contents.filter(obj => obj.Key && obj.Key.endsWith('.webm'));
+      const filteredChunks = listResponse.Contents.filter(
+        obj => obj.Key && obj.Key.endsWith('.webm')
+      );
       const sortedChunks = sortChunksByTimestampAndIndex(filteredChunks);
 
       // Log sorted chunks with validation
@@ -151,9 +158,7 @@ export class VideoProcessor {
 
       // Create concat list file for ffmpeg
       const concatListPath = path.join(tmpDir, 'concat-list.txt');
-      const concatListContent = chunkFiles
-        .map(file => `file '${file}'`)
-        .join('\n');
+      const concatListContent = chunkFiles.map(file => `file '${file}'`).join('\n');
       fs.writeFileSync(concatListPath, concatListContent);
 
       // Combine chunks using ffmpeg
@@ -186,7 +191,9 @@ export class VideoProcessor {
         }
       } catch (error) {
         console.error('[VideoProcessor] ffmpeg error:', error);
-        throw new Error(`ffmpeg failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `ffmpeg failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
 
       // Verify output file exists
@@ -283,7 +290,9 @@ export class VideoProcessor {
   /**
    * Get video metadata
    */
-  async getVideoMetadata(sessionId: string): Promise<{ exists: boolean; size?: number; url?: string }> {
+  async getVideoMetadata(
+    sessionId: string
+  ): Promise<{ exists: boolean; size?: number; url?: string }> {
     try {
       const videoKey = `sessions/${sessionId}/recording.webm`;
 

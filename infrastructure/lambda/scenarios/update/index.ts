@@ -18,7 +18,7 @@ import { LANGUAGE_DEFAULTS } from '../../shared/config/defaults';
  *   "visibility": "PRIVATE" | "ORGANIZATION" | "PUBLIC" (optional)
  * }
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Update scenario request:', JSON.stringify(event, null, 2));
 
   try {
@@ -51,7 +51,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Access control: Only allow updating own organization's scenarios
     // SUPER_ADMIN can update any, others can only update their org's scenarios
     if (user.role !== 'SUPER_ADMIN' && existingScenario.orgId !== user.orgId) {
-      return errorResponse(403, 'Access denied: You can only update scenarios from your organization');
+      return errorResponse(
+        403,
+        'Access denied: You can only update scenarios from your organization'
+      );
     }
 
     // Parse request body
@@ -67,7 +70,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate visibility if provided
     if (visibility && !['PRIVATE', 'ORGANIZATION', 'PUBLIC'].includes(visibility)) {
-      return errorResponse(400, 'Validation Error', 'visibility must be PRIVATE, ORGANIZATION, or PUBLIC');
+      return errorResponse(
+        400,
+        'Validation Error',
+        'visibility must be PRIVATE, ORGANIZATION, or PUBLIC'
+      );
     }
 
     // Validate language if provided
@@ -114,6 +121,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return successResponse(scenario);
   } catch (error) {
     console.error('Error updating scenario:', error);
-    return errorResponse(500, 'Failed to update scenario', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to update scenario',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

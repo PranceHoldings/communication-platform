@@ -10,6 +10,7 @@
 ### 1. Lambda関数のffmpeg完全欠落（Critical）
 
 **症状:**
+
 ```
 ERROR: /var/task/ffmpeg: No such file or directory
 - AUDIO_PROCESSING_ERROR: 音声変換（WebM→WAV）失敗
@@ -17,16 +18,19 @@ ERROR: /var/task/ffmpeg: No such file or directory
 ```
 
 **根本原因:**
+
 - `infrastructure/lambda/websocket/default/package.json`に`ffmpeg-static@^5.3.0`が記載されている
 - しかし実際には`node_modules`にインストールされていない
 - `npm list ffmpeg-static` → `(empty)`
 
 **影響範囲:**
+
 - 音声処理パイプライン: 100%失敗
 - 録画機能: 100%失敗
 - すべてのセッションで音声・録画が使用不可
 
 **コンソールエラーログ（consoleerror.txt）:**
+
 ```
 AUDIO_PROCESSING_ERROR: Command failed: /var/task/ffmpeg -i /tmp/input-6cb...
   /bin/sh: line 1: /var/task/ffmpeg: No such file or directory
@@ -41,6 +45,7 @@ VIDEO_PROCESSING_ERROR: Failed to process video recording
 ### 2. Lambda関数のnode_modules破損（Critical）
 
 **症状:**
+
 ```bash
 $ npm install
 npm error code Unknown system error -35
@@ -49,11 +54,13 @@ npm error errno -35
 ```
 
 **詳細:**
+
 - `microsoft-cognitiveservices-speech-sdk`ディレクトリが部分的に破損
 - `ENOTEMPTY: directory not empty`エラーが繰り返し発生
 - npm cache cleanも効果なし
 
 **試行した対策（すべて失敗）:**
+
 ```bash
 # 1. 通常の再インストール
 npm install → spawn error -35
@@ -66,6 +73,7 @@ rm -rf node_modules && npm install → spawn error -35
 ```
 
 **環境情報:**
+
 - Node.js: v24.14.0
 - npm: v11.9.0
 - Platform: Linux (Codespaces)
@@ -75,17 +83,20 @@ rm -rf node_modules && npm install → spawn error -35
 ### 3. Next.js開発サーバー: 500エラー（High）
 
 **症状:**
+
 ```bash
 $ curl http://localhost:3000
 500
 ```
 
 **プロセス状態:**
+
 ```bash
 $ ps aux | grep "next dev"
 vscode   41084  PORT=3000 next dev
 vscode   41085  node .../next dev
 ```
+
 → プロセスは実行中だが機能不全
 
 ---
@@ -93,6 +104,7 @@ vscode   41085  node .../next dev
 ### 4. Lambda関数バージョン不明（Medium）
 
 **症状:**
+
 ```bash
 $ ./scripts/check-lambda-version.sh
 ローカル: 1.1.0
@@ -101,6 +113,7 @@ $ ./scripts/check-lambda-version.sh
 ```
 
 **原因:**
+
 - Lambda関数が最近呼び出されていない
 - CloudWatch Logsにログがない
 
@@ -111,11 +124,13 @@ $ ./scripts/check-lambda-version.sh
 ### Phase 1: Lambda関数の再デプロイ（最優先）
 
 **方針:**
+
 - ローカルのnpm installは諦める
 - CDKの自動バンドリング機能を使用
 - CDKは内部でDocker/esbuildを使ってクリーンな環境で依存関係をインストールしてバンドル
 
 **手順:**
+
 ```bash
 # 1. CDK出力をクリーンアップ
 cd /workspaces/prance-communication-platform/infrastructure
@@ -129,6 +144,7 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **期待される結果:**
+
 - CDKがクリーンな環境でffmpeg-staticを含む全依存関係をインストール
 - Lambda関数に正しくバンドル
 - `/var/task/node_modules/ffmpeg-static/ffmpeg` が利用可能になる
@@ -138,6 +154,7 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ### Phase 2: Next.js開発サーバーの再起動
 
 **手順:**
+
 ```bash
 # 1. 既存プロセスを停止
 pkill -f "next dev"
@@ -157,21 +174,27 @@ npm run dev
 **確認項目:**
 
 1. **Lambda関数バージョン確認**
+
    ```bash
    ./scripts/check-lambda-version.sh
    ```
+
    → デプロイ済みバージョンが1.1.0であることを確認
 
 2. **Next.js開発サーバー**
+
    ```bash
    curl http://localhost:3000
    ```
+
    → 200 OKを確認
 
 3. **Lambda API Health Check**
+
    ```bash
    curl https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/health
    ```
+
    → `{"status":"healthy"}`を確認
 
 4. **音声処理テスト**
@@ -218,6 +241,7 @@ package-lock.json
 ```
 
 **理由:**
+
 - CDKが常にクリーンな環境でビルド
 - ローカルの不完全なnode_modulesが混入しない
 
@@ -248,15 +272,15 @@ rm -rf lambda/*/node_modules
 
 ## 📊 タイムライン
 
-| 時刻 | イベント | ステータス |
-|------|---------|-----------|
-| 2026-03-08 00:28 | Next.js開発サーバー起動 | 稼働中だが500エラー |
-| 2026-03-08 09:19 | Lambda関数最終デプロイ | v1.1.0（しかしffmpeg欠落） |
-| 2026-03-08 09:37 | 現状確認開始 | ffmpeg欠落を発見 |
-| 2026-03-08 09:38 | npm install試行 | spawn error -35で失敗 |
-| 2026-03-08 09:39 | node_modules削除＋再試行 | 同じエラー |
-| 2026-03-08 09:40 | 現状ドキュメント作成 | このファイル |
-| **次:** | **CDK再デプロイ** | **修復開始** |
+| 時刻             | イベント                 | ステータス                 |
+| ---------------- | ------------------------ | -------------------------- |
+| 2026-03-08 00:28 | Next.js開発サーバー起動  | 稼働中だが500エラー        |
+| 2026-03-08 09:19 | Lambda関数最終デプロイ   | v1.1.0（しかしffmpeg欠落） |
+| 2026-03-08 09:37 | 現状確認開始             | ffmpeg欠落を発見           |
+| 2026-03-08 09:38 | npm install試行          | spawn error -35で失敗      |
+| 2026-03-08 09:39 | node_modules削除＋再試行 | 同じエラー                 |
+| 2026-03-08 09:40 | 現状ドキュメント作成     | このファイル               |
+| **次:**          | **CDK再デプロイ**        | **修復開始**               |
 
 ---
 
@@ -278,6 +302,7 @@ rm -rf lambda/*/node_modules
 ---
 
 **次のコマンド:**
+
 ```bash
 cd /workspaces/prance-communication-platform/infrastructure
 rm -rf cdk.out lambda/websocket/default/node_modules

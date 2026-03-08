@@ -25,9 +25,7 @@ export const handler: Handler = async (event, context) => {
 
     // コメント行を除去
     const lines = migrationSql.split('\n');
-    const sqlWithoutComments = lines
-      .filter(line => !line.trim().startsWith('--'))
-      .join('\n');
+    const sqlWithoutComments = lines.filter(line => !line.trim().startsWith('--')).join('\n');
 
     console.log('SQL without comments length:', sqlWithoutComments.length);
 

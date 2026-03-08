@@ -176,7 +176,7 @@ Start by calling the support line and explaining your issue with the product.`,
 }
 
 main()
-  .catch((error) => {
+  .catch(error => {
     console.error('Error creating test data:', error);
     process.exit(1);
   })

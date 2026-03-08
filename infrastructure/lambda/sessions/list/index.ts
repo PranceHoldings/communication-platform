@@ -13,7 +13,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  * - offset: number (default: 0)
  * - status: 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR'
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('List sessions request:', JSON.stringify(event, null, 2));
 
   try {
@@ -27,7 +27,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const queryParams = event.queryStringParameters || {};
     const limit = Math.min(parseInt(queryParams.limit || '20'), 100);
     const offset = parseInt(queryParams.offset || '0');
-    const status = queryParams.status as 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR' | undefined;
+    const status = queryParams.status as
+      | 'ACTIVE'
+      | 'PROCESSING'
+      | 'COMPLETED'
+      | 'ERROR'
+      | undefined;
 
     // Build where clause
     const where: any = {
@@ -97,6 +102,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   } catch (error) {
     console.error('Error listing sessions:', error);
-    return errorResponse(500, 'Failed to list sessions', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to list sessions',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

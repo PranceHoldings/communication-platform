@@ -24,7 +24,7 @@ interface RegisterRequest {
   email: string;
   password: string;
   name: string;
-  orgId?: string;  // Prisma: User.orgId
+  orgId?: string; // Prisma: User.orgId
 }
 
 /**

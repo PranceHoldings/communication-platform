@@ -24,39 +24,42 @@
 
 ### 主要機能
 
-| 機能 | 説明 |
-| ---- | ---- |
-| **プラグインSDK** | TypeScript/JavaScript SDKでプラグイン開発 |
-| **ホットロード** | プラグインの動的読み込み・更新 |
-| **サンドボックス実行** | セキュアな隔離環境でプラグイン実行 |
-| **APIアクセス制御** | 権限スコープによるアクセス制限 |
+| 機能                   | 説明                                           |
+| ---------------------- | ---------------------------------------------- |
+| **プラグインSDK**      | TypeScript/JavaScript SDKでプラグイン開発      |
+| **ホットロード**       | プラグインの動的読み込み・更新                 |
+| **サンドボックス実行** | セキュアな隔離環境でプラグイン実行             |
+| **APIアクセス制御**    | 権限スコープによるアクセス制限                 |
 | **ライフサイクル管理** | インストール・有効化・無効化・アンインストール |
-| **マーケットプレイス** | プラグインの公開・配布・レビュー（将来実装） |
+| **マーケットプレイス** | プラグインの公開・配布・レビュー（将来実装）   |
 
 ### プラグインタイプ
 
-| タイプ | 説明 | 例 |
-| ------ | ---- | --- |
-| **UI拡張** | ダッシュボードにカスタムウィジェット追加 | Analytics Dashboard, Custom Reports |
-| **データ連携** | 外部サービスとのデータ同期 | Salesforce Connector, Slack Notifier |
-| **カスタム解析** | 独自の解析ロジック追加 | Industry-specific Analysis |
-| **レポート拡張** | カスタムレポートテンプレート | Company Branding Templates |
-| **Webhook処理** | 外部イベントへの反応 | Zapier Integration |
+| タイプ           | 説明                                     | 例                                   |
+| ---------------- | ---------------------------------------- | ------------------------------------ |
+| **UI拡張**       | ダッシュボードにカスタムウィジェット追加 | Analytics Dashboard, Custom Reports  |
+| **データ連携**   | 外部サービスとのデータ同期               | Salesforce Connector, Slack Notifier |
+| **カスタム解析** | 独自の解析ロジック追加                   | Industry-specific Analysis           |
+| **レポート拡張** | カスタムレポートテンプレート             | Company Branding Templates           |
+| **Webhook処理**  | 外部イベントへの反応                     | Zapier Integration                   |
 
 ### ユースケース
 
 #### ユースケース1: Slack通知プラグイン
+
 ```
 セッション完了 → プラグイン実行 → Slackチャンネルに通知
 ```
 
 #### ユースケース2: カスタム解析プラグイン
+
 ```
 医療業界向けコミュニケーションスキル解析
 → 専門用語使用率、患者への配慮表現チェック
 ```
 
 #### ユースケース3: ダッシュボードウィジェット
+
 ```
 組織独自のKPI可視化ウィジェット
 → ダッシュボードに埋め込み表示
@@ -314,14 +317,14 @@ interface PluginContext {
 
 ### イベント一覧
 
-| イベント | トリガー | ペイロード |
-| -------- | -------- | ---------- |
-| `session.started` | セッション開始 | `SessionStartedEvent` |
-| `session.completed` | セッション完了 | `SessionCompletedEvent` |
-| `session.failed` | セッション失敗 | `SessionFailedEvent` |
-| `report.generated` | レポート生成完了 | `ReportGeneratedEvent` |
-| `user.created` | ユーザー作成 | `UserCreatedEvent` |
-| `scenario.created` | シナリオ作成 | `ScenarioCreatedEvent` |
+| イベント            | トリガー         | ペイロード              |
+| ------------------- | ---------------- | ----------------------- |
+| `session.started`   | セッション開始   | `SessionStartedEvent`   |
+| `session.completed` | セッション完了   | `SessionCompletedEvent` |
+| `session.failed`    | セッション失敗   | `SessionFailedEvent`    |
+| `report.generated`  | レポート生成完了 | `ReportGeneratedEvent`  |
+| `user.created`      | ユーザー作成     | `UserCreatedEvent`      |
+| `scenario.created`  | シナリオ作成     | `ScenarioCreatedEvent`  |
 
 ---
 
@@ -346,15 +349,8 @@ interface PluginContext {
   "runtime": "nodejs20",
 
   "permissions": {
-    "scopes": [
-      "sessions:read",
-      "reports:read",
-      "users:read"
-    ],
-    "events": [
-      "session.completed",
-      "session.failed"
-    ],
+    "scopes": ["sessions:read", "reports:read", "users:read"],
+    "events": ["session.completed", "session.failed"],
     "http": {
       "allowedDomains": ["hooks.slack.com"]
     }
@@ -484,7 +480,10 @@ function checkPermission(plugin: Plugin, scope: string): boolean {
 
 // API呼び出し時に権限チェック
 class PluginSessionsAPI {
-  constructor(private plugin: Plugin, private context: PluginContext) {}
+  constructor(
+    private plugin: Plugin,
+    private context: PluginContext
+  ) {}
 
   async getSession(sessionId: string): Promise<Session> {
     // 権限チェック
@@ -672,7 +671,7 @@ CREATE INDEX idx_plugin_logs_org_plugin ON plugin_execution_logs(organization_pl
 
 ```typescript
 // EventBridge Rule: session.completed → Lambda
-export const dispatchPluginEvent: EventBridgeHandler = async (event) => {
+export const dispatchPluginEvent: EventBridgeHandler = async event => {
   const { eventType, data } = event.detail;
 
   // 1. このイベントをリスンしている組織プラグインを取得
@@ -709,11 +708,7 @@ export const dispatchPluginEvent: EventBridgeHandler = async (event) => {
   );
 };
 
-async function executePlugin(
-  orgPlugin: OrganizationPlugin,
-  eventType: string,
-  eventData: any
-) {
+async function executePlugin(orgPlugin: OrganizationPlugin, eventType: string, eventData: any) {
   const startTime = Date.now();
 
   // 1. プラグインコード取得（S3）
@@ -761,5 +756,6 @@ async function executePlugin(
 ---
 
 **関連ドキュメント:**
+
 - [外部連携API](EXTERNAL_API.md)
 - [開発者ガイド](../development/DEVELOPER_GUIDE.md)

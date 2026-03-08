@@ -18,7 +18,7 @@ async function main() {
 
   // Check if super admin already exists
   const existingAdmin = await prisma.user.findFirst({
-    where: { role: 'SUPER_ADMIN' }
+    where: { role: 'SUPER_ADMIN' },
   });
 
   if (existingAdmin) {
@@ -70,7 +70,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch(e => {
     console.error('Error:', e);
     process.exit(1);
   })

@@ -12,12 +12,14 @@
 ### 現在の問題
 
 **症状:**
+
 - セッション言語: 日本語（`language: "ja"`）
 - ユーザー発話: 日本語
 - STT設定: 固定 `en-US`
 - 結果: `InitialSilenceTimeout` エラー ❌
 
 **根本原因:**
+
 - AudioProcessor が環境変数 `STT_LANGUAGE` で1回だけ初期化される
 - セッションごとの言語設定が反映されない
 - 言語が一致しないと音声認識が失敗する
@@ -27,6 +29,7 @@
 > セッションの設定で指定した言語と、ユーザーが話したと認識される言語が異なることでUI上もしくはシステム上でエラーが起こっていては、実際の使用に耐えない。TTSの言語をセッション設定情報で指定するのは良いが、STTが言語の差異でエラーになることは許容できない
 
 **要件:**
+
 - ✅ STT: 自動言語検出（ユーザーがどの言語を話してもエラーなし）
 - ✅ TTS: セッション設定言語を使用（アバターの応答言語）
 - ✅ AI応答: 検出された言語に合わせて応答
@@ -37,15 +40,16 @@
 
 ### 言語処理の役割分担
 
-| コンポーネント | 言語設定 | 目的 |
-|--------------|---------|------|
+| コンポーネント                  | 言語設定                    | 目的                     |
+| ------------------------------- | --------------------------- | ------------------------ |
 | **STT (Azure Speech Services)** | 自動検出 [`ja-JP`, `en-US`] | ユーザー発話を正確に認識 |
-| **TTS (ElevenLabs)** | セッション設定言語 | アバターの応答言語 |
-| **AI (AWS Bedrock)** | 検出された言語 | ユーザーの言語で応答 |
+| **TTS (ElevenLabs)**            | セッション設定言語          | アバターの応答言語       |
+| **AI (AWS Bedrock)**            | 検出された言語              | ユーザーの言語で応答     |
 
 ### Azure Speech Services AutoDetectSourceLanguage
 
 **技術仕様:**
+
 - API: `AutoDetectSourceLanguageConfig.fromLanguages()`
 - 候補言語: `['ja-JP', 'en-US']` (Phase 1)
 - 検出方式: 音声の最初の数秒で自動判定
@@ -63,6 +67,7 @@
 **変更内容:**
 
 1. **インターフェース更新:**
+
 ```typescript
 export interface AzureSTTConfig {
   subscriptionKey: string;
@@ -82,6 +87,7 @@ export interface TranscriptResult {
 ```
 
 2. **コンストラクタ修正:**
+
 ```typescript
 constructor(private options: AzureSTTConfig) {
   this.config = sdk.SpeechConfig.fromSubscription(
@@ -106,6 +112,7 @@ constructor(private options: AzureSTTConfig) {
 ```
 
 3. **recognizeFromFile 修正:**
+
 ```typescript
 async recognizeFromFile(audioFilePath: string): Promise<TranscriptResult> {
   return new Promise((resolve, reject) => {
@@ -164,6 +171,7 @@ async recognizeFromFile(audioFilePath: string): Promise<TranscriptResult> {
 **ファイル:** `infrastructure/lambda/shared/config/defaults.ts`
 
 **追加内容:**
+
 ```typescript
 export const LANGUAGE_DEFAULTS = {
   STT_LANGUAGE: 'en-US', // 後方互換性（非推奨）
@@ -178,6 +186,7 @@ export const LANGUAGE_DEFAULTS = {
 **ファイル:** `infrastructure/lambda/websocket/default/index.ts`
 
 **変更内容:**
+
 ```typescript
 function getAudioProcessor(): AudioProcessor {
   if (!audioProcessor) {
@@ -207,6 +216,7 @@ function getAudioProcessor(): AudioProcessor {
 **ファイル:** `infrastructure/lambda/websocket/default/audio-processor.ts`
 
 **変更内容:**
+
 ```typescript
 export interface AudioProcessorConfig {
   azureSpeechKey: string;
@@ -279,6 +289,7 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
    - 期待結果: ✅ 正常認識（主要言語を自動検出）
 
 **検証方法:**
+
 ```bash
 # CloudWatch Logsで確認
 aws logs tail /aws/lambda/prance-websocket-default-dev --since 2m --follow | grep -E "Detected language|Recognized text"
@@ -293,11 +304,13 @@ aws logs tail /aws/lambda/prance-websocket-default-dev --since 2m --follow | gre
 ## チェックリスト
 
 ### 実装前
+
 - [x] VOICE_MODULE.md に仕様を記録
 - [x] 実装計画書を作成
 - [ ] ユーザーに計画を確認
 
 ### 実装中
+
 - [ ] Step 1: AzureSpeechToText修正
 - [ ] Step 2: defaults.ts更新
 - [ ] Step 3: AudioProcessor初期化修正
@@ -305,6 +318,7 @@ aws logs tail /aws/lambda/prance-websocket-default-dev --since 2m --follow | gre
 - [ ] Step 5: デプロイ
 
 ### 実装後
+
 - [ ] Step 6: テスト実行
 - [ ] CloudWatch Logsで言語検出確認
 - [ ] UI上でエラーが出ないことを確認
@@ -316,14 +330,17 @@ aws logs tail /aws/lambda/prance-websocket-default-dev --since 2m --follow | gre
 ## リスクと対策
 
 ### リスク1: 検出精度の低下
+
 - **リスク:** 候補言語が多すぎると精度低下
 - **対策:** Phase 1では2言語のみ（ja-JP, en-US）
 
 ### リスク2: 追加遅延
+
 - **リスク:** 自動検出に~100ms追加
 - **対策:** ユーザー体験上は許容範囲（元々200-500ms）
 
 ### リスク3: Azure API制限
+
 - **リスク:** 自動検出は追加コストがかかる可能性
 - **対策:** Azureドキュメントで確認（現時点では追加コストなし）
 

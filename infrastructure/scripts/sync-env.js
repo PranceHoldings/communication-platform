@@ -68,7 +68,7 @@ function main() {
   const envVars = {};
 
   // 環境変数をパース
-  envContent.split('\n').forEach((line) => {
+  envContent.split('\n').forEach(line => {
     // コメントと空行をスキップ
     if (line.trim().startsWith('#') || !line.trim()) {
       return;
@@ -98,10 +98,7 @@ function main() {
 
     if (!value || value === 'xxxxx' || value === '') {
       missingKeys.push({ key, name });
-    } else if (
-      key === 'JWT_SECRET' &&
-      value.includes('dev-secret-change-in-production')
-    ) {
+    } else if (key === 'JWT_SECRET' && value.includes('dev-secret-change-in-production')) {
       defaultKeys.push({ key, name });
     }
   });

@@ -16,7 +16,13 @@ import {
   PutCommand,
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  ListObjectsV2Command,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AudioProcessor } from './audio-processor';
 import { VideoProcessor } from './video-processor';
@@ -93,7 +99,9 @@ function getAudioProcessor(): AudioProcessor {
   if (!audioProcessor) {
     // Check if required environment variables are set
     if (!AZURE_SPEECH_KEY || !ELEVENLABS_API_KEY) {
-      throw new Error('Audio processing API keys not configured. Set AZURE_SPEECH_KEY and ELEVENLABS_API_KEY environment variables.');
+      throw new Error(
+        'Audio processing API keys not configured. Set AZURE_SPEECH_KEY and ELEVENLABS_API_KEY environment variables.'
+      );
     }
 
     // STT自動言語検出候補を取得
@@ -148,10 +156,7 @@ function getVideoProcessor(): VideoProcessor {
  * @param maxRetries - Maximum number of retry attempts (default: 3)
  * @returns true if deletion succeeded, false otherwise
  */
-async function deleteLockWithRetry(
-  lockKey: string,
-  maxRetries: number = 3
-): Promise<boolean> {
+async function deleteLockWithRetry(lockKey: string, maxRetries: number = 3): Promise<boolean> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await ddb.send(
@@ -173,7 +178,9 @@ async function deleteLockWithRetry(
     }
   }
 
-  console.error(`CRITICAL: Failed to delete lock ${lockKey} after ${maxRetries} attempts. TTL will clean up in 5 minutes.`);
+  console.error(
+    `CRITICAL: Failed to delete lock ${lockKey} after ${maxRetries} attempts. TTL will clean up in 5 minutes.`
+  );
   return false;
 }
 
@@ -206,9 +213,7 @@ interface ConnectionData {
   [key: string]: unknown;
 }
 
-export const handler = async (
-  event: WebSocketEvent
-): Promise<APIGatewayProxyResultV2> => {
+export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyResultV2> => {
   console.log('[Lambda Version]', LAMBDA_VERSION, '- Audio Processing: volume=10.0 + compressor');
   console.log('WebSocket Default Handler Event:', JSON.stringify(event, null, 2));
 
@@ -288,7 +293,13 @@ export const handler = async (
 
         // Save audio chunk to S3 (to avoid DynamoDB 400KB limit)
         const chunkCount = (connectionData?.audioChunksCount || 0) + 1;
-        const chunkKey = generateChunkKey(audioSessionId, 'audio', timestamp, chunkCount, VIDEO_FORMAT);
+        const chunkKey = generateChunkKey(
+          audioSessionId,
+          'audio',
+          timestamp,
+          chunkCount,
+          VIDEO_FORMAT
+        );
 
         try {
           await s3Client.send(
@@ -395,7 +406,9 @@ export const handler = async (
               console.log(`Lock acquired for chunk ${chunkId}, proceeding with processing`);
             } catch (error: any) {
               if (error.name === 'ConditionalCheckFailedException') {
-                console.log(`Lock already held for chunk ${chunkId}, skipping duplicate processing`);
+                console.log(
+                  `Lock already held for chunk ${chunkId}, skipping duplicate processing`
+                );
                 // Another Lambda is already processing this chunk - return success
                 return {
                   statusCode: 200,
@@ -472,9 +485,11 @@ export const handler = async (
               }
 
               processingSuccess = true;
-
             } catch (processingError) {
-              console.error(`[video_chunk_part] Processing failed for chunk ${chunkId}:`, processingError);
+              console.error(
+                `[video_chunk_part] Processing failed for chunk ${chunkId}:`,
+                processingError
+              );
 
               // Notify client of error
               try {
@@ -482,18 +497,20 @@ export const handler = async (
                   type: 'error',
                   code: 'VIDEO_PROCESSING_ERROR',
                   message: 'Failed to process video chunk',
-                  details: processingError instanceof Error ? processingError.message : 'Unknown error',
+                  details:
+                    processingError instanceof Error ? processingError.message : 'Unknown error',
                   chunkId,
                 });
               } catch (sendError) {
                 console.error('[video_chunk_part] Failed to send error notification:', sendError);
               }
-
             } finally {
               // Always clean up lock (success or failure)
               const lockDeleted = await deleteLockWithRetry(lockKey);
               if (lockDeleted) {
-                console.log(`Lock cleanup completed for chunk ${chunkId} (success=${processingSuccess})`);
+                console.log(
+                  `Lock cleanup completed for chunk ${chunkId} (success=${processingSuccess})`
+                );
               }
             }
 
@@ -553,7 +570,10 @@ export const handler = async (
             videoChunkCount
           );
 
-          console.log('Saved video chunk to S3:', { sessionId: videoSessionId, chunkCount: videoChunkCount });
+          console.log('Saved video chunk to S3:', {
+            sessionId: videoSessionId,
+            chunkCount: videoChunkCount,
+          });
         } catch (error) {
           console.error('Failed to save video chunk to S3:', error);
           await sendToConnection(connectionId, {
@@ -618,7 +638,10 @@ export const handler = async (
             })
           );
 
-          console.log(`Saved audio part ${audioPartIndex + 1}/${audioTotalParts} to S3:`, audioPartKey);
+          console.log(
+            `Saved audio part ${audioPartIndex + 1}/${audioTotalParts} to S3:`,
+            audioPartKey
+          );
 
           // Check if all parts received by listing S3 objects
           const audioListResponse = await s3Client.send(
@@ -629,7 +652,9 @@ export const handler = async (
           );
 
           const audioReceivedParts = audioListResponse.Contents?.length || 0;
-          console.log(`Received ${audioReceivedParts}/${audioTotalParts} audio parts for chunk ${audioChunkId}`);
+          console.log(
+            `Received ${audioReceivedParts}/${audioTotalParts} audio parts for chunk ${audioChunkId}`
+          );
 
           if (audioReceivedParts === audioTotalParts) {
             // All parts received, try to acquire processing lock
@@ -654,7 +679,9 @@ export const handler = async (
               console.log(`Lock acquired for chunk ${audioChunkId}, proceeding with processing`);
             } catch (error: any) {
               if (error.name === 'ConditionalCheckFailedException') {
-                console.log(`Lock already held for chunk ${audioChunkId}, skipping duplicate processing`);
+                console.log(
+                  `Lock already held for chunk ${audioChunkId}, skipping duplicate processing`
+                );
                 // Another Lambda is already processing this chunk - return success
                 return {
                   statusCode: 200,
@@ -724,9 +751,11 @@ export const handler = async (
               }
 
               audioProcessingSuccess = true;
-
             } catch (processingError) {
-              console.error(`[audio_data_part] Processing failed for chunk ${audioChunkId}:`, processingError);
+              console.error(
+                `[audio_data_part] Processing failed for chunk ${audioChunkId}:`,
+                processingError
+              );
 
               // Notify client of error
               try {
@@ -734,18 +763,20 @@ export const handler = async (
                   type: 'error',
                   code: 'AUDIO_PROCESSING_ERROR',
                   message: 'Failed to process audio',
-                  details: processingError instanceof Error ? processingError.message : 'Unknown error',
+                  details:
+                    processingError instanceof Error ? processingError.message : 'Unknown error',
                   chunkId: audioChunkId,
                 });
               } catch (sendError) {
                 console.error('[audio_data_part] Failed to send error notification:', sendError);
               }
-
             } finally {
               // Always clean up lock (success or failure)
               const lockDeleted = await deleteLockWithRetry(lockKey);
               if (lockDeleted) {
-                console.log(`Lock cleanup completed for chunk ${audioChunkId} (success=${audioProcessingSuccess})`);
+                console.log(
+                  `Lock cleanup completed for chunk ${audioChunkId} (success=${audioProcessingSuccess})`
+                );
               }
             }
 
@@ -755,7 +786,9 @@ export const handler = async (
               await updateConnectionData(connectionId, {
                 audioChunksCount: 0,
               });
-              console.log('[audio_data_part] Reset audioChunksCount to prevent duplicate processing in session_end');
+              console.log(
+                '[audio_data_part] Reset audioChunksCount to prevent duplicate processing in session_end'
+              );
 
               // Delete audio-chunks from S3 to prevent session_end from re-processing
               try {
@@ -768,7 +801,9 @@ export const handler = async (
                 );
 
                 if (listResponse.Contents && listResponse.Contents.length > 0) {
-                  console.log(`Deleting ${listResponse.Contents.length} audio-chunks from S3 to prevent duplicate processing`);
+                  console.log(
+                    `Deleting ${listResponse.Contents.length} audio-chunks from S3 to prevent duplicate processing`
+                  );
                   for (const obj of listResponse.Contents) {
                     if (obj.Key) {
                       await s3Client.send(
@@ -826,7 +861,9 @@ export const handler = async (
 
         // Process accumulated audio chunks if any
         if (connectionData?.audioChunksCount && connectionData.audioChunksCount > 0) {
-          console.log(`Processing ${connectionData.audioChunksCount} accumulated audio chunks from S3`);
+          console.log(
+            `Processing ${connectionData.audioChunksCount} accumulated audio chunks from S3`
+          );
 
           try {
             await sendToConnection(connectionId, {
@@ -849,55 +886,56 @@ export const handler = async (
             );
 
             if (!listResponse.Contents || listResponse.Contents.length === 0) {
-              console.log('[session_end] No audio chunks found in S3 - already processed by audio_data_part, skipping audio re-processing');
+              console.log(
+                '[session_end] No audio chunks found in S3 - already processed by audio_data_part, skipping audio re-processing'
+              );
               // Reset counter and skip audio processing (audio was already processed by audio_data_part)
               await updateConnectionData(connectionId, {
                 audioChunksCount: 0,
               });
             } else {
+              console.log(`Found ${listResponse.Contents.length} chunks in S3`);
 
-            console.log(`Found ${listResponse.Contents.length} chunks in S3`);
+              // Sort chunks using shared utility function
+              const sortedChunks = sortChunksByTimestampAndIndex(listResponse.Contents);
 
-            // Sort chunks using shared utility function
-            const sortedChunks = sortChunksByTimestampAndIndex(listResponse.Contents);
+              // Log sorted chunks with validation
+              logSortedChunks(sortedChunks, 'session_end:audio', 5);
 
-            // Log sorted chunks with validation
-            logSortedChunks(sortedChunks, 'session_end:audio', 5);
+              // Download and combine all chunks
+              const audioBuffers: Buffer[] = [];
+              for (const chunk of sortedChunks) {
+                if (!chunk.Key) continue;
 
-            // Download and combine all chunks
-            const audioBuffers: Buffer[] = [];
-            for (const chunk of sortedChunks) {
-              if (!chunk.Key) continue;
+                const getResponse = await s3Client.send(
+                  new GetObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: chunk.Key,
+                  })
+                );
 
-              const getResponse = await s3Client.send(
-                new GetObjectCommand({
-                  Bucket: S3_BUCKET,
-                  Key: chunk.Key,
-                })
-              );
-
-              if (getResponse.Body) {
-                const chunkBuffer = await getResponse.Body.transformToByteArray();
-                audioBuffers.push(Buffer.from(chunkBuffer));
+                if (getResponse.Body) {
+                  const chunkBuffer = await getResponse.Body.transformToByteArray();
+                  audioBuffers.push(Buffer.from(chunkBuffer));
+                }
               }
-            }
 
-            const combinedAudioBuffer = Buffer.concat(audioBuffers);
-            console.log('Combined audio size:', combinedAudioBuffer.length, 'bytes');
+              const combinedAudioBuffer = Buffer.concat(audioBuffers);
+              console.log('Combined audio size:', combinedAudioBuffer.length, 'bytes');
 
-            await sendToConnection(connectionId, {
-              type: 'processing_update',
-              stage: 'transcribing',
-              progress: 0.5,
-            });
+              await sendToConnection(connectionId, {
+                type: 'processing_update',
+                stage: 'transcribing',
+                progress: 0.5,
+              });
 
-            // Process through STT -> AI -> TTS pipeline
-            await handleAudioProcessing(connectionId, combinedAudioBuffer, connectionData);
+              // Process through STT -> AI -> TTS pipeline
+              await handleAudioProcessing(connectionId, combinedAudioBuffer, connectionData);
 
-            // Clear audio chunks count after processing
-            await updateConnectionData(connectionId, {
-              audioChunksCount: 0,
-            });
+              // Clear audio chunks count after processing
+              await updateConnectionData(connectionId, {
+                audioChunksCount: 0,
+              });
             } // End of else block (audio chunks found)
           } catch (error) {
             console.error('Failed to process accumulated audio:', error);
@@ -996,7 +1034,10 @@ export const handler = async (
                   },
                 })
               );
-              console.log('Recording error metadata saved to DynamoDB:', { recordingId, sessionId });
+              console.log('Recording error metadata saved to DynamoDB:', {
+                recordingId,
+                sessionId,
+              });
             } catch (dbError) {
               console.error('Failed to save recording error metadata to DynamoDB:', dbError);
             }
@@ -1375,9 +1416,7 @@ async function handleUserSpeech(
 /**
  * Get connection data from DynamoDB
  */
-async function getConnectionData(
-  connectionId: string
-): Promise<ConnectionData | undefined> {
+async function getConnectionData(connectionId: string): Promise<ConnectionData | undefined> {
   try {
     const result = await ddb.send(
       new GetCommand({

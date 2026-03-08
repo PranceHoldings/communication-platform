@@ -27,7 +27,7 @@ const languageMetadata: Record<string, { name: string; nativeName: string; flag:
 };
 
 // Build available languages from config locales
-const languages = locales.map((code) => ({
+const languages = locales.map(code => ({
   code,
   ...(languageMetadata[code] || {
     name: code.toUpperCase(),
@@ -52,12 +52,12 @@ export default function LanguageSwitcher() {
     <div className="relative inline-block">
       <select
         value={locale}
-        onChange={(e) => handleLanguageChange(e.target.value)}
+        onChange={e => handleLanguageChange(e.target.value)}
         disabled={isChanging}
         className="block w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
         aria-label={t('common.selectLanguage')}
       >
-        {languages.map((language) => (
+        {languages.map(language => (
           <option key={language.code} value={language.code}>
             {language.flag} {language.nativeName}
           </option>

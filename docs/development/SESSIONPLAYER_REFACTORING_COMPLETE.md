@@ -30,6 +30,7 @@ const endSessionRef = useRef<(() => void) | null>(null);
 ### 2. Updated handleRecordingComplete (Line 311-333)
 
 **Before:**
+
 ```typescript
 const handleRecordingComplete = useCallback(
   async (audioBlob: Blob) => {
@@ -43,6 +44,7 @@ const handleRecordingComplete = useCallback(
 ```
 
 **After:**
+
 ```typescript
 const handleRecordingComplete = useCallback(
   async (audioBlob: Blob) => {
@@ -60,6 +62,7 @@ const handleRecordingComplete = useCallback(
 ### 3. Updated handleVideoChunk (Line 354-370)
 
 **Before:**
+
 ```typescript
 const handleVideoChunk = useCallback(
   async (chunk: Blob, timestamp: number) => {
@@ -73,6 +76,7 @@ const handleVideoChunk = useCallback(
 ```
 
 **After:**
+
 ```typescript
 const handleVideoChunk = useCallback(
   async (chunk: Blob, timestamp: number) => {
@@ -113,6 +117,7 @@ useEffect(() => {
 ### 5. Updated handleStop (Line 570-585)
 
 **Before:**
+
 ```typescript
 if (isConnected && !pendingSessionEnd) {
   endSession();
@@ -121,6 +126,7 @@ if (isConnected && !pendingSessionEnd) {
 ```
 
 **After:**
+
 ```typescript
 if (isConnectedRef.current && !pendingSessionEnd && endSessionRef.current) {
   endSessionRef.current();
@@ -160,6 +166,7 @@ if (isConnectedRef.current && !pendingSessionEnd && endSessionRef.current) {
 ## Verification
 
 ### TypeScript Check
+
 ```bash
 cd /workspaces/prance-communication-platform/apps/web
 npx tsc --noEmit --skipLibCheck
@@ -204,6 +211,7 @@ handleRecordingComplete → [t] → (uses refs at runtime) → useWebSocket (syn
 After deployment, test these scenarios:
 
 ### Basic Flow
+
 - [ ] Click "Start" button
 - [ ] WebSocket connects successfully
 - [ ] Audio recording starts
@@ -214,6 +222,7 @@ After deployment, test these scenarios:
 - [ ] Session completes successfully
 
 ### Video Recording
+
 - [ ] Start session
 - [ ] Click "Start Recording" button
 - [ ] Verify video chunks sent to WebSocket
@@ -222,6 +231,7 @@ After deployment, test these scenarios:
 - [ ] Check DynamoDB for recording metadata
 
 ### Error Scenarios
+
 - [ ] No console errors about initialization order
 - [ ] No "Cannot access before initialization" errors
 - [ ] WebSocket disconnect handling works correctly

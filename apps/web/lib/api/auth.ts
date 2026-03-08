@@ -8,7 +8,6 @@ import { apiClient, ApiResponse } from './client';
 // Re-export User type for convenience
 export type { User };
 
-
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;

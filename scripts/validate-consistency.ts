@@ -25,10 +25,7 @@ console.log('🔍 型整合性検証を開始します...\n');
 console.log('📌 [1/6] Prisma Clientの生成状態を確認中...');
 
 try {
-  const prismaClientPath = path.join(
-    __dirname,
-    '../packages/database/node_modules/.prisma/client'
-  );
+  const prismaClientPath = path.join(__dirname, '../packages/database/node_modules/.prisma/client');
 
   if (!fs.existsSync(prismaClientPath)) {
     results.push({
@@ -39,10 +36,7 @@ try {
     });
   } else {
     // Prismaスキーマの最終更新時刻
-    const schemaPath = path.join(
-      __dirname,
-      '../packages/database/prisma/schema.prisma'
-    );
+    const schemaPath = path.join(__dirname, '../packages/database/prisma/schema.prisma');
     const clientIndexPath = path.join(prismaClientPath, 'index.js');
 
     const schemaMtime = fs.statSync(schemaPath).mtime.getTime();
@@ -281,11 +275,11 @@ try {
 
   const modifiedFiles = gitStatus
     .split('\n')
-    .filter((line) => line.trim() !== '')
-    .map((line) => line.substring(3));
+    .filter(line => line.trim() !== '')
+    .map(line => line.substring(3));
 
   // schema.prismaが変更されているか
-  const schemaModified = modifiedFiles.some((file) => file.includes('schema.prisma'));
+  const schemaModified = modifiedFiles.some(file => file.includes('schema.prisma'));
 
   if (schemaModified) {
     results.push({
@@ -321,16 +315,16 @@ console.log('\n' + '='.repeat(60));
 console.log('📊 検証結果サマリー');
 console.log('='.repeat(60) + '\n');
 
-const passCount = results.filter((r) => r.status === 'pass').length;
-const warningCount = results.filter((r) => r.status === 'warning').length;
-const failCount = results.filter((r) => r.status === 'fail').length;
+const passCount = results.filter(r => r.status === 'pass').length;
+const warningCount = results.filter(r => r.status === 'warning').length;
+const failCount = results.filter(r => r.status === 'fail').length;
 
-results.forEach((result) => {
+results.forEach(result => {
   const icon = result.status === 'pass' ? '✅' : result.status === 'warning' ? '⚠️' : '❌';
   console.log(`${icon} [${result.category}] ${result.message}`);
 
   if (result.details && result.details.length > 0) {
-    result.details.forEach((detail) => {
+    result.details.forEach(detail => {
       console.log(`   ${detail}`);
     });
   }

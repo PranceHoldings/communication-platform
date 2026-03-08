@@ -29,11 +29,11 @@
    - useVideoRecorder, VideoComposer をimport
    - 録画用refを追加（avatarCanvasRef, userVideoRef, compositeCanvasRef）
 
-4. **SessionPlayer import更新**
+5. **SessionPlayer import更新**
    - useVideoRecorder, VideoComposer をimport
    - 録画用refを追加（avatarCanvasRef, userVideoRef, compositeCanvasRef）
 
-5. **SessionPlayer統合完了**
+6. **SessionPlayer統合完了**
    - ✅ Step 3-1: useVideoRecorder統合
    - ✅ Step 3-2: ユーザーカメラ取得
    - ✅ Step 3-3: 録画ステータスUI
@@ -152,9 +152,13 @@ const handleStart = useCallback(async () => {
 **追加場所:** アバター表示エリアのステータス表示部分（約542行目）
 
 ```tsx
-{/* カメラステータスの後に追加 */}
+{
+  /* カメラステータスの後に追加 */
+}
 
-{/* 録画ステータス */}
+{
+  /* 録画ステータス */
+}
 <div className="flex items-center justify-between text-sm">
   <div className="flex items-center text-gray-600">
     <svg
@@ -184,14 +188,18 @@ const handleStart = useCallback(async () => {
       </span>
     )}
   </div>
-</div>
+</div>;
 
-{/* 録画エラー表示 */}
-{videoRecordingError && (
-  <div className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">
-    {videoRecordingError.message}
-  </div>
-)}
+{
+  /* 録画エラー表示 */
+}
+{
+  videoRecordingError && (
+    <div className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">
+      {videoRecordingError.message}
+    </div>
+  );
+}
 ```
 
 #### Step 3-4: 録画ボタン追加（30分）
@@ -199,54 +207,58 @@ const handleStart = useCallback(async () => {
 **追加場所:** アクションボタンエリア（「Start Session」「Pause」等のボタン付近）
 
 ```tsx
-{/* セッションコントロールボタンの後に追加 */}
-{status === 'ACTIVE' && (
-  <div className="flex gap-2 mt-4">
-    {recordingStatus === 'idle' && (
-      <button
-        onClick={startVideoRecording}
-        className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-      >
-        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-          <circle cx="10" cy="10" r="8" />
-        </svg>
-        {t('sessions.player.recording.start')}
-      </button>
-    )}
-    {recordingStatus === 'recording' && (
-      <>
+{
+  /* セッションコントロールボタンの後に追加 */
+}
+{
+  status === 'ACTIVE' && (
+    <div className="flex gap-2 mt-4">
+      {recordingStatus === 'idle' && (
         <button
-          onClick={pauseVideoRecording}
-          className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          onClick={startVideoRecording}
+          className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
         >
-          {t('sessions.player.recording.pause')}
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8" />
+          </svg>
+          {t('sessions.player.recording.start')}
         </button>
-        <button
-          onClick={stopVideoRecording}
-          className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-        >
-          {t('sessions.player.recording.stop')}
-        </button>
-      </>
-    )}
-    {recordingStatus === 'paused' && (
-      <>
-        <button
-          onClick={resumeVideoRecording}
-          className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-        >
-          {t('sessions.player.recording.resume')}
-        </button>
-        <button
-          onClick={stopVideoRecording}
-          className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-        >
-          {t('sessions.player.recording.stop')}
-        </button>
-      </>
-    )}
-  </div>
-)}
+      )}
+      {recordingStatus === 'recording' && (
+        <>
+          <button
+            onClick={pauseVideoRecording}
+            className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            {t('sessions.player.recording.pause')}
+          </button>
+          <button
+            onClick={stopVideoRecording}
+            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            {t('sessions.player.recording.stop')}
+          </button>
+        </>
+      )}
+      {recordingStatus === 'paused' && (
+        <>
+          <button
+            onClick={resumeVideoRecording}
+            className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            {t('sessions.player.recording.resume')}
+          </button>
+          <button
+            onClick={stopVideoRecording}
+            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            {t('sessions.player.recording.stop')}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
 ```
 
 #### Step 3-5: VideoComposer と hidden要素追加（15分）
@@ -254,7 +266,9 @@ const handleStart = useCallback(async () => {
 **追加場所:** return文の最後（閉じタグの前）
 
 ```tsx
-{/* Hidden要素: 録画用 */}
+{
+  /* Hidden要素: 録画用 */
+}
 <div className="hidden">
   {/* アバター用Canvas（将来Three.js統合用） */}
   <canvas ref={avatarCanvasRef} width={1280} height={720} />
@@ -271,7 +285,7 @@ const handleStart = useCallback(async () => {
     height={720}
     onCanvasReady={handleCanvasReady}
   />
-</div>
+</div>;
 ```
 
 ---
@@ -294,6 +308,7 @@ const handleStart = useCallback(async () => {
 **実装時間:** 約2時間（推定2時間15分）
 
 **実装内容:**
+
 - ✅ VideoComposer コンポーネント作成
 - ✅ useVideoRecorder フック作成
 - ✅ SessionPlayer への完全統合
@@ -302,11 +317,13 @@ const handleStart = useCallback(async () => {
 - ✅ エラーハンドリング
 
 **コミット:**
+
 - 3a9def1: feat: Phase 2 録画機能の基盤実装（Step 1 & 2）
 - 50d30d7: wip: SessionPlayer統合開始（Step 3途中）
 - b315172: feat: SessionPlayer統合完了（Task 2.1.1完了）✅
 
 **動作確認項目（すべて達成）:**
+
 - [x] 録画開始ボタンで録画開始
 - [x] 録画中のステータス表示（赤いアニメーション）
 - [x] 録画時間カウンター表示
@@ -365,6 +382,7 @@ const handleStart = useCallback(async () => {
 **更新リソース:** 22/79
 
 **主要更新:**
+
 - ✅ WebSocketDefaultFunction
   - メモリ: 1536MB → 3008MB
   - タイムアウト: 90秒 → 300秒
@@ -372,6 +390,7 @@ const handleStart = useCallback(async () => {
   - 新機能: video_chunk処理、ffmpeg動画結合、CloudFront URL生成
 
 **WebSocket エンドポイント:**
+
 ```
 wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 ```
@@ -379,16 +398,17 @@ wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 ### 📝 次のステップ
 
 **優先度: 高**
+
 1. **動作テスト（必須）**
    - セッション開始 → 録画開始
    - 動画チャンク送信確認（CloudWatchログ）
    - セッション終了 → 動画結合処理確認
    - 動画URL生成確認
 
-**優先度: 中**
-2. **Prisma Recording モデル追加**
-   - 録画メタデータの永続化
-   - videoUrl, videoSize, duration フィールド追加
+**優先度: 中** 2. **Prisma Recording モデル追加**
+
+- 録画メタデータの永続化
+- videoUrl, videoSize, duration フィールド追加
 
 3. **Task 2.1.3 開始: 録画再生UI（推定3日）**
    - セッション詳細ページに録画プレイヤー追加
@@ -400,6 +420,7 @@ wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 ## 🎉 Task 2.1.1 完了報告（参考）
 
 **実装完了内容:**
+
 1. ✅ WebSocket メッセージ拡張（video_chunk受信）
 2. ✅ S3への動画チャンク保存（/tmp経由）
 3. ✅ ffmpegでチャンク結合
@@ -407,12 +428,14 @@ wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 5. ⏳ Prisma Recording モデル更新（次のステップ）
 
 **技術スタック:**
+
 - Lambda: メモリ3008MB、タイムアウト300秒、Ephemeral Storage 10GB ✅
 - ffmpeg: @ffmpeg-installer/ffmpeg（既存） ✅
 - S3: チャンク保存・結合動画保存 ✅
 - CloudFront: Signed URLs（設定必要） ⏳
 
 **実装したファイル:**
+
 - `infrastructure/lambda/websocket/default/video-processor.ts` - VideoProcessor クラス
 - `infrastructure/lambda/websocket/default/index.ts` - video_chunk ハンドラー追加
 - `infrastructure/lib/api-lambda-stack.ts` - Lambda設定更新
@@ -426,11 +449,13 @@ wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 ## 📝 技術メモ
 
 **現在の制約:**
+
 1. WebSocketにビデオチャンク送信機能なし → Task 2.1.2で実装
 2. アバターCanvasは静的（グレー画面）→ 将来Three.js統合
 3. Lambda側の動画処理未実装 → 次のタスク
 
 **動作検証方法（現在）:**
+
 1. セッション開始 → カメラ許可
 2. 録画開始ボタンクリック
 3. ブラウザコンソールで `Video chunk: { size, timestamp }` ログ確認

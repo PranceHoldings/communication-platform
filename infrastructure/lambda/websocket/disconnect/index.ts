@@ -21,9 +21,7 @@ interface WebSocketEvent {
   [key: string]: unknown;
 }
 
-export const handler = async (
-  event: WebSocketEvent
-): Promise<APIGatewayProxyResultV2> => {
+export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyResultV2> => {
   console.log('WebSocket Disconnect Event:', JSON.stringify(event, null, 2));
 
   const connectionId = event.requestContext.connectionId;

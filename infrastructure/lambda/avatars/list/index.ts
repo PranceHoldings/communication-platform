@@ -16,7 +16,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  * - source: 'PRESET' | 'GENERATED' | 'ORG_CUSTOM' (optional filter)
  * - visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' (optional filter)
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('List avatars request:', JSON.stringify(event, null, 2));
 
   try {
@@ -113,6 +113,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   } catch (error) {
     console.error('Error listing avatars:', error);
-    return errorResponse(500, 'Failed to list avatars', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to list avatars',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

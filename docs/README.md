@@ -110,6 +110,7 @@ docs/
 ```
 
 **注意:** コーディング規約は以下に統合されました：
+
 - **[CODING_RULES.md](../CODING_RULES.md)** - 実践的クイックリファレンス（ルート）
 - **[DEVELOPMENT_WORKFLOW.md](development/DEVELOPMENT_WORKFLOW.md)** - 包括的開発ガイド
 
@@ -117,33 +118,36 @@ docs/
 
 ## 🔍 目的別の参照先
 
-| 目的 | 参照先 |
-|------|--------|
-| **次回作業開始** | [START_HERE.md](../START_HERE.md) |
+| 目的                     | 参照先                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| **次回作業開始**         | [START_HERE.md](../START_HERE.md)                                                        |
 | **プロジェクト全体理解** | [CLAUDE.md](../CLAUDE.md), [SYSTEM_ARCHITECTURE.md](architecture/SYSTEM_ARCHITECTURE.md) |
-| **開発を始める** | [IMPLEMENTATION_PHASES.md](development/IMPLEMENTATION_PHASES.md) |
-| **特定機能を実装** | [modules/](modules/) 配下の該当ドキュメント |
-| **API実装** | [API_DESIGN.md](development/API_DESIGN.md) |
-| **DB設計** | [DATABASE_DESIGN.md](development/DATABASE_DESIGN.md) |
-| **デプロイ** | [AWS_SERVERLESS.md](infrastructure/AWS_SERVERLESS.md), [DEPLOYMENT.md](DEPLOYMENT.md) |
-| **進捗確認** | [progress/](progress/) 配下のドキュメント |
-| **用語確認** | [GLOSSARY.md](reference/GLOSSARY.md) |
+| **開発を始める**         | [IMPLEMENTATION_PHASES.md](development/IMPLEMENTATION_PHASES.md)                         |
+| **特定機能を実装**       | [modules/](modules/) 配下の該当ドキュメント                                              |
+| **API実装**              | [API_DESIGN.md](development/API_DESIGN.md)                                               |
+| **DB設計**               | [DATABASE_DESIGN.md](development/DATABASE_DESIGN.md)                                     |
+| **デプロイ**             | [AWS_SERVERLESS.md](infrastructure/AWS_SERVERLESS.md), [DEPLOYMENT.md](DEPLOYMENT.md)    |
+| **進捗確認**             | [progress/](progress/) 配下のドキュメント                                                |
+| **用語確認**             | [GLOSSARY.md](reference/GLOSSARY.md)                                                     |
 
 ---
 
 ## 📋 新規参加者向けガイド
 
 ### 1. 全体把握（30分）
+
 1. [START_HERE.md](../START_HERE.md) - 現在のステータス確認
 2. [CLAUDE.md](../CLAUDE.md) - プロジェクト概要
 3. [SYSTEM_ARCHITECTURE.md](architecture/SYSTEM_ARCHITECTURE.md) - アーキテクチャ理解
 
 ### 2. 技術理解（1時間）
+
 1. [TECH_STACK.md](reference/TECH_STACK.md) - 使用技術
 2. [AWS_SERVERLESS.md](infrastructure/AWS_SERVERLESS.md) - インフラ構成
 3. [DATABASE_DESIGN.md](development/DATABASE_DESIGN.md) - DB設計
 
 ### 3. 開発準備（1時間）
+
 1. [IMPLEMENTATION_PHASES.md](development/IMPLEMENTATION_PHASES.md) - 現在のフェーズ
 2. [API_DESIGN.md](development/API_DESIGN.md) - API仕様
 3. [CODING_STANDARDS.md](CODING_STANDARDS.md) - コーディング規約
@@ -155,14 +159,17 @@ docs/
 ### 更新タイミング
 
 **START_HERE.md:**
+
 - ✅ セッション終了時（最新状態を反映）
 - ✅ 重要なマイルストーン達成時
 
 **CLAUDE.md:**
+
 - ✅ アーキテクチャ変更・重要な設計決定
 - ✅ Phase完了時の総括
 
 **docs/ 配下:**
+
 - ✅ 技術仕様の変更
 - ✅ API設計の追加・変更
 - ✅ 新しいモジュールの追加

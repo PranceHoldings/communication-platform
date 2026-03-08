@@ -33,7 +33,7 @@ import {
 function detectLocaleFromHeader(acceptLanguage: string | null): string {
   if (!acceptLanguage) return defaultLocale;
 
-  const languages = acceptLanguage.split(',').map((lang) => {
+  const languages = acceptLanguage.split(',').map(lang => {
     const [code, qValue] = lang.trim().split(';q=');
     const parts = code ? code.split('-') : [];
     const baseCode = parts[0] ? parts[0].toLowerCase() : '';

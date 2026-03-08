@@ -8,33 +8,34 @@ AWS Cloud Development Kit (CDK) を使用したPranceプラットフォームの
 
 ### スタック構成
 
-| スタック名 | 説明 | 主要リソース |
-|-----------|------|-------------|
-| **DnsStack** ★NEW | DNSホストゾーン | Route 53 Hosted Zone |
-| **CertificateStack** ★NEW | SSL/TLS証明書 | ACM Certificate (us-east-1) |
-| **NetworkStack** | VPC・ネットワーク基盤 | VPC, Subnets, NAT Gateway, VPC Endpoints |
-| **CognitoStack** | 認証・認可 | User Pool, User Pool Client, Identity Pool |
-| **DatabaseStack** | データベース | Aurora Serverless v2 (PostgreSQL) |
-| **StorageStack** | ストレージ・CDN | S3 Buckets, CloudFront Distribution, Custom Domain |
-| **DynamoDBStack** | NoSQLデータストア | セッション状態、WebSocket接続、ベンチマークキャッシュ、APIレート制限 |
-| **ApiGatewayStack** | API Gateway | REST API, WebSocket API, Cognito Authorizer |
-| **ApiLambdaStack** ★UPDATED | Lambda関数 | ヘルスチェック、JWT Authorizer、認証API（Register/Login/Me）、DBマイグレーション |
+| スタック名                  | 説明                  | 主要リソース                                                                     |
+| --------------------------- | --------------------- | -------------------------------------------------------------------------------- |
+| **DnsStack** ★NEW           | DNSホストゾーン       | Route 53 Hosted Zone                                                             |
+| **CertificateStack** ★NEW   | SSL/TLS証明書         | ACM Certificate (us-east-1)                                                      |
+| **NetworkStack**            | VPC・ネットワーク基盤 | VPC, Subnets, NAT Gateway, VPC Endpoints                                         |
+| **CognitoStack**            | 認証・認可            | User Pool, User Pool Client, Identity Pool                                       |
+| **DatabaseStack**           | データベース          | Aurora Serverless v2 (PostgreSQL)                                                |
+| **StorageStack**            | ストレージ・CDN       | S3 Buckets, CloudFront Distribution, Custom Domain                               |
+| **DynamoDBStack**           | NoSQLデータストア     | セッション状態、WebSocket接続、ベンチマークキャッシュ、APIレート制限             |
+| **ApiGatewayStack**         | API Gateway           | REST API, WebSocket API, Cognito Authorizer                                      |
+| **ApiLambdaStack** ★UPDATED | Lambda関数            | ヘルスチェック、JWT Authorizer、認証API（Register/Login/Me）、DBマイグレーション |
 
 ## 🌐 ドメイン設定
 
 本プラットフォームは、お名前.comで取得したルートドメイン `prance.co.jp` を使用します。
 
-| 環境 | ドメイン | 説明 |
-|------|---------|------|
-| **開発** | `dev.platform.prance.co.jp` | 開発環境 |
+| 環境             | ドメイン                        | 説明             |
+| ---------------- | ------------------------------- | ---------------- |
+| **開発**         | `dev.platform.prance.co.jp`     | 開発環境         |
 | **ステージング** | `staging.platform.prance.co.jp` | ステージング環境 |
-| **本番** | `platform.prance.co.jp` | 本番環境 |
+| **本番**         | `platform.prance.co.jp`         | 本番環境         |
 
 **📖 詳細な設定手順:** [docs/DOMAIN_SETUP.md](docs/DOMAIN_SETUP.md)
 
 ### 初回セットアップ（1回のみ）
 
 1. **Route 53 ホストゾーン作成:**
+
    ```bash
    aws route53 create-hosted-zone --name prance.co.jp --caller-reference "prance-$(date +%s)"
    ```
@@ -108,6 +109,7 @@ npm run deploy:production # 本番環境
 ```
 
 **スクリプトの動作:**
+
 1. ✅ AWS CLI・Node.js・npm確認
 2. ✅ AWS認証確認
 3. ✅ 依存関係インストール (npm ci)
@@ -237,14 +239,14 @@ npm run cdk -- deploy --context environment=production
 
 ### 環境別の違い
 
-| 設定項目 | 開発 (dev) | 本番 (production) |
-|---------|-----------|------------------|
-| Aurora ACU | 0.5-2 | 0.5-2 |
-| Aurora Replica | なし | あり（Reader） |
-| Backup保持 | 1日 | 7日 |
-| 削除保護 | なし | あり |
-| Removal Policy | DESTROY | RETAIN/SNAPSHOT |
-| Log保持 | 1週間 | 1ヶ月 |
+| 設定項目       | 開発 (dev) | 本番 (production) |
+| -------------- | ---------- | ----------------- |
+| Aurora ACU     | 0.5-2      | 0.5-2             |
+| Aurora Replica | なし       | あり（Reader）    |
+| Backup保持     | 1日        | 7日               |
+| 削除保護       | なし       | あり              |
+| Removal Policy | DESTROY    | RETAIN/SNAPSHOT   |
+| Log保持        | 1週間      | 1ヶ月             |
 
 ## 🔒 セキュリティ
 

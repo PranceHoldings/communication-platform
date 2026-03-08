@@ -25,16 +25,18 @@ export default function AvatarDetailPage() {
 
   const avatarId = params.id as string;
   const currentUser = authApi.getCurrentUser();
-  const canDelete = currentUser && avatar && (
-    avatar.orgId === currentUser.orgId ||
-    currentUser.role === 'SUPER_ADMIN'
-  ) && avatar.source !== 'PRESET';
+  const canDelete =
+    currentUser &&
+    avatar &&
+    (avatar.orgId === currentUser.orgId || currentUser.role === 'SUPER_ADMIN') &&
+    avatar.source !== 'PRESET';
 
-  const canClone = currentUser && avatar && (
+  const canClone =
+    currentUser &&
+    avatar &&
     avatar.visibility === 'PUBLIC' &&
     avatar.allowCloning &&
-    avatar.orgId !== currentUser.orgId
-  );
+    avatar.orgId !== currentUser.orgId;
 
   const isOwnOrg = currentUser && avatar && avatar.orgId === currentUser.orgId;
 
@@ -145,7 +147,12 @@ export default function AvatarDetailPage() {
             className="text-sm text-indigo-600 hover:text-indigo-900 mb-2 inline-flex items-center"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             {t('avatars.list.title')}
           </Link>
@@ -167,18 +174,16 @@ export default function AvatarDetailPage() {
               </span>
             )}
           </div>
-          <p className="text-gray-600 mt-2">{t('avatars.detail.avatarId')}: {avatar.id}</p>
+          <p className="text-gray-600 mt-2">
+            {t('avatars.detail.avatarId')}: {avatar.id}
+          </p>
         </div>
       </div>
 
       {/* Thumbnail */}
       {avatar.thumbnailUrl && (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <img
-            src={avatar.thumbnailUrl}
-            alt={avatar.name}
-            className="w-full max-w-md mx-auto"
-          />
+          <img src={avatar.thumbnailUrl} alt={avatar.name} className="w-full max-w-md mx-auto" />
         </div>
       )}
 
@@ -243,11 +248,8 @@ export default function AvatarDetailPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-xl font-semibold mb-4">{t('avatars.detail.tags')}</h2>
           <div className="flex flex-wrap gap-2">
-            {avatar.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 bg-indigo-50 text-indigo-700 text-sm rounded"
-              >
+            {avatar.tags.map(tag => (
+              <span key={tag} className="px-3 py-1 bg-indigo-50 text-indigo-700 text-sm rounded">
                 {tag}
               </span>
             ))}
@@ -323,8 +325,6 @@ export default function AvatarDetailPage() {
         onConfirm={handleCloneConfirm}
         variant="default"
       />
-
-
     </div>
   );
 }

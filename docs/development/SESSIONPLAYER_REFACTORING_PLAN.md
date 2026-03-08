@@ -39,10 +39,12 @@
 ### Identified Circular Dependencies
 
 #### Problem 1: handleRecordingComplete (line 305)
+
 ```typescript
 const handleRecordingComplete = useCallback(
   async (audioBlob: Blob) => {
-    if (isConnected) { // ← isConnected comes from useWebSocket (line 229)
+    if (isConnected) {
+      // ← isConnected comes from useWebSocket (line 229)
       await sendAudioData(audioBlob); // ← sendAudioData from useWebSocket
       setPendingSessionEnd(true);
     }
@@ -54,10 +56,12 @@ const handleRecordingComplete = useCallback(
 **Impact:** `handleRecordingComplete` is passed to `useAudioRecorder` (line 343), which is called AFTER `useWebSocket` initializes, but the callback itself is defined BEFORE `useWebSocket`.
 
 #### Problem 2: handleVideoChunk (line 349)
+
 ```typescript
 const handleVideoChunk = useCallback(
   async (chunk: Blob, timestamp: number) => {
-    if (isConnected && status === 'ACTIVE') { // ← isConnected from useWebSocket
+    if (isConnected && status === 'ACTIVE') {
+      // ← isConnected from useWebSocket
       await sendVideoChunk(chunk, timestamp); // ← sendVideoChunk from useWebSocket
     }
   },
@@ -68,10 +72,12 @@ const handleVideoChunk = useCallback(
 **Impact:** `handleVideoChunk` is passed to `useVideoRecorder` (line 409), called AFTER `useWebSocket`, but defined BEFORE.
 
 #### Problem 3: handleStop (line 537)
+
 ```typescript
 const handleStop = () => {
   // ...
-  if (isConnected && !pendingSessionEnd) { // ← isConnected from useWebSocket
+  if (isConnected && !pendingSessionEnd) {
+    // ← isConnected from useWebSocket
     endSession(); // ← endSession from useWebSocket
   }
 };
@@ -169,6 +175,7 @@ const endSessionRef = useRef<(() => void) | null>(null);
 **Location:** Line 305-331
 
 **Before:**
+
 ```typescript
 const handleRecordingComplete = useCallback(
   async (audioBlob: Blob) => {
@@ -183,6 +190,7 @@ const handleRecordingComplete = useCallback(
 ```
 
 **After:**
+
 ```typescript
 const handleRecordingComplete = useCallback(
   async (audioBlob: Blob) => {
@@ -218,6 +226,7 @@ const handleRecordingComplete = useCallback(
 **Location:** Line 349-366
 
 **Before:**
+
 ```typescript
 const handleVideoChunk = useCallback(
   async (chunk: Blob, timestamp: number) => {
@@ -235,6 +244,7 @@ const handleVideoChunk = useCallback(
 ```
 
 **After:**
+
 ```typescript
 const handleVideoChunk = useCallback(
   async (chunk: Blob, timestamp: number) => {
@@ -244,7 +254,7 @@ const handleVideoChunk = useCallback(
         console.log('[SessionPlayer] Video chunk sent:', {
           size: chunk.size,
           timestamp,
-          type: chunk.type
+          type: chunk.type,
         });
       } catch (error) {
         console.error('[SessionPlayer] Failed to send video chunk:', error);
@@ -283,6 +293,7 @@ useEffect(() => {
 **Location:** Line 537-577
 
 **Before:**
+
 ```typescript
 const handleStop = () => {
   // ...
@@ -294,6 +305,7 @@ const handleStop = () => {
 ```
 
 **After:**
+
 ```typescript
 const handleStop = () => {
   if (status === 'ACTIVE' || status === 'PAUSED' || status === 'READY') {
@@ -342,6 +354,7 @@ const handleStop = () => {
 **Location:** Line 257-280
 
 **Check:** This useEffect already uses `isConnected` and `endSession` directly, which is fine because:
+
 1. It's defined AFTER useWebSocket (line 229)
 2. It's in a useEffect, not a callback passed to other hooks
 
@@ -354,6 +367,7 @@ const handleStop = () => {
 After implementation, test the following scenarios:
 
 ### Basic Flow
+
 - [ ] Click "Start" button
 - [ ] WebSocket connects successfully
 - [ ] Audio recording starts
@@ -363,6 +377,7 @@ After implementation, test the following scenarios:
 - [ ] Session completes successfully
 
 ### Video Recording
+
 - [ ] Start session
 - [ ] Click "Start Recording" button
 - [ ] Verify video recording indicator shows
@@ -372,12 +387,14 @@ After implementation, test the following scenarios:
 - [ ] Check DynamoDB for recording metadata
 
 ### Error Scenarios
+
 - [ ] Deny microphone permission → verify error message
 - [ ] Deny camera permission → verify warning message
 - [ ] Stop session before audio processing completes → verify no errors
 - [ ] WebSocket disconnects during session → verify error handling
 
 ### Console Checks
+
 - [ ] No "Cannot access before initialization" errors
 - [ ] No duplicate transcript messages
 - [ ] All video chunks logged correctly
@@ -402,12 +419,15 @@ After implementation, test the following scenarios:
 ## Alternative Approaches (Not Recommended)
 
 ### Alternative 1: Move all callbacks after useWebSocket
+
 **Problem:** Would require restructuring useWebSocket to accept refs or functions, breaking its API
 
 ### Alternative 2: Extract custom hooks
+
 **Problem:** Adds complexity without solving the fundamental ordering issue
 
 ### Alternative 3: Use inline functions
+
 **Problem:** Creates new function instances on every render, poor performance
 
 ---
@@ -426,6 +446,7 @@ After implementation, test the following scenarios:
 ---
 
 **Next Steps:**
+
 1. Review this plan
 2. Implement Phase 1-5
 3. Test thoroughly

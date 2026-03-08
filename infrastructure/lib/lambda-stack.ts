@@ -50,7 +50,9 @@ export class LambdaStack extends cdk.Stack {
       memorySize: 256,
       tracing: lambda.Tracing.ACTIVE, // X-Ray有効化
       logRetention:
-        props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+        props.environment === 'production'
+          ? logs.RetentionDays.ONE_MONTH
+          : logs.RetentionDays.ONE_WEEK,
       environment: commonEnvironment,
     };
 
@@ -203,10 +205,13 @@ export class LambdaStack extends cdk.Stack {
       allowTestInvoke: props.environment !== 'production',
     });
 
-    const getCurrentUserIntegration = new apigateway.LambdaIntegration(this.getCurrentUserFunction, {
-      proxy: true,
-      allowTestInvoke: props.environment !== 'production',
-    });
+    const getCurrentUserIntegration = new apigateway.LambdaIntegration(
+      this.getCurrentUserFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
 
     // APIリソースの作成
     const apiV1 = props.restApi.root.resourceForPath('api/v1');
@@ -257,7 +262,10 @@ export class LambdaStack extends cdk.Stack {
     // CloudWatch Logs ロググループ
     const restApiLogGroup = new logs.LogGroup(this, 'RestApiLogGroup', {
       logGroupName: `/aws/apigateway/prance-rest-api-${props.environment}`,
-      retention: props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      retention:
+        props.environment === 'production'
+          ? logs.RetentionDays.ONE_MONTH
+          : logs.RetentionDays.ONE_WEEK,
       removalPolicy:
         props.environment === 'production' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });

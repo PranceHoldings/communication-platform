@@ -50,9 +50,7 @@ export class BedrockAI {
   /**
    * Generate AI response based on user input and conversation context
    */
-  async generateResponse(
-    options: GenerateResponseOptions
-  ): Promise<AIResponse> {
+  async generateResponse(options: GenerateResponseOptions): Promise<AIResponse> {
     const {
       userMessage,
       conversationHistory = [],
@@ -76,7 +74,7 @@ export class BedrockAI {
         anthropic_version: 'bedrock-2023-05-31',
         max_tokens: maxTokens,
         temperature,
-        messages: messages.map((msg) => ({
+        messages: messages.map(msg => ({
           role: msg.role,
           content: msg.content,
         })),
@@ -129,9 +127,7 @@ export class BedrockAI {
       };
     } catch (error) {
       console.error('[BedrockAI] Failed to generate response:', error);
-      throw error instanceof Error
-        ? error
-        : new Error('Failed to generate AI response');
+      throw error instanceof Error ? error : new Error('Failed to generate AI response');
     }
   }
 
@@ -187,9 +183,7 @@ Format your response as JSON with these fields: score, strengths, improvements, 
    * Stream AI response (for real-time streaming - future implementation)
    * Note: Bedrock streaming requires different SDK setup
    */
-  async *streamResponse(
-    options: GenerateResponseOptions
-  ): AsyncGenerator<string> {
+  async *streamResponse(options: GenerateResponseOptions): AsyncGenerator<string> {
     // TODO: Implement streaming using InvokeModelWithResponseStreamCommand
     // For now, return non-streaming response
     const response = await this.generateResponse(options);

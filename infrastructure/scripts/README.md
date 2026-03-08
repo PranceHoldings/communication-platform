@@ -11,15 +11,18 @@
 **目的:** `.env.local`を`infrastructure/.env`に自動同期
 
 **自動実行されるタイミング:**
+
 - `npm run deploy` の前（`predeploy`フック）
 - `./deploy.sh` の実行時
 
 **手動実行:**
+
 ```bash
 node scripts/sync-env.js
 ```
 
 **機能:**
+
 1. プロジェクトルートの`.env.local`を`infrastructure/.env`にコピー
 2. 必須APIキーの存在確認
    - `AZURE_SPEECH_KEY`
@@ -28,6 +31,7 @@ node scripts/sync-env.js
 3. エラーがある場合はプロセスを終了（exit code 1）
 
 **エラー例:**
+
 ```bash
 ❌ エラー: .env.local が見つかりません
    場所: /workspaces/prance-communication-platform/.env.local
@@ -39,6 +43,7 @@ node scripts/sync-env.js
 ```
 
 **成功例:**
+
 ```bash
 🔐 環境変数ファイルを同期中...
 ✅ 環境変数ファイル同期完了
@@ -63,7 +68,7 @@ const requiredKeys = [
   { key: 'AZURE_SPEECH_KEY', name: 'Azure Speech Services' },
   { key: 'ELEVENLABS_API_KEY', name: 'ElevenLabs' },
   { key: 'JWT_SECRET', name: 'JWT Secret' },
-  { key: 'YOUR_NEW_KEY', name: 'Your New Service' },  // ← 追加
+  { key: 'YOUR_NEW_KEY', name: 'Your New Service' }, // ← 追加
 ];
 ```
 

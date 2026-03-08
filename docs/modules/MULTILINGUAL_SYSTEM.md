@@ -25,23 +25,25 @@
 
 ### 主要機能
 
-| 機能 | 説明 |
-| ---- | ---- |
-| **コード変更不要** | 言語リソースファイルのみで新言語追加 |
-| **ホットデプロイ** | リビルド不要で即座に反映 |
-| **UI多言語化** | すべての表示テキストを多言語対応 |
+| 機能                 | 説明                                 |
+| -------------------- | ------------------------------------ |
+| **コード変更不要**   | 言語リソースファイルのみで新言語追加 |
+| **ホットデプロイ**   | リビルド不要で即座に反映             |
+| **UI多言語化**       | すべての表示テキストを多言語対応     |
 | **シナリオ多言語化** | アバターセリフ、評価基準の多言語対応 |
-| **レポート多言語化** | PDFレポート、メール通知の多言語対応 |
-| **言語選択** | ユーザー・組織単位の言語設定 |
-| **フォールバック** | 未翻訳キーは英語で表示 |
+| **レポート多言語化** | PDFレポート、メール通知の多言語対応  |
+| **言語選択**         | ユーザー・組織単位の言語設定         |
+| **フォールバック**   | 未翻訳キーは英語で表示               |
 
 ### サポート言語
 
 #### Phase 1（初期リリース）
+
 - 🇺🇸 英語（en）- デフォルト
 - 🇯🇵 日本語（ja）
 
 #### Phase 2（将来的に追加予定）
+
 - 🇨🇳 中国語（簡体字）（zh-CN）
 - 🇰🇷 韓国語（ko）
 - 🇪🇸 スペイン語（es）
@@ -75,6 +77,7 @@ https://en.platform.prance.co.jp/dashboard   ← 使用しない
 ```
 
 **理由:**
+
 - URLの共有が容易（言語に関係なく同じリンクを共有できる）
 - SEO最適化（canonical URLが1つのみ）
 - シンプルなルーティング（next-intlのロケールプレフィックス不要）
@@ -103,6 +106,7 @@ document.cookie = `NEXT_LOCALE=ja; path=/; max-age=31536000; SameSite=Lax`;
 ```
 
 **Cookie仕様:**
+
 - **名前**: `NEXT_LOCALE`
 - **値**: 言語コード（例: `en`, `ja`, `zh-CN`）
 - **有効期限**: 1年（`max-age=31536000`）
@@ -120,6 +124,7 @@ Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7
 ```
 
 **検出ロジック:**
+
 ```typescript
 function detectLanguageFromHeader(acceptLanguage: string): string {
   const supportedLocales = ['en', 'ja', 'zh-CN', 'ko', 'es', 'fr', 'de'];
@@ -209,6 +214,7 @@ CookieもAccept-Languageも有効な言語を提供しない場合、**英語（
 ```
 
 **次回アクセス時:**
+
 - Cookieが保持されているため、自動的に選択した言語（英語）で表示
 - ユーザーが再度UI上で変更するまで、この言語を使用
 
@@ -273,7 +279,9 @@ function translate(key: string, locale: string): string {
   // 2. 英語（デフォルト言語）にフォールバック
   const fallback = resources['en']?.[key];
   if (fallback) {
-    console.warn(`Translation missing for key "${key}" in locale "${locale}", using English fallback`);
+    console.warn(
+      `Translation missing for key "${key}" in locale "${locale}", using English fallback`
+    );
     return fallback;
   }
 
@@ -318,12 +326,14 @@ resources = {
 ### 1. 文字列の完全分離
 
 ❌ **悪い例（ハードコード）:**
+
 ```typescript
-const message = "セッションを開始しました";
-const error = "エラーが発生しました";
+const message = 'セッションを開始しました';
+const error = 'エラーが発生しました';
 ```
 
 ✅ **良い例（言語リソース使用）:**
+
 ```typescript
 const message = t('session.started');
 const error = t('error.generic');
@@ -490,14 +500,7 @@ s3://prance-language-resources/
       "completeness": 98
     }
   ],
-  "namespaces": [
-    "common",
-    "auth",
-    "dashboard",
-    "session",
-    "report",
-    "errors"
-  ]
+  "namespaces": ["common", "auth", "dashboard", "session", "report", "errors"]
 }
 ```
 
@@ -547,6 +550,7 @@ S3オリジン
 ```
 
 **キャッシュ無効化:**
+
 - 言語リソース更新時にCloudFront Invalidation APIを呼び出し
 - 通常1-5分で全世界に反映
 
@@ -652,7 +656,7 @@ const s3 = new S3Client({ region: 'us-east-1' });
 const cloudfront = new CloudFrontClient({ region: 'us-east-1' });
 const sns = new SNSClient({ region: 'us-east-1' });
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   const { languageCode, languageName, nativeName, flag, files } = JSON.parse(event.body || '{}');
 
   console.log(`Adding language: ${languageName} (${languageCode})`);
@@ -763,13 +767,13 @@ function incrementVersion(version: string): string {
 
 #### ホットデプロイのメリット
 
-| メリット | 説明 |
-|---------|------|
-| **迅速な展開** | 新言語を1-5分で追加可能（ビルド不要） |
-| **ダウンタイムゼロ** | サービス停止なしで言語追加 |
-| **コスト削減** | CI/CD パイプライン不要、Lambda実行のみ |
-| **A/Bテスト** | 言語リソースのA/Bテストが容易 |
-| **即座に修正** | 翻訳ミスをすぐに修正可能 |
+| メリット             | 説明                                   |
+| -------------------- | -------------------------------------- |
+| **迅速な展開**       | 新言語を1-5分で追加可能（ビルド不要）  |
+| **ダウンタイムゼロ** | サービス停止なしで言語追加             |
+| **コスト削減**       | CI/CD パイプライン不要、Lambda実行のみ |
+| **A/Bテスト**        | 言語リソースのA/Bテストが容易          |
+| **即座に修正**       | 翻訳ミスをすぐに修正可能               |
 
 #### 注意事項
 
@@ -799,7 +803,7 @@ const defaultLocale = 'en';
 function detectLanguageFromHeader(acceptLanguage: string | null): string {
   if (!acceptLanguage) return defaultLocale;
 
-  const languages = acceptLanguage.split(',').map((lang) => {
+  const languages = acceptLanguage.split(',').map(lang => {
     const [code, qValue] = lang.trim().split(';q=');
     const baseCode = code.split('-')[0].toLowerCase();
     return { code: baseCode, q: qValue ? parseFloat(qValue) : 1.0 };
@@ -1055,11 +1059,7 @@ export default function LanguageSwitcher() {
 
 ```typescript
 // lib/i18n/fallback.ts
-export function getTranslation(
-  locale: string,
-  key: string,
-  params?: Record<string, any>
-): string {
+export function getTranslation(locale: string, key: string, params?: Record<string, any>): string {
   const messages = loadMessages(locale);
 
   // 1. 指定言語で翻訳を取得
@@ -1184,25 +1184,30 @@ export default function DateTimeExample() {
 ### 重要なポイント（再確認）
 
 #### 1. URL設計
+
 - ✅ **全言語で共通URL**: `/dashboard`, `/sessions` など
 - ❌ **ロケールプレフィックスなし**: `/en/dashboard`, `/ja/dashboard` は使用しない
 
 #### 2. 言語検出の優先順位
+
 1. **Cookie** (`NEXT_LOCALE`)
 2. **Accept-Language** ヘッダー（ブラウザ設定）
 3. **デフォルト言語**（英語: en）
 
 #### 3. 言語切り替え
+
 - ユーザーがUI上で言語を選択 → **Cookieに保存**
 - 次回アクセス時に自動的に選択した言語で表示
 - 明示的にUI上で変更するまでCookieを保持
 
 #### 4. 言語リソース管理
+
 - **S3 + CloudFront** で配信
 - **ホットデプロイ**: スーパー管理者がアップロード → 1-5分で反映
 - **フォールバック**: リソースがない場合は英語にフォールバック
 
 #### 5. 集中管理
+
 - 言語検出は**Middleware**で一元管理
 - 各ページやコンポーネントで個別に言語判定を行わない
 
@@ -1233,12 +1238,14 @@ export default function DateTimeExample() {
 **ファイル:** `apps/web/middleware.ts`
 
 **実装内容:**
+
 - URLパラメータ `lang` による言語切り替え（最優先）
 - Cookie `NEXT_LOCALE` による言語保持
 - Accept-Languageヘッダーからの自動検出
 - デフォルト言語へのフォールバック
 
 **言語検出の優先順位:**
+
 ```
 1. URL parameter (?lang=en, ?lang=ja, etc.)
    → Cookie設定 + パラメータ削除してリダイレクト
@@ -1250,6 +1257,7 @@ export default function DateTimeExample() {
 **主要機能:**
 
 1. **URLパラメータ検出**
+
    ```typescript
    // /?lang=en でアクセス → Cookieに保存して / にリダイレクト
    const langParam = searchParams.get('lang');
@@ -1263,11 +1271,13 @@ export default function DateTimeExample() {
    ```
 
 2. **Cookie優先**
+
    ```typescript
    let locale = request.cookies.get('NEXT_LOCALE')?.value;
    ```
 
 3. **Accept-Language検出**
+
    ```typescript
    function detectLanguageFromHeader(acceptLanguage: string | null): string {
      // 品質値で降順ソート、サポート言語を優先選択
@@ -1281,6 +1291,7 @@ export default function DateTimeExample() {
    ```
 
 **テスト結果:**
+
 ```bash
 # URLパラメータでの切り替え
 curl 'http://localhost:3001/?lang=en' → 307 redirect to / + Cookie: NEXT_LOCALE=en
@@ -1300,10 +1311,12 @@ curl -H 'Accept-Language: fr,en;q=0.9' → HTML lang="fr"
 **ファイル:** `apps/web/app/layout.tsx`
 
 **実装内容:**
+
 - MiddlewareでセットされたHTTPヘッダー `x-locale` を取得
 - HTMLの`lang`属性を動的に設定
 
 **コード:**
+
 ```typescript
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
@@ -1318,6 +1331,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 ```
 
 **動作確認:**
+
 ```bash
 # 言語毎に正しいlang属性が設定される
 /?lang=en → <html lang="en">
@@ -1328,6 +1342,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 #### 3. サポート言語
 
 現在サポートされている言語（middleware.tsで定義）:
+
 - 🇺🇸 英語（en）- デフォルト
 - 🇯🇵 日本語（ja）
 - 🇨🇳 中国語簡体字（zh-CN）
@@ -1364,6 +1379,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 ### 技術的メモ
 
 **Cookie仕様（実装済み）:**
+
 ```typescript
 {
   name: 'NEXT_LOCALE',
@@ -1375,16 +1391,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 ```
 
 **Matcher設定（実装済み）:**
+
 ```typescript
 export const config = {
   matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 };
 ```
+
 - APIルート、Next.js内部ファイル、静的ファイルを除外
 - すべてのページリクエストでMiddlewareが実行される
 
 ---
 
 **関連ドキュメント:**
+
 - [UI/UX設計](../design/UI_UX.md)
 - [フロントエンド開発](../development/FRONTEND.md)

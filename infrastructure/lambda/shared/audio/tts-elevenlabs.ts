@@ -74,9 +74,7 @@ export class ElevenLabsTextToSpeech {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(
-          `ElevenLabs API error (${response.status}): ${errorText}`
-        );
+        throw new Error(`ElevenLabs API error (${response.status}): ${errorText}`);
       }
 
       const audioBuffer = Buffer.from(await response.arrayBuffer());
@@ -95,9 +93,7 @@ export class ElevenLabsTextToSpeech {
       };
     } catch (error) {
       console.error('[ElevenLabsTTS] Failed to generate speech:', error);
-      throw error instanceof Error
-        ? error
-        : new Error('Failed to generate speech');
+      throw error instanceof Error ? error : new Error('Failed to generate speech');
     }
   }
 
@@ -137,9 +133,7 @@ export class ElevenLabsTextToSpeech {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(
-          `ElevenLabs API error (${response.status}): ${errorText}`
-        );
+        throw new Error(`ElevenLabs API error (${response.status}): ${errorText}`);
       }
 
       if (!response.body) {
@@ -153,9 +147,7 @@ export class ElevenLabsTextToSpeech {
       return readable;
     } catch (error) {
       console.error('[ElevenLabsTTS] Failed to stream speech:', error);
-      throw error instanceof Error
-        ? error
-        : new Error('Failed to stream speech');
+      throw error instanceof Error ? error : new Error('Failed to stream speech');
     }
   }
 
@@ -240,8 +232,7 @@ export class ElevenLabsTextToSpeech {
       return {
         characterCount: data.subscription?.character_count || 0,
         characterLimit: data.subscription?.character_limit || 0,
-        canExtendCharacterLimit:
-          data.subscription?.can_extend_character_limit || false,
+        canExtendCharacterLimit: data.subscription?.can_extend_character_limit || false,
       };
     } catch (error) {
       console.error('[ElevenLabsTTS] Failed to get usage:', error);

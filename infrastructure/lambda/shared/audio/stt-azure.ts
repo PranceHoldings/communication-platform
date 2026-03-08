@@ -28,10 +28,7 @@ export class AzureSpeechToText {
   private recognizer?: sdk.SpeechRecognizer;
 
   constructor(private options: AzureSTTConfig) {
-    this.config = sdk.SpeechConfig.fromSubscription(
-      options.subscriptionKey,
-      options.region
-    );
+    this.config = sdk.SpeechConfig.fromSubscription(options.subscriptionKey, options.region);
 
     // 自動言語検出設定（推奨）
     if (options.autoDetectLanguages && options.autoDetectLanguages.length > 0) {
@@ -61,10 +58,7 @@ export class AzureSpeechToText {
 
     // 🔧 エンドサイレンスタイムアウトを延長（デフォルト → 2秒）
     // 理由: ユーザーの発話終了を正確に検出
-    this.config.setProperty(
-      sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs,
-      '2000'
-    );
+    this.config.setProperty(sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, '2000');
   }
 
   /**
@@ -133,11 +127,7 @@ export class AzureSpeechToText {
       // Handle errors
       this.recognizer.canceled = (_sender, event) => {
         if (event.reason === sdk.CancellationReason.Error) {
-          onError(
-            new Error(
-              `Azure STT Error: ${event.errorDetails} (Code: ${event.errorCode})`
-            )
-          );
+          onError(new Error(`Azure STT Error: ${event.errorDetails} (Code: ${event.errorCode})`));
         }
       };
 
@@ -151,18 +141,14 @@ export class AzureSpeechToText {
         () => {
           console.log('[AzureSTT] Continuous recognition started');
         },
-        (error) => {
+        error => {
           onError(new Error(`Failed to start recognition: ${error}`));
         }
       );
 
       return pushStream;
     } catch (error) {
-      onError(
-        error instanceof Error
-          ? error
-          : new Error('Failed to initialize Azure STT')
-      );
+      onError(error instanceof Error ? error : new Error('Failed to initialize Azure STT'));
       throw error;
     }
   }
@@ -183,7 +169,7 @@ export class AzureSpeechToText {
           this.recognizer = undefined;
           resolve();
         },
-        (error) => {
+        error => {
           console.error('[AzureSTT] Failed to stop recognition:', error);
           reject(new Error(`Failed to stop recognition: ${error}`));
         }
@@ -224,7 +210,7 @@ export class AzureSpeechToText {
         }
 
         recognizer.recognizeOnceAsync(
-          (result) => {
+          result => {
             // 検出された言語を取得（自動言語検出使用時のみ）
             // 注意: Azure Speech SDK v1.41では、結果から検出された言語を取得するための
             // 公式PropertyIdが存在しないため、ログ出力のみに使用
@@ -257,8 +243,8 @@ export class AzureSpeechToText {
               reject(
                 new Error(
                   `No speech recognized. Reason: ${sdk.NoMatchReason[noMatchDetails.reason]}. ` +
-                  `This typically means the audio contains no detectable speech, ` +
-                  `the speech is too quiet, or the audio format is incompatible.`
+                    `This typically means the audio contains no detectable speech, ` +
+                    `the speech is too quiet, or the audio format is incompatible.`
                 )
               );
             } else if (result.reason === sdk.ResultReason.Canceled) {
@@ -266,7 +252,7 @@ export class AzureSpeechToText {
               reject(
                 new Error(
                   `Recognition canceled. Reason: ${sdk.CancellationReason[cancellation.reason]}. ` +
-                  `Error: ${cancellation.errorDetails}`
+                    `Error: ${cancellation.errorDetails}`
                 )
               );
             } else {
@@ -278,7 +264,7 @@ export class AzureSpeechToText {
             }
             recognizer.close();
           },
-          (error) => {
+          error => {
             recognizer.close();
             reject(new Error(`Recognition error: ${error}`));
           }

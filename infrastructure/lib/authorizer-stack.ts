@@ -32,7 +32,9 @@ export class AuthorizerStack extends cdk.Stack {
       memorySize: 256,
       tracing: lambda.Tracing.ACTIVE,
       logRetention:
-        props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+        props.environment === 'production'
+          ? logs.RetentionDays.ONE_MONTH
+          : logs.RetentionDays.ONE_WEEK,
       functionName: `prance-authorizer-${props.environment}`,
       description: 'JWT Token Authorizer for API Gateway',
       entry: path.join(__dirname, '../lambda/auth/authorizer/index.ts'),

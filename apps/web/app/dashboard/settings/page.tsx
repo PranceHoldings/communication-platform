@@ -40,7 +40,9 @@ export default function SettingsPage() {
           </div>
           <div className="px-6 py-5 space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t('settings.profile.name')}</label>
+              <label className="block text-sm font-medium text-gray-700">
+                {t('settings.profile.name')}
+              </label>
               <input
                 type="text"
                 value={user.name}
@@ -50,7 +52,9 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t('settings.profile.email')}</label>
+              <label className="block text-sm font-medium text-gray-700">
+                {t('settings.profile.email')}
+              </label>
               <input
                 type="email"
                 value={user.email}
@@ -60,7 +64,9 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">{t('settings.profile.role')}</label>
+              <label className="block text-sm font-medium text-gray-700">
+                {t('settings.profile.role')}
+              </label>
               <input
                 type="text"
                 value={user.role}
@@ -80,8 +86,12 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900">{t('settings.preferences.emailNotifications.title')}</h4>
-                  <p className="text-sm text-gray-500">{t('settings.preferences.emailNotifications.description')}</p>
+                  <h4 className="text-sm font-medium text-gray-900">
+                    {t('settings.preferences.emailNotifications.title')}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    {t('settings.preferences.emailNotifications.description')}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -95,8 +105,12 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900">{t('settings.preferences.sessionReminders.title')}</h4>
-                  <p className="text-sm text-gray-500">{t('settings.preferences.sessionReminders.description')}</p>
+                  <h4 className="text-sm font-medium text-gray-900">
+                    {t('settings.preferences.sessionReminders.title')}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    {t('settings.preferences.sessionReminders.description')}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -145,9 +159,7 @@ export default function SettingsPage() {
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-blue-700">
-                {t('settings.comingSoon')}
-              </p>
+              <p className="text-sm text-blue-700">{t('settings.comingSoon')}</p>
             </div>
           </div>
         </div>

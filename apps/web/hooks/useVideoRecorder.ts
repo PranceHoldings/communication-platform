@@ -119,7 +119,7 @@ export function useVideoRecorder({
       mediaRecorder.ondataavailable = (event: BlobEvent) => {
         if (event.data && event.data.size > 0) {
           chunks.push(event.data);
-          setRecordedChunks((prev) => [...prev, event.data]);
+          setRecordedChunks(prev => [...prev, event.data]);
 
           // チャンクコールバック
           if (onChunk) {
@@ -165,7 +165,7 @@ export function useVideoRecorder({
 
       // 録画時間カウンター
       durationIntervalRef.current = setInterval(() => {
-        setDuration((prev) => prev + 1);
+        setDuration(prev => prev + 1);
       }, 1000);
 
       console.log('[useVideoRecorder] Recording started');
@@ -228,7 +228,7 @@ export function useVideoRecorder({
 
     // タイマー再開
     durationIntervalRef.current = setInterval(() => {
-      setDuration((prev) => prev + 1);
+      setDuration(prev => prev + 1);
     }, 1000);
 
     console.log('[useVideoRecorder] Recording resumed');

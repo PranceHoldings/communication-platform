@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/provider';
 import { getScenario, updateScenario } from '@/lib/api/scenarios';
 import { locales, defaultLocale } from '@/lib/i18n/config';
+import type { Visibility } from '@prance/shared';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -22,7 +23,7 @@ export default function EditScenarioPage() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [language, setLanguage] = useState(defaultLocale);
-  const [visibility, setVisibility] = useState<'PRIVATE' | 'ORGANIZATION' | 'PUBLIC'>('PRIVATE');
+  const [visibility, setVisibility] = useState<Visibility>('PRIVATE');
   const [configJson, setConfigJson] = useState('');
 
   // Load existing scenario data
@@ -107,7 +108,12 @@ export default function EditScenarioPage() {
           className="text-sm text-indigo-600 hover:text-indigo-900 mb-4 inline-flex items-center"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           {t('scenarios.edit.backToScenario')}
         </Link>
@@ -123,7 +129,10 @@ export default function EditScenarioPage() {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-lg border border-gray-200 p-6 space-y-6"
+      >
         {/* Title */}
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
@@ -133,7 +142,7 @@ export default function EditScenarioPage() {
             type="text"
             id="title"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={e => setTitle(e.target.value)}
             placeholder={t('scenarios.create.form.titlePlaceholder')}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             required
@@ -149,7 +158,7 @@ export default function EditScenarioPage() {
             type="text"
             id="category"
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={e => setCategory(e.target.value)}
             placeholder={t('scenarios.create.form.categoryPlaceholder')}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             required
@@ -166,10 +175,10 @@ export default function EditScenarioPage() {
             <select
               id="language"
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={e => setLanguage(e.target.value)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
-              {locales.map((locale) => (
+              {locales.map(locale => (
                 <option key={locale} value={locale}>
                   {t(`languages.${locale}`)}
                 </option>
@@ -185,7 +194,7 @@ export default function EditScenarioPage() {
             <select
               id="visibility"
               value={visibility}
-              onChange={(e) => setVisibility(e.target.value as any)}
+              onChange={e => setVisibility(e.target.value as any)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="PRIVATE">{t('scenarios.visibility.PRIVATE')}</option>
@@ -203,15 +212,13 @@ export default function EditScenarioPage() {
           <textarea
             id="configJson"
             value={configJson}
-            onChange={(e) => setConfigJson(e.target.value)}
+            onChange={e => setConfigJson(e.target.value)}
             placeholder={t('scenarios.create.form.configPlaceholder')}
             rows={10}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             required
           />
-          <p className="mt-2 text-sm text-gray-500">
-            {t('scenarios.edit.configHelp')}
-          </p>
+          <p className="mt-2 text-sm text-gray-500">{t('scenarios.edit.configHelp')}</p>
         </div>
 
         {/* Actions */}

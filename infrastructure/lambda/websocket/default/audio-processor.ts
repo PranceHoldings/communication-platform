@@ -74,11 +74,8 @@ export class AudioProcessor {
   /**
    * Process audio through complete STT -> AI -> TTS pipeline
    */
-  async processAudio(
-    options: ProcessAudioOptions
-  ): Promise<ProcessAudioResult> {
-    const { audioData, sessionId, scenarioPrompt, conversationHistory = [] } =
-      options;
+  async processAudio(options: ProcessAudioOptions): Promise<ProcessAudioResult> {
+    const { audioData, sessionId, scenarioPrompt, conversationHistory = [] } = options;
 
     console.log('[AudioProcessor] Starting pipeline:', {
       sessionId,
@@ -133,9 +130,7 @@ export class AudioProcessor {
       };
     } catch (error) {
       console.error('[AudioProcessor] Pipeline failed:', error);
-      throw error instanceof Error
-        ? error
-        : new Error('Audio processing failed');
+      throw error instanceof Error ? error : new Error('Audio processing failed');
     }
   }
 
@@ -180,7 +175,7 @@ export class AudioProcessor {
       const command = `${ffmpegPath} -i ${inputFile} -af "volume=10.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
 
       console.log('[AudioProcessor] Converting audio with ffmpeg:', command);
-      const { stdout, stderr} = await execAsync(command);
+      const { stdout, stderr } = await execAsync(command);
 
       if (stderr && !stderr.includes('Output #0')) {
         console.warn('[AudioProcessor] ffmpeg stderr:', stderr);
@@ -274,8 +269,7 @@ export class AudioProcessor {
       console.log('[AudioProcessor] Detected OGG format, converting to WAV');
       audioFormat = 'ogg';
       wavBuffer = await this.convertToWav(audioData, 'ogg');
-    }
-    else {
+    } else {
       console.log('[AudioProcessor] Unknown audio format, assuming WebM');
       audioFormat = 'unknown';
       wavBuffer = await this.convertToWav(audioData, 'unknown');
@@ -296,8 +290,8 @@ export class AudioProcessor {
       console.warn('[AudioProcessor] WARNING: Audio RMS level too low, may not contain speech');
       throw new Error(
         `Audio quality check failed: RMS level ${analysis.rmsLevel.toFixed(4)} is too low. ` +
-        `This typically means the microphone is muted, not working, or the audio is too quiet. ` +
-        `Please check your microphone settings and speak louder.`
+          `This typically means the microphone is muted, not working, or the audio is too quiet. ` +
+          `Please check your microphone settings and speak louder.`
       );
     }
 
@@ -397,11 +391,7 @@ export class AudioProcessor {
 
     try {
       // Generate AI response
-      const aiResponse = await this.generateAIResponse(
-        text,
-        scenarioPrompt,
-        conversationHistory
-      );
+      const aiResponse = await this.generateAIResponse(text, scenarioPrompt, conversationHistory);
 
       // Synthesize to speech
       const ttsResult = await this.tts.generateSpeech({

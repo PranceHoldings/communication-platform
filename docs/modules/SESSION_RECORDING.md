@@ -25,13 +25,13 @@
 
 ### 主要機能
 
-| 機能 | 説明 |
-| ---- | ---- |
-| **リアルタイムSTT** | ユーザー音声を即座にテキスト化 |
+| 機能                     | 説明                                        |
+| ------------------------ | ------------------------------------------- |
+| **リアルタイムSTT**      | ユーザー音声を即座にテキスト化              |
 | **マルチストリーム録画** | アバター映像 + ユーザーカメラ映像の同時録画 |
-| **合成録画** | 2つの映像を1つに合成（Picture-in-Picture） |
-| **クラウドストレージ** | S3 + CloudFrontで高速配信 |
-| **プライバシー保護** | 録画のオン/オフ、自動削除機能 |
+| **合成録画**             | 2つの映像を1つに合成（Picture-in-Picture）  |
+| **クラウドストレージ**   | S3 + CloudFrontで高速配信                   |
+| **プライバシー保護**     | 録画のオン/オフ、自動削除機能               |
 
 ---
 
@@ -127,7 +127,7 @@ class RealtimeSTTClient {
   }
 
   private setupWebSocket() {
-    this.ws.onmessage = (event) => {
+    this.ws.onmessage = event => {
       const data = JSON.parse(event.data);
       if (data.type === 'transcript') {
         this.onTranscript(data.text, data.isFinal);
@@ -139,7 +139,7 @@ class RealtimeSTTClient {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     this.mediaRecorder = new MediaRecorder(stream);
 
-    this.mediaRecorder.ondataavailable = (event) => {
+    this.mediaRecorder.ondataavailable = event => {
       if (event.data.size > 0) {
         this.ws.send(event.data);
       }
@@ -197,8 +197,8 @@ class SessionRecorder {
     });
 
     // データ収集
-    this.userRecorder.ondataavailable = (e) => this.chunks.user.push(e.data);
-    this.avatarRecorder.ondataavailable = (e) => this.chunks.avatar.push(e.data);
+    this.userRecorder.ondataavailable = e => this.chunks.user.push(e.data);
+    this.avatarRecorder.ondataavailable = e => this.chunks.avatar.push(e.data);
 
     this.userRecorder.start(1000); // 1秒ごと
     this.avatarRecorder.start(1000);
@@ -225,12 +225,12 @@ class SessionRecorder {
 
 ## 録画品質設定
 
-| 設定 | 標準 | 高画質 |
-| ---- | ---- | ------ |
-| 解像度 | 1280x720 | 1920x1080 |
-| フレームレート | 30fps | 60fps |
-| ビットレート | 2.5 Mbps | 5 Mbps |
-| コーデック | VP9 | H.264 |
+| 設定           | 標準     | 高画質    |
+| -------------- | -------- | --------- |
+| 解像度         | 1280x720 | 1920x1080 |
+| フレームレート | 30fps    | 60fps     |
+| ビットレート   | 2.5 Mbps | 5 Mbps    |
+| コーデック     | VP9      | H.264     |
 
 ---
 

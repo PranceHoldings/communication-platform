@@ -22,3 +22,4 @@ packages/database/.prisma/
 
 # Logs
 *.log
+cdk.out.old/

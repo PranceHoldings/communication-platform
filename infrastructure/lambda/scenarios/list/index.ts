@@ -14,7 +14,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  * - category: string (optional filter by category)
  * - visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' (optional filter)
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('List scenarios request:', JSON.stringify(event, null, 2));
 
   try {
@@ -87,6 +87,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   } catch (error) {
     console.error('Error listing scenarios:', error);
-    return errorResponse(500, 'Failed to list scenarios', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to list scenarios',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

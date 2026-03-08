@@ -38,6 +38,7 @@ interface UseWebSocketOptions {
   onProcessingUpdate?: (message: ProcessingUpdateMessage) => void;
   onSessionComplete?: (message: SessionCompleteMessage) => void;
   onError?: (message: ErrorMessage) => void;
+  onAuthenticated?: (sessionId: string) => void;
   autoConnect?: boolean;
 }
 
@@ -67,6 +68,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onProcessingUpdate,
     onSessionComplete,
     onError,
+    onAuthenticated,
     autoConnect = false,
   } = options;
 
@@ -85,6 +87,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const onProcessingUpdateRef = useRef(onProcessingUpdate);
   const onSessionCompleteRef = useRef(onSessionComplete);
   const onErrorRef = useRef(onError);
+  const onAuthenticatedRef = useRef(onAuthenticated);
 
   // Update refs on every render so they always point to the latest callbacks
   useEffect(() => {
@@ -94,6 +97,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onProcessingUpdateRef.current = onProcessingUpdate;
     onSessionCompleteRef.current = onSessionComplete;
     onErrorRef.current = onError;
+    onAuthenticatedRef.current = onAuthenticated;
   });
 
   // WebSocket endpoint from environment variable
@@ -171,7 +175,11 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             break;
 
           case 'authenticated':
-            console.log('Authentication confirmed');
+            console.log('Authentication confirmed:', message);
+            const authSessionId = (message as any).sessionId;
+            if (authSessionId) {
+              onAuthenticatedRef.current?.(authSessionId);
+            }
             break;
 
           case 'video_chunk_ack':
@@ -206,7 +214,11 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   );
 
   const connect = useCallback(() => {
-    console.log('[useWebSocket] connect() called', { wsEndpoint, token: token ? 'exists' : 'missing', isConnecting });
+    console.log('[useWebSocket] connect() called', {
+      wsEndpoint,
+      token: token ? 'exists' : 'missing',
+      isConnecting,
+    });
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       console.log('[useWebSocket] WebSocket already connected');
@@ -248,13 +260,13 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
       ws.onmessage = handleMessage;
 
-      ws.onerror = (event) => {
+      ws.onerror = event => {
         console.error('WebSocket error:', event);
         setError('WebSocket connection error');
         setIsConnecting(false);
       };
 
-      ws.onclose = (event) => {
+      ws.onclose = event => {
         console.log('WebSocket closed:', event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
@@ -263,7 +275,9 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         // Attempt reconnection if not a normal closure
         if (event.code !== 1000 && reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
-          console.log(`Attempting reconnect in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${MAX_RECONNECT_ATTEMPTS})`);
+          console.log(
+            `Attempting reconnect in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${MAX_RECONNECT_ATTEMPTS})`
+          );
 
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current += 1;
@@ -391,7 +405,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
           // Small delay between parts to avoid overwhelming WebSocket
           if (partIndex < totalParts - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 10));
+            await new Promise(resolve => setTimeout(resolve, 10));
           }
         }
 

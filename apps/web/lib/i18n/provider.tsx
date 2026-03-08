@@ -57,11 +57,7 @@ export function I18nProvider({ children, locale, messages }: I18nProviderProps) 
     window.location.reload();
   };
 
-  return (
-    <I18nContext.Provider value={{ locale, t, setLocale }}>
-      {children}
-    </I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={{ locale, t, setLocale }}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n() {

@@ -24,18 +24,19 @@
 
 ### 主要機能
 
-| 機能 | 説明 |
-| ---- | ---- |
-| **プロファイル比較** | 同じプロファイルグループ内での順位・偏差値表示 |
-| **成長トラッキング** | 過去のセッションとの比較、成長グラフ |
-| **パーソナライズド改善提案** | AIによる具体的なアドバイス生成 |
-| **プライバシー保護** | 完全匿名化、最小人数制限（N≥10） |
-| **リアルタイム更新** | 新しいセッション追加時の自動再計算 |
-| **多次元評価** | スキル別・カテゴリ別の詳細ベンチマーク |
+| 機能                         | 説明                                           |
+| ---------------------------- | ---------------------------------------------- |
+| **プロファイル比較**         | 同じプロファイルグループ内での順位・偏差値表示 |
+| **成長トラッキング**         | 過去のセッションとの比較、成長グラフ           |
+| **パーソナライズド改善提案** | AIによる具体的なアドバイス生成                 |
+| **プライバシー保護**         | 完全匿名化、最小人数制限（N≥10）               |
+| **リアルタイム更新**         | 新しいセッション追加時の自動再計算             |
+| **多次元評価**               | スキル別・カテゴリ別の詳細ベンチマーク         |
 
 ### ユースケース
 
 #### 就職・採用支援
+
 ```
 シナリオ: ソフトウェアエンジニア（中級）面接練習
 プロファイル: 20代後半、3-5年経験、IT業界
@@ -51,6 +52,7 @@
 ```
 
 #### 語学学習
+
 ```
 シナリオ: ビジネス英会話（中級）
 プロファイル: 30代前半、TOEIC 600-750、ビジネスパーソン
@@ -193,9 +195,7 @@ function calculateGroupStats(scores: number[]): GroupStats {
 
   // 中央値（Median）
   const sorted = [...scores].sort((a, b) => a - b);
-  const median = n % 2 === 0
-    ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
-    : sorted[Math.floor(n / 2)];
+  const median = n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)];
 
   // 標準偏差（Standard Deviation）
   const variance = scores.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / n;
@@ -219,7 +219,7 @@ function calculateZScore(score: number, mean: number, stdDev: number): number {
 
 // 偏差値（Deviation Value）
 function calculateDeviationValue(zScore: number): number {
-  return Math.round(50 + (zScore * 10));
+  return Math.round(50 + zScore * 10);
 }
 
 // パーセンタイル（Percentile）
@@ -627,17 +627,18 @@ async function generateImprovementSuggestions(
   benchmarks: RelativeBenchmark[]
 ): Promise<ImprovementSuggestion[]> {
   // 1. 改善が必要な領域を特定（平均以下、または下位50%）
-  const weakAreas = benchmarks.filter(b =>
-    b.userScore < b.groupStats.mean || b.percentile > 50
-  );
+  const weakAreas = benchmarks.filter(b => b.userScore < b.groupStats.mean || b.percentile > 50);
 
   if (weakAreas.length === 0) {
-    return [{
-      priority: 'low',
-      title: '優れたパフォーマンス',
-      description: 'すべての評価項目で平均以上のスコアを達成しています。この調子で継続してください。',
-      estimatedImprovement: null,
-    }];
+    return [
+      {
+        priority: 'low',
+        title: '優れたパフォーマンス',
+        description:
+          'すべての評価項目で平均以上のスコアを達成しています。この調子で継続してください。',
+        estimatedImprovement: null,
+      },
+    ];
   }
 
   // 2. 優先順位付け（改善余地が大きい順）
@@ -710,10 +711,10 @@ const PRIVACY_RULES = {
 
   // 個人識別不可能な属性のみ使用
   ALLOWED_ATTRIBUTES: [
-    'ageGroup',      // 10年単位
+    'ageGroup', // 10年単位
     'experienceLevel', // 段階評価
-    'industry',      // 業界カテゴリ
-    'jobFunction',   // 職種カテゴリ
+    'industry', // 業界カテゴリ
+    'jobFunction', // 職種カテゴリ
     'scenarioCategory',
     'scenarioDifficulty',
     'language',
@@ -771,18 +772,20 @@ function checkKAnonymity(benchmark: RelativeBenchmark, k: number): boolean {
 // データ削除リクエスト対応
 async function handleDataDeletionRequest(userId: string): Promise<void> {
   // 1. ユーザーの全セッション履歴を削除
-  await dynamodb.query({
-    TableName: 'UserSessionHistory',
-    KeyConditionExpression: 'PK = :pk',
-    ExpressionAttributeValues: { ':pk': `USER#${userId}` },
-  }).then(async (result) => {
-    for (const item of result.Items) {
-      await dynamodb.delete({
-        TableName: 'UserSessionHistory',
-        Key: { PK: item.PK, SK: item.SK },
-      });
-    }
-  });
+  await dynamodb
+    .query({
+      TableName: 'UserSessionHistory',
+      KeyConditionExpression: 'PK = :pk',
+      ExpressionAttributeValues: { ':pk': `USER#${userId}` },
+    })
+    .then(async result => {
+      for (const item of result.Items) {
+        await dynamodb.delete({
+          TableName: 'UserSessionHistory',
+          Key: { PK: item.PK, SK: item.SK },
+        });
+      }
+    });
 
   // 2. ベンチマークキャッシュから該当データを除外（再計算）
   // Note: 匿名化されているため、個人特定は不可能
@@ -845,7 +848,7 @@ States:
 
   SkipBenchmark:
     Type: Pass
-    Result: "Group size too small"
+    Result: 'Group size too small'
     End: true
 
   Success:
@@ -856,7 +859,7 @@ States:
 
 ```typescript
 // GET /api/v1/sessions/:sessionId/benchmark
-export const getBenchmark: APIGatewayProxyHandler = async (event) => {
+export const getBenchmark: APIGatewayProxyHandler = async event => {
   const { sessionId } = event.pathParameters;
   const { userId } = event.requestContext.authorizer;
 
@@ -876,7 +879,7 @@ export const getBenchmark: APIGatewayProxyHandler = async (event) => {
 
   // 3. ベンチマーク取得（キャッシュから）
   const benchmarks = await Promise.all(
-    session.evaluationScores.map(async (score) => {
+    session.evaluationScores.map(async score => {
       const cache = await getBenchmarkCache(profileHash, score.metric);
 
       if (!cache) {
@@ -889,9 +892,7 @@ export const getBenchmark: APIGatewayProxyHandler = async (event) => {
 
   // 4. 成長トレンド分析
   const trends = await Promise.all(
-    session.evaluationScores.map(score =>
-      analyzeGrowthTrend(userId, score.metric, 10)
-    )
+    session.evaluationScores.map(score => analyzeGrowthTrend(userId, score.metric, 10))
   );
 
   // 5. 改善提案生成
@@ -931,6 +932,7 @@ export const getBenchmark: APIGatewayProxyHandler = async (event) => {
 ---
 
 **関連ドキュメント:**
+
 - [レポートモジュール](REPORT_MODULE.md)
 - [解析モジュール](ANALYSIS_MODULE.md)
 - [データベース設計](../development/DATABASE_DESIGN.md)

@@ -227,7 +227,7 @@ import { Button } from '@/components/ui/button';
 
 <Button variant="default" size="lg">
   Click me
-</Button>
+</Button>;
 ```
 
 ### フォーム
@@ -271,6 +271,7 @@ const form = useForm({
 ### 問題: ビルドエラー `Module not found`
 
 **解決方法:**
+
 ```bash
 # node_modules削除 & 再インストール
 rm -rf node_modules package-lock.json
@@ -280,6 +281,7 @@ npm install
 ### 問題: 翻訳が表示されない
 
 **解決方法:**
+
 1. `messages/{locale}/{file}.json`にキーが存在するか確認
 2. `lib/i18n/messages.ts`にインポートされているか確認
 3. 開発サーバーを再起動
@@ -289,6 +291,7 @@ npm install
 ### 問題: APIリクエストが401エラー
 
 **解決方法:**
+
 1. `/login`でログインし直す
 2. `localStorage`の`accessToken`を確認
 3. トークンの有効期限（24時間）を確認

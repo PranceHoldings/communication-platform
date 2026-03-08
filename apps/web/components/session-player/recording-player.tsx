@@ -83,9 +83,7 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
       setCurrentTime(time);
 
       // アクティブなトランスクリプトを特定
-      const active = transcripts.find(
-        (t) => time >= t.timestampStart && time <= t.timestampEnd
-      );
+      const active = transcripts.find(t => time >= t.timestampStart && time <= t.timestampEnd);
       setActiveTranscriptId(active?.id || null);
     }
   };
@@ -215,7 +213,7 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
               {/* 再生速度 */}
               <div className="flex items-center gap-2">
                 <span className="text-white text-sm">{t('sessions.player.recording.speed')}:</span>
-                {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((rate) => (
+                {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(rate => (
                   <button
                     key={rate}
                     onClick={() => handlePlaybackRateChange(rate)}
@@ -259,7 +257,7 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">{t('sessions.player.transcript.title')}</h3>
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {transcripts.map((transcript) => (
+            {transcripts.map(transcript => (
               <button
                 key={transcript.id}
                 onClick={() => handleTranscriptClick(transcript.timestampStart)}

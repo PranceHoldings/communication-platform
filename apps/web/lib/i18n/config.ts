@@ -64,7 +64,7 @@ export const LOCALE_URL_PARAM = 'lang';
  */
 export function isValidLocale(locale: string | null | undefined): boolean {
   if (!locale) return false;
-  return locales.includes(locale as typeof locales[number]);
+  return locales.includes(locale as (typeof locales)[number]);
 }
 
 /**

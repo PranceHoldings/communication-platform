@@ -22,7 +22,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  *   "allowCloning": boolean (optional)
  * }
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Update avatar request:', JSON.stringify(event, null, 2));
 
   try {
@@ -71,13 +71,27 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return errorResponse(403, 'Access denied: Only super admins can update PRESET avatars');
       }
       if (existingAvatar.orgId !== user.orgId) {
-        return errorResponse(403, 'Access denied: You can only update avatars from your organization');
+        return errorResponse(
+          403,
+          'Access denied: You can only update avatars from your organization'
+        );
       }
     }
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { name, type, style, source, modelUrl, thumbnailUrl, configJson, tags, visibility, allowCloning } = body;
+    const {
+      name,
+      type,
+      style,
+      source,
+      modelUrl,
+      thumbnailUrl,
+      configJson,
+      tags,
+      visibility,
+      allowCloning,
+    } = body;
 
     // Validate type if provided
     if (type && !['TWO_D', 'THREE_D'].includes(type)) {
@@ -91,7 +105,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate source if provided
     if (source && !['PRESET', 'GENERATED', 'ORG_CUSTOM'].includes(source)) {
-      return errorResponse(400, 'Validation Error', 'source must be PRESET, GENERATED, or ORG_CUSTOM');
+      return errorResponse(
+        400,
+        'Validation Error',
+        'source must be PRESET, GENERATED, or ORG_CUSTOM'
+      );
     }
 
     // Only SUPER_ADMIN can change source to PRESET
@@ -101,7 +119,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate visibility if provided
     if (visibility && !['PRIVATE', 'ORGANIZATION', 'PUBLIC'].includes(visibility)) {
-      return errorResponse(400, 'Validation Error', 'visibility must be PRIVATE, ORGANIZATION, or PUBLIC');
+      return errorResponse(
+        400,
+        'Validation Error',
+        'visibility must be PRIVATE, ORGANIZATION, or PUBLIC'
+      );
     }
 
     // Validate configJson if provided
@@ -161,6 +183,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return successResponse(avatar);
   } catch (error) {
     console.error('Error updating avatar:', error);
-    return errorResponse(500, 'Failed to update avatar', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to update avatar',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

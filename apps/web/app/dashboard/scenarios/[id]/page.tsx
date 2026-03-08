@@ -22,10 +22,10 @@ export default function ScenarioDetailPage() {
 
   const scenarioId = params.id as string;
   const currentUser = authApi.getCurrentUser();
-  const canDelete = currentUser && scenario && (
-    scenario.orgId === currentUser.orgId ||
-    currentUser.role === 'SUPER_ADMIN'
-  );
+  const canDelete =
+    currentUser &&
+    scenario &&
+    (scenario.orgId === currentUser.orgId || currentUser.role === 'SUPER_ADMIN');
 
   useEffect(() => {
     loadScenario();
@@ -115,12 +115,19 @@ export default function ScenarioDetailPage() {
             className="text-sm text-indigo-600 hover:text-indigo-900 mb-2 inline-flex items-center"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             {t('scenarios.detail.backToList')}
           </Link>
           <h1 className="text-3xl font-bold">{scenario.title}</h1>
-          <p className="text-gray-600 mt-2">{t('scenarios.detail.scenarioId')}: {scenario.id}</p>
+          <p className="text-gray-600 mt-2">
+            {t('scenarios.detail.scenarioId')}: {scenario.id}
+          </p>
         </div>
       </div>
 

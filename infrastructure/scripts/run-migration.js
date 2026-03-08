@@ -1,36 +1,36 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const pg_1 = require("pg");
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+const pg_1 = require('pg');
 /**
  * Manual migration script to apply nullable session relations
  * This runs the SQL from migration: 20260305133845_make_session_relations_nullable
  */
 async function runMigration() {
-    const client = new pg_1.Client({
-        connectionString: process.env.DATABASE_URL,
-    });
-    try {
-        await client.connect();
-        console.log('Connected to database');
-        console.log('Starting migration...');
-        // Step 1: Drop existing foreign key constraints
-        console.log('Step 1: Dropping foreign key constraints...');
-        await client.query(`
+  const client = new pg_1.Client({
+    connectionString: process.env.DATABASE_URL,
+  });
+  try {
+    await client.connect();
+    console.log('Connected to database');
+    console.log('Starting migration...');
+    // Step 1: Drop existing foreign key constraints
+    console.log('Step 1: Dropping foreign key constraints...');
+    await client.query(`
       ALTER TABLE "sessions" DROP CONSTRAINT IF EXISTS "sessions_avatar_id_fkey";
     `);
-        await client.query(`
+    await client.query(`
       ALTER TABLE "sessions" DROP CONSTRAINT IF EXISTS "sessions_scenario_id_fkey";
     `);
-        // Step 2: Make columns nullable
-        console.log('Step 2: Making columns nullable...');
-        await client.query(`
+    // Step 2: Make columns nullable
+    console.log('Step 2: Making columns nullable...');
+    await client.query(`
       ALTER TABLE "sessions"
       ALTER COLUMN "scenario_id" DROP NOT NULL,
       ALTER COLUMN "avatar_id" DROP NOT NULL;
     `);
-        // Step 3: Add foreign keys with SET NULL
-        console.log('Step 3: Adding foreign keys with ON DELETE SET NULL...');
-        await client.query(`
+    // Step 3: Add foreign keys with SET NULL
+    console.log('Step 3: Adding foreign keys with ON DELETE SET NULL...');
+    await client.query(`
       ALTER TABLE "sessions"
       ADD CONSTRAINT "sessions_scenario_id_fkey"
       FOREIGN KEY ("scenario_id")
@@ -38,7 +38,7 @@ async function runMigration() {
       ON DELETE SET NULL
       ON UPDATE CASCADE;
     `);
-        await client.query(`
+    await client.query(`
       ALTER TABLE "sessions"
       ADD CONSTRAINT "sessions_avatar_id_fkey"
       FOREIGN KEY ("avatar_id")
@@ -46,23 +46,21 @@ async function runMigration() {
       ON DELETE SET NULL
       ON UPDATE CASCADE;
     `);
-        console.log('✅ Migration completed successfully!');
-    }
-    catch (error) {
-        console.error('❌ Migration failed:', error);
-        throw error;
-    }
-    finally {
-        await client.end();
-    }
+    console.log('✅ Migration completed successfully!');
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    throw error;
+  } finally {
+    await client.end();
+  }
 }
 runMigration()
-    .then(() => {
+  .then(() => {
     console.log('Done');
     process.exit(0);
-})
-    .catch((error) => {
+  })
+  .catch(error => {
     console.error('Error:', error);
     process.exit(1);
-});
+  });
 //# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicnVuLW1pZ3JhdGlvbi5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbInJ1bi1taWdyYXRpb24udHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7QUFBQSwyQkFBNEI7QUFFNUI7OztHQUdHO0FBRUgsS0FBSyxVQUFVLFlBQVk7SUFDekIsTUFBTSxNQUFNLEdBQUcsSUFBSSxXQUFNLENBQUM7UUFDeEIsZ0JBQWdCLEVBQUUsT0FBTyxDQUFDLEdBQUcsQ0FBQyxZQUFZO0tBQzNDLENBQUMsQ0FBQztJQUVILElBQUksQ0FBQztRQUNILE1BQU0sTUFBTSxDQUFDLE9BQU8sRUFBRSxDQUFDO1FBQ3ZCLE9BQU8sQ0FBQyxHQUFHLENBQUMsdUJBQXVCLENBQUMsQ0FBQztRQUNyQyxPQUFPLENBQUMsR0FBRyxDQUFDLHVCQUF1QixDQUFDLENBQUM7UUFFckMsZ0RBQWdEO1FBQ2hELE9BQU8sQ0FBQyxHQUFHLENBQUMsNkNBQTZDLENBQUMsQ0FBQztRQUMzRCxNQUFNLE1BQU0sQ0FBQyxLQUFLLENBQUM7O0tBRWxCLENBQUMsQ0FBQztRQUNILE1BQU0sTUFBTSxDQUFDLEtBQUssQ0FBQzs7S0FFbEIsQ0FBQyxDQUFDO1FBRUgsZ0NBQWdDO1FBQ2hDLE9BQU8sQ0FBQyxHQUFHLENBQUMsb0NBQW9DLENBQUMsQ0FBQztRQUNsRCxNQUFNLE1BQU0sQ0FBQyxLQUFLLENBQUM7Ozs7S0FJbEIsQ0FBQyxDQUFDO1FBRUgseUNBQXlDO1FBQ3pDLE9BQU8sQ0FBQyxHQUFHLENBQUMsd0RBQXdELENBQUMsQ0FBQztRQUN0RSxNQUFNLE1BQU0sQ0FBQyxLQUFLLENBQUM7Ozs7Ozs7S0FPbEIsQ0FBQyxDQUFDO1FBQ0gsTUFBTSxNQUFNLENBQUMsS0FBSyxDQUFDOzs7Ozs7O0tBT2xCLENBQUMsQ0FBQztRQUVILE9BQU8sQ0FBQyxHQUFHLENBQUMscUNBQXFDLENBQUMsQ0FBQztJQUNyRCxDQUFDO0lBQUMsT0FBTyxLQUFLLEVBQUUsQ0FBQztRQUNmLE9BQU8sQ0FBQyxLQUFLLENBQUMscUJBQXFCLEVBQUUsS0FBSyxDQUFDLENBQUM7UUFDNUMsTUFBTSxLQUFLLENBQUM7SUFDZCxDQUFDO1lBQVMsQ0FBQztRQUNULE1BQU0sTUFBTSxDQUFDLEdBQUcsRUFBRSxDQUFDO0lBQ3JCLENBQUM7QUFDSCxDQUFDO0FBRUQsWUFBWSxFQUFFO0tBQ1gsSUFBSSxDQUFDLEdBQUcsRUFBRTtJQUNULE9BQU8sQ0FBQyxHQUFHLENBQUMsTUFBTSxDQUFDLENBQUM7SUFDcEIsT0FBTyxDQUFDLElBQUksQ0FBQyxDQUFDLENBQUMsQ0FBQztBQUNsQixDQUFDLENBQUM7S0FDRCxLQUFLLENBQUMsQ0FBQyxLQUFLLEVBQUUsRUFBRTtJQUNmLE9BQU8sQ0FBQyxLQUFLLENBQUMsUUFBUSxFQUFFLEtBQUssQ0FBQyxDQUFDO0lBQy9CLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQyxDQUFDLENBQUM7QUFDbEIsQ0FBQyxDQUFDLENBQUMiLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBDbGllbnQgfSBmcm9tICdwZyc7XG5cbi8qKlxuICogTWFudWFsIG1pZ3JhdGlvbiBzY3JpcHQgdG8gYXBwbHkgbnVsbGFibGUgc2Vzc2lvbiByZWxhdGlvbnNcbiAqIFRoaXMgcnVucyB0aGUgU1FMIGZyb20gbWlncmF0aW9uOiAyMDI2MDMwNTEzMzg0NV9tYWtlX3Nlc3Npb25fcmVsYXRpb25zX251bGxhYmxlXG4gKi9cblxuYXN5bmMgZnVuY3Rpb24gcnVuTWlncmF0aW9uKCkge1xuICBjb25zdCBjbGllbnQgPSBuZXcgQ2xpZW50KHtcbiAgICBjb25uZWN0aW9uU3RyaW5nOiBwcm9jZXNzLmVudi5EQVRBQkFTRV9VUkwsXG4gIH0pO1xuXG4gIHRyeSB7XG4gICAgYXdhaXQgY2xpZW50LmNvbm5lY3QoKTtcbiAgICBjb25zb2xlLmxvZygnQ29ubmVjdGVkIHRvIGRhdGFiYXNlJyk7XG4gICAgY29uc29sZS5sb2coJ1N0YXJ0aW5nIG1pZ3JhdGlvbi4uLicpO1xuXG4gICAgLy8gU3RlcCAxOiBEcm9wIGV4aXN0aW5nIGZvcmVpZ24ga2V5IGNvbnN0cmFpbnRzXG4gICAgY29uc29sZS5sb2coJ1N0ZXAgMTogRHJvcHBpbmcgZm9yZWlnbiBrZXkgY29uc3RyYWludHMuLi4nKTtcbiAgICBhd2FpdCBjbGllbnQucXVlcnkoYFxuICAgICAgQUxURVIgVEFCTEUgXCJzZXNzaW9uc1wiIERST1AgQ09OU1RSQUlOVCBJRiBFWElTVFMgXCJzZXNzaW9uc19hdmF0YXJfaWRfZmtleVwiO1xuICAgIGApO1xuICAgIGF3YWl0IGNsaWVudC5xdWVyeShgXG4gICAgICBBTFRFUiBUQUJMRSBcInNlc3Npb25zXCIgRFJPUCBDT05TVFJBSU5UIElGIEVYSVNUUyBcInNlc3Npb25zX3NjZW5hcmlvX2lkX2ZrZXlcIjtcbiAgICBgKTtcblxuICAgIC8vIFN0ZXAgMjogTWFrZSBjb2x1bW5zIG51bGxhYmxlXG4gICAgY29uc29sZS5sb2coJ1N0ZXAgMjogTWFraW5nIGNvbHVtbnMgbnVsbGFibGUuLi4nKTtcbiAgICBhd2FpdCBjbGllbnQucXVlcnkoYFxuICAgICAgQUxURVIgVEFCTEUgXCJzZXNzaW9uc1wiXG4gICAgICBBTFRFUiBDT0xVTU4gXCJzY2VuYXJpb19pZFwiIERST1AgTk9UIE5VTEwsXG4gICAgICBBTFRFUiBDT0xVTU4gXCJhdmF0YXJfaWRcIiBEUk9QIE5PVCBOVUxMO1xuICAgIGApO1xuXG4gICAgLy8gU3RlcCAzOiBBZGQgZm9yZWlnbiBrZXlzIHdpdGggU0VUIE5VTExcbiAgICBjb25zb2xlLmxvZygnU3RlcCAzOiBBZGRpbmcgZm9yZWlnbiBrZXlzIHdpdGggT04gREVMRVRFIFNFVCBOVUxMLi4uJyk7XG4gICAgYXdhaXQgY2xpZW50LnF1ZXJ5KGBcbiAgICAgIEFMVEVSIFRBQkxFIFwic2Vzc2lvbnNcIlxuICAgICAgQUREIENPTlNUUkFJTlQgXCJzZXNzaW9uc19zY2VuYXJpb19pZF9ma2V5XCJcbiAgICAgIEZPUkVJR04gS0VZIChcInNjZW5hcmlvX2lkXCIpXG4gICAgICBSRUZFUkVOQ0VTIFwic2NlbmFyaW9zXCIoXCJpZFwiKVxuICAgICAgT04gREVMRVRFIFNFVCBOVUxMXG4gICAgICBPTiBVUERBVEUgQ0FTQ0FERTtcbiAgICBgKTtcbiAgICBhd2FpdCBjbGllbnQucXVlcnkoYFxuICAgICAgQUxURVIgVEFCTEUgXCJzZXNzaW9uc1wiXG4gICAgICBBREQgQ09OU1RSQUlOVCBcInNlc3Npb25zX2F2YXRhcl9pZF9ma2V5XCJcbiAgICAgIEZPUkVJR04gS0VZIChcImF2YXRhcl9pZFwiKVxuICAgICAgUkVGRVJFTkNFUyBcImF2YXRhcnNcIihcImlkXCIpXG4gICAgICBPTiBERUxFVEUgU0VUIE5VTExcbiAgICAgIE9OIFVQREFURSBDQVNDQURFO1xuICAgIGApO1xuXG4gICAgY29uc29sZS5sb2coJ+KchSBNaWdyYXRpb24gY29tcGxldGVkIHN1Y2Nlc3NmdWxseSEnKTtcbiAgfSBjYXRjaCAoZXJyb3IpIHtcbiAgICBjb25zb2xlLmVycm9yKCfinYwgTWlncmF0aW9uIGZhaWxlZDonLCBlcnJvcik7XG4gICAgdGhyb3cgZXJyb3I7XG4gIH0gZmluYWxseSB7XG4gICAgYXdhaXQgY2xpZW50LmVuZCgpO1xuICB9XG59XG5cbnJ1bk1pZ3JhdGlvbigpXG4gIC50aGVuKCgpID0+IHtcbiAgICBjb25zb2xlLmxvZygnRG9uZScpO1xuICAgIHByb2Nlc3MuZXhpdCgwKTtcbiAgfSlcbiAgLmNhdGNoKChlcnJvcikgPT4ge1xuICAgIGNvbnNvbGUuZXJyb3IoJ0Vycm9yOicsIGVycm9yKTtcbiAgICBwcm9jZXNzLmV4aXQoMSk7XG4gIH0pO1xuIl19

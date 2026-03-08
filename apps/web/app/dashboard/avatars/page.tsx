@@ -97,18 +97,8 @@ export default function AvatarsPage() {
           href="/dashboard/avatars/new"
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           {t('avatars.create.button')}
         </Link>
@@ -124,7 +114,7 @@ export default function AvatarsPage() {
             </label>
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
+              onChange={e => setTypeFilter(e.target.value as any)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">{t('avatars.list.filter.all')}</option>
@@ -140,7 +130,7 @@ export default function AvatarsPage() {
             </label>
             <select
               value={styleFilter}
-              onChange={(e) => setStyleFilter(e.target.value as any)}
+              onChange={e => setStyleFilter(e.target.value as any)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">{t('avatars.list.filter.all')}</option>
@@ -156,7 +146,7 @@ export default function AvatarsPage() {
             </label>
             <select
               value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value as any)}
+              onChange={e => setSourceFilter(e.target.value as any)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">{t('avatars.list.filter.all')}</option>
@@ -180,12 +170,7 @@ export default function AvatarsPage() {
           </div>
         ) : avatars.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-            <svg
-              className="w-12 h-12 mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -198,7 +183,7 @@ export default function AvatarsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-            {avatars.map((avatar) => (
+            {avatars.map(avatar => (
               <Link
                 key={avatar.id}
                 href={`/dashboard/avatars/${avatar.id}`}
@@ -254,7 +239,7 @@ export default function AvatarsPage() {
 
                   {avatar.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
-                      {avatar.tags.slice(0, 3).map((tag) => (
+                      {avatar.tags.slice(0, 3).map(tag => (
                         <span
                           key={tag}
                           className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded"

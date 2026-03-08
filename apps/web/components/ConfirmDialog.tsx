@@ -54,7 +54,7 @@ export default function ConfirmDialog({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
           className="bg-white rounded-lg shadow-xl max-w-md w-full transform transition-all"
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-200">

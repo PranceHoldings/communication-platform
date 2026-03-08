@@ -30,12 +30,12 @@ ns-1593.awsdns-07.co.uk
 
 ### 設定内容
 
-| ホスト名 | TYPE | TTL | VALUE |
-|---------|------|-----|-------|
-| `platform` | NS | 3600 | `ns-786.awsdns-34.net` |
-| `platform` | NS | 3600 | `ns-1297.awsdns-34.org` |
-| `platform` | NS | 3600 | `ns-65.awsdns-08.com` |
-| `platform` | NS | 3600 | `ns-1593.awsdns-07.co.uk` |
+| ホスト名   | TYPE | TTL  | VALUE                     |
+| ---------- | ---- | ---- | ------------------------- |
+| `platform` | NS   | 3600 | `ns-786.awsdns-34.net`    |
+| `platform` | NS   | 3600 | `ns-1297.awsdns-34.org`   |
+| `platform` | NS   | 3600 | `ns-65.awsdns-08.com`     |
+| `platform` | NS   | 3600 | `ns-1593.awsdns-07.co.uk` |
 
 ### 設定手順
 
@@ -81,6 +81,7 @@ dig NS platform.prance.co.jp +short
 **原因:** DNS伝播がまだ完了していない
 
 **対処:**
+
 - 5-10分待ってから再度確認
 - お名前.comの設定を再確認
 - DNSキャッシュをクリア
@@ -92,6 +93,7 @@ dig NS platform.prance.co.jp +short
 **原因:** DNS伝播が完了していない、またはお名前.comでNSレコードが設定されていない
 
 **対処:**
+
 - NSレコード伝播を確認（`dig`コマンド）
 - お名前.comの設定を再確認
 

@@ -8,7 +8,11 @@ import type { Avatar } from '@prance/shared';
 import { getAvatar } from '@/lib/api/avatars';
 import { getScenario, type Scenario } from '@/lib/api/scenarios';
 import { SessionPlayer } from '@/components/session-player';
-import { RecordingPlayer, type Recording, type Transcript } from '@/components/session-player/recording-player';
+import {
+  RecordingPlayer,
+  type Recording,
+  type Transcript,
+} from '@/components/session-player/recording-player';
 import Link from 'next/link';
 
 export default function SessionDetailPage() {
@@ -100,7 +104,9 @@ export default function SessionDetailPage() {
             clipRule="evenodd"
           />
         </svg>
-        <span className="text-gray-900 font-medium">{t('sessions.detail.session')} {sessionId.slice(0, 8)}...</span>
+        <span className="text-gray-900 font-medium">
+          {t('sessions.detail.session')} {sessionId.slice(0, 8)}...
+        </span>
       </div>
 
       {/* セッションプレイヤー or 録画プレイヤー */}

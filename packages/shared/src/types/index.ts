@@ -381,6 +381,22 @@ export interface PongMessage extends WebSocketMessageBase {
 }
 
 /**
+ * バージョン情報メッセージ（サーバー → クライアント）
+ */
+export interface VersionMessage extends WebSocketMessageBase {
+  type: 'version';
+  version: string;
+  name: string;
+  runtime?: string;
+  audioProcessing?: {
+    volume: string;
+    compressor: string;
+    sttAutoDetect: boolean;
+    languages: string[];
+  };
+}
+
+/**
  * クライアントからサーバーへのメッセージ（Union型）
  */
 export type ClientToServerMessage =
@@ -404,4 +420,5 @@ export type ServerToClientMessage =
   | VideoReadyMessage
   | SessionCompleteMessage
   | ErrorMessage
-  | PongMessage;
+  | PongMessage
+  | VersionMessage;

@@ -16,7 +16,7 @@ async function main() {
 
   // Check if test user already exists
   const existingUser = await prisma.user.findUnique({
-    where: { email: 'test@example.com' }
+    where: { email: 'test@example.com' },
   });
 
   if (existingUser) {
@@ -65,7 +65,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch(e => {
     console.error('Error:', e);
     process.exit(1);
   })

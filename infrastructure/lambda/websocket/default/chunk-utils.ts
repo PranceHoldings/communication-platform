@@ -111,14 +111,8 @@ export function validateChunkOrder(chunks: S3Object[]): {
  * @param context - Context label (e.g., 'audio', 'video')
  * @param count - Number of items to log (default: 5)
  */
-export function logSortedChunks(
-  chunks: S3Object[],
-  context: string,
-  count: number = 5
-): void {
-  const preview = chunks
-    .slice(0, count)
-    .map(c => c.Key?.split('/').pop() || 'unknown');
+export function logSortedChunks(chunks: S3Object[], context: string, count: number = 5): void {
+  const preview = chunks.slice(0, count).map(c => c.Key?.split('/').pop() || 'unknown');
 
   console.log(`[${context}] Sorted chunks (first ${count}):`, preview);
 

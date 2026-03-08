@@ -17,7 +17,7 @@ interface QuickActionsProps {
 export default function QuickActions({ actions }: QuickActionsProps) {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {actions.map((action) => (
+      {actions.map(action => (
         <Link
           key={action.name}
           href={action.href}

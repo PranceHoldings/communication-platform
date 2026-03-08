@@ -21,7 +21,7 @@ import {
  *   "metadata": {}  // optional
  * }
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Create session request:', JSON.stringify(event, null, 2));
 
   try {

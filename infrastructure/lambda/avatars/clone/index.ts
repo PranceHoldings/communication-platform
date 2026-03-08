@@ -14,7 +14,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  * - Original avatar must have allowCloning = true
  * - Original avatar must be from a different organization
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Clone avatar request:', JSON.stringify(event, null, 2));
 
   try {
@@ -111,6 +111,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     );
   } catch (error) {
     console.error('Error cloning avatar:', error);
-    return errorResponse(500, 'Failed to clone avatar', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to clone avatar',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

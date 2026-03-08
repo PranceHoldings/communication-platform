@@ -25,19 +25,20 @@
 
 ### 主要機能
 
-| 機能 | 説明 |
-| ---- | ---- |
-| **APIキー管理** | 組織ごとのAPIキー発行・管理・無効化 |
-| **階層的レート制限** | グローバル・組織・APIキーレベルの制限 |
-| **OpenAPI仕様** | Swagger/OpenAPI 3.0準拠の自動生成ドキュメント |
-| **Webhook統合** | セッション完了、レポート生成等のイベント通知 |
-| **使用状況トラッキング** | リクエスト数、データ転送量、エラー率の監視 |
-| **バージョニング** | APIバージョン管理（v1, v2...） |
-| **認証・認可** | API Key + JWT、スコープベースの権限管理 |
+| 機能                     | 説明                                          |
+| ------------------------ | --------------------------------------------- |
+| **APIキー管理**          | 組織ごとのAPIキー発行・管理・無効化           |
+| **階層的レート制限**     | グローバル・組織・APIキーレベルの制限         |
+| **OpenAPI仕様**          | Swagger/OpenAPI 3.0準拠の自動生成ドキュメント |
+| **Webhook統合**          | セッション完了、レポート生成等のイベント通知  |
+| **使用状況トラッキング** | リクエスト数、データ転送量、エラー率の監視    |
+| **バージョニング**       | APIバージョン管理（v1, v2...）                |
+| **認証・認可**           | API Key + JWT、スコープベースの権限管理       |
 
 ### ユースケース
 
 #### 1. ATS連携（採用管理システム）
+
 ```
 ATSシステム → Prance API
 1. 候補者情報を送信
@@ -47,6 +48,7 @@ ATSシステム → Prance API
 ```
 
 #### 2. LMS連携（学習管理システム）
+
 ```
 LMSシステム → Prance API
 1. 学生アカウントを一括登録
@@ -56,6 +58,7 @@ LMSシステム → Prance API
 ```
 
 #### 3. カスタムアプリケーション
+
 ```
 モバイルアプリ → Prance API
 1. セッション一覧を取得
@@ -70,11 +73,11 @@ LMSシステム → Prance API
 
 ### APIキーの種類
 
-| タイプ | スコープ | 有効期限 | 用途 |
-| ------ | -------- | -------- | ---- |
-| **本番キー** | フルアクセス | 無期限（手動無効化まで） | 本番環境 |
-| **テストキー** | 制限付きアクセス | 無期限 | 開発・テスト環境 |
-| **一時キー** | 制限付きアクセス | 1-30日 | デモ、トライアル |
+| タイプ         | スコープ         | 有効期限                 | 用途             |
+| -------------- | ---------------- | ------------------------ | ---------------- |
+| **本番キー**   | フルアクセス     | 無期限（手動無効化まで） | 本番環境         |
+| **テストキー** | 制限付きアクセス | 無期限                   | 開発・テスト環境 |
+| **一時キー**   | 制限付きアクセス | 1-30日                   | デモ、トライアル |
 
 ### APIキーデータモデル
 
@@ -198,7 +201,7 @@ type APIScope =
 
 ```typescript
 // POST /api/v1/api-keys
-export const createAPIKey: APIGatewayProxyHandler = async (event) => {
+export const createAPIKey: APIGatewayProxyHandler = async event => {
   const { name, scopes, environment, rateLimits, expiresAt } = JSON.parse(event.body);
   const { userId, organizationId, role } = event.requestContext.authorizer;
 
@@ -332,7 +335,7 @@ async function checkRateLimit(apiKeyId: string): Promise<boolean> {
 }
 
 // Lambda Authorizer
-export const authorizer: APIGatewayAuthorizerHandler = async (event) => {
+export const authorizer: APIGatewayAuthorizerHandler = async event => {
   const apiKey = event.headers['X-API-Key'] || event.headers['x-api-key'];
 
   if (!apiKey) {
@@ -621,14 +624,14 @@ curl -X GET "https://api.prance.ai/v1/sessions/session_789/report?format=pdf" \
 
 ### Webhookイベント
 
-| イベント | トリガー | ペイロード |
-| -------- | -------- | ---------- |
-| `session.started` | セッション開始時 | Session オブジェクト |
-| `session.completed` | セッション完了時 | Session + 統計情報 |
-| `session.failed` | セッション失敗時 | Session + エラー情報 |
-| `report.generated` | レポート生成完了時 | Report オブジェクト |
-| `user.created` | ユーザー作成時 | User オブジェクト |
-| `api_key.created` | APIキー作成時 | APIKey メタデータ |
+| イベント            | トリガー           | ペイロード           |
+| ------------------- | ------------------ | -------------------- |
+| `session.started`   | セッション開始時   | Session オブジェクト |
+| `session.completed` | セッション完了時   | Session + 統計情報   |
+| `session.failed`    | セッション失敗時   | Session + エラー情報 |
+| `report.generated`  | レポート生成完了時 | Report オブジェクト  |
+| `user.created`      | ユーザー作成時     | User オブジェクト    |
+| `api_key.created`   | APIキー作成時      | APIKey メタデータ    |
 
 ### Webhook設定
 
@@ -693,20 +696,10 @@ Lambda: Webhook Dispatcher
 // Webhook受信側の検証コード
 import crypto from 'crypto';
 
-function verifyWebhookSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex');
+function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
+  const expectedSignature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
 }
 
 // Express.jsでの使用例
@@ -838,7 +831,7 @@ async function recordAPIUsage(
       ':in': Buffer.byteLength(JSON.stringify(request.body || '')),
       ':out': Buffer.byteLength(response.body || ''),
       ':empty': { count: 0, avgLatency: 0, errorRate: 0 },
-      ':ttl': Math.floor(Date.now() / 1000) + (90 * 86400), // 90日
+      ':ttl': Math.floor(Date.now() / 1000) + 90 * 86400, // 90日
       ':now': new Date().toISOString(),
     },
   });
@@ -902,6 +895,7 @@ async function recordAPIUsage(
 
 ```markdown
 ✅ DO:
+
 - APIキーは環境変数に保存
 - 本番キーとテストキーを分離
 - 定期的にキーをローテーション（90日ごと推奨）
@@ -909,11 +903,12 @@ async function recordAPIUsage(
 - スコープを最小限に制限
 
 ❌ DON'T:
+
 - コードにハードコード
 - クライアントサイド（ブラウザ）で使用
 - パブリックリポジトリにコミット
 - 複数環境で同じキーを使用
-- 全権限（*）スコープを付与
+- 全権限（\*）スコープを付与
 ```
 
 ### HTTPS必須
@@ -1031,6 +1026,7 @@ sessionById.addMethod('GET', new LambdaIntegration(getSessionLambda), {
 ---
 
 **関連ドキュメント:**
+
 - [API設計](../development/API_DESIGN.md)
 - [認証・認可](../architecture/AUTHENTICATION.md)
 - [ATS連携](ATS_INTEGRATION.md)

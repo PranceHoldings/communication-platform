@@ -21,12 +21,12 @@
 
 ### 主要機能
 
-| 機能 | 説明 |
-| ---- | ---- |
-| **同期再生** | 録画映像と文字起こしを完全同期 |
-| **ハイライト表示** | 重要な発言を強調表示 |
-| **検索機能** | トランスクリプト内の全文検索 |
-| **タイムスタンプジャンプ** | 特定の発言にジャンプ |
+| 機能                       | 説明                           |
+| -------------------------- | ------------------------------ |
+| **同期再生**               | 録画映像と文字起こしを完全同期 |
+| **ハイライト表示**         | 重要な発言を強調表示           |
+| **検索機能**               | トランスクリプト内の全文検索   |
+| **タイムスタンプジャンプ** | 特定の発言にジャンプ           |
 
 ---
 
@@ -72,7 +72,7 @@ class TranscriptPlayer {
 
     // 現在時刻に対応するトランスクリプトを検索
     const currentTranscript = this.transcripts.find(
-      (t) => t.timestampStart <= currentTime && currentTime <= t.timestampEnd
+      t => t.timestampStart <= currentTime && currentTime <= t.timestampEnd
     );
 
     if (currentTranscript) {
@@ -82,7 +82,7 @@ class TranscriptPlayer {
 
   private highlightTranscript(id: string) {
     // UIで該当トランスクリプトをハイライト
-    document.querySelectorAll('.transcript-item').forEach((el) => {
+    document.querySelectorAll('.transcript-item').forEach(el => {
       el.classList.remove('active');
     });
     document.getElementById(`transcript-${id}`)?.classList.add('active');

@@ -138,7 +138,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         mimeType: actualMimeType,
       });
 
-      mediaRecorder.ondataavailable = (event) => {
+      mediaRecorder.ondataavailable = event => {
         console.log('[AudioRecorder] ondataavailable event fired:', {
           dataSize: event.data.size,
           type: event.data.type,
@@ -170,7 +170,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         }
       };
 
-      mediaRecorder.onerror = (event) => {
+      mediaRecorder.onerror = event => {
         const error = new Error(`MediaRecorder error: ${event}`);
         console.error(error);
         setError(error.message);
@@ -199,7 +199,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         }
 
         // Clean up
-        stream.getTracks().forEach((track) => track.stop());
+        stream.getTracks().forEach(track => track.stop());
         audioContext.close();
 
         if (animationFrameRef.current) {

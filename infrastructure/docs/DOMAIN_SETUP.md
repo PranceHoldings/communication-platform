@@ -4,13 +4,14 @@
 
 ## 📋 ドメイン構成
 
-| 環境 | ドメイン | 説明 |
-|------|---------|------|
-| **開発** | `dev.platform.prance.co.jp` | 開発環境 |
+| 環境             | ドメイン                        | 説明             |
+| ---------------- | ------------------------------- | ---------------- |
+| **開発**         | `dev.platform.prance.co.jp`     | 開発環境         |
 | **ステージング** | `staging.platform.prance.co.jp` | ステージング環境 |
-| **本番** | `platform.prance.co.jp` | 本番環境 |
+| **本番**         | `platform.prance.co.jp`         | 本番環境         |
 
 **補足:**
+
 - ルートドメイン: `prance.co.jp`（お名前.comで管理）
 - すべての環境が同じRoute 53ホストゾーンを共有
 - 各環境ごとに個別のSSL証明書を発行
@@ -31,6 +32,7 @@ aws route53 create-hosted-zone \
 ```
 
 **または AWS Console で作成:**
+
 1. [Route 53 Console](https://console.aws.amazon.com/route53) を開く
 2. 「ホストゾーンの作成」をクリック
 3. ドメイン名: `prance.co.jp` を入力
@@ -50,6 +52,7 @@ ns-5678.awsdns-12.co.uk
 ```
 
 **確認方法（AWS CLI）:**
+
 ```bash
 aws route53 get-hosted-zone --id /hostedzone/YOUR_HOSTED_ZONE_ID
 ```
@@ -70,6 +73,7 @@ aws route53 get-hosted-zone --id /hostedzone/YOUR_HOSTED_ZONE_ID
 6. 「確認画面へ進む」→「設定する」をクリック
 
 **⚠️ 注意:**
+
 - ネームサーバー変更の反映には **24-48時間** かかる場合があります
 - 変更が反映されるまで、既存のDNS設定が継続して使用されます
 
@@ -100,12 +104,14 @@ npm run deploy:dev
 ```
 
 **デプロイされるスタック:**
+
 1. `Prance-dev-DNS` - Route 53ホストゾーン参照
 2. `Prance-dev-Certificate` - SSL証明書発行（us-east-1）
 3. `Prance-dev-Storage` - CloudFront + カスタムドメイン設定
 4. その他のスタック（Network, Cognito, Database等）
 
 **デプロイ完了後の確認:**
+
 ```bash
 # 証明書のステータス確認
 aws acm list-certificates --region us-east-1
@@ -117,6 +123,7 @@ aws cloudformation describe-stacks \
 ```
 
 **アクセステスト:**
+
 ```bash
 # DNS解決確認
 dig dev.platform.prance.co.jp +short
@@ -138,6 +145,7 @@ npm run deploy:production
 ```
 
 **⚠️ 本番環境の注意事項:**
+
 - デプロイ前に必ずステージング環境でテストしてください
 - 削除保護が有効化されます（データ保持）
 - バックアップ保持期間が7日間に設定されます
@@ -151,6 +159,7 @@ npm run deploy:production
 **原因:** DNS変更が浸透していない
 
 **解決方法:**
+
 ```bash
 # DNSの浸透を確認
 dig prance.co.jp NS +short
@@ -160,6 +169,7 @@ dig prance.co.jp NS +short
 ```
 
 **手動検証:**
+
 1. [ACM Console](https://console.aws.amazon.com/acm/home?region=us-east-1) を開く
 2. 証明書のステータスが「検証保留中」の場合
 3. 「CNAME レコードを Route 53 に作成」ボタンをクリック（自動追加）
@@ -169,6 +179,7 @@ dig prance.co.jp NS +short
 **原因:** 証明書がus-east-1リージョンにない
 
 **解決方法:**
+
 ```bash
 # 証明書がus-east-1に存在するか確認
 aws acm list-certificates --region us-east-1
@@ -182,6 +193,7 @@ npm run cdk -- deploy Prance-dev-Certificate --context environment=dev
 **原因:** Route 53ホストゾーンが作成されていない
 
 **解決方法:**
+
 ```bash
 # ホストゾーンを手動作成
 aws route53 create-hosted-zone \
@@ -195,6 +207,7 @@ npm run deploy:dev
 ### 4. DNSの変更が反映されない
 
 **確認手順:**
+
 ```bash
 # 1. お名前.comのネームサーバー設定を確認
 # お名前.com Navi → ドメイン設定 → ネームサーバーの設定
@@ -208,6 +221,7 @@ aws route53 list-resource-record-sets \
 ```
 
 **DNS キャッシュをクリア:**
+
 ```bash
 # macOS
 sudo dscacheutil -flushcache
@@ -225,6 +239,7 @@ sudo systemd-resolve --flush-caches
 **原因:** 初回デプロイ後、CloudFrontの配信が全世界に伝播するまで15-30分かかります
 
 **確認方法:**
+
 ```bash
 # CloudFrontディストリビューションのステータス確認
 aws cloudfront get-distribution --id YOUR_DISTRIBUTION_ID \
@@ -251,6 +266,7 @@ curl -I https://platform.prance.co.jp
 ```
 
 **期待されるレスポンス:**
+
 ```
 HTTP/2 200
 content-type: text/html
@@ -298,8 +314,8 @@ S3バケットのCORS設定を環境別ドメインに制限:
 ```typescript
 // lib/storage-stack.ts で設定
 allowedOrigins: [
-  `https://${config.domain.fullDomain}`,  // 環境別ドメイン
-]
+  `https://${config.domain.fullDomain}`, // 環境別ドメイン
+];
 ```
 
 ### CloudFront署名付きURL
@@ -338,6 +354,7 @@ const signedUrl = cloudfront.getSignedUrl({
 ACMが自動更新するため、通常は操作不要です。
 
 **手動確認:**
+
 ```bash
 # 証明書のステータス確認
 aws acm describe-certificate \
@@ -364,6 +381,7 @@ npm run cdk -- destroy Prance-dev-* --context environment=dev
 ```
 
 **⚠️ 注意:**
+
 - 本番環境は削除保護が有効化されているため、手動で無効化が必要
 - S3バケット内のデータは `autoDeleteObjects` 設定に従って削除されます
 

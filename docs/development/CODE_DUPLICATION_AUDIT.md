@@ -10,48 +10,50 @@
 ### 1. 型定義の重複（最重要）
 
 #### 現状
+
 3箇所で同じ型を定義している：
 
-| 型名 | packages/shared | infrastructure/lambda | apps/web/lib/api |
-|------|------------------|----------------------|------------------|
-| **User** | ✅ 定義済み | ✅ 重複定義 | ✅ 重複定義 |
-| **Avatar** | ✅ 定義済み | ✅ 重複定義 | ✅ 重複定義 |
-| **Scenario** | ✅ 定義済み | ✅ 重複定義 | ✅ 重複定義 |
-| **Session** | ✅ 定義済み | ✅ 重複定義 | ✅ 重複定義 |
-| **Organization** | ✅ 定義済み | ✅ 重複定義 | ❌ 未使用 |
-| **Recording** | ✅ 定義済み | ✅ 重複定義 | ❌ 未使用 |
-| **Transcript** | ✅ 定義済み | ✅ 重複定義 | ❌ 未使用 |
+| 型名             | packages/shared | infrastructure/lambda | apps/web/lib/api |
+| ---------------- | --------------- | --------------------- | ---------------- |
+| **User**         | ✅ 定義済み     | ✅ 重複定義           | ✅ 重複定義      |
+| **Avatar**       | ✅ 定義済み     | ✅ 重複定義           | ✅ 重複定義      |
+| **Scenario**     | ✅ 定義済み     | ✅ 重複定義           | ✅ 重複定義      |
+| **Session**      | ✅ 定義済み     | ✅ 重複定義           | ✅ 重複定義      |
+| **Organization** | ✅ 定義済み     | ✅ 重複定義           | ❌ 未使用        |
+| **Recording**    | ✅ 定義済み     | ✅ 重複定義           | ❌ 未使用        |
+| **Transcript**   | ✅ 定義済み     | ✅ 重複定義           | ❌ 未使用        |
 
 #### Enum型の重複
 
-| Enum | packages/shared | infrastructure/lambda | apps/web/lib/api |
-|------|------------------|----------------------|------------------|
-| **UserRole** | ✅ | ✅ | ✅ |
-| **AvatarType** | ✅ | ✅ | ✅ |
-| **AvatarStyle** | ✅ | ✅ | ✅ |
-| **AvatarSource** | ✅ | ✅ | ✅ |
-| **Visibility** | ✅ | ✅ | ✅（インライン） |
-| **SessionStatus** | ✅ | ✅ | ✅ |
-| **RecordingType** | ✅ | ✅ | ❌ |
-| **Speaker** | ✅ | ✅ | ❌ |
-| **Highlight** | ✅ | ✅ | ❌ |
+| Enum              | packages/shared | infrastructure/lambda | apps/web/lib/api |
+| ----------------- | --------------- | --------------------- | ---------------- |
+| **UserRole**      | ✅              | ✅                    | ✅               |
+| **AvatarType**    | ✅              | ✅                    | ✅               |
+| **AvatarStyle**   | ✅              | ✅                    | ✅               |
+| **AvatarSource**  | ✅              | ✅                    | ✅               |
+| **Visibility**    | ✅              | ✅                    | ✅（インライン） |
+| **SessionStatus** | ✅              | ✅                    | ✅               |
+| **RecordingType** | ✅              | ✅                    | ❌               |
+| **Speaker**       | ✅              | ✅                    | ❌               |
+| **Highlight**     | ✅              | ✅                    | ❌               |
 
 #### エラー型の重複
 
-| エラークラス | packages/shared | infrastructure/lambda |
-|--------------|------------------|----------------------|
-| **AppError** | ✅ | ✅ |
-| **AuthenticationError** | ✅ | ✅ |
-| **AuthorizationError** | ✅ | ✅ |
-| **NotFoundError** | ✅ | ✅ |
-| **ValidationError** | ✅ | ✅ |
-| **ConflictError** | ✅ | ✅ |
+| エラークラス            | packages/shared | infrastructure/lambda |
+| ----------------------- | --------------- | --------------------- |
+| **AppError**            | ✅              | ✅                    |
+| **AuthenticationError** | ✅              | ✅                    |
+| **AuthorizationError**  | ✅              | ✅                    |
+| **NotFoundError**       | ✅              | ✅                    |
+| **ValidationError**     | ✅              | ✅                    |
+| **ConflictError**       | ✅              | ✅                    |
 
 ---
 
 ### 2. Pagination インターフェースの重複
 
 #### Lambda側
+
 ```typescript
 // infrastructure/lambda/shared/utils/validation.ts
 export interface PaginationParams {
@@ -79,6 +81,7 @@ export const paginatedResponse = <T>(
 ```
 
 #### Frontend側
+
 ```typescript
 // apps/web/lib/api/avatars.ts
 export interface AvatarListResponse {
@@ -102,6 +105,7 @@ export interface AvatarListResponse {
 ### 3. API Response/Error パターンの重複
 
 #### Lambda側
+
 ```typescript
 // infrastructure/lambda/shared/types/index.ts
 export interface APIResponse<T = any> {
@@ -126,6 +130,7 @@ export interface ErrorResponse {
 ```
 
 #### Frontend側
+
 ```typescript
 // apps/web/lib/api/client.ts
 export interface ApiResponse<T> {
@@ -156,6 +161,7 @@ export interface ApiError {
 **現状:** `packages/shared/src/types/index.ts` に全ての基本型が定義済みだが、誰も使っていない
 
 **対応:**
+
 1. Lambda関数を共有パッケージに移行
    - `infrastructure/lambda/shared/types/index.ts` を削除
    - 全Lambda関数で `import { User, Avatar, ... } from '@prance/shared'` に変更
@@ -169,7 +175,9 @@ export interface ApiError {
 ### Phase 2: Pagination の共有化（優先度: 中）
 
 **対応:**
+
 1. `packages/shared/src/types/index.ts` に追加:
+
 ```typescript
 export interface PaginationParams {
   limit: number;
@@ -194,10 +202,12 @@ export interface PaginatedResponse<T> {
 ### Phase 3: ユーティリティ関数の整理（優先度: 低）
 
 **Lambda専用（移行不要）:**
+
 - `infrastructure/lambda/shared/utils/validation.ts` - バリデーション関数
 - `infrastructure/lambda/shared/utils/response.ts` - HTTP レスポンス生成
 
 **Frontend専用（移行不要）:**
+
 - `apps/web/lib/api/client.ts` - API クライアント
 - `apps/web/lib/utils.ts` - UI ユーティリティ
 
@@ -206,6 +216,7 @@ export interface PaginatedResponse<T> {
 ## 📊 影響範囲
 
 ### Lambda関数（18ファイル）
+
 ```
 infrastructure/lambda/auth/register/index.ts
 infrastructure/lambda/auth/login/index.ts
@@ -228,6 +239,7 @@ infrastructure/lambda/shared/utils/response.ts
 ```
 
 ### Frontend API ファイル（4ファイル）
+
 ```
 apps/web/lib/api/auth.ts
 apps/web/lib/api/avatars.ts
@@ -256,21 +268,25 @@ apps/web/lib/api/sessions.ts
 ## 🚀 実装ステップ
 
 ### Step 1: packages/shared の準備
+
 - [x] 既存の型定義を確認（完了）
 - [ ] Pagination 型を追加
 - [ ] package.json の exports を確認
 
 ### Step 2: Lambda の移行
+
 - [ ] infrastructure/lambda/shared/types/index.ts の Lambda固有型を特定
 - [ ] 全Lambda関数のimport文を変更
 - [ ] infrastructure/lambda/shared/types/index.ts を削除（Lambda固有型のみ残す）
 
 ### Step 3: Frontend の移行
-- [ ] apps/web/lib/api/*.ts の import文を変更
+
+- [ ] apps/web/lib/api/\*.ts の import文を変更
 - [ ] 重複型定義を削除
 - [ ] Frontend固有型のみ残す
 
 ### Step 4: テスト
+
 - [ ] TypeScript コンパイルエラーがないか確認
 - [ ] Lambda ビルド成功確認
 - [ ] Frontend ビルド成功確認

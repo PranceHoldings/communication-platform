@@ -1,218 +1,220 @@
 {
-  "list": {
-    "title": "Sessions",
-    "description": "View and manage your conversation sessions",
-    "empty": "No sessions found",
-    "emptyDescription": "Create your first session to get started",
-    "filter": {
-      "all": "All",
-      "ACTIVE": "Active",
-      "PROCESSING": "Processing",
-      "COMPLETED": "Completed",
-      "ERROR": "Error"
-    }
-  },
-  "table": {
-    "scenario": "Scenario",
-    "avatar": "Avatar",
-    "status": "Status",
-    "date": "Date",
-    "duration": "Duration",
-    "actions": "Actions",
-    "view": "View"
-  },
-  "status": {
-    "ACTIVE": "Active",
-    "PROCESSING": "Processing",
-    "COMPLETED": "Completed",
-    "ERROR": "Error"
-  },
-  "detail": {
-    "minutes": "{count} min",
-    "loading": "Loading session...",
-    "notFound": "Session not found",
-    "backToList": "Back to Sessions",
-    "session": "Session",
-    "dashboard": "Dashboard"
-  },
-  "create": {
-    "button": "Create Session"
-  },
-  "new": {
-    "title": "Create New Session",
-    "description": "Select a scenario and avatar to start your conversation session",
-    "step_1": "Step 1: Select Scenario",
-    "step_2": "Step 2: Select Avatar",
-    "step_3": "Step 3: Session Options",
-    "scenario": {
-      "title": "Choose a Scenario",
-      "description": "Select the conversation scenario for this session",
-      "search_placeholder": "Search scenarios...",
-      "filter_all": "All Categories",
-      "no_results": "No scenarios found",
-      "loading": "Loading...",
-      "card": {
-        "category": "Category",
-        "language": "Language",
-        "visibility": "Visibility"
-      }
+    "list": {
+        "title": "Sessions",
+        "description": "View and manage your conversation sessions",
+        "empty": "No sessions found",
+        "emptyDescription": "Create your first session to get started",
+        "filter": {
+            "all": "All",
+            "ACTIVE": "Active",
+            "PROCESSING": "Processing",
+            "COMPLETED": "Completed",
+            "ERROR": "Error"
+        }
     },
-    "avatar": {
-      "title": "Choose an Avatar",
-      "description": "Select the AI avatar that will interact with you",
-      "search_placeholder": "Search avatars...",
-      "filter": {
-        "all_types": "All Types",
-        "all_styles": "All Styles",
-        "type_2d": "2D",
-        "type_3d": "3D",
-        "style_anime": "Anime",
-        "style_realistic": "Realistic"
-      },
-      "no_results": "No avatars found",
-      "loading": "Loading...",
-      "card": {
-        "type": "Type",
-        "style": "Style",
-        "source": "Source"
-      }
+    "table": {
+        "scenario": "Scenario",
+        "avatar": "Avatar",
+        "status": "Status",
+        "date": "Date",
+        "duration": "Duration",
+        "actions": "Actions",
+        "view": "View"
     },
-    "options": {
-      "title": "Session Options",
-      "description": "Configure additional settings for your session",
-      "metadata": "Session Metadata (optional)",
-      "metadata_placeholder": "Enter JSON metadata...",
-      "scenario": "Scenario",
-      "avatar": "Avatar"
-    },
-    "actions": {
-      "back": "Back",
-      "next": "Next",
-      "create": "Create Session",
-      "cancel": "Cancel"
-    },
-    "validation": {
-      "scenario_required": "Please select a scenario",
-      "avatar_required": "Please select an avatar",
-      "invalid_metadata": "Invalid JSON format in metadata"
-    },
-    "creating": "Creating session...",
-    "success": "Session created successfully!",
-    "error": "Failed to create session"
-  },
-  "player": {
     "status": {
-      "notStarted": "Not Started",
-      "ready": "Ready",
-      "inProgress": "In Progress",
-      "paused": "Paused",
-      "completed": "Completed",
-      "unknown": "Unknown"
+        "ACTIVE": "Active",
+        "PROCESSING": "Processing",
+        "COMPLETED": "Completed",
+        "ERROR": "Error"
     },
-    "help": {
-      "startSession": "Click \"Start Session\" to begin the conversation with {avatarName}",
-      "listening": "🎤 Listening... Speak clearly into your microphone"
+    "detail": {
+        "minutes": "{count} min",
+        "loading": "Loading session...",
+        "notFound": "Session not found",
+        "backToList": "Back to Sessions",
+        "session": "Session",
+        "dashboard": "Dashboard"
     },
-    "actions": {
-      "start": "Start Session",
-      "resume": "Resume",
-      "pause": "Pause",
-      "stop": "Stop",
-      "cancel": "Cancel",
-      "sendTestMessage": "Send Test Message"
+    "create": {
+        "button": "Create Session"
     },
-    "avatar": {
-      "title": "Avatar View",
-      "placeholder": "Avatar will appear here",
-      "microphone": "Microphone",
-      "camera": "Camera",
-      "speaker": "Speaker",
-      "active": "Active",
-      "inactive": "Inactive",
-      "off": "Off",
-      "recording": "Recording",
-      "playing": "Playing",
-      "audioLevel": "Audio Level"
+    "new": {
+        "title": "Create New Session",
+        "description": "Select a scenario and avatar to start your conversation session",
+        "step_1": "Step 1: Select Scenario",
+        "step_2": "Step 2: Select Avatar",
+        "step_3": "Step 3: Session Options",
+        "scenario": {
+            "title": "Choose a Scenario",
+            "description": "Select the conversation scenario for this session",
+            "search_placeholder": "Search scenarios...",
+            "filter_all": "All Categories",
+            "no_results": "No scenarios found",
+            "loading": "Loading...",
+            "card": {
+                "category": "Category",
+                "language": "Language",
+                "visibility": "Visibility"
+            }
+        },
+        "avatar": {
+            "title": "Choose an Avatar",
+            "description": "Select the AI avatar that will interact with you",
+            "search_placeholder": "Search avatars...",
+            "filter": {
+                "all_types": "All Types",
+                "all_styles": "All Styles",
+                "type_2d": "2D",
+                "type_3d": "3D",
+                "style_anime": "Anime",
+                "style_realistic": "Realistic"
+            },
+            "no_results": "No avatars found",
+            "loading": "Loading...",
+            "card": {
+                "type": "Type",
+                "style": "Style",
+                "source": "Source"
+            }
+        },
+        "options": {
+            "title": "Session Options",
+            "description": "Configure additional settings for your session",
+            "metadata": "Session Metadata (optional)",
+            "metadata_placeholder": "Enter JSON metadata...",
+            "scenario": "Scenario",
+            "avatar": "Avatar"
+        },
+        "actions": {
+            "back": "Back",
+            "next": "Next",
+            "create": "Create Session",
+            "cancel": "Cancel"
+        },
+        "validation": {
+            "scenario_required": "Please select a scenario",
+            "avatar_required": "Please select an avatar",
+            "invalid_metadata": "Invalid JSON format in metadata"
+        },
+        "creating": "Creating session...",
+        "success": "Session created successfully!",
+        "error": "Failed to create session"
     },
-    "transcript": {
-      "title": "Conversation Transcript",
-      "empty": "No conversation yet",
-      "emptyDescription": "Start the session to begin",
-      "you": "You"
+    "player": {
+        "status": {
+            "notStarted": "Not Started",
+            "ready": "Ready",
+            "inProgress": "In Progress",
+            "paused": "Paused",
+            "completed": "Completed",
+            "unknown": "Unknown"
+        },
+        "help": {
+            "startSession": "Click \"Start Session\" to begin the conversation with {avatarName}",
+            "listening": "🎤 Listening... Speak clearly into your microphone"
+        },
+        "actions": {
+            "start": "Start Session",
+            "resume": "Resume",
+            "pause": "Pause",
+            "stop": "Stop",
+            "cancel": "Cancel",
+            "sendTestMessage": "Send Test Message"
+        },
+        "avatar": {
+            "title": "Avatar View",
+            "placeholder": "Avatar will appear here",
+            "microphone": "Microphone",
+            "camera": "Camera",
+            "speaker": "Speaker",
+            "active": "Active",
+            "inactive": "Inactive",
+            "off": "Off",
+            "recording": "Recording",
+            "playing": "Playing",
+            "audioLevel": "Audio Level"
+        },
+        "transcript": {
+            "title": "Conversation Transcript",
+            "empty": "No conversation yet",
+            "emptyDescription": "Start the session to begin",
+            "you": "You"
+        },
+        "websocket": {
+            "connecting": "Connecting to session...",
+            "connectingWebSocket": "Connecting to WebSocket...",
+            "connected": "Connected",
+            "notConnected": "Not connected",
+            "error": "WebSocket connection error"
+        },
+        "messages": {
+            "authRequired": "Authentication required. Please login again.",
+            "sessionStarted": "Session started! You can now speak.",
+            "sessionResumed": "Session resumed!",
+            "sessionEnded": "Session ended",
+            "sessionCompleted": "Session completed successfully!",
+            "testMessageSent": "Test message sent!",
+            "connectionTimeout": "Connection timeout. Please try again.",
+            "maxAttemptsReached": "Maximum connection attempts reached.",
+            "reconnecting": "Connection lost. Reconnecting...",
+            "authFailed": "Authentication failed. Please log in again.",
+            "processingAudio": "Processing your recording...",
+            "audioSendError": "Failed to send audio. Please try again.",
+            "microphoneError": "Microphone error occurred.",
+            "microphonePermissionDenied": "Microphone access denied. Please allow microphone permission in your browser settings.",
+            "audioPlaybackError": "Failed to play audio response. Please check your browser settings.",
+            "authenticated": "WebSocket authenticated successfully",
+            "authenticationTimeout": "Authentication timeout. Please try again."
+        },
+        "completed": {
+            "title": "Session Completed",
+            "duration": "Duration",
+            "messageCount": "{count} messages"
+        },
+        "info": {
+            "scenario": "Scenario",
+            "avatar": "Avatar",
+            "category": "Category"
+        },
+        "details": {
+            "title": "Session Information",
+            "sessionId": "Session ID",
+            "scenario": "Scenario",
+            "language": "Language",
+            "created": "Created"
+        },
+        "recording": {
+            "title": "Recording",
+            "start": "Start Recording",
+            "stop": "Stop Recording",
+            "pause": "Pause Recording",
+            "resume": "Resume Recording",
+            "speed": "Speed",
+            "format": "Format",
+            "resolution": "Resolution",
+            "size": "File Size",
+            "duration": "Duration",
+            "status": {
+                "idle": "Not Recording",
+                "recording": "Recording",
+                "paused": "Paused",
+                "stopped": "Stopped"
+            },
+            "messages": {
+                "started": "Recording started",
+                "stopped": "Recording stopped",
+                "paused": "Recording paused",
+                "resumed": "Recording resumed",
+                "error": "Recording error",
+                "errorUnknown": "An unknown error occurred",
+                "processing": "Processing recording",
+                "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
+                "notSupported": "Recording is not supported in your browser"
+            }
+        }
     },
-    "websocket": {
-      "connecting": "Connecting to session...",
-      "connectingWebSocket": "Connecting to WebSocket...",
-      "connected": "Connected",
-      "notConnected": "Not connected",
-      "error": "WebSocket connection error"
-    },
-    "messages": {
-      "authRequired": "Authentication required. Please login again.",
-      "sessionStarted": "Session started! You can now speak.",
-      "sessionResumed": "Session resumed!",
-      "sessionEnded": "Session ended",
-      "sessionCompleted": "Session completed successfully!",
-      "testMessageSent": "Test message sent!",
-      "connectionTimeout": "Connection timeout. Please try again.",
-      "maxAttemptsReached": "Maximum connection attempts reached.",
-      "reconnecting": "Connection lost. Reconnecting...",
-      "authFailed": "Authentication failed. Please log in again.",
-      "processingAudio": "Processing your recording...",
-      "audioSendError": "Failed to send audio. Please try again.",
-      "microphoneError": "Microphone error occurred.",
-      "microphonePermissionDenied": "Microphone access denied. Please allow microphone permission in your browser settings.",
-      "audioPlaybackError": "Failed to play audio response. Please check your browser settings."
-    },
-    "completed": {
-      "title": "Session Completed",
-      "duration": "Duration",
-      "messageCount": "{count} messages"
-    },
-    "info": {
-      "scenario": "Scenario",
-      "avatar": "Avatar",
-      "category": "Category"
-    },
-    "details": {
-      "title": "Session Information",
-      "sessionId": "Session ID",
-      "scenario": "Scenario",
-      "language": "Language",
-      "created": "Created"
-    },
-    "recording": {
-      "title": "Recording",
-      "start": "Start Recording",
-      "stop": "Stop Recording",
-      "pause": "Pause Recording",
-      "resume": "Resume Recording",
-      "speed": "Speed",
-      "format": "Format",
-      "resolution": "Resolution",
-      "size": "File Size",
-      "duration": "Duration",
-      "status": {
-        "idle": "Not Recording",
-        "recording": "Recording",
-        "paused": "Paused",
-        "stopped": "Stopped"
-      },
-      "messages": {
-        "started": "Recording started",
-        "stopped": "Recording stopped",
-        "paused": "Recording paused",
-        "resumed": "Recording resumed",
-        "error": "Recording error",
-        "errorUnknown": "An unknown error occurred",
-        "processing": "Processing recording",
-        "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
-        "notSupported": "Recording is not supported in your browser"
-      }
+    "errors": {
+        "loadFailed": "Failed to load sessions",
+        "genericError": "An error occurred"
     }
-  },
-  "errors": {
-    "loadFailed": "Failed to load sessions",
-    "genericError": "An error occurred"
-  }
 }

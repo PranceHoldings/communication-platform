@@ -73,14 +73,12 @@ export const extractTokenFromHeader = (authHeader: string | undefined): string =
  * APIGatewayProxyEventから認証されたユーザー情報を取得
  * Lambda Authorizerを使用している場合は requestContext.authorizer から取得
  */
-export const getUserFromEvent = (
-  event: {
-    headers: { [key: string]: string | undefined };
-    requestContext?: {
-      authorizer?: any; // Allow any type for authorizer to accept Lambda Authorizer context
-    };
-  }
-): JWTPayload | null => {
+export const getUserFromEvent = (event: {
+  headers: { [key: string]: string | undefined };
+  requestContext?: {
+    authorizer?: any; // Allow any type for authorizer to accept Lambda Authorizer context
+  };
+}): JWTPayload | null => {
   try {
     // Lambda Authorizerがある場合は、そこからユーザー情報を取得
     // IMPORTANT: Authorizer context field names must match Prisma schema

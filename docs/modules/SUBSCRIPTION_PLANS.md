@@ -25,15 +25,15 @@
 
 ### 主要機能
 
-| 機能 | 説明 |
-| ---- | ---- |
-| **プラン設定UI** | プラン名、価格、機能制限をGUIで設定 |
-| **デフォルトプラン** | 新規組織の自動割り当てプラン設定 |
-| **機能制限管理** | プランごとのリソース制限（セッション数、ストレージ等） |
-| **Stripe統合** | サブスクリプション決済、自動請求 |
-| **使用量トラッキング** | プラン制限に対する使用状況の監視 |
-| **アップグレード促進** | 制限到達時のアップグレード通知 |
-| **トライアル管理** | 無料トライアル期間の設定・管理 |
+| 機能                   | 説明                                                   |
+| ---------------------- | ------------------------------------------------------ |
+| **プラン設定UI**       | プラン名、価格、機能制限をGUIで設定                    |
+| **デフォルトプラン**   | 新規組織の自動割り当てプラン設定                       |
+| **機能制限管理**       | プランごとのリソース制限（セッション数、ストレージ等） |
+| **Stripe統合**         | サブスクリプション決済、自動請求                       |
+| **使用量トラッキング** | プラン制限に対する使用状況の監視                       |
+| **アップグレード促進** | 制限到達時のアップグレード通知                         |
+| **トライアル管理**     | 無料トライアル期間の設定・管理                         |
 
 ### 設計の背景
 
@@ -45,12 +45,12 @@
 
 ### 標準プランテンプレート
 
-| プラン | 月額 | セッション数 | ストレージ | 同時接続 | サポート | 主な機能 |
-| ------ | ---- | ------------ | ---------- | -------- | -------- | -------- |
-| **Free** | $0 | 10/月 | 1 GB | 1 | コミュニティ | 基本アバター、標準シナリオ |
-| **Pro** | $99 | 100/月 | 10 GB | 5 | メール | カスタムアバター、音声クローニング、ベンチマーク |
-| **Business** | $299 | 500/月 | 50 GB | 20 | 優先メール | API連携、Webhook、詳細解析 |
-| **Enterprise** | カスタム | 無制限 | 500 GB+ | 100+ | 専任担当 | SLA保証、SSO、カスタムプロンプト、専用環境 |
+| プラン         | 月額     | セッション数 | ストレージ | 同時接続 | サポート     | 主な機能                                         |
+| -------------- | -------- | ------------ | ---------- | -------- | ------------ | ------------------------------------------------ |
+| **Free**       | $0       | 10/月        | 1 GB       | 1        | コミュニティ | 基本アバター、標準シナリオ                       |
+| **Pro**        | $99      | 100/月       | 10 GB      | 5        | メール       | カスタムアバター、音声クローニング、ベンチマーク |
+| **Business**   | $299     | 500/月       | 50 GB      | 20       | 優先メール   | API連携、Webhook、詳細解析                       |
+| **Enterprise** | カスタム | 無制限       | 500 GB+    | 100+     | 専任担当     | SLA保証、SSO、カスタムプロンプト、専用環境       |
 
 ### プランデータモデル
 
@@ -306,7 +306,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16',
 });
 
-export const createCheckoutSession: APIGatewayProxyHandler = async (event) => {
+export const createCheckoutSession: APIGatewayProxyHandler = async event => {
   const { planId, billingPeriod } = JSON.parse(event.body);
   const { userId, organizationId } = event.requestContext.authorizer;
 
@@ -356,7 +356,7 @@ async function getOrCreateStripeCustomer(organizationId: string): Promise<Stripe
   });
 
   if (subscription?.stripeCustomerId) {
-    return await stripe.customers.retrieve(subscription.stripeCustomerId) as Stripe.Customer;
+    return (await stripe.customers.retrieve(subscription.stripeCustomerId)) as Stripe.Customer;
   }
 
   // 新規作成
@@ -380,7 +380,7 @@ async function getOrCreateStripeCustomer(organizationId: string): Promise<Stripe
 
 ```typescript
 // Lambda: Stripe Webhook Handler
-export const handleStripeWebhook: APIGatewayProxyHandler = async (event) => {
+export const handleStripeWebhook: APIGatewayProxyHandler = async event => {
   const sig = event.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -498,7 +498,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
 ```typescript
 // Lambda: Session Create
-export const createSession: APIGatewayProxyHandler = async (event) => {
+export const createSession: APIGatewayProxyHandler = async event => {
   const { organizationId } = event.requestContext.authorizer;
 
   // 1. プラン制限チェック
@@ -680,7 +680,7 @@ DB更新
 
 ```typescript
 // POST /api/v1/subscription/change
-export const changeSubscriptionPlan: APIGatewayProxyHandler = async (event) => {
+export const changeSubscriptionPlan: APIGatewayProxyHandler = async event => {
   const { newPlanId } = JSON.parse(event.body);
   const { organizationId } = event.requestContext.authorizer;
 
@@ -695,18 +695,16 @@ export const changeSubscriptionPlan: APIGatewayProxyHandler = async (event) => {
   const newPlan = await prisma.subscriptionPlan.findUnique({ where: { id: newPlanId } });
 
   // Stripeサブスクリプション更新
-  const updatedSubscription = await stripe.subscriptions.update(
-    subscription.stripeSubscriptionId,
-    {
-      items: [
-        {
-          id: (await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId)).items.data[0].id,
-          price: newPlan.stripePriceId,
-        },
-      ],
-      proration_behavior: 'create_prorations', // 日割り計算
-    }
-  );
+  const updatedSubscription = await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+    items: [
+      {
+        id: (await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId)).items.data[0]
+          .id,
+        price: newPlan.stripePriceId,
+      },
+    ],
+    proration_behavior: 'create_prorations', // 日割り計算
+  });
 
   // DB更新
   await prisma.organizationSubscription.update({
@@ -858,5 +856,6 @@ CREATE INDEX idx_invoices_org ON invoices(organization_id, created_at DESC);
 ---
 
 **関連ドキュメント:**
+
 - [外部連携API](EXTERNAL_API.md)
 - [マルチテナント設計](../architecture/MULTITENANCY.md)

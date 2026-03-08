@@ -172,13 +172,9 @@ export class FrontendStack extends Stack {
     });
 
     // CloudFront Origin Access Identity
-    const originAccessIdentity = new cloudfront.OriginAccessIdentity(
-      this,
-      'OAI',
-      {
-        comment: 'OAI for Prance Website',
-      }
-    );
+    const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OAI', {
+      comment: 'OAI for Prance Website',
+    });
 
     websiteBucket.grantRead(originAccessIdentity);
 
@@ -250,12 +246,7 @@ export class ApiGatewayStack extends Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: [
-          'Content-Type',
-          'Authorization',
-          'X-Api-Key',
-          'X-Tenant-Id',
-        ],
+        allowHeaders: ['Content-Type', 'Authorization', 'X-Api-Key', 'X-Tenant-Id'],
       },
       apiKeySourceType: apigateway.ApiKeySourceType.HEADER,
     });
@@ -401,9 +392,7 @@ export class DatabaseStack extends Stack {
       serverlessV2MinCapacity: 0.5,
       serverlessV2MaxCapacity: 16,
       writer: rds.ClusterInstance.serverlessV2('writer'),
-      readers: [
-        rds.ClusterInstance.serverlessV2('reader1', { scaleWithWriter: true }),
-      ],
+      readers: [rds.ClusterInstance.serverlessV2('reader1', { scaleWithWriter: true })],
       vpc: props.vpc,
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
@@ -550,21 +539,17 @@ export class WorkflowStack extends Stack {
     super(scope, id, props);
 
     // Step Functions State Machine
-    const sessionProcessingWorkflow = new sfn.StateMachine(
-      this,
-      'SessionProcessingWorkflow',
-      {
-        stateMachineName: `session-processing-${props.environment}`,
-        definition: this.createWorkflowDefinition(props),
-        tracingEnabled: true,
-        logs: {
-          level: sfn.LogLevel.ALL,
-          destination: new logs.LogGroup(this, 'WorkflowLogs', {
-            retention: logs.RetentionDays.ONE_WEEK,
-          }),
-        },
-      }
-    );
+    const sessionProcessingWorkflow = new sfn.StateMachine(this, 'SessionProcessingWorkflow', {
+      stateMachineName: `session-processing-${props.environment}`,
+      definition: this.createWorkflowDefinition(props),
+      tracingEnabled: true,
+      logs: {
+        level: sfn.LogLevel.ALL,
+        destination: new logs.LogGroup(this, 'WorkflowLogs', {
+          retention: logs.RetentionDays.ONE_WEEK,
+        }),
+      },
+    });
 
     // EventBridge Rule: Session Completion Event
     const rule = new events.Rule(this, 'SessionCompletionRule', {
@@ -598,13 +583,9 @@ export class WorkflowStack extends Stack {
       lambdaFunction: props.generateThumbnailFunction,
     });
 
-    const regenerateTranscript = new tasks.LambdaInvoke(
-      this,
-      'RegenerateTranscript',
-      {
-        lambdaFunction: props.regenerateTranscriptFunction,
-      }
-    );
+    const regenerateTranscript = new tasks.LambdaInvoke(this, 'RegenerateTranscript', {
+      lambdaFunction: props.regenerateTranscriptFunction,
+    });
 
     parallelProcessing.branch(generateThumbnail);
     parallelProcessing.branch(regenerateTranscript);
@@ -719,20 +700,15 @@ export class StorageStack extends Stack {
     });
 
     // CloudFront Distribution for Avatars
-    const avatarsDistribution = new cloudfront.Distribution(
-      this,
-      'AvatarsDistribution',
-      {
-        defaultBehavior: {
-          origin: new origins.S3Origin(avatarsBucket, {
-            originAccessIdentity: props.originAccessIdentity,
-          }),
-          viewerProtocolPolicy:
-            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
-        },
-      }
-    );
+    const avatarsDistribution = new cloudfront.Distribution(this, 'AvatarsDistribution', {
+      defaultBehavior: {
+        origin: new origins.S3Origin(avatarsBucket, {
+          originAccessIdentity: props.originAccessIdentity,
+        }),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+      },
+    });
   }
 }
 ```
@@ -750,13 +726,13 @@ export class StorageStack extends Stack {
 
 ### 水平スケーリング
 
-| コンポーネント | スケール方法 | 最大容量 |
-| -------------- | ------------ | -------- |
-| **Lambda** | 自動（リクエスト数ベース） | 1,000同時実行（デフォルト制限） |
-| **Aurora Serverless v2** | 自動（ACU調整） | 16 ACU (32GB RAM) |
-| **DynamoDB** | 自動（オンデマンド） | 無制限 |
-| **IoT Core** | 自動（接続数ベース） | 100万同時接続 |
-| **CloudFront** | 自動（グローバルエッジ） | 無制限 |
+| コンポーネント           | スケール方法               | 最大容量                        |
+| ------------------------ | -------------------------- | ------------------------------- |
+| **Lambda**               | 自動（リクエスト数ベース） | 1,000同時実行（デフォルト制限） |
+| **Aurora Serverless v2** | 自動（ACU調整）            | 16 ACU (32GB RAM)               |
+| **DynamoDB**             | 自動（オンデマンド）       | 無制限                          |
+| **IoT Core**             | 自動（接続数ベース）       | 100万同時接続                   |
+| **CloudFront**           | 自動（グローバルエッジ）   | 無制限                          |
 
 ### 垂直スケーリング
 
@@ -785,17 +761,17 @@ cpuAlarm.addAlarmAction(new actions.SnsAction(props.alertTopic));
 
 ### 月間1,000セッション想定コスト ($500-800)
 
-| サービス | 使用量 | 月額 (USD) |
-| -------- | ------ | ---------- |
-| **Lambda** | 100万リクエスト、1024MB、30秒平均 | $120 |
-| **Aurora Serverless v2** | 平均2 ACU、730時間 | $180 |
-| **DynamoDB** | 500万読込、100万書込 | $40 |
-| **S3** | 1TB保存、10TBダウンロード | $50 |
-| **CloudFront** | 10TBダウンロード | $85 |
-| **IoT Core** | 100万メッセージ/月 | $8 |
-| **API Gateway** | 100万リクエスト | $3.50 |
-| **ElastiCache** | Serverless、1GBキャッシュ | $20 |
-| **その他** (NAT Gateway, VPC, Logs) | - | $50 |
+| サービス                            | 使用量                            | 月額 (USD) |
+| ----------------------------------- | --------------------------------- | ---------- |
+| **Lambda**                          | 100万リクエスト、1024MB、30秒平均 | $120       |
+| **Aurora Serverless v2**            | 平均2 ACU、730時間                | $180       |
+| **DynamoDB**                        | 500万読込、100万書込              | $40        |
+| **S3**                              | 1TB保存、10TBダウンロード         | $50        |
+| **CloudFront**                      | 10TBダウンロード                  | $85        |
+| **IoT Core**                        | 100万メッセージ/月                | $8         |
+| **API Gateway**                     | 100万リクエスト                   | $3.50      |
+| **ElastiCache**                     | Serverless、1GBキャッシュ         | $20        |
+| **その他** (NAT Gateway, VPC, Logs) | -                                 | $50        |
 
 **合計**: 約 **$556/月**
 
@@ -826,9 +802,7 @@ cpuAlarm.addAlarmAction(new actions.SnsAction(props.alertTopic));
 // Aurora Automatic Failover
 this.cluster = new rds.DatabaseCluster(this, 'AuroraCluster', {
   // ...
-  readers: [
-    rds.ClusterInstance.serverlessV2('reader1', { scaleWithWriter: true }),
-  ],
+  readers: [rds.ClusterInstance.serverlessV2('reader1', { scaleWithWriter: true })],
 });
 ```
 
@@ -839,11 +813,11 @@ this.cluster = new rds.DatabaseCluster(this, 'AuroraCluster', {
 
 #### バックアップ戦略
 
-| データ | バックアップ方法 | 保持期間 | リストア時間 |
-| ------ | ---------------- | -------- | ------------ |
-| **Aurora** | 自動スナップショット | 7日 | 5-10分 |
-| **DynamoDB** | Point-in-Time Recovery | 35日 | 5-10分 |
-| **S3** | バージョニング | 無期限 | 即時 |
+| データ       | バックアップ方法       | 保持期間 | リストア時間 |
+| ------------ | ---------------------- | -------- | ------------ |
+| **Aurora**   | 自動スナップショット   | 7日      | 5-10分       |
+| **DynamoDB** | Point-in-Time Recovery | 35日     | 5-10分       |
+| **S3**       | バージョニング         | 無期限   | 即時         |
 
 #### DR計画
 
@@ -924,9 +898,7 @@ this.auroraSecurityGroup.addIngressRule(
 const lambdaRole = new iam.Role(this, 'LambdaRole', {
   assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
   managedPolicies: [
-    iam.ManagedPolicy.fromAwsManagedPolicyName(
-      'service-role/AWSLambdaVPCAccessExecutionRole'
-    ),
+    iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
   ],
 });
 
@@ -1065,15 +1037,11 @@ const liveAlias = new lambda.Alias(this, 'LiveAlias', {
 });
 
 // Gradual Deployment
-const deployment = new codedeploy.LambdaDeploymentGroup(
-  this,
-  'DeploymentGroup',
-  {
-    alias: liveAlias,
-    deploymentConfig: codedeploy.LambdaDeploymentConfig.LINEAR_10PERCENT_EVERY_1MINUTE,
-    alarms: [errorAlarm],
-  }
-);
+const deployment = new codedeploy.LambdaDeploymentGroup(this, 'DeploymentGroup', {
+  alias: liveAlias,
+  deploymentConfig: codedeploy.LambdaDeploymentConfig.LINEAR_10PERCENT_EVERY_1MINUTE,
+  alarms: [errorAlarm],
+});
 ```
 
 ---

@@ -52,7 +52,10 @@ export const handler = async (
 
   // デバッグ: JWT_SECRETの最初と最後の5文字をログ出力
   const jwtSecret = process.env.JWT_SECRET || 'not-set';
-  console.log('JWT_SECRET (masked):', jwtSecret.substring(0, 5) + '...' + jwtSecret.substring(jwtSecret.length - 5));
+  console.log(
+    'JWT_SECRET (masked):',
+    jwtSecret.substring(0, 5) + '...' + jwtSecret.substring(jwtSecret.length - 5)
+  );
 
   try {
     // Authorization headerからトークンを抽出

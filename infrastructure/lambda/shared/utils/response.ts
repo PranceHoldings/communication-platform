@@ -34,8 +34,15 @@ export const successResponse = <T>(data: T, statusCode = 200): APIResponse<Succe
 /**
  * エラーレスポンスを生成 (オーバーロード)
  */
-export function errorResponse(error: AppError | Error, statusCode?: number): APIResponse<ErrorResponse>;
-export function errorResponse(statusCode: number, message: string, details?: string): APIResponse<ErrorResponse>;
+export function errorResponse(
+  error: AppError | Error,
+  statusCode?: number
+): APIResponse<ErrorResponse>;
+export function errorResponse(
+  statusCode: number,
+  message: string,
+  details?: string
+): APIResponse<ErrorResponse>;
 export function errorResponse(
   errorOrStatusCode: AppError | Error | number,
   statusCodeOrMessage?: number | string,
@@ -97,7 +104,8 @@ export function errorResponse(
     code,
     message,
     statusCode: finalStatusCode,
-    ...(typeof errorOrStatusCode === 'object' && errorOrStatusCode instanceof Error && { stack: errorOrStatusCode.stack }),
+    ...(typeof errorOrStatusCode === 'object' &&
+      errorOrStatusCode instanceof Error && { stack: errorOrStatusCode.stack }),
   });
 
   return {

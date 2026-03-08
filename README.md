@@ -98,6 +98,7 @@ npm run dev
 ```
 
 詳細は以下を参照してください：
+
 - **[セットアップガイド](docs/SETUP.md)** - 詳細な初期設定手順
 - **[クイックスタート](docs/QUICKSTART.md)** - 作業再開手順
 - **[環境アーキテクチャ](docs/development/ENVIRONMENT_ARCHITECTURE.md)** - 環境構成の理解

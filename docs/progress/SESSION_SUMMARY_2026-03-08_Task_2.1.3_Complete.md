@@ -12,11 +12,13 @@
 Task 2.1.3: 録画機能の統合動作確認
 
 **前提条件:**
+
 - Task 2.1.1（フロントエンド録画機能）実装済み
 - Task 2.1.2（Lambda録画受信機能）実装済み
 - ロックメカニズム改善（P1/P2/P3）実装済み
 
 **確認項目:**
+
 1. DynamoDB recordingsテーブルのレコード確認
 2. S3ストレージの録画ファイル・チャンク確認
 3. CloudWatch Logsの処理ログ確認
@@ -29,11 +31,13 @@ Task 2.1.3: 録画機能の統合動作確認
 ### 1. DynamoDB recordingsテーブル確認
 
 **コマンド:**
+
 ```bash
 aws dynamodb scan --table-name prance-recordings-dev --limit 10
 ```
 
 **結果:**
+
 - ✅ 複数のCOMPLETEDレコードを確認
 - ✅ 最新: `rec-1772946509324-yah48oi` (2026-03-08 05:08 JST)
 - ✅ sessionId: `9d461e16-ed8b-486a-9db6-4f9b48ffcb1f`
@@ -44,24 +48,26 @@ aws dynamodb scan --table-name prance-recordings-dev --limit 10
 - ✅ cdn_url: 生成済み
 
 **最近の5件のCOMPLETED録画統計:**
-| Recording ID              | Chunks | File Size | Status    | Created At              |
+| Recording ID | Chunks | File Size | Status | Created At |
 |---------------------------|--------|-----------|-----------|-------------------------|
-| rec-1772943497777-st68ui  | 8      | 140 KB    | COMPLETED | 2026-03-08 04:18:17 JST |
-| rec-1772944447798-dd0jxe  | 14     | 136 KB    | COMPLETED | 2026-03-08 04:34:07 JST |
-| rec-1772944814718-250cz   | 12     | 138 KB    | COMPLETED | 2026-03-08 04:40:14 JST |
-| rec-1772941993132-92e0tj  | 9      | 138 KB    | COMPLETED | 2026-03-08 03:53:13 JST |
-| rec-1772928135685-ejcwmt  | 9      | 154 KB    | COMPLETED | 2026-03-08 00:02:15 JST |
+| rec-1772943497777-st68ui | 8 | 140 KB | COMPLETED | 2026-03-08 04:18:17 JST |
+| rec-1772944447798-dd0jxe | 14 | 136 KB | COMPLETED | 2026-03-08 04:34:07 JST |
+| rec-1772944814718-250cz | 12 | 138 KB | COMPLETED | 2026-03-08 04:40:14 JST |
+| rec-1772941993132-92e0tj | 9 | 138 KB | COMPLETED | 2026-03-08 03:53:13 JST |
+| rec-1772928135685-ejcwmt | 9 | 154 KB | COMPLETED | 2026-03-08 00:02:15 JST |
 
 ---
 
 ### 2. S3ストレージ確認
 
 **コマンド:**
+
 ```bash
 aws s3 ls s3://prance-recordings-dev-010438500933/sessions/9d461e16-ed8b-486a-9db6-4f9b48ffcb1f/ --human-readable
 ```
 
 **結果:**
+
 - ✅ `recording.webm` ファイル保存確認（145.3 KB）
 - ✅ `video-chunks/` ディレクトリに9個のチャンク保存
 - ✅ ファイル名形式: `{timestamp}-{chunkIndex}.webm`
@@ -69,6 +75,7 @@ aws s3 ls s3://prance-recordings-dev-010438500933/sessions/9d461e16-ed8b-486a-9d
 - ✅ チャンクサイズ: 57KB～288KB（可変）
 
 **video-chunks詳細:**
+
 ```
 2026-03-08 05:08:24  232.2 KiB  10210-10.webm
 2026-03-08 05:08:15  145.0 KiB  1040-1.webm
@@ -88,12 +95,14 @@ aws s3 ls s3://prance-recordings-dev-010438500933/sessions/9d461e16-ed8b-486a-9d
 ### 3. CloudWatch Logs確認
 
 **コマンド:**
+
 ```bash
 aws logs filter-log-events --log-group-name /aws/lambda/prance-websocket-default-dev \
   --filter-pattern "video_chunk_part" --start-time $(($(date +%s) - 7200))000 --max-items 50
 ```
 
 **結果:**
+
 - ✅ video_chunk_part メッセージ受信ログ確認
 - ✅ WebSocketからのビデオチャンク受信正常
 - ✅ Base64デコード・S3保存正常
@@ -104,6 +113,7 @@ aws logs filter-log-events --log-group-name /aws/lambda/prance-websocket-default
 ### 4. エラー分析
 
 **ERRORステータスの録画レコード:**
+
 ```json
 {
   "recording_id": "rec-1772936123987-gbpjzl",
@@ -115,10 +125,12 @@ aws logs filter-log-events --log-group-name /aws/lambda/prance-websocket-default
 ```
 
 **エラー内容:**
+
 - `Cannot find module '@ffmpeg-installer/ffmpeg'`
 - 発生日時: 2026-03-08 02:15 JST
 
 **既に修正済み:**
+
 - `infrastructure/lambda/websocket/default/package.json`で`ffmpeg-static`使用中
 - 最新デプロイ（2026-03-08 05:51 JST）以降はすべて成功
 - ロックメカニズム改善（P1/P2/P3）も正常動作
@@ -142,11 +154,13 @@ aws logs filter-log-events --log-group-name /aws/lambda/prance-websocket-default
 ### 定量的成果
 
 **録画成功率:** 100%（最近5セッション、最新デプロイ以降）
+
 - ロック解放成功率: 99.9%（P3リトライ機能により改善）
 - ChunkID衝突率: <0.0001%/年（UUID v4により改善）
 - データ損失リスク: <1件/月（P1エラーハンドリングにより改善）
 
 **処理時間:**
+
 - ビデオチャンク受信・保存: リアルタイム
 - ffmpeg結合処理: 約5-10秒（9-14チャンク）
 - 最終ファイルサイズ: 136KB～154KB（セッション時間により変動）
@@ -160,17 +174,20 @@ aws logs filter-log-events --log-group-name /aws/lambda/prance-websocket-default
 ### 完了したサブタスク
 
 #### ✅ Task 2.1.1 フロントエンド映像キャプチャ（完了: 2026-03-07）
+
 - Canvas APIでアバター + ユーザーカメラ合成
 - MediaRecorder APIで映像録画
 - WebSocketで動画チャンク送信（1秒ごと）
 - 録画状態管理（Recording/Paused/Stopped）
 
 **実装ファイル:**
+
 - `apps/web/hooks/useVideoRecorder.ts`
 - `apps/web/components/session-player/video-composer.tsx`
 - `apps/web/components/session-player/index.tsx`
 
 #### ✅ Task 2.1.2 Lambda動画処理（完了: 2026-03-07）
+
 - 動画チャンクをS3に保存（video_chunk_part ハンドラー）
 - セッション終了時にチャンク結合（ffmpeg）
 - 最終動画をS3に保存
@@ -178,22 +195,26 @@ aws logs filter-log-events --log-group-name /aws/lambda/prance-websocket-default
 - DynamoDB recordingsテーブル保存
 
 **実装ファイル:**
+
 - `infrastructure/lambda/websocket/default/video-processor.ts`
 - `infrastructure/lambda/websocket/default/index.ts`
 - `infrastructure/lambda/websocket/default/chunk-utils.ts`
 
 **Lambda設定:**
+
 - メモリ: 3008MB
 - タイムアウト: 300秒
 - 依存パッケージ: `ffmpeg-static`
 
 #### ✅ Task 2.1.3 録画再生UI（完了: 2026-03-07）
+
 - セッション詳細ページに録画プレイヤー追加
 - シークバー・再生速度調整
 - タイムスタンプ付きトランスクリプト表示
 - 録画処理ステータス表示（PENDING/PROCESSING/COMPLETED/ERROR）
 
 **実装ファイル:**
+
 - `apps/web/components/session-player/recording-player.tsx`
 - `apps/web/app/dashboard/sessions/[id]/page.tsx`
 
@@ -204,18 +225,21 @@ aws logs filter-log-events --log-group-name /aws/lambda/prance-websocket-default
 ### Task 2.2: 解析機能実装（推定: 2-3週間）
 
 #### 2.2.1 表情・感情解析（1週間）
+
 - AWS Rekognition統合
 - フレーム抽出（1秒ごと）
 - 表情・感情スコアリング
 - 時系列データ保存
 
 #### 2.2.2 音声特徴解析（1週間）
+
 - Web Audio API統合
 - 音高・速度・間・ピッチ解析
 - フィラーワード検出
 - 話速計算
 
 #### 2.2.3 スコアリングアルゴリズム（3日）
+
 - 総合スコア計算
 - カテゴリ別スコア（声・表情・内容・流暢さ）
 - ベンチマーク比較
@@ -227,9 +251,11 @@ aws logs filter-log-events --log-group-name /aws/lambda/prance-websocket-default
 ## 📊 ファイル変更履歴
 
 ### 更新ファイル
+
 - `START_HERE.md` - Phase 2進捗更新、Task 2.1.3完了記録
 
 ### 新規作成ファイル
+
 - `docs/progress/SESSION_SUMMARY_2026-03-08_Task_2.1.3_Complete.md` - 本ファイル
 
 ---
@@ -257,6 +283,7 @@ aws logs filter-log-events --log-group-name /aws/lambda/prance-websocket-default
 ### 3. ffmpeg-staticパッケージの重要性
 
 過去のエラーから学んだ教訓：
+
 - `@ffmpeg-installer/ffmpeg`は依存関係が複雑でデプロイ時にエラーが発生
 - `ffmpeg-static`は単一バイナリで安定動作
 - Lambda関数デプロイ時のパッケージ選定は重要

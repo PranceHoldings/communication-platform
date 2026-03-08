@@ -8,7 +8,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  *
  * Delete an avatar
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async event => {
   console.log('Delete avatar request:', JSON.stringify(event, null, 2));
 
   try {
@@ -58,7 +58,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return errorResponse(403, 'Access denied: Only super admins can delete PRESET avatars');
       }
       if (existingAvatar.orgId !== user.orgId) {
-        return errorResponse(403, 'Access denied: You can only delete avatars from your organization');
+        return errorResponse(
+          403,
+          'Access denied: You can only delete avatars from your organization'
+        );
       }
     }
 
@@ -75,6 +78,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   } catch (error) {
     console.error('Error deleting avatar:', error);
-    return errorResponse(500, 'Failed to delete avatar', error instanceof Error ? error.message : undefined);
+    return errorResponse(
+      500,
+      'Failed to delete avatar',
+      error instanceof Error ? error.message : undefined
+    );
   }
 };

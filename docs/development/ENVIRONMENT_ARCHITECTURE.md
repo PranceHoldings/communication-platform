@@ -61,6 +61,7 @@
 ```
 
 **特徴:**
+
 - ✅ フロントエンドのみローカル（高速なHMR）
 - ✅ バックエンドは完全にAWS（本番同等の動作）
 - ✅ データベースは共有（AWS Aurora）
@@ -68,12 +69,14 @@
 - ❌ Lambda コールドスタート発生
 
 **使用する環境変数:**
+
 ```bash
 # apps/web/.env.local
 NEXT_PUBLIC_API_URL=https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1
 ```
 
 **起動方法:**
+
 ```bash
 cd /workspaces/prance-communication-platform/apps/web
 npm run dev
@@ -109,11 +112,13 @@ npm run dev
 ```
 
 **特徴:**
+
 - ⏳ フロントエンドのデプロイ先未決定
 - ✅ バックエンドは環境Aと同じインフラを共有
 - ✅ データベースは同じAurora
 
 **注意:**
+
 - 現時点では環境Aのみ実装済み
 - フロントエンドの本番デプロイは Phase 2 以降
 
@@ -124,12 +129,14 @@ npm run dev
 ### AWS RDS Aurora Serverless v2
 
 **スペック:**
+
 - エンジン: PostgreSQL 15.4
 - ACU範囲: 0.5 - 1.0（開発環境）
 - ストレージ: 自動スケーリング
 - バックアップ: 7日間保持
 
 **接続情報:**
+
 ```
 Endpoint: prance-dev-database-*.cluster-*.us-east-1.rds.amazonaws.com
 Port: 5432
@@ -139,11 +146,13 @@ Password: (Secrets Manager経由)
 ```
 
 **重要:**
+
 - ✅ Lambda関数からVPC経由で接続
 - ❌ ローカルマシンから直接接続不可（セキュリティグループで制限）
 - ✅ 開発・本番で同じデータベースを使用（スキーマは別テーブル/DBで分離予定）
 
 **現在のユーザーデータ:**
+
 ```sql
 -- 組織
 - Platform Administration (8d4cab88-ab01-41e0-a59c-b93aeabfdbe6)
@@ -159,11 +168,13 @@ Password: (Secrets Manager経由)
 ## 🔑 ローカルPostgreSQL（未使用）
 
 **状態:**
+
 - ✅ Dockerコンテナで起動中（prance-postgres）
 - ❌ 実際には使用していない
 - ❌ .env.localがAWS Lambda APIを指しているため
 
 **接続情報:**
+
 ```
 Host: localhost
 Port: 5432
@@ -173,11 +184,13 @@ Password: password
 ```
 
 **用途:**
+
 - テストデータの一時保存
 - スキーマ確認
 - 将来的な完全ローカル開発環境の構築（Phase 2以降）
 
 **起動確認:**
+
 ```bash
 docker ps | grep prance-postgres
 docker exec prance-postgres psql -U postgres -d prance_dev -c "\dt"
@@ -195,6 +208,7 @@ docker exec prance-postgres psql -U postgres -d prance_dev -c "\dt"
 ```
 
 **内容:**
+
 ```bash
 #############################################
 # AWS Configuration
@@ -335,11 +349,13 @@ aws lambda invoke \
 ### 1. データベースはAWS Auroraのみ
 
 **理由:**
+
 - .env.localがAWS Lambda APIを指している
 - Lambda関数がAWS Auroraに接続
 - ローカルPostgreSQLは使用していない
 
 **影響:**
+
 - オフライン開発不可
 - データベース変更はLambda経由のみ
 - 開発中もAWSコスト発生
@@ -347,20 +363,24 @@ aws lambda invoke \
 ### 2. Lambda コールドスタート
 
 **現象:**
+
 - 初回APIコール時に2-5秒の遅延
 - 頻繁にアクセスすれば緩和される
 
 **対策:**
+
 - Provisioned Concurrency（本番環境で検討）
 - Keep-Alive リクエスト（実装予定）
 
 ### 3. フロントエンドのみローカル
 
 **現状:**
+
 - Next.jsはローカルで実行
 - 全てのAPI呼び出しはAWS Lambda経由
 
 **将来の改善（Phase 2）:**
+
 - Next.js API Routesの実装
 - 完全ローカル開発環境の構築
 - 環境切り替えスクリプト

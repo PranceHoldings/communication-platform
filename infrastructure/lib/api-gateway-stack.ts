@@ -18,7 +18,10 @@ export class ApiGatewayStack extends cdk.Stack {
     // CloudWatch Logs ロググループ
     const restApiLogGroup = new logs.LogGroup(this, 'RestApiLogGroup', {
       logGroupName: `/aws/apigateway/prance-rest-api-${props.environment}`,
-      retention: props.environment === 'production' ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      retention:
+        props.environment === 'production'
+          ? logs.RetentionDays.ONE_MONTH
+          : logs.RetentionDays.ONE_WEEK,
       removalPolicy:
         props.environment === 'production' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
