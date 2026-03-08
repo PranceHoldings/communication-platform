@@ -158,13 +158,9 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
             totalChunks: recordedChunksRef.current.length,
           });
 
-          // Also send chunk for real-time processing (if needed)
-          if (onAudioChunk) {
-            console.log('[AudioRecorder] Calling onAudioChunk callback');
-            onAudioChunk(event.data, timestamp);
-          } else {
-            console.warn('[AudioRecorder] onAudioChunk callback not provided');
-          }
+          // Note: onAudioChunk is intentionally NOT called here
+          // Reason: MediaRecorder with timeslice creates fragmented WebM chunks
+          // that cannot be simply concatenated. We only process the complete blob.
         } else {
           console.warn('[AudioRecorder] ondataavailable fired but data.size is 0');
         }
@@ -210,20 +206,21 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
       mediaRecorderRef.current = mediaRecorder;
 
-      console.log('[AudioRecorder] Starting MediaRecorder with timeslice:', {
-        timeslice,
+      console.log('[AudioRecorder] Starting MediaRecorder (no timeslice):', {
         mimeType: actualMimeType,
         state: mediaRecorder.state,
         hasOnDataAvailable: !!mediaRecorder.ondataavailable,
       });
 
-      // Start recording with timeslice for real-time chunks
-      mediaRecorder.start(timeslice);
+      // Start recording WITHOUT timeslice to get one complete WebM blob
+      // Note: Previously used timeslice=250ms, but this created fragmented chunks
+      // that cannot be properly concatenated into a valid WebM file
+      mediaRecorder.start();
       setIsRecording(true);
 
       console.log('[AudioRecorder] MediaRecorder started:', {
         state: mediaRecorder.state,
-        timeslice,
+        timeslice: 'none (complete blob on stop)',
       });
 
       // Start audio level monitoring
@@ -231,7 +228,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
       console.log('[AudioRecorder] Recording started', {
         mimeType: actualMimeType,
-        timeslice,
+        mode: 'complete blob on stop',
         sampleRate: audioContext.sampleRate,
         recorderState: mediaRecorder.state,
       });

@@ -56,6 +56,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   // WebSocket value refs (to break circular dependencies)
   const isConnectedRef = useRef<boolean>(false);
+  const isAuthenticatedRef = useRef<boolean>(false);
   const sendAudioDataRef = useRef<((blob: Blob) => Promise<void>) | null>(null);
   const sendVideoChunkRef = useRef<((chunk: Blob, timestamp: number) => Promise<void>) | null>(
     null
@@ -151,6 +152,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     (_message: SessionCompleteMessage) => {
       // セッション完了
       setStatus('COMPLETED');
+      setIsAuthenticated(false);
+      isAuthenticatedRef.current = false;
       toast.success(t('sessions.player.messages.sessionCompleted'));
 
       // Clear timeout
@@ -255,6 +258,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     (sessionId: string) => {
       console.log('[SessionPlayer] WebSocket authenticated:', sessionId);
       setIsAuthenticated(true);
+      isAuthenticatedRef.current = true;
       toast.success(t('sessions.player.messages.authenticated'));
     },
     [t]
@@ -361,7 +365,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const handleRecordingComplete = useCallback(
     async (audioBlob: Blob) => {
       // 認証完了後のみ音声データを送信
-      if (isConnectedRef.current && isAuthenticated && sendAudioDataRef.current) {
+      if (isConnectedRef.current && isAuthenticatedRef.current && sendAudioDataRef.current) {
         try {
           console.log('[SessionPlayer] Recording complete:', {
             size: audioBlob.size,
@@ -382,11 +386,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           toast.error(t('sessions.player.messages.audioSendError'));
           setPendingSessionEnd(false);
         }
-      } else if (!isAuthenticated) {
+      } else if (!isAuthenticatedRef.current) {
         console.warn('[SessionPlayer] Skipping audio data - not authenticated yet');
       }
     },
-    [t, isAuthenticated]
+    [t]
   );
 
   const {
@@ -398,10 +402,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     resumeRecording,
     error: recordingError,
   } = useAudioRecorder({
-    onAudioChunk: handleAudioChunk,
     onRecordingComplete: handleRecordingComplete,
     onError: handleRecordingError,
-    timeslice: 250, // 250ms chunks for real-time processing
+    // Note: timeslice removed - we now get one complete WebM blob on stop
+    // instead of fragmented chunks that cannot be properly concatenated
   });
 
   // 録画機能 - ビデオチャンクハンドラー
@@ -623,6 +627,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const handleStop = () => {
     if (status === 'ACTIVE' || status === 'PAUSED' || status === 'READY') {
       setStatus('COMPLETED');
+      // Note: Do NOT reset isAuthenticated here - audio data needs to be sent first
+      // It will be reset in handleSessionComplete() after all processing is done
 
       // 1. Stop audio recording first
       stopRecording();
