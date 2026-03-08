@@ -19,7 +19,8 @@ export interface AudioProcessorConfig {
   bedrockRegion: string;
   bedrockModelId: string;
   s3Bucket: string;
-  language?: string;
+  language?: string; // Deprecated: 固定言語設定（非推奨）
+  autoDetectLanguages?: string[]; // 自動言語検出候補（推奨）
 }
 
 export interface ProcessAudioOptions {
@@ -44,11 +45,12 @@ export class AudioProcessor {
   private s3Bucket: string;
 
   constructor(private config: AudioProcessorConfig) {
-    // Initialize STT
+    // Initialize STT with auto-detect (推奨) or fixed language (非推奨)
     this.stt = new AzureSpeechToText({
       subscriptionKey: config.azureSpeechKey,
       region: config.azureSpeechRegion,
-      language: config.language || LANGUAGE_DEFAULTS.STT_LANGUAGE,
+      autoDetectLanguages: config.autoDetectLanguages, // 自動言語検出（推奨）
+      language: config.language, // フォールバック用固定言語（非推奨）
     });
 
     // Initialize TTS
@@ -153,15 +155,32 @@ export class AudioProcessor {
       // Write input buffer to file
       fs.writeFileSync(inputFile, inputBuffer);
 
-      // Get ffmpeg path from environment variable or fallback to installed version
-      const ffmpegPath = process.env.FFMPEG_PATH || require('@ffmpeg-installer/ffmpeg').path;
+      // Get ffmpeg path with multiple fallback options
+      let ffmpegPath = process.env.FFMPEG_PATH;
+
+      if (!ffmpegPath) {
+        // Try Lambda Layer path first
+        if (fs.existsSync('/opt/bin/ffmpeg')) {
+          ffmpegPath = '/opt/bin/ffmpeg';
+        } else {
+          // Fallback to npm package (ffmpeg-static)
+          try {
+            ffmpegPath = require('ffmpeg-static');
+          } catch (error) {
+            throw new Error('ffmpeg not found. Check Lambda Layer or ffmpeg-static package.');
+          }
+        }
+      }
+
+      console.log('[AudioProcessor] Using ffmpeg path:', ffmpegPath);
 
       // Convert to WAV (16kHz, mono, 16-bit PCM) with volume boost for better speech recognition
-      // Note: volume=3.0 amplifies audio by 3x to improve Azure STT detection
-      const command = `${ffmpegPath} -i ${inputFile} -af "volume=3.0" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
+      // Note: volume=10.0 amplifies audio by 10x to improve Azure STT detection
+      // Also apply dynamic audio compression to normalize levels
+      const command = `${ffmpegPath} -i ${inputFile} -af "volume=10.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
 
       console.log('[AudioProcessor] Converting audio with ffmpeg:', command);
-      const { stdout, stderr } = await execAsync(command);
+      const { stdout, stderr} = await execAsync(command);
 
       if (stderr && !stderr.includes('Output #0')) {
         console.warn('[AudioProcessor] ffmpeg stderr:', stderr);
@@ -185,6 +204,48 @@ export class AudioProcessor {
         console.error('[AudioProcessor] Failed to clean up temp files:', error);
       }
     }
+  }
+
+  /**
+   * Analyze WAV file for audio quality diagnostics
+   */
+  private async analyzeWavFile(wavBuffer: Buffer): Promise<{
+    sampleCount: number;
+    durationSeconds: number;
+    peakLevel: number;
+    rmsLevel: number;
+    hasSpeech: boolean;
+  }> {
+    // WAV header parsing
+    // Offset 40: data chunk, next 4 bytes = data size
+    const dataSize = wavBuffer.readUInt32LE(40);
+    const sampleCount = dataSize / 2; // 16-bit = 2 bytes per sample
+    const sampleRate = wavBuffer.readUInt32LE(24);
+    const durationSeconds = sampleCount / sampleRate;
+
+    // Analyze audio samples (starting at offset 44)
+    let peakLevel = 0;
+    let sumSquares = 0;
+
+    for (let i = 44; i < wavBuffer.length; i += 2) {
+      const sample = wavBuffer.readInt16LE(i);
+      const normalizedSample = Math.abs(sample) / 32768.0; // Normalize to 0.0-1.0
+      peakLevel = Math.max(peakLevel, normalizedSample);
+      sumSquares += normalizedSample * normalizedSample;
+    }
+
+    const rmsLevel = Math.sqrt(sumSquares / sampleCount);
+
+    // Heuristic: RMS > 0.01 suggests audio contains speech/sound
+    const hasSpeech = rmsLevel > 0.01;
+
+    return {
+      sampleCount,
+      durationSeconds,
+      peakLevel,
+      rmsLevel,
+      hasSpeech,
+    };
   }
 
   /**
@@ -218,6 +279,26 @@ export class AudioProcessor {
       console.log('[AudioProcessor] Unknown audio format, assuming WebM');
       audioFormat = 'unknown';
       wavBuffer = await this.convertToWav(audioData, 'unknown');
+    }
+
+    // 🔍 音声品質診断
+    const analysis = await this.analyzeWavFile(wavBuffer);
+    console.log('[AudioProcessor] Audio analysis:', {
+      durationSeconds: analysis.durationSeconds.toFixed(2),
+      sampleCount: analysis.sampleCount,
+      peakLevel: analysis.peakLevel.toFixed(4),
+      rmsLevel: analysis.rmsLevel.toFixed(4),
+      hasSpeech: analysis.hasSpeech,
+    });
+
+    // 🚨 音声が含まれていない場合は事前に警告
+    if (!analysis.hasSpeech) {
+      console.warn('[AudioProcessor] WARNING: Audio RMS level too low, may not contain speech');
+      throw new Error(
+        `Audio quality check failed: RMS level ${analysis.rmsLevel.toFixed(4)} is too low. ` +
+        `This typically means the microphone is muted, not working, or the audio is too quiet. ` +
+        `Please check your microphone settings and speak louder.`
+      );
     }
 
     // Save audio as temporary WAV file

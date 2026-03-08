@@ -6,54 +6,28 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import type {
+  AuthenticateMessage,
+  TranscriptMessage,
+  AvatarResponseMessage,
+  AudioResponseMessage,
+  ProcessingUpdateMessage,
+  SessionCompleteMessage,
+  ErrorMessage,
+  ServerToClientMessage,
+} from '@prance/shared';
 
-export interface WebSocketMessage {
-  type: string;
-  [key: string]: unknown;
-}
+// Re-export for backward compatibility
+export type {
+  TranscriptMessage,
+  AvatarResponseMessage,
+  AudioResponseMessage,
+  ProcessingUpdateMessage,
+  SessionCompleteMessage,
+  ErrorMessage,
+};
 
-export interface TranscriptMessage {
-  type: 'transcript_partial' | 'transcript_final';
-  speaker: 'AI' | 'USER';
-  text: string;
-  timestamp?: number;
-  timestamp_start?: number;
-  timestamp_end?: number;
-  confidence?: number;
-}
-
-export interface AvatarResponseMessage {
-  type: 'avatar_response';
-  speaker: 'AI';
-  text: string;
-  timestamp: number;
-}
-
-export interface ProcessingUpdateMessage {
-  type: 'processing_update';
-  stage: string;
-  progress: number;
-}
-
-export interface ErrorMessage {
-  type: 'error';
-  code: string;
-  message: string;
-  details?: unknown;
-}
-
-export interface SessionCompleteMessage {
-  type: 'session_complete';
-  session_id: string;
-  report_id?: string;
-}
-
-export interface AudioResponseMessage {
-  type: 'audio_response';
-  audio: string; // Base64 encoded audio data
-  contentType: string;
-  timestamp: number;
-}
+// All types are now imported from @prance/shared
 
 interface UseWebSocketOptions {
   sessionId: string;
@@ -73,13 +47,14 @@ interface UseWebSocketReturn {
   error: string | null;
   connect: () => void;
   disconnect: () => void;
-  sendMessage: (message: WebSocketMessage) => void;
+  sendMessage: (message: Record<string, unknown>) => void;
   sendAudioChunk: (data: ArrayBuffer, timestamp: number) => void;
   sendAudioData: (audioBlob: Blob) => Promise<void>;
   sendVideoChunk: (data: Blob, timestamp: number) => Promise<void>;
   sendUserSpeech: (text: string, confidence: number) => void;
   sendSpeechEnd: () => void;
   endSession: () => void;
+  checkVersion: () => void;
 }
 
 export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
@@ -133,7 +108,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const handleMessage = useCallback(
     (event: MessageEvent) => {
       try {
-        const message: WebSocketMessage = JSON.parse(event.data);
+        const message = JSON.parse(event.data) as ServerToClientMessage;
         console.log('WebSocket message received:', message);
 
         // Ignore empty messages
@@ -209,8 +184,17 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             console.log('Video ready:', message);
             break;
 
+          case 'version':
+            // Version information from Lambda
+            console.log('[WebSocket] Lambda Version Info:', message);
+            console.log('  Name:', (message as any).name);
+            console.log('  Version:', (message as any).version);
+            console.log('  Runtime:', (message as any).runtime);
+            console.log('  Audio Processing:', (message as any).audioProcessing);
+            break;
+
           default:
-            console.warn('Unknown WebSocket message type:', message.type, message);
+            console.warn('Unknown WebSocket message type:', (message as any).type, message);
         }
       } catch (err) {
         console.error('Failed to parse WebSocket message:', err);
@@ -254,13 +238,12 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         reconnectAttempts.current = 0;
 
         // Send initial message with session ID
-        ws.send(
-          JSON.stringify({
-            type: 'authenticate',
-            session_id: sessionId,
-            timestamp: Date.now(),
-          })
-        );
+        const authenticateMsg: AuthenticateMessage = {
+          type: 'authenticate',
+          sessionId: sessionId,
+          timestamp: Date.now(),
+        };
+        ws.send(JSON.stringify(authenticateMsg));
       };
 
       ws.onmessage = handleMessage;
@@ -314,7 +297,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     reconnectAttempts.current = 0;
   }, []);
 
-  const sendMessage = useCallback((message: WebSocketMessage) => {
+  const sendMessage = useCallback((message: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
     } else {
@@ -327,6 +310,11 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
   const sendAudioChunk = useCallback(
     (data: ArrayBuffer, timestamp: number) => {
+      console.log('[WebSocket] sendAudioChunk called:', {
+        arrayBufferSize: data.byteLength,
+        timestamp,
+      });
+
       // Convert ArrayBuffer to Base64 string for JSON serialization
       const bytes = new Uint8Array(data);
       let binary = '';
@@ -334,6 +322,12 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         binary += String.fromCharCode(bytes[i]!);
       }
       const base64 = btoa(binary);
+
+      console.log('[WebSocket] Sending audio_chunk message:', {
+        base64Length: base64.length,
+        timestamp,
+        messageType: 'audio_chunk',
+      });
 
       sendMessage({
         type: 'audio_chunk',
@@ -351,25 +345,60 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         const arrayBuffer = await audioBlob.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
 
-        // Convert to Base64 string
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]!);
-        }
-        const base64 = btoa(binary);
+        // AWS API Gateway WebSocket limit: 32KB per message
+        // Split audio data into smaller chunks (30KB) to stay within limit
+        const MAX_CHUNK_SIZE = 30 * 1024; // 30KB
 
-        console.log('[WebSocket] Sending complete audio data:', {
-          size: audioBlob.size,
-          type: audioBlob.type,
-          base64Length: base64.length,
+        const timestamp = Date.now();
+        // Use UUID v4 for collision-resistant chunk IDs
+        const chunkId = `audio-${timestamp}-${crypto.randomUUID()}`;
+        const totalParts = Math.ceil(bytes.byteLength / MAX_CHUNK_SIZE);
+
+        console.log('[WebSocket] Splitting audio data into chunks:', {
+          originalSize: bytes.byteLength,
+          totalParts,
+          chunkId,
         });
 
-        // Send complete audio data
-        sendMessage({
-          type: 'audio_data',
-          audio: base64,
-          contentType: audioBlob.type,
-          timestamp: Date.now(),
+        // Send each part
+        for (let partIndex = 0; partIndex < totalParts; partIndex++) {
+          const start = partIndex * MAX_CHUNK_SIZE;
+          const end = Math.min(start + MAX_CHUNK_SIZE, bytes.byteLength);
+          const partBytes = bytes.slice(start, end);
+
+          // Convert to Base64
+          let binary = '';
+          for (let i = 0; i < partBytes.byteLength; i++) {
+            binary += String.fromCharCode(partBytes[i]!);
+          }
+          const base64Part = btoa(binary);
+
+          console.log(`[WebSocket] Sending audio part ${partIndex + 1}/${totalParts}:`, {
+            chunkId,
+            partSize: partBytes.byteLength,
+            base64Length: base64Part.length,
+          });
+
+          sendMessage({
+            type: 'audio_data_part',
+            chunkId,
+            partIndex,
+            totalParts,
+            data: base64Part,
+            contentType: audioBlob.type,
+            timestamp,
+          });
+
+          // Small delay between parts to avoid overwhelming WebSocket
+          if (partIndex < totalParts - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 10));
+          }
+        }
+
+        console.log('[WebSocket] Audio transmission complete:', {
+          chunkId,
+          totalParts,
+          timestamp,
         });
       } catch (error) {
         console.error('[WebSocket] Failed to send audio data:', error);
@@ -386,17 +415,56 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         const arrayBuffer = await chunk.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
 
-        // Convert to Base64 string
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]!);
-        }
-        const base64 = btoa(binary);
+        // AWS API Gateway WebSocket limit: 32KB per message
+        // We need to split large chunks into smaller sub-chunks
+        // Use 30KB (30,720 bytes) as safe limit to leave room for JSON overhead
+        const MAX_CHUNK_SIZE = 30 * 1024; // 30KB
 
-        // Send video chunk
-        sendMessage({
-          type: 'video_chunk',
-          data: base64,
+        // Generate unique chunk ID with UUID v4 for collision resistance
+        const chunkId = `${timestamp}-${crypto.randomUUID()}`;
+
+        // Calculate total parts needed
+        const totalParts = Math.ceil(arrayBuffer.byteLength / MAX_CHUNK_SIZE);
+
+        console.log(`[WebSocket] Splitting video chunk into ${totalParts} parts:`, {
+          originalSize: arrayBuffer.byteLength,
+          timestamp,
+          chunkId,
+        });
+
+        // Split and send each part
+        for (let partIndex = 0; partIndex < totalParts; partIndex++) {
+          const start = partIndex * MAX_CHUNK_SIZE;
+          const end = Math.min(start + MAX_CHUNK_SIZE, arrayBuffer.byteLength);
+          const partBytes = bytes.slice(start, end);
+
+          // Convert to Base64 string
+          let binary = '';
+          for (let i = 0; i < partBytes.byteLength; i++) {
+            binary += String.fromCharCode(partBytes[i]!);
+          }
+          const base64 = btoa(binary);
+
+          // Send video chunk part
+          sendMessage({
+            type: 'video_chunk_part',
+            chunkId,
+            partIndex,
+            totalParts,
+            data: base64,
+            timestamp,
+          });
+
+          console.log(`[WebSocket] Sent video chunk part ${partIndex + 1}/${totalParts}:`, {
+            chunkId,
+            partSize: partBytes.byteLength,
+            base64Length: base64.length,
+          });
+        }
+
+        console.log(`[WebSocket] Video chunk transmission complete:`, {
+          chunkId,
+          totalParts,
           timestamp,
         });
       } catch (error) {
@@ -429,6 +497,13 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const endSession = useCallback(() => {
     sendMessage({
       type: 'session_end',
+    });
+  }, [sendMessage]);
+
+  const checkVersion = useCallback(() => {
+    console.log('[WebSocket] Requesting version information');
+    sendMessage({
+      type: 'version',
     });
   }, [sendMessage]);
 
@@ -468,5 +543,6 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     sendUserSpeech,
     sendSpeechEnd,
     endSession,
+    checkVersion,
   };
 }

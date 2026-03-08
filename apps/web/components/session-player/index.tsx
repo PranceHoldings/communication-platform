@@ -34,6 +34,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [currentTime, setCurrentTime] = useState(0);
   const [token, setToken] = useState<string | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [pendingSessionEnd, setPendingSessionEnd] = useState(false);
+  const [shouldSendSessionEnd, setShouldSendSessionEnd] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const disconnectRef = useRef<(() => void) | null>(null);
@@ -42,6 +44,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const avatarCanvasRef = useRef<HTMLCanvasElement>(null);
   const userVideoRef = useRef<HTMLVideoElement>(null);
   const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null); // VideoComposerから受け取ったcanvasを保持（useVideoRecorderに渡す）
+
+  // WebSocket value refs (to break circular dependencies)
+  const isConnectedRef = useRef<boolean>(false);
+  const sendAudioDataRef = useRef<((blob: Blob) => Promise<void>) | null>(null);
+  const sendVideoChunkRef = useRef<((chunk: Blob, timestamp: number) => Promise<void>) | null>(null);
+  const endSessionRef = useRef<(() => void) | null>(null);
 
   // トークン取得
   useEffect(() => {
@@ -97,8 +105,15 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           },
         ];
       });
+
+      // If session end is pending, trigger it now after receiving transcript
+      if (pendingSessionEnd && message.speaker === 'USER') {
+        console.log('[SessionPlayer] Transcript received, will send session_end');
+        setPendingSessionEnd(false);
+        setShouldSendSessionEnd(true);
+      }
     }
-  }, []);
+  }, [pendingSessionEnd]);
 
   const handleAvatarResponse = useCallback((message: AvatarResponseMessage) => {
     // AIアバターの応答
@@ -140,22 +155,37 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const handleAudioResponse = useCallback((message: AudioResponseMessage) => {
     // AI音声レスポンスを再生
     try {
+      let audioUrl: string;
+      let needsCleanup = false;
+
       console.log('[SessionPlayer] Audio response received:', {
         contentType: message.contentType,
-        audioLength: message.audio.length,
+        hasAudioUrl: !!message.audioUrl,
+        hasAudioData: !!message.audio,
       });
 
-      // Base64デコード
-      const audioData = atob(message.audio);
-      const arrayBuffer = new ArrayBuffer(audioData.length);
-      const view = new Uint8Array(arrayBuffer);
-      for (let i = 0; i < audioData.length; i++) {
-        view[i] = audioData.charCodeAt(i);
-      }
+      // Check if audio URL is provided (new format)
+      if (message.audioUrl) {
+        // Use S3 URL directly
+        audioUrl = message.audioUrl;
+        console.log('[SessionPlayer] Using audio URL:', audioUrl);
+      } else if (message.audio) {
+        // Fallback to base64 decoding (backward compatibility)
+        const audioData = atob(message.audio);
+        const arrayBuffer = new ArrayBuffer(audioData.length);
+        const view = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < audioData.length; i++) {
+          view[i] = audioData.charCodeAt(i);
+        }
 
-      // Blobを作成
-      const blob = new Blob([arrayBuffer], { type: message.contentType });
-      const audioUrl = URL.createObjectURL(blob);
+        // Create blob
+        const blob = new Blob([arrayBuffer], { type: message.contentType });
+        audioUrl = URL.createObjectURL(blob);
+        needsCleanup = true;
+        console.log('[SessionPlayer] Using base64 audio data');
+      } else {
+        throw new Error('No audio data or URL provided');
+      }
 
       // Audio要素で再生
       if (!audioRef.current) {
@@ -169,12 +199,16 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       };
       audioRef.current.onended = () => {
         setIsPlayingAudio(false);
-        URL.revokeObjectURL(audioUrl);
+        if (needsCleanup) {
+          URL.revokeObjectURL(audioUrl);
+        }
         console.log('[SessionPlayer] Audio playback ended');
       };
       audioRef.current.onerror = (error) => {
         setIsPlayingAudio(false);
-        URL.revokeObjectURL(audioUrl);
+        if (needsCleanup) {
+          URL.revokeObjectURL(audioUrl);
+        }
         console.error('[SessionPlayer] Audio playback error:', error);
         toast.error(t('sessions.player.messages.audioPlaybackError'));
       };
@@ -205,7 +239,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     connect,
     disconnect,
     sendUserSpeech,
-    sendAudioChunk,
+    sendAudioData,
     sendVideoChunk,
     endSession,
   } = useWebSocket({
@@ -220,23 +254,70 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onError: handleError,
   });
 
+  // Sync WebSocket values to refs (to break circular dependencies)
+  useEffect(() => {
+    isConnectedRef.current = isConnected;
+  }, [isConnected]);
+
+  useEffect(() => {
+    sendAudioDataRef.current = sendAudioData;
+  }, [sendAudioData]);
+
+  useEffect(() => {
+    sendVideoChunkRef.current = sendVideoChunk;
+  }, [sendVideoChunk]);
+
+  useEffect(() => {
+    endSessionRef.current = endSession;
+  }, [endSession]);
+
   // Store disconnect function in ref for use in callbacks
   useEffect(() => {
     disconnectRef.current = disconnect;
   }, [disconnect]);
 
+  // Handle session end after transcript is received
+  useEffect(() => {
+    if (shouldSendSessionEnd && isConnected) {
+      console.log('[SessionPlayer] Sending session_end after transcript');
+      setShouldSendSessionEnd(false);
+
+      // Small delay to ensure transcript is rendered
+      setTimeout(() => {
+        endSession();
+
+        // Set timeout to disconnect after 30 seconds if no session_complete received
+        if (sessionEndTimeoutRef.current) {
+          clearTimeout(sessionEndTimeoutRef.current);
+        }
+        sessionEndTimeoutRef.current = setTimeout(() => {
+          console.log('[SessionPlayer] Session end timeout - disconnecting WebSocket');
+          if (disconnectRef.current) {
+            disconnectRef.current();
+          }
+        }, 30000); // 30 seconds timeout
+
+        toast.info(t('sessions.player.messages.processingComplete'));
+      }, 100);
+    }
+  }, [shouldSendSessionEnd, isConnected, endSession, t]);
+
   // Audio Recorder統合
   const handleAudioChunk = useCallback(
     (chunk: Blob, timestamp: number) => {
-      // Only send audio if WebSocket is connected and session is active
-      if (isConnected && (status === 'ACTIVE' || status === 'READY')) {
-        // Convert Blob to ArrayBuffer and send via WebSocket
-        chunk.arrayBuffer().then((arrayBuffer) => {
-          sendAudioChunk(arrayBuffer, timestamp);
-        });
-      }
+      console.log('[SessionPlayer] handleAudioChunk called (buffering only):', {
+        chunkSize: chunk.size,
+        chunkType: chunk.type,
+        timestamp,
+        isConnected,
+        status,
+      });
+
+      // Audio chunks are buffered by useAudioRecorder
+      // They will be sent together in handleRecordingComplete
+      // This prevents duplicate processing (one per chunk + one complete)
     },
-    [isConnected, status, sendAudioChunk]
+    [isConnected, status]
   );
 
   const handleRecordingError = useCallback((error: Error) => {
@@ -246,26 +327,30 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleRecordingComplete = useCallback(
     async (audioBlob: Blob) => {
-      if (isConnected) {
+      if (isConnectedRef.current && sendAudioDataRef.current) {
         try {
           console.log('[SessionPlayer] Recording complete:', {
             size: audioBlob.size,
             type: audioBlob.type,
-            chunks: 'already sent via WebSocket',
           });
 
-          // Audio chunks were already sent in real-time via handleAudioChunk
-          // No need to send the complete blob again (it would exceed WebSocket 32KB limit)
-          // The Lambda function will process the accumulated chunks on session_end
+          console.log('[SessionPlayer] Sending complete audio via WebSocket');
+
+          // Send complete audio blob for STT processing
+          await sendAudioDataRef.current(audioBlob);
+
+          // Set flag to wait for transcript_final before ending session
+          setPendingSessionEnd(true);
 
           toast.info(t('sessions.player.messages.processingAudio'));
         } catch (error) {
           console.error('[SessionPlayer] Failed to process recording:', error);
           toast.error(t('sessions.player.messages.audioSendError'));
+          setPendingSessionEnd(false);
         }
       }
     },
-    [isConnected, t]
+    [t]
   );
 
   const {
@@ -286,10 +371,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   // 録画機能 - ビデオチャンクハンドラー
   const handleVideoChunk = useCallback(
     async (chunk: Blob, timestamp: number) => {
-      if (isConnected && status === 'ACTIVE') {
+      if (isConnectedRef.current && status === 'ACTIVE' && sendVideoChunkRef.current) {
         try {
           // WebSocketでビデオチャンク送信
-          await sendVideoChunk(chunk, timestamp);
+          await sendVideoChunkRef.current(chunk, timestamp);
           console.log('[SessionPlayer] Video chunk sent:', {
             size: chunk.size,
             timestamp,
@@ -300,7 +385,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         }
       }
     },
-    [isConnected, status, sendVideoChunk]
+    [status]
   );
 
   const handleVideoRecordingComplete = useCallback(
@@ -495,9 +580,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       }
 
       // 4. Send session end notification (if connected)
-      if (isConnected) {
-        endSession();
-        toast.info(t('sessions.player.messages.processingAudio'));
+      // Note: If audio was just recorded, endSession() will be called after transcript_final is received
+      if (isConnectedRef.current && !pendingSessionEnd && endSessionRef.current) {
+        endSessionRef.current();
 
         // 5. Set timeout to disconnect after 30 seconds if no session_complete received
         sessionEndTimeoutRef.current = setTimeout(() => {
@@ -506,6 +591,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             disconnectRef.current();
           }
         }, 30000); // 30 seconds timeout
+      } else if (pendingSessionEnd) {
+        console.log('[SessionPlayer] Waiting for transcript before sending session_end');
       }
 
       toast.success(t('sessions.player.messages.sessionEnded'));

@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 import { exec } from 'child_process';
+import { sortChunksByTimestampAndIndex, logSortedChunks, generateChunkKey } from './chunk-utils';
 
 const execAsync = promisify(exec);
 
@@ -56,7 +57,7 @@ export class VideoProcessor {
     timestamp: number,
     chunkIndex: number
   ): Promise<string> {
-    const chunkKey = `sessions/${sessionId}/video-chunks/${timestamp}-${chunkIndex}.webm`;
+    const chunkKey = generateChunkKey(sessionId, 'video', timestamp, chunkIndex, 'webm');
 
     await this.s3Client.send(
       new PutObjectCommand({
@@ -107,17 +108,12 @@ export class VideoProcessor {
 
       console.log('[VideoProcessor] Found chunks:', listResponse.Contents.length);
 
-      // Sort chunks by timestamp (extracted from filename)
-      const sortedChunks = listResponse.Contents
-        .filter(obj => obj.Key && obj.Key.endsWith('.webm'))
-        .sort((a, b) => {
-          const aKey = a.Key || '';
-          const bKey = b.Key || '';
-          // Extract timestamp from filename: {timestamp}-{index}.webm
-          const aTimestamp = parseInt(aKey.split('/').pop()?.split('-')[0] || '0', 10);
-          const bTimestamp = parseInt(bKey.split('/').pop()?.split('-')[0] || '0', 10);
-          return aTimestamp - bTimestamp;
-        });
+      // Filter and sort chunks using shared utility function
+      const filteredChunks = listResponse.Contents.filter(obj => obj.Key && obj.Key.endsWith('.webm'));
+      const sortedChunks = sortChunksByTimestampAndIndex(filteredChunks);
+
+      // Log sorted chunks with validation
+      logSortedChunks(sortedChunks, 'VideoProcessor:combineChunks', 5);
 
       // Download chunks to /tmp
       const tmpDir = path.join('/tmp', `video-${sessionId}-${Date.now()}`);
@@ -162,7 +158,23 @@ export class VideoProcessor {
 
       // Combine chunks using ffmpeg
       const outputPath = path.join(tmpDir, 'output.webm');
-      const ffmpegCommand = `ffmpeg -f concat -safe 0 -i "${concatListPath}" -c copy "${outputPath}"`;
+
+      // Get ffmpeg path with multiple fallback options
+      let ffmpegPath = process.env.FFMPEG_PATH;
+      if (!ffmpegPath) {
+        // Try Lambda Layer path first
+        if (fs.existsSync('/opt/bin/ffmpeg')) {
+          ffmpegPath = '/opt/bin/ffmpeg';
+        } else {
+          // Fallback to npm package (ffmpeg-static)
+          try {
+            ffmpegPath = require('ffmpeg-static');
+          } catch (error) {
+            throw new Error('ffmpeg not found. Check Lambda Layer or ffmpeg-static package.');
+          }
+        }
+      }
+      const ffmpegCommand = `${ffmpegPath} -f concat -safe 0 -i "${concatListPath}" -c copy "${outputPath}"`;
 
       console.log('[VideoProcessor] Running ffmpeg:', ffmpegCommand);
 
