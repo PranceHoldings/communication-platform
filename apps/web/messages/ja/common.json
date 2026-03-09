@@ -41,8 +41,16 @@
     "termsOfService": "利用規約"
   },
   "languages": {
-    "ja": "日本語 (Japanese)",
-    "en": "英語 (English)"
+    "ja": "日本語",
+    "en": "英語",
+    "zh-CN": "中国語（簡体字）",
+    "zh-TW": "中国語（繁体字）",
+    "ko": "韓国語",
+    "es": "スペイン語",
+    "pt": "ポルトガル語",
+    "fr": "フランス語",
+    "de": "ドイツ語",
+    "it": "イタリア語"
   },
   "navigation": {
     "home": "ホーム",
@@ -64,5 +72,17 @@
     "requiredField": "この項目は必須です。",
     "invalidEmail": "無効なメールアドレスです。",
     "invalidPassword": "無効なパスワードです。"
+  },
+  "languagesNative": {
+    "ja": "日本語",
+    "en": "English",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文",
+    "ko": "한국어",
+    "es": "Español",
+    "pt": "Português",
+    "fr": "Français",
+    "de": "Deutsch",
+    "it": "Italiano"
   }
 }

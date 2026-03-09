@@ -22,14 +22,23 @@
  */
 
 /**
- * Available locales
+ * Available locales - All 10 supported languages
  *
  * This list is derived from message file imports in lib/i18n/messages.ts
- * To add a new language, add message files and import them in messages.ts
- *
  * Convention: English ('en') should always be first as the fallback locale
  */
-export const locales = ['en', 'ja'] as const;
+export const locales = [
+  'en',      // English (United States)
+  'ja',      // Japanese
+  'zh-CN',   // Chinese (Simplified)
+  'zh-TW',   // Chinese (Traditional)
+  'ko',      // Korean
+  'es',      // Spanish
+  'pt',      // Portuguese
+  'fr',      // French
+  'de',      // German
+  'it',      // Italian
+] as const;
 
 /**
  * Default locale - First available locale

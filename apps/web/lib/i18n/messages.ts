@@ -34,10 +34,29 @@ import avatarsJa from '@/messages/ja/avatars.json';
 import settingsJa from '@/messages/ja/settings.json';
 import reportsJa from '@/messages/ja/reports.json';
 
-// Add more languages here by importing and adding to messages object
-// Example for Spanish:
-// import commonEs from '@/messages/es/common.json';
-// ...
+// Import Chinese Simplified
+import commonZhCN from '@/messages/zh-CN/common.json';
+
+// Import Chinese Traditional
+import commonZhTW from '@/messages/zh-TW/common.json';
+
+// Import Korean
+import commonKo from '@/messages/ko/common.json';
+
+// Import Spanish
+import commonEs from '@/messages/es/common.json';
+
+// Import Portuguese
+import commonPt from '@/messages/pt/common.json';
+
+// Import French
+import commonFr from '@/messages/fr/common.json';
+
+// Import German
+import commonDe from '@/messages/de/common.json';
+
+// Import Italian
+import commonIt from '@/messages/it/common.json';
 
 const messages: Record<string, Record<string, any>> = {
   en: {
@@ -62,8 +81,95 @@ const messages: Record<string, Record<string, any>> = {
     settings: settingsJa,
     reports: reportsJa,
   },
-  // Add more languages here:
-  // es: { ...commonEs, ... },
+  'zh-CN': {
+    ...commonZhCN,
+    // Other sections fallback to English
+    ...homeEn,
+    ...authEn,
+    ...dashboardEn,
+    sessions: sessionsEn,
+    scenarios: scenariosEn,
+    avatars: avatarsEn,
+    settings: settingsEn,
+    reports: reportsEn,
+  },
+  'zh-TW': {
+    ...commonZhTW,
+    ...homeEn,
+    ...authEn,
+    ...dashboardEn,
+    sessions: sessionsEn,
+    scenarios: scenariosEn,
+    avatars: avatarsEn,
+    settings: settingsEn,
+    reports: reportsEn,
+  },
+  ko: {
+    ...commonKo,
+    ...homeEn,
+    ...authEn,
+    ...dashboardEn,
+    sessions: sessionsEn,
+    scenarios: scenariosEn,
+    avatars: avatarsEn,
+    settings: settingsEn,
+    reports: reportsEn,
+  },
+  es: {
+    ...commonEs,
+    ...homeEn,
+    ...authEn,
+    ...dashboardEn,
+    sessions: sessionsEn,
+    scenarios: scenariosEn,
+    avatars: avatarsEn,
+    settings: settingsEn,
+    reports: reportsEn,
+  },
+  pt: {
+    ...commonPt,
+    ...homeEn,
+    ...authEn,
+    ...dashboardEn,
+    sessions: sessionsEn,
+    scenarios: scenariosEn,
+    avatars: avatarsEn,
+    settings: settingsEn,
+    reports: reportsEn,
+  },
+  fr: {
+    ...commonFr,
+    ...homeEn,
+    ...authEn,
+    ...dashboardEn,
+    sessions: sessionsEn,
+    scenarios: scenariosEn,
+    avatars: avatarsEn,
+    settings: settingsEn,
+    reports: reportsEn,
+  },
+  de: {
+    ...commonDe,
+    ...homeEn,
+    ...authEn,
+    ...dashboardEn,
+    sessions: sessionsEn,
+    scenarios: scenariosEn,
+    avatars: avatarsEn,
+    settings: settingsEn,
+    reports: reportsEn,
+  },
+  it: {
+    ...commonIt,
+    ...homeEn,
+    ...authEn,
+    ...dashboardEn,
+    sessions: sessionsEn,
+    scenarios: scenariosEn,
+    avatars: avatarsEn,
+    settings: settingsEn,
+    reports: reportsEn,
+  },
 };
 
 /**

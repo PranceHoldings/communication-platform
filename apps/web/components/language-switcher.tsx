@@ -5,36 +5,31 @@ import { useI18n } from '@/lib/i18n/provider';
 import { locales } from '@/lib/i18n/config';
 
 /**
- * Language metadata for UI display
+ * Language Switcher Component
  *
- * IMPORTANT: This list should match the locales in lib/i18n/config.ts
- * Only languages with complete message files should be included here.
+ * Display names are managed in language resources (messages/{locale}/common.json)
+ * - languages.{code}: Translated language name (e.g., "Japanese" in English UI)
+ * - languagesNative.{code}: Native language name (e.g., "日本語")
  *
  * To add a new language:
- * 1. Add message files in apps/web/messages/[locale]/
- * 2. Import in lib/i18n/messages.ts
- * 3. Update lib/i18n/config.ts locales array
- * 4. Add metadata entry here
+ * 1. Add locale to lib/i18n/config.ts
+ * 2. Create messages/{locale}/common.json
+ * 3. Add entries to languages and languagesNative sections
+ * 4. Deploy - no code changes needed!
  */
-const languageMetadata: Record<string, { name: string; nativeName: string; flag: string }> = {
-  en: { name: 'English', nativeName: 'English', flag: '🇺🇸' },
-  ja: { name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
-  'zh-CN': { name: 'Chinese (Simplified)', nativeName: '简体中文', flag: '🇨🇳' },
-  ko: { name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
-  es: { name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
-  fr: { name: 'French', nativeName: 'Français', flag: '🇫🇷' },
-  de: { name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
-};
 
-// Build available languages from config locales
-const languages = locales.map(code => ({
-  code,
-  ...(languageMetadata[code] || {
-    name: code.toUpperCase(),
-    nativeName: code.toUpperCase(),
-    flag: '🌐',
-  }),
-}));
+const languageFlags: Record<string, string> = {
+  en: '🇺🇸',
+  ja: '🇯🇵',
+  'zh-CN': '🇨🇳',
+  'zh-TW': '🇹🇼',
+  ko: '🇰🇷',
+  es: '🇪🇸',
+  pt: '🇧🇷',
+  fr: '🇫🇷',
+  de: '🇩🇪',
+  it: '🇮🇹',
+};
 
 export default function LanguageSwitcher() {
   const { locale, setLocale, t } = useI18n();
@@ -47,6 +42,13 @@ export default function LanguageSwitcher() {
     setLocale(newLocale);
     // setLocale will reload the page, so no need to set isChanging back to false
   };
+
+  // Build available languages from config locales
+  const languages = locales.map(code => ({
+    code,
+    flag: languageFlags[code] || '🌐',
+    nativeName: t(`languagesNative.${code}`),
+  }));
 
   return (
     <div className="relative inline-block">

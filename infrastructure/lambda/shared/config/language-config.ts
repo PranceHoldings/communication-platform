@@ -1,16 +1,20 @@
 /**
  * Language Configuration
- * 
+ *
  * Resource-file-based language management.
  * Adding a new language only requires adding an entry to the LANGUAGES array.
- * 
+ *
  * Language Code Formats:
  * - languageCode: ISO 639-1 ('ja', 'en', 'zh-CN', 'zh-TW')
  * - sttCode: BCP-47 for Azure STT ('ja-JP', 'en-US', 'zh-CN', 'zh-TW')
- * 
+ *
  * Chinese Language Handling:
  * - zh-CN (Simplified Chinese) and zh-TW (Traditional Chinese) are COMPLETELY DIFFERENT languages
  * - They must be treated separately, not as regional variants
+ *
+ * Display Names:
+ * - Display names are managed in Frontend language resources (apps/web/messages/{locale}/common.json)
+ * - Use t('languages.{code}') or t('languagesNative.{code}') in UI components
  */
 
 /**
@@ -19,43 +23,38 @@
 export interface RegionalVariant {
   /** BCP-47 code (e.g., 'en-US', 'en-GB') */
   code: string;
-  /** Display name (e.g., 'English (United States)') */
-  displayName: string;
   /** Priority for auto-detection (1 = highest) */
   priority: number;
 }
 
 /**
- * Language metadata
+ * Language metadata (Backend - technical identifiers only)
  */
 export interface LanguageMetadata {
   /** ISO 639-1 language code (e.g., 'ja', 'en', 'zh-CN', 'zh-TW') */
   languageCode: string;
   /** BCP-47 code for STT (e.g., 'ja-JP', 'en-US') */
   sttCode: string;
-  /** Display name (e.g., '日本語', 'English') */
-  displayName: string;
   /** Regional variants for this language (empty for languages like Japanese, Chinese variants) */
   regionalVariants: RegionalVariant[];
 }
 
 /**
  * All supported languages
- * 
+ *
  * To add a new language:
  * 1. Add an entry to this array
- * 2. Create apps/web/messages/{languageCode}.json for UI translations
- * 3. Deploy - no code changes required!
+ * 2. Create apps/web/messages/{languageCode}/common.json for UI translations
+ * 3. Add display name to languages/languagesNative sections
+ * 4. Deploy - no code changes required!
  */
 export const LANGUAGES: LanguageMetadata[] = [
   {
     languageCode: 'ja',
     sttCode: 'ja-JP',
-    displayName: '日本語',
     regionalVariants: [
       {
         code: 'ja-JP',
-        displayName: '日本語（日本）',
         priority: 1,
       },
     ],
@@ -63,26 +62,21 @@ export const LANGUAGES: LanguageMetadata[] = [
   {
     languageCode: 'en',
     sttCode: 'en-US',
-    displayName: 'English',
     regionalVariants: [
       {
         code: 'en-US',
-        displayName: 'English (United States)',
         priority: 1,
       },
       {
         code: 'en-GB',
-        displayName: 'English (United Kingdom)',
         priority: 2,
       },
       {
         code: 'en-AU',
-        displayName: 'English (Australia)',
         priority: 3,
       },
       {
         code: 'en-CA',
-        displayName: 'English (Canada)',
         priority: 4,
       },
     ],
@@ -90,11 +84,9 @@ export const LANGUAGES: LanguageMetadata[] = [
   {
     languageCode: 'zh-CN',
     sttCode: 'zh-CN',
-    displayName: '中文（简体）',
     regionalVariants: [
       {
         code: 'zh-CN',
-        displayName: '中文（简体，中国大陆）',
         priority: 1,
       },
     ],
@@ -102,16 +94,13 @@ export const LANGUAGES: LanguageMetadata[] = [
   {
     languageCode: 'zh-TW',
     sttCode: 'zh-TW',
-    displayName: '中文（繁體）',
     regionalVariants: [
       {
         code: 'zh-TW',
-        displayName: '中文（繁體，台灣）',
         priority: 1,
       },
       {
         code: 'zh-HK',
-        displayName: '中文（繁體，香港）',
         priority: 2,
       },
     ],
@@ -119,11 +108,9 @@ export const LANGUAGES: LanguageMetadata[] = [
   {
     languageCode: 'ko',
     sttCode: 'ko-KR',
-    displayName: '한국어',
     regionalVariants: [
       {
         code: 'ko-KR',
-        displayName: '한국어（대한민국）',
         priority: 1,
       },
     ],
@@ -131,21 +118,17 @@ export const LANGUAGES: LanguageMetadata[] = [
   {
     languageCode: 'es',
     sttCode: 'es-ES',
-    displayName: 'Español',
     regionalVariants: [
       {
         code: 'es-ES',
-        displayName: 'Español (España)',
         priority: 1,
       },
       {
         code: 'es-MX',
-        displayName: 'Español (México)',
         priority: 2,
       },
       {
         code: 'es-AR',
-        displayName: 'Español (Argentina)',
         priority: 3,
       },
     ],
@@ -153,16 +136,13 @@ export const LANGUAGES: LanguageMetadata[] = [
   {
     languageCode: 'pt',
     sttCode: 'pt-BR',
-    displayName: 'Português',
     regionalVariants: [
       {
         code: 'pt-BR',
-        displayName: 'Português (Brasil)',
         priority: 1,
       },
       {
         code: 'pt-PT',
-        displayName: 'Português (Portugal)',
         priority: 2,
       },
     ],
@@ -170,16 +150,13 @@ export const LANGUAGES: LanguageMetadata[] = [
   {
     languageCode: 'fr',
     sttCode: 'fr-FR',
-    displayName: 'Français',
     regionalVariants: [
       {
         code: 'fr-FR',
-        displayName: 'Français (France)',
         priority: 1,
       },
       {
         code: 'fr-CA',
-        displayName: 'Français (Canada)',
         priority: 2,
       },
     ],
@@ -187,11 +164,9 @@ export const LANGUAGES: LanguageMetadata[] = [
   {
     languageCode: 'de',
     sttCode: 'de-DE',
-    displayName: 'Deutsch',
     regionalVariants: [
       {
         code: 'de-DE',
-        displayName: 'Deutsch (Deutschland)',
         priority: 1,
       },
     ],
@@ -199,11 +174,9 @@ export const LANGUAGES: LanguageMetadata[] = [
   {
     languageCode: 'it',
     sttCode: 'it-IT',
-    displayName: 'Italiano',
     regionalVariants: [
       {
         code: 'it-IT',
-        displayName: 'Italiano (Italia)',
         priority: 1,
       },
     ],
@@ -222,7 +195,7 @@ export const MAX_AUTO_DETECT_LANGUAGES = 4;
 
 /**
  * Get language metadata by language code
- * 
+ *
  * @param languageCode ISO 639-1 code (e.g., 'ja', 'en', 'zh-CN')
  * @returns Language metadata or undefined if not found
  */
@@ -232,10 +205,10 @@ export function getLanguageMetadata(languageCode: string): LanguageMetadata | un
 
 /**
  * Normalize language code to BCP-47 format for STT
- * 
+ *
  * @param languageCode ISO 639-1 or BCP-47 language code
  * @returns BCP-47 language code (e.g., 'ja-JP', 'en-US')
- * 
+ *
  * Examples:
  * - 'ja' → 'ja-JP'
  * - 'ja-JP' → 'ja-JP'
@@ -271,16 +244,16 @@ export function normalizeLanguageCode(languageCode: string): string {
 
 /**
  * Get language priority list for auto-detection
- * 
+ *
  * @param primaryLanguage Primary language code (ISO 639-1 or BCP-47)
  * @returns Array of BCP-47 language codes, ordered by priority (max 4)
- * 
+ *
  * Examples:
  * - 'ja' → ['ja-JP', 'en-US']
  * - 'en' → ['en-US', 'en-GB', 'en-AU', 'en-CA']
  * - 'zh-TW' → ['zh-TW', 'zh-HK', 'en-US', 'ja-JP']
  * - 'zh-CN' → ['zh-CN', 'en-US', 'ja-JP'] (NOT including zh-TW - they're different!)
- * 
+ *
  * Logic:
  * 1. Place primary language first
  * 2. Add its regional variants
@@ -322,10 +295,10 @@ export function getLanguagePriority(primaryLanguage: string): string[] {
 
 /**
  * Get base language code (ISO 639-1) from BCP-47
- * 
+ *
  * @param languageCode BCP-47 language code
  * @returns ISO 639-1 base language code
- * 
+ *
  * Examples:
  * - 'ja-JP' → 'ja'
  * - 'en-US' → 'en'
@@ -344,7 +317,7 @@ export function getBaseLanguageCode(languageCode: string): string {
 
 /**
  * Get all supported language codes
- * 
+ *
  * @returns Array of ISO 639-1 language codes
  */
 export function getSupportedLanguages(): string[] {
@@ -353,7 +326,7 @@ export function getSupportedLanguages(): string[] {
 
 /**
  * Get all supported STT codes
- * 
+ *
  * @returns Array of BCP-47 language codes
  */
 export function getSupportedSTTCodes(): string[] {
