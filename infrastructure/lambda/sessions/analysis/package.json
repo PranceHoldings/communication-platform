@@ -1,0 +1,11 @@
+{
+  "name": "prance-session-analysis",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/client-rekognition": "^3.0.0",
+    "@prisma/client": "^5.9.0"
+  }
+}

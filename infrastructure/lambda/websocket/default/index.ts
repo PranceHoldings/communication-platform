@@ -28,6 +28,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AudioProcessor } from './audio-processor';
 import { VideoProcessor } from './video-processor';
 import { sortChunksByTimestampAndIndex, logSortedChunks, generateChunkKey } from './chunk-utils';
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 
 // Lambda function version
 const LAMBDA_VERSION = '1.1.0';
@@ -92,6 +93,10 @@ const ddbClient = new DynamoDBClient({});
 const ddb = DynamoDBDocumentClient.from(ddbClient);
 
 const s3Client = new S3Client({});
+
+const lambdaClient = new LambdaClient({
+  region: process.env.AWS_REGION || DEFAULT_AWS_REGION,
+});
 
 // Audio Processor (lazy initialization to avoid errors when API keys are not set)
 let audioProcessor: AudioProcessor | null = null;
@@ -1125,6 +1130,30 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         } else {
           // Audio processing is complete (or was never started), send session_complete now
           console.log('[session_end] Audio processing complete or not started, sending session_complete');
+          
+          // 🆕 Trigger automatic analysis (if enabled)
+          if (process.env.ENABLE_AUTO_ANALYSIS === 'true' && connectionData?.sessionId) {
+            console.log('[session_end] Triggering automatic analysis', {
+              sessionId: connectionData.sessionId,
+            });
+            
+            try {
+              // Invoke analysis Lambda function asynchronously
+              await lambdaClient.send(
+                new InvokeCommand({
+                  FunctionName: process.env.ANALYSIS_LAMBDA_FUNCTION_NAME || 'prance-session-analysis-dev',
+                  InvocationType: 'Event', // Asynchronous invocation
+                  Payload: JSON.stringify({ sessionId: connectionData.sessionId }),
+                })
+              );
+              
+              console.log('[session_end] Analysis triggered successfully');
+            } catch (analysisError) {
+              console.error('[session_end] Failed to trigger analysis:', analysisError);
+              // Non-critical error - continue to send session_complete
+            }
+          }
+          
           await sendToConnection(connectionId, {
             type: 'session_complete',
             sessionId: connectionData?.sessionId,
