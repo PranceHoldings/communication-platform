@@ -5,9 +5,9 @@
 
 import { S3Client } from '@aws-sdk/client-s3';
 import { PrismaClient } from '@prisma/client';
-import { FrameAnalyzer } from './frame-analyzer';
-import { AudioAnalyzer } from '../../shared/analysis/audio-analyzer';
-import { ScoreCalculator } from '../../shared/analysis/score-calculator';
+import { RekognitionAnalyzer } from './rekognition';
+import { AudioAnalyzer } from './audio-analyzer';
+import { ScoreCalculator } from './score-calculator';
 import type {
   EmotionAnalysis,
   AudioAnalysis,
@@ -30,16 +30,14 @@ export interface AnalysisResult {
 }
 
 export class AnalysisOrchestrator {
-  private frameAnalyzer: FrameAnalyzer;
+  private frameAnalyzer: RekognitionAnalyzer;
   private audioAnalyzer: AudioAnalyzer;
   private scoreCalculator: ScoreCalculator;
   private prisma: PrismaClient;
   private bucket: string;
 
   constructor(config: AnalysisOrchestratorConfig) {
-    this.frameAnalyzer = new FrameAnalyzer({
-      s3Client: config.s3Client,
-      bucket: config.bucket,
+    this.frameAnalyzer = new RekognitionAnalyzer({
       region: config.region,
     });
     this.audioAnalyzer = new AudioAnalyzer();
@@ -182,59 +180,23 @@ export class AnalysisOrchestrator {
 
   /**
    * Perform emotion analysis on video frames
+   * TODO: Implement video frame extraction and analysis
    */
   private async performEmotionAnalysis(
     sessionId: string,
     recordingId: string,
     videoKey: string
   ): Promise<EmotionAnalysis[]> {
-    try {
-      // Extract frames and analyze emotions
-      const videoAnalysisResult = await this.frameAnalyzer.analyzeVideo(
-        sessionId,
-        videoKey,
-        {
-          interval: 1, // Extract 1 frame per second
-          maxFrames: 60, // Max 60 frames (1 minute)
-        }
-      );
+    console.log('[AnalysisOrchestrator] Emotion analysis temporarily disabled', {
+      sessionId,
+      recordingId,
+      videoKey,
+    });
 
-      // Convert to EmotionAnalysis format and save to DB
-      const emotionAnalyses: EmotionAnalysis[] = [];
-
-      for (const frame of videoAnalysisResult.frames) {
-        const analysis = await this.prisma.emotionAnalysis.create({
-          data: {
-            sessionId,
-            recordingId,
-            timestamp: frame.timestamp,
-            frameUrl: frame.frameUrl,
-            emotions: frame.analysis.emotions as any,
-            dominantEmotion: frame.analysis.dominantEmotion,
-            ageRange: frame.analysis.ageRange as any,
-            gender: frame.analysis.gender,
-            genderConfidence: frame.analysis.genderConfidence,
-            eyesOpen: frame.analysis.eyesOpen,
-            eyesOpenConfidence: frame.analysis.eyesOpenConfidence,
-            mouthOpen: frame.analysis.mouthOpen,
-            mouthOpenConfidence: frame.analysis.mouthOpenConfidence,
-            pose: frame.analysis.pose as any,
-            confidence: frame.analysis.confidence,
-            brightness: frame.analysis.quality?.brightness,
-            sharpness: frame.analysis.quality?.sharpness,
-            processingTimeMs: frame.processingTimeMs,
-          },
-        });
-
-        emotionAnalyses.push(analysis as EmotionAnalysis);
-      }
-
-      return emotionAnalyses;
-    } catch (error) {
-      console.error('[AnalysisOrchestrator] Emotion analysis failed:', error);
-      // Return empty array if emotion analysis fails (non-critical)
-      return [];
-    }
+    // TODO: Implement video frame extraction using ffmpeg
+    // TODO: Call frameAnalyzer.analyzeFrameFromS3 for each extracted frame
+    // For now, return empty array to allow audio analysis and scoring to proceed
+    return [];
   }
 
   /**

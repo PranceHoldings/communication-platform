@@ -46,6 +46,10 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly updateAvatarFunction: nodejs.NodejsFunction;
   public readonly deleteAvatarFunction: nodejs.NodejsFunction;
   public readonly cloneAvatarFunction: nodejs.NodejsFunction;
+  public readonly sessionAnalysisFunction: nodejs.NodejsFunction;
+  public readonly getAnalysisFunction: nodejs.NodejsFunction;
+  public readonly triggerAnalysisFunction: nodejs.NodejsFunction;
+  public readonly getScoreFunction: nodejs.NodejsFunction;
   public readonly authorizer: apigateway.TokenAuthorizer;
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
@@ -597,6 +601,93 @@ export class ApiLambdaStack extends cdk.Stack {
       bundling: prismaBundlingConfig,
     });
 
+    // ==================== セッション解析Lambda関数 ====================
+
+    // セッション解析処理Lambda関数（非同期実行）
+    this.sessionAnalysisFunction = new nodejs.NodejsFunction(this, 'SessionAnalysisFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-sessions-analysis-${props.environment}`,
+      description: 'Process session analysis (emotion, audio, scoring)',
+      entry: path.join(__dirname, '../lambda/sessions/analysis/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.minutes(5), // 解析処理は時間がかかる
+      memorySize: 3008, // 高メモリ（Rekognition処理）
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+      environment: {
+        ...commonEnvironment,
+        RECORDINGS_BUCKET_NAME: props.recordingsBucket.bucketName,
+        ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS || 'true',
+      },
+    });
+
+    // S3とRekognitionアクセス権限を付与
+    props.recordingsBucket.grantRead(this.sessionAnalysisFunction);
+    this.sessionAnalysisFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'rekognition:DetectFaces',
+          'rekognition:RecognizeCelebrities',
+          'rekognition:DetectModerationLabels',
+        ],
+        resources: ['*'],
+      })
+    );
+
+    // 解析結果取得Lambda関数
+    this.getAnalysisFunction = new nodejs.NodejsFunction(this, 'GetAnalysisFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-sessions-get-analysis-${props.environment}`,
+      description: 'Get session analysis results',
+      entry: path.join(__dirname, '../lambda/sessions/get-analysis/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // 解析トリガーLambda関数
+    this.triggerAnalysisFunction = new nodejs.NodejsFunction(this, 'TriggerAnalysisFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-sessions-trigger-analysis-${props.environment}`,
+      description: 'Trigger session analysis manually',
+      entry: path.join(__dirname, '../lambda/sessions/trigger-analysis/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+      environment: {
+        ...commonEnvironment,
+        ANALYSIS_FUNCTION_NAME: `prance-sessions-analysis-${props.environment}`,
+      },
+    });
+
+    // 解析Lambda呼び出し権限を付与
+    this.sessionAnalysisFunction.grantInvoke(this.triggerAnalysisFunction);
+
+    // スコア取得Lambda関数
+    this.getScoreFunction = new nodejs.NodejsFunction(this, 'GetScoreFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-sessions-get-score-${props.environment}`,
+      description: 'Get session score',
+      entry: path.join(__dirname, '../lambda/sessions/get-score/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
     // ==================== WebSocket Lambda Functions ====================
 
     // WebSocket $connect Handler
@@ -713,6 +804,9 @@ export class ApiLambdaStack extends cdk.Stack {
         VIDEO_RESOLUTION: process.env.VIDEO_RESOLUTION || '',
         AUDIO_CONTENT_TYPE: process.env.AUDIO_CONTENT_TYPE || '',
         VIDEO_CONTENT_TYPE: process.env.VIDEO_CONTENT_TYPE || '',
+        // Analysis Configuration
+        ANALYSIS_FUNCTION_NAME: `prance-sessions-analysis-${props.environment}`,
+        ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS || 'true',
       },
       bundling: {
         minify: props.environment === 'production',
@@ -779,6 +873,9 @@ export class ApiLambdaStack extends cdk.Stack {
         ],
       })
     );
+
+    // Lambda invoke permission for session analysis (auto-trigger on session_end)
+    this.sessionAnalysisFunction.grantInvoke(websocketDefaultFunction);
 
     // ==================== API Gateway統合 ====================
 
@@ -884,6 +981,25 @@ export class ApiLambdaStack extends cdk.Stack {
       allowTestInvoke: props.environment !== 'production',
     });
 
+    // セッション解析API統合
+    const getAnalysisIntegration = new apigateway.LambdaIntegration(this.getAnalysisFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const triggerAnalysisIntegration = new apigateway.LambdaIntegration(
+      this.triggerAnalysisFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const getScoreIntegration = new apigateway.LambdaIntegration(this.getScoreFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
     // APIリソースの作成
     const apiV1 = this.restApi.root.resourceForPath('api/v1');
 
@@ -936,6 +1052,30 @@ export class ApiLambdaStack extends cdk.Stack {
     // GET /api/v1/sessions/{id} (Get session by ID)
     const sessionIdResource = sessionsResource.addResource('{id}');
     sessionIdResource.addMethod('GET', getSessionIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // GET /api/v1/sessions/{id}/analysis (Get session analysis results)
+    const analysisResource = sessionIdResource.addResource('analysis');
+    analysisResource.addMethod('GET', getAnalysisIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/sessions/{id}/analyze (Trigger session analysis)
+    const analyzeResource = sessionIdResource.addResource('analyze');
+    analyzeResource.addMethod('POST', triggerAnalysisIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // GET /api/v1/sessions/{id}/score (Get session score)
+    const scoreResource = sessionIdResource.addResource('score');
+    scoreResource.addMethod('GET', getScoreIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,

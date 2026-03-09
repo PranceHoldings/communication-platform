@@ -4,7 +4,7 @@
  */
 
 import { S3Client } from '@aws-sdk/client-s3';
-import { AnalysisOrchestrator } from '../../websocket/default/analysis-orchestrator';
+import { AnalysisOrchestrator } from '../../shared/analysis/analysis-orchestrator';
 
 // Environment variables
 const S3_BUCKET = process.env.S3_BUCKET || '';
