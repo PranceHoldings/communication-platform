@@ -13,6 +13,10 @@ import {
   type Recording,
   type Transcript,
 } from '@/components/session-player/recording-player';
+import { getAnalysis, triggerAnalysis, type AnalysisResult } from '@/lib/api/analysis';
+import { ScoreDashboard } from '@/components/analysis/score-dashboard';
+import { PerformanceRadar } from '@/components/analysis/performance-radar';
+import { DetailStats } from '@/components/analysis/detail-stats';
 import Link from 'next/link';
 
 export default function SessionDetailPage() {
@@ -22,8 +26,12 @@ export default function SessionDetailPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [avatar, setAvatar] = useState<Avatar | null>(null);
   const [scenario, setScenario] = useState<Scenario | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [triggeringAnalysis, setTriggeringAnalysis] = useState(false);
 
   const sessionId = params.id as string;
 
@@ -46,10 +54,45 @@ export default function SessionDetailPage() {
       // シナリオ情報取得
       const scenarioData = await getScenario(sessionData.scenarioId);
       setScenario(scenarioData);
+
+      // 完了したセッションの場合、解析結果を取得
+      if (sessionData.status === 'COMPLETED') {
+        loadAnalysisData();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('sessions.detail.notFound'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAnalysisData = async () => {
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+    try {
+      const analysisData = await getAnalysis(sessionId);
+      setAnalysis(analysisData);
+    } catch (err) {
+      // 解析がまだ完了していない場合はエラーを無視
+      console.log('Analysis not yet available:', err);
+      setAnalysisError(null);
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
+  const handleTriggerAnalysis = async () => {
+    setTriggeringAnalysis(true);
+    try {
+      await triggerAnalysis(sessionId);
+      // 解析開始後、少し待ってから結果を再取得
+      setTimeout(() => {
+        loadAnalysisData();
+      }, 2000);
+    } catch (err) {
+      setAnalysisError(err instanceof Error ? err.message : 'Failed to trigger analysis');
+    } finally {
+      setTriggeringAnalysis(false);
     }
   };
 
@@ -117,6 +160,105 @@ export default function SessionDetailPage() {
         />
       ) : (
         <SessionPlayer session={session} avatar={avatar} scenario={scenario} />
+      )}
+
+      {/* 解析結果セクション */}
+      {session.status === 'COMPLETED' && (
+        <div className="mt-8">
+          {analysisLoading ? (
+            <div className="bg-white rounded-lg shadow p-8">
+              <div className="flex items-center justify-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>
+                <p className="text-gray-500">{t('analysis.loading')}</p>
+              </div>
+            </div>
+          ) : analysis && analysis.sessionScore ? (
+            <div className="space-y-6">
+              {/* Score Dashboard */}
+              <ScoreDashboard score={analysis.sessionScore} />
+
+              {/* Performance Radar Chart */}
+              <PerformanceRadar score={analysis.sessionScore} />
+
+              {/* Detail Statistics */}
+              <DetailStats
+                audioSummary={analysis.audioSummary}
+                emotionSummary={analysis.emotionSummary}
+              />
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow p-8 text-center">
+              <svg
+                className="w-16 h-16 text-gray-400 mx-auto mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {t('analysis.notAvailable.title')}
+              </h3>
+              <p className="text-gray-600 mb-6">{t('analysis.notAvailable.description')}</p>
+              <button
+                onClick={handleTriggerAnalysis}
+                disabled={triggeringAnalysis}
+                className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {triggeringAnalysis ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    {t('analysis.triggering')}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    {t('analysis.trigger')}
+                  </>
+                )}
+              </button>
+              {analysisError && (
+                <p className="mt-4 text-sm text-red-600">{analysisError}</p>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

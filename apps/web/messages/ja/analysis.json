@@ -1,0 +1,43 @@
+{
+  "loading": "解析結果を読み込み中...",
+  "triggering": "解析を開始中...",
+  "trigger": "解析を開始",
+  "dashboard": {
+    "title": "セッション解析",
+    "outOf100": "/ 100",
+    "strengths": "強み",
+    "improvements": "改善点"
+  },
+  "scores": {
+    "emotion": "感情",
+    "audio": "音声",
+    "content": "内容",
+    "delivery": "表現"
+  },
+  "radar": {
+    "title": "パフォーマンス概要",
+    "score": "スコア",
+    "stability": "安定性",
+    "positivity": "ポジティブ性",
+    "confidence": "自信",
+    "clarity": "明瞭さ",
+    "fluency": "流暢さ",
+    "pacing": "ペース"
+  },
+  "stats": {
+    "title": "詳細統計",
+    "audioAnalysis": "音声解析",
+    "emotionAnalysis": "感情解析",
+    "speakingRate": "話速",
+    "volume": "音量",
+    "fillerWords": "フィラーワード",
+    "pauses": "ポーズ",
+    "dominantEmotion": "支配的な感情",
+    "avgConfidence": "平均信頼度",
+    "emotionDistribution": "感情分布"
+  },
+  "notAvailable": {
+    "title": "解析結果がありません",
+    "description": "このセッションはまだ解析されていません。下のボタンをクリックして解析を開始してください。"
+  }
+}
