@@ -869,6 +869,8 @@ export default function BulkInvitationStatusPage() {
 
 ### サポートATS
 
+#### グローバル市場（北米中心）
+
 | ATS名              | 市場シェア | 対応優先度 | 連携方式              |
 | ------------------ | ---------- | ---------- | --------------------- |
 | Workday            | 25%        | 高         | REST API + Webhook    |
@@ -879,6 +881,16 @@ export default function BulkInvitationStatusPage() {
 | SAP SuccessFactors | 7%         | 中         | SOAP API              |
 | iCIMS              | 6%         | 低         | REST API              |
 | Taleo (Oracle)     | 5%         | 低         | REST API              |
+
+#### 日本市場
+
+| ATS名                  | 市場シェア | 対応優先度 | 連携方式              | 備考                           |
+| ---------------------- | ---------- | ---------- | --------------------- | ------------------------------ |
+| HRMOS採用 (ビズリーチ)  | 30%        | 高         | REST API + Webhook    | 日本最大級、大企業向け          |
+| ジョブカン採用管理      | 20%        | 高         | REST API              | 中小企業シェアトップ            |
+| sonar ATS              | 15%        | 高         | REST API + Webhook    | エンジニア採用に強い            |
+| HITO-Manager           | 12%        | 中         | REST API              | パーソルキャリア、大企業向け    |
+| TalentPalette          | 8%         | 中         | REST API              | タレントマネジメント統合型       |
 
 ### データモデル
 
@@ -924,6 +936,7 @@ model ATSIntegration {
 }
 
 enum ATSProvider {
+  // グローバル市場
   WORKDAY
   GREENHOUSE
   LEVER
@@ -932,6 +945,13 @@ enum ATSProvider {
   SAP_SUCCESSFACTORS
   ICIMS
   TALEO
+
+  // 日本市場
+  HRMOS                 // HRMOS採用 (ビズリーチ)
+  JOBKAN                // ジョブカン採用管理
+  SONAR_ATS             // sonar ATS
+  HITO_MANAGER          // HITO-Manager (パーソルキャリア)
+  TALENT_PALETTE        // TalentPalette
 }
 
 enum ATSSyncDirection {
@@ -1365,10 +1385,19 @@ import { useState } from 'react';
 import { setupATSIntegration } from '@/lib/api/ats';
 
 const ATS_PROVIDERS = [
-  { value: 'GREENHOUSE', label: 'Greenhouse', logo: '/logos/greenhouse.svg' },
-  { value: 'LEVER', label: 'Lever', logo: '/logos/lever.svg' },
-  { value: 'WORKDAY', label: 'Workday', logo: '/logos/workday.svg' },
-  { value: 'JOBVITE', label: 'Jobvite', logo: '/logos/jobvite.svg' },
+  // グローバル市場
+  { value: 'GREENHOUSE', label: 'Greenhouse', logo: '/logos/greenhouse.svg', region: 'global' },
+  { value: 'LEVER', label: 'Lever', logo: '/logos/lever.svg', region: 'global' },
+  { value: 'WORKDAY', label: 'Workday', logo: '/logos/workday.svg', region: 'global' },
+  { value: 'JOBVITE', label: 'Jobvite', logo: '/logos/jobvite.svg', region: 'global' },
+  { value: 'SMARTRECRUITERS', label: 'SmartRecruiters', logo: '/logos/smartrecruiters.svg', region: 'global' },
+
+  // 日本市場
+  { value: 'HRMOS', label: 'HRMOS採用', logo: '/logos/hrmos.svg', region: 'japan' },
+  { value: 'JOBKAN', label: 'ジョブカン採用管理', logo: '/logos/jobkan.svg', region: 'japan' },
+  { value: 'SONAR_ATS', label: 'sonar ATS', logo: '/logos/sonar.svg', region: 'japan' },
+  { value: 'HITO_MANAGER', label: 'HITO-Manager', logo: '/logos/hito-manager.svg', region: 'japan' },
+  { value: 'TALENT_PALETTE', label: 'TalentPalette', logo: '/logos/talent-palette.svg', region: 'japan' },
 ];
 
 export default function ATSSettingsPage() {
@@ -1493,6 +1522,403 @@ export default function ATSSettingsPage() {
     </div>
   );
 }
+```
+
+### 日本市場ATS実装例
+
+#### HRMOS採用連携
+
+HRMOS採用はビズリーチが提供する日本最大級のクラウド採用管理システムです。大企業を中心に高いシェアを持ち、REST APIとWebhook機能を提供しています。
+
+```typescript
+// infrastructure/lambda/ats/hrmos/sync.ts
+import axios from 'axios';
+import { prisma } from '../../shared/database/prisma';
+import { SecretsManager } from 'aws-sdk';
+
+const secretsManager = new SecretsManager();
+
+export class HRMOSSync {
+  private apiKey: string;
+  private companyId: string;
+  private baseUrl: string;
+
+  constructor(apiKey: string, companyId: string) {
+    this.apiKey = apiKey;
+    this.companyId = companyId;
+    this.baseUrl = `https://api.hrmos.co/v1`;
+  }
+
+  // 認証ヘッダー
+  private get headers() {
+    return {
+      'X-API-Key': this.apiKey,
+      'Content-Type': 'application/json',
+    };
+  }
+
+  // 応募者一覧取得
+  async getApplicants(params?: { updated_after?: string }): Promise<any[]> {
+    const response = await axios.get(`${this.baseUrl}/companies/${this.companyId}/applicants`, {
+      headers: this.headers,
+      params: {
+        ...params,
+        per_page: 100,
+      },
+    });
+    return response.data.applicants;
+  }
+
+  // 応募者詳細取得
+  async getApplicant(applicantId: string): Promise<any> {
+    const response = await axios.get(
+      `${this.baseUrl}/companies/${this.companyId}/applicants/${applicantId}`,
+      { headers: this.headers }
+    );
+    return response.data;
+  }
+
+  // 選考ステップ更新
+  async updateSelectionStep(applicantId: string, stepId: string, status: string): Promise<void> {
+    await axios.patch(
+      `${this.baseUrl}/companies/${this.companyId}/applicants/${applicantId}/selection_step`,
+      {
+        step_id: stepId,
+        status: status,  // 'passed', 'failed', 'in_progress'
+      },
+      { headers: this.headers }
+    );
+  }
+
+  // 評価メモ追加
+  async addEvaluationNote(applicantId: string, note: string, score?: number): Promise<void> {
+    await axios.post(
+      `${this.baseUrl}/companies/${this.companyId}/applicants/${applicantId}/notes`,
+      {
+        content: note,
+        evaluation_score: score,  // 1-5
+        note_type: 'evaluation',
+      },
+      { headers: this.headers }
+    );
+  }
+
+  // 全件同期（ATSからPranceへ）
+  async syncToPrance(orgId: string, scenarioId: string, avatarId: string): Promise<{
+    created: number;
+    updated: number;
+    failed: number;
+  }> {
+    const applicants = await this.getApplicants();
+    let created = 0;
+    let updated = 0;
+    let failed = 0;
+
+    for (const applicant of applicants) {
+      try {
+        // 既存マッピング確認
+        const mapping = await prisma.candidateATSMapping.findFirst({
+          where: {
+            atsProvider: 'HRMOS',
+            atsCandidateId: applicant.id.toString(),
+          },
+          include: { guestSession: true },
+        });
+
+        if (mapping) {
+          // 更新
+          await prisma.guestSession.update({
+            where: { id: mapping.guestSessionId },
+            data: {
+              guestName: `${applicant.last_name} ${applicant.first_name}`,
+              guestEmail: applicant.email,
+              guestPhone: applicant.phone,
+            },
+          });
+          updated++;
+        } else {
+          // 新規ゲストセッション作成
+          const guestSession = await prisma.guestSession.create({
+            data: {
+              sessionId: generateSessionId(),
+              accessToken: generateAccessToken(),
+              accessPassword: await bcrypt.hash(generateRandomPassword(), 10),
+              orgId: orgId,
+              scenarioId: scenarioId,
+              avatarId: avatarId,
+              guestName: `${applicant.last_name} ${applicant.first_name}`,
+              guestEmail: applicant.email,
+              guestPhone: applicant.phone,
+              status: 'PENDING',
+            },
+          });
+
+          // ATSマッピング作成
+          await prisma.candidateATSMapping.create({
+            data: {
+              guestSessionId: guestSession.id,
+              atsProvider: 'HRMOS',
+              atsCandidateId: applicant.id.toString(),
+              atsApplicationId: applicant.application_id?.toString(),
+              atsJobId: applicant.job_id?.toString(),
+            },
+          });
+
+          created++;
+        }
+      } catch (error) {
+        console.error(`Failed to sync applicant ${applicant.id}:`, error);
+        failed++;
+      }
+    }
+
+    return { created, updated, failed };
+  }
+
+  // Prance評価結果をHRMOSに送信
+  async syncFromPrance(guestSessionId: string): Promise<void> {
+    // ゲストセッションと評価データ取得
+    const guestSession = await prisma.guestSession.findUnique({
+      where: { id: guestSessionId },
+      include: {
+        evaluation: true,
+        candidateATSMapping: true,
+      },
+    });
+
+    if (!guestSession?.candidateATSMapping) {
+      throw new Error('ATS mapping not found');
+    }
+
+    const mapping = guestSession.candidateATSMapping;
+    const evaluation = guestSession.evaluation;
+
+    if (!evaluation) {
+      throw new Error('Evaluation not found');
+    }
+
+    // 評価スコアを5段階に変換
+    const score = Math.round((evaluation.totalScore / 100) * 5);
+
+    // HRMOSに評価メモ追加
+    const noteContent = `
+【Prance AI面接評価】
+総合スコア: ${evaluation.totalScore}点
+コミュニケーション力: ${evaluation.communicationScore}点
+論理的思考力: ${evaluation.logicalThinkingScore}点
+専門知識: ${evaluation.technicalScore}点
+
+AIフィードバック:
+${evaluation.aiFeedback}
+
+詳細レポート: ${process.env.FRONTEND_URL}/sessions/${guestSession.sessionId}/report
+    `.trim();
+
+    await this.addEvaluationNote(mapping.atsCandidateId, noteContent, score);
+
+    // 選考ステップ自動更新（オプション）
+    if (evaluation.totalScore >= 80) {
+      await this.updateSelectionStep(mapping.atsCandidateId, 'next_step_id', 'passed');
+    } else if (evaluation.totalScore < 50) {
+      await this.updateSelectionStep(mapping.atsCandidateId, 'current_step_id', 'failed');
+    }
+
+    // 同期ステータス更新
+    await prisma.candidateATSMapping.update({
+      where: { id: mapping.id },
+      data: {
+        lastSyncedAt: new Date(),
+        syncStatus: 'synced',
+      },
+    });
+  }
+}
+```
+
+#### HRMOS Webhook実装
+
+```typescript
+// infrastructure/lambda/webhooks/ats/hrmos/index.ts
+import crypto from 'crypto';
+import { APIGatewayProxyHandler } from 'aws-lambda';
+import { prisma } from '../../../shared/database/prisma';
+
+export const handler: APIGatewayProxyHandler = async (event) => {
+  const orgId = event.pathParameters?.orgId;
+  const signature = event.headers['X-HRMOS-Signature'] || '';
+  const timestamp = event.headers['X-HRMOS-Timestamp'] || '';
+  const body = event.body || '';
+
+  // ATS統合設定を取得
+  const integration = await prisma.atsIntegration.findUnique({
+    where: { orgId },
+  });
+
+  if (!integration || !integration.webhookEnabled) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({ error: 'ATS integration not found or webhook not enabled' }),
+    };
+  }
+
+  // Webhook署名検証（HMAC-SHA256）
+  const expectedSignature = crypto
+    .createHmac('sha256', integration.webhookSecret!)
+    .update(timestamp + body)
+    .digest('hex');
+
+  if (signature !== expectedSignature) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Invalid signature' }),
+    };
+  }
+
+  // タイムスタンプ検証（5分以内）
+  const now = Date.now();
+  const requestTime = parseInt(timestamp);
+  if (Math.abs(now - requestTime) > 5 * 60 * 1000) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Request timestamp too old' }),
+    };
+  }
+
+  // ペイロード解析
+  const payload = JSON.parse(body);
+  const { event_type, data } = payload;
+
+  // イベント別処理
+  switch (event_type) {
+    case 'applicant.created':
+      await handleApplicantCreated(orgId, data);
+      break;
+    case 'applicant.updated':
+      await handleApplicantUpdated(orgId, data);
+      break;
+    case 'applicant.selection_step_changed':
+      await handleSelectionStepChanged(orgId, data);
+      break;
+    default:
+      console.log(`Unhandled event type: ${event_type}`);
+  }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ message: 'Webhook processed successfully' }),
+  };
+};
+
+async function handleApplicantCreated(orgId: string, data: any) {
+  const { applicant } = data;
+
+  // デフォルトのシナリオ・アバター取得
+  const org = await prisma.organization.findUnique({
+    where: { id: orgId },
+    include: {
+      scenarios: { where: { visibility: 'ORGANIZATION' }, take: 1 },
+      avatars: { where: { visibility: 'ORGANIZATION' }, take: 1 },
+    },
+  });
+
+  if (!org?.scenarios[0] || !org?.avatars[0]) {
+    console.error('Default scenario or avatar not found');
+    return;
+  }
+
+  // ゲストセッション作成
+  const guestSession = await prisma.guestSession.create({
+    data: {
+      sessionId: generateSessionId(),
+      accessToken: generateAccessToken(),
+      accessPassword: await bcrypt.hash(generateRandomPassword(), 10),
+      orgId: orgId,
+      scenarioId: org.scenarios[0].id,
+      avatarId: org.avatars[0].id,
+      guestName: `${applicant.last_name} ${applicant.first_name}`,
+      guestEmail: applicant.email,
+      guestPhone: applicant.phone,
+      status: 'PENDING',
+    },
+  });
+
+  // ATSマッピング作成
+  await prisma.candidateATSMapping.create({
+    data: {
+      guestSessionId: guestSession.id,
+      atsProvider: 'HRMOS',
+      atsCandidateId: applicant.id.toString(),
+      atsApplicationId: applicant.application_id?.toString(),
+      atsJobId: applicant.job_id?.toString(),
+    },
+  });
+
+  // 招待メール送信
+  await sendInvitationEmail(guestSession);
+}
+
+async function handleSelectionStepChanged(orgId: string, data: any) {
+  const { applicant, selection_step } = data;
+
+  // "AI面接" ステップに到達したら自動的にゲストセッション作成
+  if (selection_step.name === 'AI面接' || selection_step.name === 'Prance Interview') {
+    const existing = await prisma.candidateATSMapping.findFirst({
+      where: {
+        atsProvider: 'HRMOS',
+        atsCandidateId: applicant.id.toString(),
+      },
+    });
+
+    if (!existing) {
+      await handleApplicantCreated(orgId, data);
+    }
+  }
+}
+```
+
+#### UI実装（日本市場ATS対応）
+
+```typescript
+// apps/web/app/[locale]/dashboard/settings/ats/page.tsx に追加
+
+const ATS_PROVIDERS = [
+  // グローバル
+  { value: 'GREENHOUSE', label: 'Greenhouse', logo: '/logos/greenhouse.svg', region: 'global' },
+  { value: 'LEVER', label: 'Lever', logo: '/logos/lever.svg', region: 'global' },
+  { value: 'WORKDAY', label: 'Workday', logo: '/logos/workday.svg', region: 'global' },
+  { value: 'JOBVITE', label: 'Jobvite', logo: '/logos/jobvite.svg', region: 'global' },
+
+  // 日本市場
+  { value: 'HRMOS', label: 'HRMOS採用', logo: '/logos/hrmos.svg', region: 'japan' },
+  { value: 'JOBKAN', label: 'ジョブカン採用管理', logo: '/logos/jobkan.svg', region: 'japan' },
+  { value: 'SONAR_ATS', label: 'sonar ATS', logo: '/logos/sonar.svg', region: 'japan' },
+  { value: 'HITO_MANAGER', label: 'HITO-Manager', logo: '/logos/hito-manager.svg', region: 'japan' },
+  { value: 'TALENT_PALETTE', label: 'TalentPalette', logo: '/logos/talent-palette.svg', region: 'japan' },
+];
+
+// プロバイダー選択時のフォーム切り替え
+const getProviderFields = (provider: string) => {
+  switch (provider) {
+    case 'HRMOS':
+      return [
+        { name: 'companyId', label: '企業ID', type: 'text', required: true, placeholder: 'company123' },
+        { name: 'apiKey', label: 'APIキー', type: 'password', required: true, helper: 'HRMOS管理画面の「API設定」から取得' },
+      ];
+    case 'JOBKAN':
+      return [
+        { name: 'subdomain', label: 'サブドメイン', type: 'text', required: true, placeholder: 'mycompany', suffix: '.jobcan.jp' },
+        { name: 'apiToken', label: 'APIトークン', type: 'password', required: true },
+      ];
+    case 'SONAR_ATS':
+      return [
+        { name: 'accountId', label: 'アカウントID', type: 'text', required: true },
+        { name: 'apiKey', label: 'APIキー', type: 'password', required: true },
+        { name: 'apiSecret', label: 'APIシークレット', type: 'password', required: true },
+      ];
+    default:
+      return [];
+  }
+};
 ```
 
 ---
@@ -2056,17 +2482,24 @@ export default function GuestAccessPage() {
 
 #### Week 3: ATS連携（他プロバイダ）
 
-**Day 11-13: Lever, Workday対応**
+**Day 11-12: グローバル市場ATS（Lever, Workday）**
 - [ ] Lever API連携クラス
 - [ ] Workday API連携クラス
 - [ ] プロバイダ別Webhook処理
 - [ ] フィールドマッピングロジック
 
+**Day 13: 日本市場ATS（HRMOS採用）**
+- [ ] HRMOS API連携クラス
+- [ ] HRMOS Webhook処理（HMAC-SHA256検証）
+- [ ] 日本語フィールドマッピング（姓・名、全角半角変換）
+- [ ] 評価スコア5段階変換ロジック
+
 **Day 14-15: ATS UI**
-- [ ] ATS設定ページ
+- [ ] ATS設定ページ（グローバル/日本市場切り替え）
+- [ ] プロバイダー別フォーム動的生成
 - [ ] 同期ステータス表示
 - [ ] 手動同期トリガー
-- [ ] Webhook設定手順ガイド
+- [ ] Webhook設定手順ガイド（プロバイダー別）
 
 #### Week 4: ブランディング・カスタマイズ
 
