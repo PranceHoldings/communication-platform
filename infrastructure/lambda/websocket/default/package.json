@@ -1,6 +1,6 @@
 {
   "name": "websocket-default-handler",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.0.0",
     "@aws-sdk/client-bedrock-runtime": "^3.0.0",

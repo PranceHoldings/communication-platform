@@ -339,7 +339,7 @@ export function getBaseLanguageCode(languageCode: string): string {
   }
 
   // For other languages, return the base code
-  return languageCode.split('-')[0];
+  return languageCode.split('-')[0] || languageCode;
 }
 
 /**

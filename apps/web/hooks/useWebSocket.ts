@@ -182,6 +182,11 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             }
             break;
 
+          case 'audio_part_ack':
+            // Audio part acknowledgment
+            console.log('[WebSocket] Audio part acknowledged:', (message as any).partsReceived, '/', (message as any).totalParts);
+            break;
+
           case 'video_chunk_ack':
             // Video chunk acknowledgment
             console.log('Video chunk acknowledged:', message);

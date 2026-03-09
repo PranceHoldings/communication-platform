@@ -1,6 +1,7 @@
 /**
  * WebSocket $default Handler
  * Handles all WebSocket messages with STT/AI/TTS integration
+ * Last updated: 2026-03-09
  */
 
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
@@ -1106,9 +1107,17 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         // audio_data_part sets audioProcessingInProgress flag when lock is acquired
         const currentConnectionData = await getConnectionData(connectionId);
 
-        if (currentConnectionData?.audioProcessingInProgress) {
-          console.log('[session_end] Audio processing still in progress, marking session_end_received flag');
-          console.log('[session_end] Current audio chunk:', currentConnectionData.currentAudioChunkId);
+        // Check if audio data exists or processing is in progress
+        const hasAudioData = (currentConnectionData?.audioChunksCount || 0) > 0;
+        const isProcessing = currentConnectionData?.audioProcessingInProgress;
+
+        if (isProcessing || hasAudioData) {
+          console.log('[session_end] Audio data exists or processing in progress, marking session_end_received flag');
+          console.log('[session_end] Current state:', {
+            audioChunksCount: currentConnectionData?.audioChunksCount,
+            audioProcessingInProgress: isProcessing,
+            currentAudioChunkId: currentConnectionData?.currentAudioChunkId,
+          });
           // Mark that session_end was received, audio_data_part will send session_complete when done
           await updateConnectionData(connectionId, {
             sessionEndReceived: true,

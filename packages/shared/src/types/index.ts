@@ -264,6 +264,16 @@ export interface VideoChunkPartMessage extends WebSocketMessageBase {
 }
 
 /**
+ * 音声パート確認メッセージ（サーバー → クライアント）
+ */
+export interface AudioPartAckMessage extends WebSocketMessageBase {
+  type: 'audio_part_ack';
+  chunkId: string;
+  partsReceived: number;
+  totalParts: number;
+}
+
+/**
  * ビデオチャンク確認メッセージ（サーバー → クライアント）
  */
 export interface VideoChunkAckMessage extends WebSocketMessageBase {
@@ -412,6 +422,7 @@ export type ClientToServerMessage =
  */
 export type ServerToClientMessage =
   | AuthenticatedMessage
+  | AudioPartAckMessage
   | VideoChunkAckMessage
   | TranscriptMessage
   | AvatarResponseMessage

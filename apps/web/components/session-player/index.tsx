@@ -510,20 +510,34 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     }
   }, [status, isConnecting, isConnected, token, connect]);
 
-  // WebSocket接続完了 + 認証完了時にACTIVE状態に自動遷移 + 音声録音開始
+  // WebSocket接続完了 + 認証完了時にACTIVE状態に自動遷移 + 音声録音 + ビデオ録画開始
   useEffect(() => {
     if (isConnected && isAuthenticated && status === 'READY') {
       console.log('[SessionPlayer] Connection and authentication complete, starting session');
       setStatus('ACTIVE');
       toast.success(t('sessions.player.messages.sessionStarted'));
 
-      // Start audio recording
+      // Start audio recording (critical - must succeed)
       startRecording().catch(err => {
-        console.error('[SessionPlayer] Failed to start recording:', err);
+        console.error('[SessionPlayer] Failed to start audio recording:', err);
         toast.error(t('sessions.player.messages.microphonePermissionDenied'));
       });
+
+      // Start video recording (optional - failure should not affect audio)
+      setTimeout(() => {
+        if (compositeCanvasRef.current) {
+          console.log('[SessionPlayer] Starting video recording...');
+          startVideoRecording().catch(err => {
+            console.error('[SessionPlayer] Failed to start video recording:', err);
+            console.error('[SessionPlayer] Video recording error details:', err.message, err.stack);
+            toast.warning('ビデオ録画の開始に失敗しました（音声は正常に動作します）');
+          });
+        } else {
+          console.warn('[SessionPlayer] Composite canvas not ready, skipping video recording');
+        }
+      }, 100); // Small delay to ensure canvas is ready
     }
-  }, [isConnected, isAuthenticated, status, t, startRecording]);
+  }, [isConnected, isAuthenticated, status, t, startRecording, startVideoRecording]);
 
   // Connection timeout - 30秒以内に接続できない場合はタイムアウト
   useEffect(() => {
@@ -609,8 +623,15 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       // 接続完了後、useEffectで自動的にACTIVE状態に遷移
     } else if (status === 'PAUSED') {
       setStatus('ACTIVE');
-      // セッション再開 + 音声録音再開
+      // セッション再開 + 音声録音再開 + ビデオ録画再開
       resumeRecording();
+      if (recordingStatus === 'paused') {
+        try {
+          resumeVideoRecording();
+        } catch (err) {
+          console.error('[SessionPlayer] Failed to resume video recording:', err);
+        }
+      }
       toast.success(t('sessions.player.messages.sessionResumed'));
     }
   };
@@ -618,8 +639,15 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const handlePause = () => {
     if (status === 'ACTIVE') {
       setStatus('PAUSED');
-      // 音声録音一時停止
+      // 音声録音一時停止 + ビデオ録画一時停止
       pauseRecording();
+      if (recordingStatus === 'recording') {
+        try {
+          pauseVideoRecording();
+        } catch (err) {
+          console.error('[SessionPlayer] Failed to pause video recording:', err);
+        }
+      }
       toast.info(t('sessions.player.status.paused'));
     }
   };
@@ -630,12 +658,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       // Note: Do NOT reset isAuthenticated here - audio data needs to be sent first
       // It will be reset in handleSessionComplete() after all processing is done
 
+      // Check if audio was being recorded
+      const wasRecording = isMicRecording;
+
       // 1. Stop audio recording first
       stopRecording();
 
       // 2. Stop video recording if active
       if (recordingStatus === 'recording' || recordingStatus === 'paused') {
-        stopVideoRecording();
+        try {
+          stopVideoRecording();
+        } catch (err) {
+          console.error('[SessionPlayer] Failed to stop video recording:', err);
+        }
       }
 
       // 3. Stop user camera
@@ -648,20 +683,25 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         userVideoRef.current.srcObject = null;
       }
 
-      // 4. Send session end notification (if connected)
-      // Note: If audio was just recorded, endSession() will be called after transcript_final is received
-      if (isConnectedRef.current && !pendingSessionEnd && endSessionRef.current) {
-        endSessionRef.current();
+      // 4. If audio was recording, wait for transcript before sending session_end
+      if (wasRecording) {
+        console.log('[SessionPlayer] Audio was recording, will wait for audio processing before session_end');
+        setPendingSessionEnd(true);
+        // session_end will be sent after transcript_final is received
+      } else {
+        // 4. Send session end notification immediately if no audio to process
+        if (isConnectedRef.current && endSessionRef.current) {
+          console.log('[SessionPlayer] No audio recorded, sending session_end immediately');
+          endSessionRef.current();
 
-        // 5. Set timeout to disconnect after 30 seconds if no session_complete received
-        sessionEndTimeoutRef.current = setTimeout(() => {
-          console.log('[SessionPlayer] Session end timeout - disconnecting WebSocket');
-          if (disconnectRef.current) {
-            disconnectRef.current();
-          }
-        }, 30000); // 30 seconds timeout
-      } else if (pendingSessionEnd) {
-        console.log('[SessionPlayer] Waiting for transcript before sending session_end');
+          // 5. Set timeout to disconnect after 30 seconds if no session_complete received
+          sessionEndTimeoutRef.current = setTimeout(() => {
+            console.log('[SessionPlayer] Session end timeout - disconnecting WebSocket');
+            if (disconnectRef.current) {
+              disconnectRef.current();
+            }
+          }, 30000); // 30 seconds timeout
+        }
       }
 
       toast.success(t('sessions.player.messages.sessionEnded'));
@@ -1055,54 +1095,6 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             </>
           )}
 
-          {/* 録画コントロールボタン */}
-          {status === 'ACTIVE' && (
-            <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
-              {recordingStatus === 'idle' && (
-                <button
-                  onClick={startVideoRecording}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <circle cx="10" cy="10" r="8" />
-                  </svg>
-                  {t('sessions.player.recording.start')}
-                </button>
-              )}
-              {recordingStatus === 'recording' && (
-                <>
-                  <button
-                    onClick={pauseVideoRecording}
-                    className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    {t('sessions.player.recording.pause')}
-                  </button>
-                  <button
-                    onClick={stopVideoRecording}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    {t('sessions.player.recording.stop')}
-                  </button>
-                </>
-              )}
-              {recordingStatus === 'paused' && (
-                <>
-                  <button
-                    onClick={resumeVideoRecording}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    {t('sessions.player.recording.resume')}
-                  </button>
-                  <button
-                    onClick={stopVideoRecording}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    {t('sessions.player.recording.stop')}
-                  </button>
-                </>
-              )}
-            </div>
-          )}
 
           {status === 'COMPLETED' && (
             <div className="text-center py-2">
