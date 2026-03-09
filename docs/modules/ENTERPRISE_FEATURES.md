@@ -11,9 +11,10 @@
 1. [概要](#概要)
 2. [XLSX一括登録システム](#xlsx一括登録システム)
 3. [ATS連携](#ats連携)
-4. [ブランディング・カスタマイズ](#ブランディングカスタマイズ)
-5. [実装フェーズ](#実装フェーズ)
-6. [セキュリティ考慮事項](#セキュリティ考慮事項)
+4. [AIプロンプト・プロバイダー管理](#aiプロンプトプロバイダー管理)
+5. [ブランディング・カスタマイズ](#ブランディングカスタマイズ)
+6. [実装フェーズ](#実装フェーズ)
+7. [セキュリティ考慮事項](#セキュリティ考慮事項)
 
 ---
 
@@ -36,6 +37,7 @@
 | ------------------------------ | ------------------------------------------ | -------------------- |
 | XLSX一括登録                   | Excelで候補者を一括登録・招待             | CLIENT_ADMIN, CLIENT_USER |
 | ATS連携                        | 主要ATSとのデータ同期・Webhook連携        | CLIENT_ADMIN         |
+| AIプロンプト・プロバイダー管理 | LLMベンダー切り替え、プロンプト編集       | SUPER_ADMIN          |
 | ブランディング・カスタマイズ   | 候補者ページのロゴ・色・メッセージを編集   | SUPER_ADMIN          |
 
 ### ビジネス価値
@@ -1923,6 +1925,744 @@ const getProviderFields = (provider: string) => {
 
 ---
 
+## AIプロンプト・プロバイダー管理
+
+### 概要
+
+スーパー管理者が**コード変更なし**でAI会話の挙動を制御・最適化するための中核システムです。LLMベンダーの選択・切り替えと、AIに投入するプロンプトの編集を全てUI上で実行できます。
+
+### 目的
+
+**ビジネスの柔軟性:**
+- プロンプト変更 → 5分で本番反映（従来: 2-3日のデプロイサイクル）
+- Enterprise顧客ごとの独自プロンプト設定が可能
+- A/Bテスト、バージョン管理、即座のロールバック
+
+**リスク管理:**
+- プロバイダー障害時の自動フォールバック（Bedrock → OpenAI → Google AI）
+- エラー率・レスポンス時間の監視と自動切り替え
+- サービス継続性の向上（99.99% Uptime目標）
+
+**コスト最適化:**
+- プロバイダー別コスト比較（Bedrock $18/1M → Gemini $2/1M）
+- 使用量に応じた自動切り替え
+- 月間予算管理・アラート設定
+
+### 主要機能
+
+| 機能                   | 説明                                       | アクセス権限     |
+| ---------------------- | ------------------------------------------ | ---------------- |
+| プロンプトテンプレート | システムプロンプト、変数定義、AI設定       | SUPER_ADMIN      |
+| プロバイダー管理       | LLMベンダー選択、優先順位、フォールバック  | SUPER_ADMIN      |
+| バージョン管理         | プロンプト変更履歴、比較、ロールバック     | SUPER_ADMIN      |
+| テスト実行             | リアルタイムテスト、デバッグ情報表示       | SUPER_ADMIN      |
+| コスト管理             | プロバイダー別コスト追跡、予算管理         | SUPER_ADMIN      |
+
+### データモデル
+
+#### PromptTemplate テーブル
+
+```prisma
+model PromptTemplate {
+  id              String   @id @default(cuid())
+  name            String   // '面接官プロンプト（標準）'
+  category        PromptCategory
+  orgId           String?  // 組織固有のカスタムプロンプト
+  isDefault       Boolean  @default(false)
+  version         Int      @default(1)
+  status          PromptStatus @default(DRAFT)
+
+  // プロンプト本体
+  systemPrompt    String   @db.Text
+  userPromptTemplate String? @db.Text
+
+  // 変数定義（JSON）
+  variables       Json?    // { key, label, type, required, defaultValue }
+
+  // AI設定
+  modelSettings   Json?    // { temperature, maxTokens, topP }
+
+  // メタデータ
+  description     String?
+  tags            String[]
+  usageCount      Int      @default(0)
+
+  // 関連
+  versions        PromptVersion[]
+  sessions        Session[] @relation("SessionPrompt")
+
+  // タイムスタンプ
+  createdBy       String
+  updatedBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([category, status])
+  @@map("prompt_templates")
+}
+
+enum PromptCategory {
+  SYSTEM          // システムプロンプト（役割定義）
+  SCENARIO        // シナリオ固有プロンプト
+  EVALUATION      // 評価用プロンプト
+}
+
+enum PromptStatus {
+  DRAFT           // 下書き
+  ACTIVE          // 有効
+  ARCHIVED        // アーカイブ
+}
+
+model PromptVersion {
+  id              String   @id @default(cuid())
+  templateId      String
+  template        PromptTemplate @relation(fields: [templateId], references: [id])
+  version         Int
+  changelog       String   @db.Text
+
+  // スナップショット
+  snapshot        Json     // { systemPrompt, variables, modelSettings }
+
+  // 統計情報
+  totalSessions   Int      @default(0)
+  avgRating       Float?
+  errorRate       Float?
+
+  createdBy       String
+  createdAt       DateTime @default(now())
+
+  @@unique([templateId, version])
+  @@index([templateId])
+  @@map("prompt_versions")
+}
+```
+
+#### AIProvider テーブル
+
+```prisma
+model AIProvider {
+  id              String   @id @default(cuid())
+  name            String   // 'AWS Bedrock (Claude Sonnet 4.6)'
+  provider        AIProviderType
+  modelId         String   // 'us.anthropic.claude-sonnet-4-6'
+
+  // 接続設定（暗号化してSecrets Managerに保存）
+  configSecretArn String?  // AWS Secrets Manager ARN
+
+  // 優先順位（フォールバック用）
+  priority        Int      @default(1)
+  status          AIProviderStatus @default(ACTIVE)
+
+  // コスト設定
+  inputCostPer1M  Float    // $3.0
+  outputCostPer1M Float    // $15.0
+
+  // 制限設定
+  maxTokens       Int      @default(4096)
+  maxRPM          Int      @default(1000)
+  maxRPD          Int      @default(100000)
+
+  // 健全性チェック
+  healthStatus    String?  // 'healthy', 'degraded', 'down'
+  lastHealthCheck DateTime?
+  errorRate       Float?
+  avgLatency      Float?
+
+  // タイムスタンプ
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([priority, status])
+  @@map("ai_providers")
+}
+
+enum AIProviderType {
+  BEDROCK         // AWS Bedrock
+  OPENAI          // OpenAI
+  GOOGLE          // Google AI (Gemini)
+  AZURE_OPENAI    // Azure OpenAI Service
+  ANTHROPIC       // Anthropic (Direct)
+}
+
+enum AIProviderStatus {
+  ACTIVE          // アクティブ（優先使用）
+  STANDBY         // スタンバイ（フォールバック）
+  DISABLED        // 無効
+  ERROR           // エラー状態
+}
+```
+
+### サポートAIプロバイダー
+
+| プロバイダ       | モデル            | 入力コスト | 出力コスト | 特徴                          |
+| ---------------- | ----------------- | ---------- | ---------- | ----------------------------- |
+| **AWS Bedrock**  | Claude Sonnet 4.6 | $3.0/1M    | $15.0/1M   | 高品質、低レイテンシ、AWS統合 |
+| **OpenAI**       | GPT-4 Turbo       | $10.0/1M   | $30.0/1M   | 高性能、広範な知識            |
+| **Google AI**    | Gemini Pro        | $0.5/1M    | $1.5/1M    | コスト効率、多言語対応        |
+| **Azure OpenAI** | GPT-4             | $10.0/1M   | $30.0/1M   | Enterprise向け、SLA保証       |
+| **Anthropic**    | Claude 3.5 Sonnet | $3.0/1M    | $15.0/1M   | 直接契約、高性能              |
+
+### API設計
+
+#### 1. プロンプトテンプレート一覧取得
+
+**Endpoint:**
+```
+GET /api/v1/prompts/templates?category=system&status=active
+```
+
+**認証:**
+```
+Authorization: Bearer <JWT>
+```
+
+**権限:**
+- `SUPER_ADMIN`
+
+**レスポンス (200 OK):**
+```typescript
+{
+  templates: [
+    {
+      id: 'tpl_abc123',
+      name: '面接官プロンプト（標準）',
+      category: 'SYSTEM',
+      status: 'ACTIVE',
+      version: 3,
+      usageCount: 120,
+      updatedAt: '2026-03-08T10:30:00Z',
+    },
+    // ...
+  ],
+  pagination: {
+    total: 15,
+    limit: 20,
+    offset: 0,
+  }
+}
+```
+
+#### 2. プロンプトテンプレート作成・更新
+
+**Endpoint:**
+```
+POST /api/v1/prompts/templates
+PUT /api/v1/prompts/templates/{id}
+```
+
+**リクエスト:**
+```typescript
+{
+  name: '面接官プロンプト（標準）',
+  category: 'SYSTEM',
+  systemPrompt: 'あなたは{{company_name}}の採用面接官です...',
+  variables: [
+    {
+      key: 'company_name',
+      label: '会社名',
+      type: 'text',
+      required: true,
+      defaultValue: 'デフォルト株式会社',
+    },
+    // ...
+  ],
+  modelSettings: {
+    temperature: 0.7,
+    maxTokens: 2048,
+    topP: 0.9,
+  },
+  status: 'ACTIVE',
+}
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  id: 'tpl_abc123',
+  version: 4,  // 自動インクリメント
+  // ... 全フィールド
+}
+```
+
+#### 3. プロンプトテスト実行
+
+**Endpoint:**
+```
+POST /api/v1/prompts/templates/{id}/test
+```
+
+**リクエスト:**
+```typescript
+{
+  variables: {
+    company_name: 'テスト株式会社',
+    job_position: 'バックエンドエンジニア',
+  },
+  testMessages: [
+    {
+      role: 'user',
+      content: 'こんにちは',
+    }
+  ],
+  providerId: 'provider_bedrock_001',  // オプション
+}
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  response: {
+    role: 'assistant',
+    content: 'こんにちは。本日は面接にお越しいただきありがとうございます...',
+  },
+  debug: {
+    responseTime: 1.2,  // 秒
+    tokensUsed: {
+      input: 145,
+      output: 89,
+      total: 234,
+    },
+    cost: 0.0042,  // USD
+    provider: 'AWS Bedrock (Claude Sonnet 4.6)',
+  }
+}
+```
+
+#### 4. AIプロバイダー一覧取得
+
+**Endpoint:**
+```
+GET /api/v1/ai-providers
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  providers: [
+    {
+      id: 'provider_bedrock_001',
+      name: 'AWS Bedrock (Claude Sonnet 4.6)',
+      provider: 'BEDROCK',
+      modelId: 'us.anthropic.claude-sonnet-4-6',
+      priority: 1,
+      status: 'ACTIVE',
+      healthStatus: 'healthy',
+      usage: {
+        monthlyRequests: 12450,
+        monthlyTokens: 5234000,
+        monthlyCost: 1234.56,
+      },
+      pricing: {
+        inputCostPer1M: 3.0,
+        outputCostPer1M: 15.0,
+      },
+    },
+    // ...
+  ]
+}
+```
+
+#### 5. AIプロバイダー設定更新
+
+**Endpoint:**
+```
+PUT /api/v1/ai-providers/{id}
+```
+
+**リクエスト:**
+```typescript
+{
+  priority: 1,
+  status: 'ACTIVE',
+  maxTokens: 4096,
+  maxRPM: 1000,
+}
+```
+
+#### 6. フォールバック設定
+
+**Endpoint:**
+```
+PUT /api/v1/ai-providers/fallback
+```
+
+**リクエスト:**
+```typescript
+{
+  enabled: true,
+  conditions: {
+    errorRateThreshold: 0.05,  // 5%
+    latencyThreshold: 5000,    // 5秒
+    quotaExceeded: true,
+  },
+  monthlyBudget: 5000,  // USD
+  alertThreshold: 0.8,  // 80%
+}
+```
+
+### UI実装
+
+#### プロンプトテンプレート一覧ページ
+
+**場所:** `apps/web/app/[locale]/admin/prompts/page.tsx`
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getPromptTemplates, deletePromptTemplate } from '@/lib/api/prompts';
+import type { PromptTemplate } from '@prance/shared';
+
+export default function PromptTemplatesPage() {
+  const [templates, setTemplates] = useState<PromptTemplate[]>([]);
+  const [filter, setFilter] = useState({
+    category: 'all',
+    status: 'all',
+  });
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      const data = await getPromptTemplates(filter);
+      setTemplates(data.templates);
+    };
+    fetchTemplates();
+  }, [filter]);
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">AI Prompt Templates</h1>
+        <a
+          href="/admin/prompts/new"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          + New Template
+        </a>
+      </div>
+
+      {/* フィルター */}
+      <div className="bg-white border rounded-lg p-4 mb-6">
+        <div className="flex gap-4">
+          <select
+            value={filter.category}
+            onChange={(e) => setFilter({ ...filter, category: e.target.value })}
+            className="p-2 border rounded-lg"
+          >
+            <option value="all">All Categories</option>
+            <option value="SYSTEM">System</option>
+            <option value="SCENARIO">Scenario</option>
+            <option value="EVALUATION">Evaluation</option>
+          </select>
+          <select
+            value={filter.status}
+            onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+            className="p-2 border rounded-lg"
+          >
+            <option value="all">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="DRAFT">Draft</option>
+            <option value="ARCHIVED">Archived</option>
+          </select>
+        </div>
+      </div>
+
+      {/* テンプレート一覧 */}
+      <div className="space-y-4">
+        {templates.map((template) => (
+          <div key={template.id} className="bg-white border rounded-lg p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-xl font-semibold">{template.name}</h3>
+                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                    v{template.version}
+                  </span>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded ${
+                      template.status === 'ACTIVE'
+                        ? 'bg-green-100 text-green-800'
+                        : template.status === 'DRAFT'
+                        ? 'bg-gray-100 text-gray-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {template.status}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span>Category: {template.category}</span>
+                  <span>•</span>
+                  <span>Used in {template.usageCount} sessions</span>
+                  <span>•</span>
+                  <span>Updated: {new Date(template.updatedAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <a
+                  href={`/admin/prompts/${template.id}/edit`}
+                  className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                >
+                  Edit
+                </a>
+                <a
+                  href={`/admin/prompts/${template.id}/test`}
+                  className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                >
+                  Test
+                </a>
+                <button
+                  onClick={() => handleDelete(template.id)}
+                  className="px-3 py-1 text-sm text-red-600 border border-red-600 rounded hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+#### AIプロバイダー管理ページ
+
+**場所:** `apps/web/app/[locale]/admin/ai-providers/page.tsx`
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getAIProviders, updateAIProvider, updateFallbackSettings } from '@/lib/api/ai-providers';
+
+export default function AIProvidersPage() {
+  const [providers, setProviders] = useState<any[]>([]);
+  const [fallbackSettings, setFallbackSettings] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getAIProviders();
+      setProviders(data.providers);
+      setFallbackSettings(data.fallbackSettings);
+    };
+    fetchData();
+  }, []);
+
+  const handleStatusChange = async (providerId: string, newStatus: string) => {
+    await updateAIProvider(providerId, { status: newStatus });
+    // Re-fetch providers
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">AI Provider Management</h1>
+
+      {/* プロバイダー一覧 */}
+      <div className="space-y-4 mb-8">
+        {providers.map((provider) => (
+          <div key={provider.id} className="bg-white border rounded-lg p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                <div
+                  className={`w-3 h-3 rounded-full mt-1.5 ${
+                    provider.status === 'ACTIVE'
+                      ? 'bg-green-500'
+                      : provider.status === 'STANDBY'
+                      ? 'bg-yellow-500'
+                      : 'bg-gray-300'
+                  }`}
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-semibold">{provider.name}</h3>
+                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                      Priority: {provider.priority}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                    <div>
+                      <span className="font-medium">Status:</span> {provider.status} |{' '}
+                      {provider.healthStatus}
+                    </div>
+                    <div>
+                      <span className="font-medium">Usage (month):</span>{' '}
+                      {provider.usage?.monthlyRequests?.toLocaleString()} requests
+                    </div>
+                    <div>
+                      <span className="font-medium">Cost:</span> $
+                      {provider.usage?.monthlyCost?.toFixed(2)}
+                    </div>
+                    <div>
+                      <span className="font-medium">Pricing:</span> $
+                      {provider.pricing?.inputCostPer1M} / ${provider.pricing?.outputCostPer1M} per
+                      1M tokens
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleStatusChange(provider.id, 'ACTIVE')}
+                  className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                  disabled={provider.status === 'ACTIVE'}
+                >
+                  Activate
+                </button>
+                <button
+                  onClick={() => handleStatusChange(provider.id, 'STANDBY')}
+                  className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                >
+                  Standby
+                </button>
+                <button
+                  onClick={() => handleStatusChange(provider.id, 'DISABLED')}
+                  className="px-3 py-1 text-sm text-red-600 border border-red-600 rounded hover:bg-red-50"
+                >
+                  Disable
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* フォールバック設定 */}
+      <div className="bg-white border rounded-lg p-6">
+        <h2 className="text-xl font-semibold mb-4">Fallback Settings</h2>
+        <label className="flex items-center gap-2 mb-4">
+          <input
+            type="checkbox"
+            checked={fallbackSettings?.enabled}
+            onChange={(e) =>
+              setFallbackSettings({ ...fallbackSettings, enabled: e.target.checked })
+            }
+            className="rounded"
+          />
+          <span>Enable automatic fallback on provider failure</span>
+        </label>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Error Rate Threshold (%)</label>
+            <input
+              type="number"
+              value={(fallbackSettings?.conditions?.errorRateThreshold || 0) * 100}
+              onChange={(e) =>
+                setFallbackSettings({
+                  ...fallbackSettings,
+                  conditions: {
+                    ...fallbackSettings.conditions,
+                    errorRateThreshold: parseFloat(e.target.value) / 100,
+                  },
+                })
+              }
+              className="w-full p-2 border rounded-lg"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Latency Threshold (ms)</label>
+            <input
+              type="number"
+              value={fallbackSettings?.conditions?.latencyThreshold || 5000}
+              onChange={(e) =>
+                setFallbackSettings({
+                  ...fallbackSettings,
+                  conditions: {
+                    ...fallbackSettings.conditions,
+                    latencyThreshold: parseInt(e.target.value),
+                  },
+                })
+              }
+              className="w-full p-2 border rounded-lg"
+            />
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Monthly Budget (USD)</label>
+          <input
+            type="number"
+            value={fallbackSettings?.monthlyBudget || 5000}
+            onChange={(e) =>
+              setFallbackSettings({
+                ...fallbackSettings,
+                monthlyBudget: parseInt(e.target.value),
+              })
+            }
+            className="w-full p-2 border rounded-lg"
+          />
+        </div>
+
+        <button
+          onClick={() => updateFallbackSettings(fallbackSettings)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Save Changes
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+### セキュリティ考慮事項
+
+#### 1. プロンプトインジェクション対策
+
+```typescript
+// 変数のサニタイゼーション
+function sanitizeVariable(value: string): string {
+  // システムプロンプトを上書きしようとする試みを検出
+  const dangerousPatterns = [
+    /ignore\s+(previous|all)\s+instructions?/i,
+    /you\s+are\s+now/i,
+    /system\s*:/i,
+    /\[INST\]/i,
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(value)) {
+      throw new Error('Potential prompt injection detected');
+    }
+  }
+
+  return value;
+}
+```
+
+#### 2. APIキー管理
+
+```typescript
+// AWS Secrets Manager で暗号化保存
+import { SecretsManager } from 'aws-sdk';
+
+async function storeProviderCredentials(providerId: string, credentials: any) {
+  const secretsManager = new SecretsManager();
+
+  const secretArn = await secretsManager
+    .createSecret({
+      Name: `prance/ai-provider/${providerId}`,
+      SecretString: JSON.stringify(credentials),
+      KmsKeyId: process.env.KMS_KEY_ID,
+    })
+    .promise();
+
+  return secretArn.ARN;
+}
+```
+
+#### 3. アクセス制御
+
+- プロンプト編集: `SUPER_ADMIN` のみ
+- プロバイダー管理: `SUPER_ADMIN` のみ
+- テスト実行: `SUPER_ADMIN` のみ
+- バージョン履歴閲覧: 全管理者
+
+---
+
 ## ブランディング・カスタマイズ
 
 ### 概要
@@ -2444,7 +3184,7 @@ export default function GuestAccessPage() {
 
 ## 実装フェーズ
 
-### Phase 3.0: エンタープライズ機能（推定4-5週間）
+### Phase 3.0: エンタープライズ機能（推定5-6週間）
 
 #### Week 1: XLSX一括登録（Backend）
 
@@ -2520,16 +3260,47 @@ export default function GuestAccessPage() {
 - [ ] 動的CSS生成
 - [ ] ファビコン、メタタグ適用
 
-#### Week 5: 統合テスト・ドキュメント
+#### Week 5: AIプロンプト・プロバイダー管理
 
-**Day 22-23: 統合テスト**
+**Day 22-23: Backend（データモデル・API）**
+- [ ] `PromptTemplate`, `PromptVersion`, `AIProvider` テーブル
+- [ ] プロンプトテンプレートAPI（GET, POST, PUT, DELETE）
+- [ ] AIプロバイダーAPI（GET, PUT）
+- [ ] バージョン管理ロジック
+- [ ] プロンプト変数の動的置換処理
+
+**Day 24-25: プロバイダー統合**
+- [ ] AWS Bedrock連携（Claude Sonnet 4.6）
+- [ ] OpenAI連携（GPT-4 Turbo）
+- [ ] Google AI連携（Gemini Pro）
+- [ ] プロバイダー抽象化レイヤー
+- [ ] フォールバックロジック実装
+
+**Day 26-27: Frontend（プロンプト管理）**
+- [ ] プロンプトテンプレート一覧ページ
+- [ ] プロンプト編集ページ（変数定義、AI設定）
+- [ ] リアルタイムテスト実行UI
+- [ ] バージョン比較・ロールバック機能
+
+**Day 28: Frontend（プロバイダー管理）**
+- [ ] AIプロバイダー管理ページ
+- [ ] 優先順位設定、ステータス切り替え
+- [ ] フォールバック設定UI
+- [ ] コスト管理・アラート設定
+
+#### Week 6: 統合テスト・ドキュメント
+
+**Day 29-30: 統合テスト**
 - [ ] XLSX → ATS同期の全フロー
 - [ ] ブランディング適用確認
+- [ ] AIプロンプト・プロバイダー切り替えテスト
+- [ ] フォールバック動作確認
 - [ ] パフォーマンステスト（1000候補者）
 
-**Day 24-25: ドキュメント・トレーニング**
+**Day 31-32: ドキュメント・トレーニング**
 - [ ] ユーザーガイド作成
-- [ ] ATS設定マニュアル（プロバイダ別）
+- [ ] ATS設定マニュアル（プロバイダー別）
+- [ ] AIプロンプト編集ガイド
 - [ ] ブランディングガイドライン
 - [ ] API ドキュメント更新
 
