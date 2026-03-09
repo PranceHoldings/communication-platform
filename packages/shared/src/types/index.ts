@@ -433,3 +433,311 @@ export type ServerToClientMessage =
   | ErrorMessage
   | PongMessage
   | VersionMessage;
+
+// ============================================================
+// 感情・表情解析
+// ============================================================
+
+export interface EmotionScore {
+  type: string; // 'HAPPY', 'SAD', 'ANGRY', 'CONFUSED', 'DISGUSTED', 'SURPRISED', 'CALM', 'FEAR'
+  confidence: number; // 0-100
+}
+
+export interface AgeRange {
+  low: number;
+  high: number;
+}
+
+export interface Pose {
+  pitch: number; // 上下の傾き (-90 to 90)
+  roll: number; // 回転 (-180 to 180)
+  yaw: number; // 左右の向き (-90 to 90)
+}
+
+export interface EmotionAnalysis {
+  id: string;
+  sessionId: string;
+  recordingId?: string;
+  timestamp: number; // セッション開始からの秒数
+  frameUrl?: string; // 解析に使用したフレームのS3 URL
+
+  // AWS Rekognition - Emotions
+  emotions: EmotionScore[]; // [{ type: 'HAPPY', confidence: 95.5 }, ...]
+  dominantEmotion?: string; // 最も強い感情
+
+  // AWS Rekognition - Face Details
+  ageRange?: AgeRange; // { low: 25, high: 32 }
+  gender?: string; // 'Male' | 'Female'
+  genderConfidence?: number;
+
+  // AWS Rekognition - Face Quality
+  eyesOpen?: boolean;
+  eyesOpenConfidence?: number;
+  mouthOpen?: boolean;
+  mouthOpenConfidence?: number;
+
+  // AWS Rekognition - Pose (Head orientation)
+  pose?: Pose;
+
+  // Overall quality
+  confidence: number;
+  brightness?: number;
+  sharpness?: number;
+
+  // Processing metadata
+  processingTimeMs?: number;
+  errorMessage?: string;
+  createdAt: Date;
+}
+
+/**
+ * 感情解析サマリー
+ */
+export interface EmotionAnalysisSummary {
+  averageEmotions: { [emotion: string]: number }; // 平均感情スコア
+  dominantEmotionFrequency: { [emotion: string]: number }; // 支配的感情の出現頻度
+  totalFrames: number;
+  successfulFrames: number;
+  failedFrames: number;
+  averageConfidence: number;
+}
+
+/**
+ * セッション感情解析結果
+ */
+export interface SessionEmotionAnalysis {
+  sessionId: string;
+  analyses: EmotionAnalysis[];
+  summary: EmotionAnalysisSummary;
+}
+
+// ============================================================
+// 音声特徴解析
+// ============================================================
+
+/**
+ * 音声特徴量
+ */
+export interface AudioFeatures {
+  pitch?: number; // 平均ピッチ (Hz)
+  pitchVariance?: number; // ピッチの分散
+  volume?: number; // 平均音量 (dB)
+  volumeVariance?: number; // 音量の分散
+  speakingRate?: number; // 話速 (words per minute)
+  pauseCount?: number; // ポーズ回数
+  pauseDuration?: number; // 平均ポーズ時間 (秒)
+  clarity?: number; // 音声の明瞭度 (0-1)
+  snr?: number; // Signal-to-Noise Ratio (dB)
+}
+
+/**
+ * フィラー語情報
+ */
+export interface FillerWordsInfo {
+  words: string[]; // 検出されたフィラー語のリスト
+  count: number; // 合計出現回数
+  frequency: { [word: string]: number }; // 各フィラー語の出現回数
+}
+
+/**
+ * 音声解析結果
+ */
+export interface AudioAnalysis {
+  id: string;
+  sessionId: string;
+  transcriptId?: string;
+  timestamp: number; // セッション開始からの秒数
+
+  // 音声特徴量
+  pitch?: number;
+  pitchVariance?: number;
+  volume?: number;
+  volumeVariance?: number;
+  speakingRate?: number;
+  pauseCount?: number;
+  pauseDuration?: number;
+
+  // 音声品質
+  clarity?: number;
+  confidence?: number;
+  snr?: number;
+
+  // フィラー語
+  fillerWords?: string[];
+  fillerCount?: number;
+
+  // メタデータ
+  audioUrl?: string;
+  duration?: number;
+  processingTimeMs?: number;
+  errorMessage?: string;
+  createdAt: Date;
+}
+
+/**
+ * 音声解析サマリー
+ */
+export interface AudioAnalysisSummary {
+  averagePitch: number;
+  averageVolume: number;
+  averageSpeakingRate: number;
+  totalPauses: number;
+  averagePauseDuration: number;
+  totalFillerWords: number;
+  fillerWordsFrequency: { [word: string]: number };
+  averageClarity: number;
+  averageConfidence: number;
+  totalDuration: number;
+}
+
+/**
+ * セッション音声解析結果
+ */
+export interface SessionAudioAnalysis {
+  sessionId: string;
+  analyses: AudioAnalysis[];
+  summary: AudioAnalysisSummary;
+}
+
+/**
+ * ポーズ情報
+ */
+export interface PauseInfo {
+  startTime: number; // 秒
+  endTime: number; // 秒
+  duration: number; // 秒
+}
+
+// ============================================================
+// セッションスコア
+// ============================================================
+
+/**
+ * スコアリング重み
+ */
+export interface ScoringWeights {
+  emotion: number; // 0-1 (default: 0.35)
+  audio: number; // 0-1 (default: 0.35)
+  content: number; // 0-1 (default: 0.20)
+  delivery: number; // 0-1 (default: 0.10)
+}
+
+/**
+ * スコアリング基準プリセット
+ */
+export type ScoringPreset = 'default' | 'interview_practice' | 'language_learning' | 'presentation' | 'custom';
+
+/**
+ * スコアリング基準
+ */
+export interface ScoringCriteria {
+  preset: ScoringPreset;
+  customWeights?: ScoringWeights;
+  description?: string;
+}
+
+/**
+ * 感情スコア詳細
+ */
+export interface EmotionScoreDetails {
+  stability: number; // 感情の安定性 (0-100)
+  positivity: number; // ポジティブさ (0-100)
+  confidence: number; // 自信 (0-100)
+  engagement: number; // エンゲージメント (0-100)
+}
+
+/**
+ * 音声スコア詳細
+ */
+export interface AudioScoreDetails {
+  clarity: number; // 明瞭さ (0-100)
+  fluency: number; // 流暢さ (0-100)
+  pacing: number; // ペース配分 (0-100)
+  volume: number; // 音量適正 (0-100)
+}
+
+/**
+ * コンテンツスコア詳細
+ */
+export interface ContentScoreDetails {
+  relevance: number; // 関連性 (0-100)
+  structure: number; // 構造 (0-100)
+  completeness: number; // 完全性 (0-100)
+}
+
+/**
+ * セッションスコア
+ */
+export interface SessionScore {
+  id: string;
+  sessionId: string;
+
+  // 総合スコア
+  overallScore: number; // 0-100
+
+  // カテゴリ別スコア
+  emotionScore?: number;
+  audioScore?: number;
+  contentScore?: number;
+  deliveryScore?: number;
+
+  // 詳細スコア（感情関連）
+  emotionStability?: number;
+  emotionPositivity?: number;
+  confidence?: number;
+  engagement?: number;
+
+  // 詳細スコア（音声関連）
+  clarity?: number;
+  fluency?: number;
+  pacing?: number;
+  volume?: number;
+
+  // 詳細スコア（コンテンツ関連）
+  relevance?: number;
+  structure?: number;
+  completeness?: number;
+
+  // 改善ポイント
+  strengths?: string[];
+  improvements?: string[];
+
+  // スコアリング設定
+  criteria?: ScoringCriteria;
+  weights?: ScoringWeights;
+
+  // メタデータ
+  calculatedAt: Date;
+  version: string;
+}
+
+/**
+ * スコア計算結果
+ */
+export interface ScoreCalculationResult {
+  overallScore: number;
+  emotionScore: number;
+  audioScore: number;
+  contentScore: number;
+  deliveryScore: number;
+  emotionDetails: EmotionScoreDetails;
+  audioDetails: AudioScoreDetails;
+  contentDetails: ContentScoreDetails;
+  strengths: string[];
+  improvements: string[];
+}
+
+/**
+ * スコア評価レベル
+ */
+export type ScoreLevel = 'excellent' | 'very_good' | 'good' | 'fair' | 'needs_improvement' | 'poor';
+
+/**
+ * スコア評価
+ */
+export interface ScoreAssessment {
+  level: ScoreLevel;
+  label: string;
+  description: string;
+  color: string; // For UI display
+}

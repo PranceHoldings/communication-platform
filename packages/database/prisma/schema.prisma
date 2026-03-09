@@ -156,6 +156,9 @@ model Session {
 
   recordings       Recording[]
   transcripts      Transcript[]
+  emotionAnalyses  EmotionAnalysis[]
+  audioAnalyses    AudioAnalysis[]
+  score            SessionScore?
 
   @@index([userId])
   @@index([orgId])
@@ -190,6 +193,7 @@ model Recording {
   createdAt        DateTime         @default(now()) @map("created_at")
 
   session          Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  emotionAnalyses  EmotionAnalysis[]
 
   @@index([sessionId])
   @@index([processingStatus])
@@ -220,6 +224,7 @@ model Transcript {
   highlight     Highlight?
 
   session       Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  audioAnalyses AudioAnalysis[]
 
   @@index([sessionId])
   @@index([timestampStart])
@@ -235,4 +240,149 @@ enum Highlight {
   POSITIVE
   NEGATIVE
   IMPORTANT
+}
+
+// ============================================================
+// 感情・表情解析
+// ============================================================
+
+model EmotionAnalysis {
+  id               String   @id @default(uuid())
+  sessionId        String   @map("session_id")
+  recordingId      String?  @map("recording_id")
+  timestamp        Float    // セッション開始からの秒数
+  frameUrl         String?  @map("frame_url") // 解析に使用したフレームのS3 URL
+
+  // AWS Rekognition - Emotions
+  emotions         Json     // [{ Type: 'HAPPY', Confidence: 95.5 }, ...]
+  dominantEmotion  String?  @map("dominant_emotion") // 最も強い感情
+
+  // AWS Rekognition - Face Details
+  ageRange         Json?    @map("age_range") // { Low: 25, High: 32 }
+  gender           String?  // 'Male' | 'Female'
+  genderConfidence Float?   @map("gender_confidence")
+
+  // AWS Rekognition - Face Quality
+  eyesOpen         Boolean? @map("eyes_open")
+  eyesOpenConfidence Float? @map("eyes_open_confidence")
+  mouthOpen        Boolean? @map("mouth_open")
+  mouthOpenConfidence Float? @map("mouth_open_confidence")
+
+  // AWS Rekognition - Pose (Head orientation)
+  pose             Json?    // { Pitch, Roll, Yaw }
+
+  // AWS Rekognition - Overall quality
+  confidence       Float    // 全体の信頼度
+  brightness       Float?   // 明るさ
+  sharpness        Float?   // シャープネス
+
+  // Processing metadata
+  processingTimeMs Int?     @map("processing_time_ms")
+  errorMessage     String?  @map("error_message")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  session          Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  recording        Recording? @relation(fields: [recordingId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([recordingId])
+  @@index([timestamp])
+  @@map("emotion_analyses")
+}
+
+// ============================================================
+// 音声特徴解析
+// ============================================================
+
+model AudioAnalysis {
+  id              String   @id @default(uuid())
+  sessionId       String   @map("session_id")
+  transcriptId    String?  @map("transcript_id")
+  timestamp       Float    // セッション開始からの秒数
+
+  // 音声特徴量
+  pitch           Float?   // 平均ピッチ (Hz)
+  pitchVariance   Float?   @map("pitch_variance") // ピッチの分散
+  volume          Float?   // 平均音量 (dB)
+  volumeVariance  Float?   @map("volume_variance") // 音量の分散
+  speakingRate    Float?   @map("speaking_rate") // 話速 (words per minute)
+  pauseCount      Int?     @map("pause_count") // ポーズ回数
+  pauseDuration   Float?   @map("pause_duration") // 平均ポーズ時間 (秒)
+
+  // 音声品質
+  clarity         Float?   // 音声の明瞭度 (0-1)
+  confidence      Float?   // STT信頼度スコア
+  snr             Float?   // Signal-to-Noise Ratio (dB)
+
+  // フィラー語
+  fillerWords     Json?    @map("filler_words") // ["ええと", "あの", "um", "uh"]
+  fillerCount     Int?     @map("filler_count")
+
+  // メタデータ
+  audioUrl        String?  @map("audio_url") // 元音声のS3 URL
+  duration        Float?   // 音声の長さ (秒)
+  processingTimeMs Int?    @map("processing_time_ms")
+  errorMessage    String?  @map("error_message")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  session         Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  transcript      Transcript? @relation(fields: [transcriptId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([transcriptId])
+  @@index([timestamp])
+  @@map("audio_analyses")
+}
+
+// ============================================================
+// セッションスコア
+// ============================================================
+
+model SessionScore {
+  id                String   @id @default(uuid())
+  sessionId         String   @unique @map("session_id")
+
+  // 総合スコア
+  overallScore      Float    @map("overall_score") // 0-100
+
+  // カテゴリ別スコア
+  emotionScore      Float?   @map("emotion_score") // 0-100
+  audioScore        Float?   @map("audio_score") // 0-100
+  contentScore      Float?   @map("content_score") // 0-100
+  deliveryScore     Float?   @map("delivery_score") // 0-100
+
+  // 詳細スコア（感情関連）
+  emotionStability  Float?   @map("emotion_stability") // 感情の安定性
+  emotionPositivity Float?   @map("emotion_positivity") // ポジティブさ
+  confidence        Float?   // 自信
+  engagement        Float?   // エンゲージメント
+
+  // 詳細スコア（音声関連）
+  clarity           Float?   // 明瞭さ
+  fluency           Float?   // 流暢さ
+  pacing            Float?   // ペース配分
+  volume            Float?   // 音量適正
+
+  // 詳細スコア（コンテンツ関連）
+  relevance         Float?   // 関連性
+  structure         Float?   // 構造
+  completeness      Float?   // 完全性
+
+  // 改善ポイント
+  strengths         Json?    // ["良好な感情コントロール", "適切な話速"]
+  improvements      Json?    // ["フィラー語を減らす", "音量を上げる"]
+
+  // スコアリング設定
+  criteria          Json?    // 使用した評価基準
+  weights           Json?    // 各カテゴリの重み
+
+  // メタデータ
+  calculatedAt      DateTime @default(now()) @map("calculated_at")
+  version           String   @default("1.0") // スコアリングアルゴリズムのバージョン
+
+  session           Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([overallScore])
+  @@map("session_scores")
 }

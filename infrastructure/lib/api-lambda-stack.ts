@@ -342,6 +342,9 @@ export class ApiLambdaStack extends cdk.Stack {
               `cp /asset-input/infrastructure/lambda/migrations/create-users.sql ${outputDir}/`,
               `cp /asset-input/infrastructure/lambda/migrations/update-admin-password.sql ${outputDir}/`,
               `cp /asset-input/infrastructure/lambda/migrations/add-recording-video-fields.sql ${outputDir}/`,
+              `cp /asset-input/infrastructure/lambda/migrations/add-emotion-analysis.sql ${outputDir}/`,
+              `cp /asset-input/infrastructure/lambda/migrations/add-audio-analysis.sql ${outputDir}/`,
+              `cp /asset-input/infrastructure/lambda/migrations/add-session-score.sql ${outputDir}/`,
             ];
           },
           beforeInstall(): string[] {
@@ -721,6 +724,7 @@ export class ApiLambdaStack extends cdk.Stack {
           '@smithy/*',
           'microsoft-cognitiveservices-speech-sdk',
           'ffmpeg-static',
+          '@prisma/client',
         ],
         nodeModules: ['microsoft-cognitiveservices-speech-sdk', 'ffmpeg-static'],
         commandHooks: {
@@ -729,10 +733,11 @@ export class ApiLambdaStack extends cdk.Stack {
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
             return [
-              // Copy shared modules (AI and Audio processors)
+              // Copy shared modules (AI, Audio, and Analysis processors)
               `mkdir -p ${outputDir}/shared`,
               `cp -r /asset-input/shared/ai ${outputDir}/shared/`,
               `cp -r /asset-input/shared/audio ${outputDir}/shared/`,
+              `cp -r /asset-input/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
             ];
           },
           beforeInstall(): string[] {

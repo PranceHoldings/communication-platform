@@ -397,7 +397,7 @@ import { User, Avatar, ValidationError, NotFoundError } from '../shared/types';
 
 - **完全ガイド:** [CLAUDE.md](CLAUDE.md) - Section 4「開発ガイドライン」
 - **メモリー:** `~/.claude/projects/-workspaces-prance-communication-platform/memory/MEMORY.md`
-- **重複監査:** [CODE_DUPLICATION_AUDIT.md](CODE_DUPLICATION_AUDIT.md)
+- **重複監査:** [CODE_DUPLICATION_AUDIT.md](docs/development/CODE_DUPLICATION_AUDIT.md)
 - **Phase 1完了記録:** [START_HERE.md](START_HERE.md)
 - **DRY原則実例:** [docs/development/CHUNK_SORTING_REFACTORING.md](docs/development/CHUNK_SORTING_REFACTORING.md)
 

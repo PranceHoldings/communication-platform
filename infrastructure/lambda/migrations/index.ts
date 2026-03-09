@@ -48,7 +48,7 @@ export const handler: Handler = async (event, context) => {
           }
         } catch (error: any) {
           // テーブルやエンティティが既に存在する場合はスキップ
-          if (error.code === '42P07' || error.code === '42710' || error.code === '23505') {
+          if (error.code === '42P07' || error.code === '42710' || error.code === '23505' || error.code === 'P2010') {
             console.warn('Statement already exists (skipping):', error.message);
             executedCount++;
             continue;
