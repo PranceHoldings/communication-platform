@@ -12,10 +12,11 @@
 2. [XLSX一括登録システム](#xlsx一括登録システム)
 3. [ATS連携](#ats連携)
 4. [AIプロンプト・プロバイダー管理](#aiプロンプトプロバイダー管理)
-5. [レポート・分析機能](#レポート分析機能)
-6. [ブランディング・カスタマイズ](#ブランディングカスタマイズ)
-7. [実装フェーズ](#実装フェーズ)
-8. [セキュリティ考慮事項](#セキュリティ考慮事項)
+5. [レポート・検索・分析機能](#レポート検索分析機能)
+6. [データ管理・アーカイブ機能](#データ管理アーカイブ機能)
+7. [ブランディング・カスタマイズ](#ブランディングカスタマイズ)
+8. [実装フェーズ](#実装フェーズ)
+9. [セキュリティ考慮事項](#セキュリティ考慮事項)
 
 ---
 
@@ -39,7 +40,8 @@
 | XLSX一括登録                   | Excelで候補者を一括登録・招待             | CLIENT_ADMIN, CLIENT_USER |
 | ATS連携                        | 主要ATSとのデータ同期・Webhook連携        | CLIENT_ADMIN         |
 | AIプロンプト・プロバイダー管理 | LLMベンダー切り替え、プロンプト編集       | SUPER_ADMIN          |
-| レポート・分析機能             | フィルタ・ソート、Excelエクスポート       | CLIENT_ADMIN, CLIENT_USER |
+| レポート・検索・分析機能       | 候補者検索、フィルタ・ソート、Excelエクスポート | CLIENT_ADMIN, CLIENT_USER |
+| データ管理・アーカイブ機能     | ソフトデリート、アーカイブ、復元機能       | CLIENT_ADMIN         |
 | ブランディング・カスタマイズ   | 候補者ページのロゴ・色・メッセージを編集   | SUPER_ADMIN          |
 
 ### ビジネス価値
@@ -2672,11 +2674,11 @@ async function storeProviderCredentials(providerId: string, credentials: any) {
 
 ---
 
-## レポート・分析機能
+## レポート・検索・分析機能
 
 ### 概要
 
-面接結果およびセッション解析結果を一覧表示し、各項目ごとにフィルタリング・ソーティングを行えます。選択した結果はExcelファイル（.xlsx）としてエクスポート可能です。
+候補者の全文検索、面接結果およびセッション解析結果を一覧表示し、各項目ごとにフィルタリング・ソーティングを行えます。選択した結果はExcelファイル（.xlsx）としてエクスポート可能です。
 
 ### 目的
 
@@ -2699,11 +2701,297 @@ async function storeProviderCredentials(providerId: string, credentials: any) {
 
 | 機能                 | 説明                                       | 対象ユーザー         |
 | -------------------- | ------------------------------------------ | -------------------- |
+| 候補者検索           | 名前・メール・電話番号での全文検索         | CLIENT_ADMIN, CLIENT_USER |
 | 高度なフィルタリング | 複数条件での絞り込み（AND/OR条件）         | CLIENT_ADMIN, CLIENT_USER |
 | ソーティング         | 各列でのソート（昇順・降順）               | CLIENT_ADMIN, CLIENT_USER |
 | Excelエクスポート    | フィルタ結果を.xlsx形式でダウンロード      | CLIENT_ADMIN, CLIENT_USER |
 | 保存済みフィルター   | よく使う条件を保存・再利用                 | CLIENT_ADMIN, CLIENT_USER |
 | 一括操作             | 選択した複数セッションの一括処理           | CLIENT_ADMIN         |
+
+### 候補者検索機能
+
+#### 概要
+
+候補者の名前、メールアドレス、電話番号から瞬時に検索できる全文検索機能を提供します。大量の候補者データから目的の候補者を素早く見つけ出せます。
+
+#### 検索対象フィールド
+
+| フィールド       | 検索方式           | 例                          |
+| ---------------- | ------------------ | --------------------------- |
+| 候補者名（User） | 部分一致           | '田中' → 田中太郎, 田中花子 |
+| ゲスト名         | 部分一致           | '山田' → 山田一郎           |
+| メールアドレス   | 部分一致・完全一致 | '@example.com', 'tanaka@'   |
+| 電話番号         | 部分一致           | '090-1234', '1234'          |
+| シナリオ名       | 部分一致           | '技術面接'                  |
+| 評価コメント     | 全文検索           | 'コミュニケーション力が高い' |
+
+#### 検索実装方式
+
+**PostgreSQL全文検索（tsvector）:**
+```sql
+-- tsvector列の追加（マイグレーション）
+ALTER TABLE users ADD COLUMN search_vector tsvector;
+ALTER TABLE guest_sessions ADD COLUMN search_vector tsvector;
+
+-- インデックス作成
+CREATE INDEX users_search_idx ON users USING GIN(search_vector);
+CREATE INDEX guest_sessions_search_idx ON guest_sessions USING GIN(search_vector);
+
+-- トリガーで自動更新
+CREATE TRIGGER users_search_update BEFORE INSERT OR UPDATE ON users
+FOR EACH ROW EXECUTE FUNCTION
+tsvector_update_trigger(search_vector, 'pg_catalog.simple', name, email, phone);
+```
+
+**検索クエリ例:**
+```typescript
+// Prisma raw query
+const results = await prisma.$queryRaw`
+  SELECT u.*, s.*, e.*
+  FROM users u
+  LEFT JOIN sessions s ON s.user_id = u.id
+  LEFT JOIN evaluations e ON e.session_id = s.id
+  WHERE u.search_vector @@ plainto_tsquery('simple', ${searchQuery})
+     OR u.name ILIKE ${'%' + searchQuery + '%'}
+     OR u.email ILIKE ${'%' + searchQuery + '%'}
+  ORDER BY ts_rank(u.search_vector, plainto_tsquery('simple', ${searchQuery})) DESC
+  LIMIT 50
+`;
+```
+
+#### API設計
+
+**Endpoint:**
+```
+GET /api/v1/candidates/search?q={query}&limit=50&offset=0
+```
+
+**認証:**
+```
+Authorization: Bearer <JWT>
+```
+
+**権限:**
+- `CLIENT_ADMIN`: 組織内の全候補者
+- `CLIENT_USER`: 自分が担当した候補者のみ
+
+**クエリパラメータ:**
+```typescript
+{
+  q: '田中',                    // 検索クエリ
+  type?: 'user' | 'guest' | 'all',  // 検索対象（デフォルト: all）
+  limit: 50,
+  offset: 0,
+}
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  results: [
+    {
+      type: 'user',
+      user: {
+        id: 'user_123',
+        name: '田中太郎',
+        email: 'tanaka@example.com',
+        phone: '090-1234-5678',
+      },
+      sessions: [
+        {
+          id: 'session_456',
+          scenarioName: '技術面接',
+          totalScore: 85,
+          startedAt: '2026-03-15T10:00:00Z',
+        },
+        // ...
+      ],
+      highlightFields: ['name'],  // マッチしたフィールド
+    },
+    {
+      type: 'guest',
+      guestSession: {
+        id: 'guest_789',
+        guestName: '田中花子',
+        guestEmail: 'hanako.tanaka@example.com',
+        status: 'COMPLETED',
+      },
+      evaluation: {
+        totalScore: 78,
+      },
+      highlightFields: ['guestName', 'guestEmail'],
+    },
+    // ...
+  ],
+  pagination: {
+    total: 15,
+    limit: 50,
+    offset: 0,
+    hasMore: false,
+  },
+  searchTime: 0.045,  // 秒
+}
+```
+
+#### UI実装
+
+**検索バー（ヘッダーまたは一覧ページ）:**
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { searchCandidates } from '@/lib/api/candidates';
+
+export default function CandidateSearchBar() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  const handleSearch = async (searchQuery: string) => {
+    if (!searchQuery || searchQuery.length < 2) {
+      setResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const data = await searchCandidates({ q: searchQuery, limit: 10 });
+      setResults(data.results);
+      setShowResults(true);
+    } catch (error) {
+      console.error('Search failed:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // デバウンス処理
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+
+    // 300ms後に検索実行
+    setTimeout(() => {
+      if (value === query) {
+        handleSearch(value);
+      }
+    }, 300);
+  };
+
+  return (
+    <div className="relative w-full max-w-xl">
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={handleInputChange}
+          onFocus={() => setShowResults(true)}
+          placeholder="候補者名、メールアドレス、電話番号で検索..."
+          className="w-full px-4 py-2 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <svg
+          className="absolute left-3 top-3 h-5 w-5 text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+        {isSearching && (
+          <div className="absolute right-3 top-3">
+            <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          </div>
+        )}
+      </div>
+
+      {/* 検索結果ドロップダウン */}
+      {showResults && results.length > 0 && (
+        <div className="absolute z-10 w-full mt-2 bg-white border rounded-lg shadow-lg max-h-96 overflow-y-auto">
+          {results.map((result, index) => (
+            <a
+              key={index}
+              href={
+                result.type === 'user'
+                  ? `/dashboard/users/${result.user.id}`
+                  : `/dashboard/guest-sessions/${result.guestSession.id}`
+              }
+              className="block px-4 py-3 hover:bg-gray-50 border-b last:border-b-0"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold">
+                      {result.type === 'user' ? result.user.name : result.guestSession.guestName}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 text-xs rounded ${
+                        result.type === 'user'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}
+                    >
+                      {result.type === 'user' ? 'User' : 'Guest'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {result.type === 'user' ? result.user.email : result.guestSession.guestEmail}
+                  </p>
+                  {result.sessions && result.sessions.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {result.sessions.length} sessions • Avg score:{' '}
+                      {Math.round(
+                        result.sessions.reduce((sum: number, s: any) => sum + s.totalScore, 0) /
+                          result.sessions.length
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </a>
+          ))}
+
+          {results.length === 10 && (
+            <a
+              href={`/dashboard/candidates?q=${encodeURIComponent(query)}`}
+              className="block px-4 py-2 text-center text-sm text-blue-600 hover:bg-gray-50"
+            >
+              View all results →
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* 検索結果なし */}
+      {showResults && query.length >= 2 && results.length === 0 && !isSearching && (
+        <div className="absolute z-10 w-full mt-2 bg-white border rounded-lg shadow-lg p-4 text-center text-gray-500">
+          No results found for "{query}"
+        </div>
+      )}
+    </div>
+  );
+}
+```
 
 ### データモデル
 
@@ -3511,6 +3799,662 @@ function validateField(field: string): boolean {
 
 ---
 
+## データ管理・アーカイブ機能
+
+### 概要
+
+終了した募集要項（シナリオ）やゲストセッションをUI上で非表示にする**ソフトデリート機能**を提供します。データベースから物理削除せず、論理削除（アーカイブ）することで、必要に応じて復元が可能です。
+
+### 目的
+
+**データ整理:**
+- 終了した募集要項を一覧から非表示にして、UI を整理
+- アクティブなシナリオのみを表示して、業務効率を向上
+- 誤って削除したデータの復元が可能
+
+**コンプライアンス:**
+- データ保持ポリシーに準拠（GDPR、個人情報保護法）
+- 監査証跡の保持（誰が・いつ・何をアーカイブしたか）
+- 完全削除前の猶予期間を設ける
+
+**業務継続性:**
+- 過去データの参照・分析が可能
+- 同じ募集要項の再利用（アーカイブ解除）
+- データ移行時の安全性確保
+
+### 主要機能
+
+| 機能                 | 説明                                       | 対象ユーザー   |
+| -------------------- | ------------------------------------------ | -------------- |
+| ソフトデリート       | UI上で非表示（論理削除）                   | CLIENT_ADMIN   |
+| アーカイブ一覧       | アーカイブされたデータの閲覧               | CLIENT_ADMIN   |
+| 復元機能             | アーカイブデータをアクティブに戻す         | CLIENT_ADMIN   |
+| 完全削除             | データベースから物理削除（復元不可）       | SUPER_ADMIN    |
+| 一括アーカイブ       | 複数データを一度にアーカイブ               | CLIENT_ADMIN   |
+| 自動アーカイブ       | 期限切れデータの自動アーカイブ             | システム自動   |
+
+### データモデル
+
+#### アーカイブ対象データ
+
+**1. Scenario（募集要項・シナリオ）**
+
+```prisma
+model Scenario {
+  id          String       @id @default(uuid())
+  userId      String?      @map("user_id")
+  orgId       String       @map("org_id")
+  title       String
+  category    String
+  language    String       @default("ja")
+  visibility  Visibility   @default(PRIVATE)
+
+  // アーカイブ関連フィールド（追加）
+  isArchived  Boolean      @default(false) @map("is_archived")
+  archivedAt  DateTime?    @map("archived_at")
+  archivedBy  String?      @map("archived_by")  // User ID
+
+  configJson  Json         @map("config_json")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sessions     Session[]
+
+  @@index([orgId])
+  @@index([category])
+  @@index([isArchived])  // 追加
+  @@map("scenarios")
+}
+```
+
+**2. GuestSession（ゲストセッション）**
+
+```prisma
+model GuestSession {
+  id              String   @id @default(cuid())
+  sessionId       String   @unique
+  accessToken     String   @unique
+  accessPassword  String   // bcrypt hashed
+
+  orgId           String
+  scenarioId      String
+  avatarId        String
+
+  guestName       String?
+  guestEmail      String?
+  guestPhone      String?
+
+  status          GuestSessionStatus @default(PENDING)
+  expiresAt       DateTime?
+
+  // アーカイブ関連フィールド（追加）
+  isArchived      Boolean   @default(false) @map("is_archived")
+  archivedAt      DateTime? @map("archived_at")
+  archivedBy      String?   @map("archived_by")
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([orgId])
+  @@index([status])
+  @@index([isArchived])  // 追加
+  @@map("guest_sessions")
+}
+```
+
+**3. Avatar（アバター）**
+
+```prisma
+model Avatar {
+  id          String       @id @default(uuid())
+  userId      String?      @map("user_id")
+  orgId       String       @map("org_id")
+  name        String
+  type        AvatarType
+  style       AvatarStyle
+  source      AvatarSource
+
+  // アーカイブ関連フィールド（追加）
+  isArchived  Boolean      @default(false) @map("is_archived")
+  archivedAt  DateTime?    @map("archived_at")
+  archivedBy  String?      @map("archived_by")
+
+  modelUrl    String       @map("model_url")
+  thumbnailUrl String?     @map("thumbnail_url")
+  configJson  Json?        @map("config_json")
+  tags        String[]     @default([])
+  visibility  Visibility   @default(PRIVATE)
+  allowCloning Boolean     @default(false) @map("allow_cloning")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sessions     Session[]
+
+  @@index([orgId])
+  @@index([userId])
+  @@index([visibility])
+  @@index([isArchived])  // 追加
+  @@map("avatars")
+}
+```
+
+#### 監査ログ（ArchiveLog）
+
+```prisma
+model ArchiveLog {
+  id              String   @id @default(cuid())
+
+  // 対象データ
+  targetType      ArchiveTargetType  // 'SCENARIO', 'GUEST_SESSION', 'AVATAR'
+  targetId        String
+  targetName      String  // アーカイブ時の名前
+
+  // 操作情報
+  action          ArchiveAction  // 'ARCHIVE', 'RESTORE', 'DELETE'
+  performedBy     String  // User ID
+  performedByName String  // ユーザー名（スナップショット）
+
+  orgId           String
+
+  // 理由・メモ
+  reason          String?
+  notes           String?
+
+  // タイムスタンプ
+  performedAt     DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([orgId])
+  @@index([performedAt])
+  @@map("archive_logs")
+}
+
+enum ArchiveTargetType {
+  SCENARIO
+  GUEST_SESSION
+  AVATAR
+  USER
+}
+
+enum ArchiveAction {
+  ARCHIVE   // アーカイブ（論理削除）
+  RESTORE   // 復元
+  DELETE    // 完全削除
+}
+```
+
+### API設計
+
+#### 1. シナリオをアーカイブ
+
+**Endpoint:**
+```
+POST /api/v1/scenarios/{id}/archive
+```
+
+**認証:**
+```
+Authorization: Bearer <JWT>
+```
+
+**権限:**
+- `CLIENT_ADMIN`: 自組織のシナリオ
+
+**リクエスト:**
+```typescript
+{
+  reason?: '募集終了のため',  // アーカイブ理由（オプション）
+  notes?: '次回募集時に再利用予定',
+}
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  id: 'scenario_123',
+  title: '2024年度 新卒エンジニア採用',
+  isArchived: true,
+  archivedAt: '2026-03-15T12:00:00Z',
+  archivedBy: 'user_456',
+  archivedByName: '田中太郎',
+}
+```
+
+#### 2. アーカイブ済みシナリオ一覧取得
+
+**Endpoint:**
+```
+GET /api/v1/scenarios?includeArchived=true
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  scenarios: [
+    {
+      id: 'scenario_123',
+      title: '2024年度 新卒エンジニア採用',
+      isArchived: true,
+      archivedAt: '2026-03-15T12:00:00Z',
+      createdAt: '2026-01-01T00:00:00Z',
+    },
+    // ...
+  ],
+  pagination: { /* ... */ }
+}
+```
+
+#### 3. アーカイブを復元
+
+**Endpoint:**
+```
+POST /api/v1/scenarios/{id}/restore
+```
+
+**リクエスト:**
+```typescript
+{
+  notes?: '2025年度募集で再利用',
+}
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  id: 'scenario_123',
+  title: '2024年度 新卒エンジニア採用',
+  isArchived: false,
+  archivedAt: null,
+  archivedBy: null,
+}
+```
+
+#### 4. 完全削除（物理削除）
+
+**Endpoint:**
+```
+DELETE /api/v1/scenarios/{id}/permanent
+```
+
+**権限:**
+- `SUPER_ADMIN` のみ
+
+**確認:**
+```typescript
+{
+  confirm: true,  // 必須
+  reason: '個人情報保護法に基づく削除依頼',
+}
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  message: 'Scenario permanently deleted',
+  deletedAt: '2026-03-15T12:00:00Z',
+}
+```
+
+#### 5. 一括アーカイブ
+
+**Endpoint:**
+```
+POST /api/v1/scenarios/bulk-archive
+```
+
+**リクエスト:**
+```typescript
+{
+  scenarioIds: ['scenario_123', 'scenario_456', 'scenario_789'],
+  reason: '年度終了に伴う一括アーカイブ',
+}
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  success: 3,
+  failed: 0,
+  results: [
+    { id: 'scenario_123', status: 'archived' },
+    { id: 'scenario_456', status: 'archived' },
+    { id: 'scenario_789', status: 'archived' },
+  ]
+}
+```
+
+#### 6. 自動アーカイブ設定
+
+**Endpoint:**
+```
+PUT /api/v1/organizations/{orgId}/auto-archive-settings
+```
+
+**リクエスト:**
+```typescript
+{
+  enabled: true,
+  rules: [
+    {
+      targetType: 'GUEST_SESSION',
+      condition: 'expiresAt < now() AND status = COMPLETED',
+      daysAfterExpiry: 30,  // 期限切れ30日後に自動アーカイブ
+    },
+    {
+      targetType: 'SCENARIO',
+      condition: 'updatedAt < now() - interval "180 days"',
+      // 180日間更新されていないシナリオを自動アーカイブ
+    }
+  ]
+}
+```
+
+### UI実装
+
+#### シナリオ一覧ページ（アーカイブ機能付き）
+
+**場所:** `apps/web/app/[locale]/dashboard/scenarios/page.tsx`
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getScenarios, archiveScenario, restoreScenario } from '@/lib/api/scenarios';
+
+export default function ScenariosPage() {
+  const [scenarios, setScenarios] = useState<any[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchScenarios();
+  }, [showArchived]);
+
+  const fetchScenarios = async () => {
+    const data = await getScenarios({ includeArchived: showArchived });
+    setScenarios(data.scenarios);
+  };
+
+  const handleArchive = async (scenarioId: string) => {
+    if (!confirm('この募集要項をアーカイブしますか？\n※復元可能です')) return;
+
+    const reason = prompt('アーカイブ理由を入力してください（任意）:');
+    await archiveScenario(scenarioId, { reason });
+    fetchScenarios();
+  };
+
+  const handleRestore = async (scenarioId: string) => {
+    if (!confirm('この募集要項を復元しますか？')) return;
+
+    await restoreScenario(scenarioId);
+    fetchScenarios();
+  };
+
+  const handleBulkArchive = async () => {
+    if (selectedIds.length === 0) {
+      alert('アーカイブするシナリオを選択してください');
+      return;
+    }
+
+    if (!confirm(`${selectedIds.length}件の募集要項をアーカイブしますか？`)) return;
+
+    const reason = prompt('アーカイブ理由を入力してください（任意）:');
+    // Bulk archive API call
+    fetchScenarios();
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Scenarios</h1>
+        <div className="flex gap-2">
+          <label className="flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+              className="rounded"
+            />
+            <span className="text-sm">Show archived</span>
+          </label>
+          {selectedIds.length > 0 && (
+            <button
+              onClick={handleBulkArchive}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+            >
+              Archive selected ({selectedIds.length})
+            </button>
+          )}
+          <a
+            href="/dashboard/scenarios/new"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            + New Scenario
+          </a>
+        </div>
+      </div>
+
+      {/* シナリオ一覧 */}
+      <div className="space-y-4">
+        {scenarios.map((scenario) => (
+          <div
+            key={scenario.id}
+            className={`bg-white border rounded-lg p-6 ${
+              scenario.isArchived ? 'opacity-60 bg-gray-50' : ''
+            }`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3 flex-1">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(scenario.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedIds([...selectedIds, scenario.id]);
+                    } else {
+                      setSelectedIds(selectedIds.filter((id) => id !== scenario.id));
+                    }
+                  }}
+                  className="mt-1 rounded"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-semibold">{scenario.title}</h3>
+                    {scenario.isArchived && (
+                      <span className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded">
+                        Archived
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3">{scenario.category}</p>
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <span>Language: {scenario.language}</span>
+                    <span>•</span>
+                    <span>Created: {new Date(scenario.createdAt).toLocaleDateString()}</span>
+                    {scenario.isArchived && (
+                      <>
+                        <span>•</span>
+                        <span>
+                          Archived: {new Date(scenario.archivedAt).toLocaleDateString()}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {!scenario.isArchived ? (
+                  <>
+                    <a
+                      href={`/dashboard/scenarios/${scenario.id}/edit`}
+                      className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                    >
+                      Edit
+                    </a>
+                    <button
+                      onClick={() => handleArchive(scenario.id)}
+                      className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                    >
+                      Archive
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => handleRestore(scenario.id)}
+                    className="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
+                  >
+                    Restore
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Backend実装（アーカイブ処理）
+
+**場所:** `infrastructure/lambda/scenarios/archive/index.ts`
+
+```typescript
+import { APIGatewayProxyHandler } from 'aws-lambda';
+import { prisma } from '../../shared/database/prisma';
+import { verifyJWT } from '../../shared/auth/jwt';
+
+export const handler: APIGatewayProxyHandler = async (event) => {
+  const scenarioId = event.pathParameters?.id;
+  const body = JSON.parse(event.body || '{}');
+  const { reason, notes } = body;
+
+  // 認証
+  const token = event.headers.Authorization?.replace('Bearer ', '');
+  const user = await verifyJWT(token!);
+
+  // 権限チェック（CLIENT_ADMIN以上）
+  if (user.role !== 'CLIENT_ADMIN' && user.role !== 'SUPER_ADMIN') {
+    return {
+      statusCode: 403,
+      body: JSON.stringify({ error: 'Insufficient permissions' }),
+    };
+  }
+
+  // シナリオ取得
+  const scenario = await prisma.scenario.findUnique({
+    where: { id: scenarioId },
+  });
+
+  if (!scenario) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({ error: 'Scenario not found' }),
+    };
+  }
+
+  // 組織IDチェック
+  if (scenario.orgId !== user.orgId && user.role !== 'SUPER_ADMIN') {
+    return {
+      statusCode: 403,
+      body: JSON.stringify({ error: 'Cannot archive scenario from another organization' }),
+    };
+  }
+
+  // アーカイブ処理
+  const archivedScenario = await prisma.scenario.update({
+    where: { id: scenarioId },
+    data: {
+      isArchived: true,
+      archivedAt: new Date(),
+      archivedBy: user.id,
+    },
+  });
+
+  // 監査ログ記録
+  await prisma.archiveLog.create({
+    data: {
+      targetType: 'SCENARIO',
+      targetId: scenarioId,
+      targetName: scenario.title,
+      action: 'ARCHIVE',
+      performedBy: user.id,
+      performedByName: user.name,
+      orgId: scenario.orgId,
+      reason,
+      notes,
+    },
+  });
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      id: archivedScenario.id,
+      title: archivedScenario.title,
+      isArchived: archivedScenario.isArchived,
+      archivedAt: archivedScenario.archivedAt,
+      archivedBy: archivedScenario.archivedBy,
+    }),
+  };
+};
+```
+
+### セキュリティ考慮事項
+
+#### 1. アクセス制御
+
+```typescript
+// CLIENT_ADMINは自組織のみ
+if (user.role === 'CLIENT_ADMIN' && scenario.orgId !== user.orgId) {
+  throw new Error('Unauthorized');
+}
+
+// SUPER_ADMINのみ完全削除可能
+if (action === 'DELETE' && user.role !== 'SUPER_ADMIN') {
+  throw new Error('Only SUPER_ADMIN can permanently delete');
+}
+```
+
+#### 2. 監査証跡
+
+- 全アーカイブ操作を `ArchiveLog` テーブルに記録
+- 誰が・いつ・何を・なぜアーカイブしたかを追跡
+- CloudTrail と連携して完全な監査ログを保持
+
+#### 3. データ保持ポリシー
+
+```typescript
+// アーカイブ後90日で完全削除警告
+const AUTO_DELETE_DAYS = 90;
+
+// 定期実行Lambda（daily）
+export async function checkAutoDelete() {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - AUTO_DELETE_DAYS);
+
+  const oldArchives = await prisma.scenario.findMany({
+    where: {
+      isArchived: true,
+      archivedAt: { lt: cutoffDate },
+    },
+  });
+
+  // 管理者に通知
+  for (const scenario of oldArchives) {
+    await sendAdminNotification({
+      type: 'AUTO_DELETE_WARNING',
+      message: `Scenario "${scenario.title}" will be permanently deleted in 7 days`,
+      scenarioId: scenario.id,
+    });
+  }
+}
+```
+
+---
+
 ## ブランディング・カスタマイズ
 
 ### 概要
@@ -4032,7 +4976,7 @@ export default function GuestAccessPage() {
 
 ## 実装フェーズ
 
-### Phase 3.0: エンタープライズ機能（推定6-7週間）
+### Phase 3.0: エンタープライズ機能（推定7-8週間）
 
 #### Week 1: XLSX一括登録（Backend）
 
@@ -4134,47 +5078,78 @@ export default function GuestAccessPage() {
 - [ ] エクスポート進行状況表示
 - [ ] ダウンロード完了通知
 
-#### Week 5.5: AIプロンプト・プロバイダー管理
+**Day 26.5: 候補者検索機能**
+- [ ] PostgreSQL全文検索（tsvector）設定
+- [ ] 検索APIエンドポイント実装
+- [ ] 検索バーUI（デバウンス処理）
+- [ ] 検索結果ドロップダウン表示
 
-**Day 27-28: Backend（データモデル・API）**
+#### Week 4.7: データ管理・アーカイブ機能
+
+**Day 26.7-27: Backend（ソフトデリート）**
+- [ ] ScenarioテーブルにisArchived, archivedAt, archivedByフィールド追加
+- [ ] GuestSessionテーブルにアーカイブフィールド追加
+- [ ] Avatarテーブルにアーカイブフィールド追加
+- [ ] ArchiveLogテーブル作成
+- [ ] アーカイブAPI（POST /scenarios/{id}/archive）実装
+
+**Day 27.5: Backend（復元・完全削除）**
+- [ ] 復元API（POST /scenarios/{id}/restore）実装
+- [ ] 完全削除API（DELETE /scenarios/{id}/permanent）実装（SUPER_ADMIN専用）
+- [ ] 一括アーカイブAPI実装
+- [ ] 自動アーカイブ設定API実装
+
+**Day 28: Frontend（アーカイブUI）**
+- [ ] シナリオ一覧にアーカイブボタン追加
+- [ ] 「アーカイブ済みを表示」チェックボックス
+- [ ] 復元ボタン実装
+- [ ] 一括選択・一括アーカイブUI
+- [ ] アーカイブ理由入力ダイアログ
+
+#### Week 5.7: AIプロンプト・プロバイダー管理
+
+**Day 29-30: Backend（データモデル・API）**
 - [ ] `PromptTemplate`, `PromptVersion`, `AIProvider` テーブル
 - [ ] プロンプトテンプレートAPI（GET, POST, PUT, DELETE）
 - [ ] AIプロバイダーAPI（GET, PUT）
 - [ ] バージョン管理ロジック
 - [ ] プロンプト変数の動的置換処理
 
-**Day 29-30: プロバイダー統合**
+**Day 31-32: プロバイダー統合**
 - [ ] AWS Bedrock連携（Claude Sonnet 4.6）
 - [ ] OpenAI連携（GPT-4 Turbo）
 - [ ] Google AI連携（Gemini Pro）
 - [ ] プロバイダー抽象化レイヤー
 - [ ] フォールバックロジック実装
 
-**Day 31-32: Frontend（プロンプト管理）**
+**Day 33-34: Frontend（プロンプト管理）**
 - [ ] プロンプトテンプレート一覧ページ
 - [ ] プロンプト編集ページ（変数定義、AI設定）
 - [ ] リアルタイムテスト実行UI
 - [ ] バージョン比較・ロールバック機能
 
-**Day 33: Frontend（プロバイダー管理）**
+**Day 35: Frontend（プロバイダー管理）**
 - [ ] AIプロバイダー管理ページ
 - [ ] 優先順位設定、ステータス切り替え
 - [ ] フォールバック設定UI
 - [ ] コスト管理・アラート設定
 
-#### Week 6.5: 統合テスト・ドキュメント
+#### Week 6.7: 統合テスト・ドキュメント
 
-**Day 34-35: 統合テスト**
+**Day 36-37: 統合テスト**
 - [ ] XLSX → ATS同期の全フロー
 - [ ] ブランディング適用確認
+- [ ] 候補者検索機能（全文検索パフォーマンス）
+- [ ] ソフトデリート・復元・完全削除フロー
 - [ ] レポートフィルタリング・Excelエクスポート確認
 - [ ] AIプロンプト・プロバイダー切り替えテスト
 - [ ] フォールバック動作確認
 - [ ] パフォーマンステスト（1000候補者、複雑なフィルタ条件）
 
-**Day 36-37: ドキュメント・トレーニング**
+**Day 38-39: ドキュメント・トレーニング**
 - [ ] ユーザーガイド作成
 - [ ] ATS設定マニュアル（プロバイダー別）
+- [ ] 候補者検索・データ管理ガイド
 - [ ] レポート分析・Excelエクスポートガイド
 - [ ] AIプロンプト編集ガイド
 - [ ] ブランディングガイドライン
