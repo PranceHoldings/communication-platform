@@ -1,9 +1,10 @@
-# 次回セッション開始手順（2026-03-08更新）
+# 次回セッション開始手順（2026-03-09更新）
 
-**最終作業日:** 2026-03-08 23:35 JST
-**Phase 1進捗:** 100%完了 🎉 | **Phase 2進捗:** 録画機能実装完了・デプロイ環境整備完了 ✅
-**最新コミット:** fe4a75e - リソースファイルベース言語設定システム実装
-**最新デプロイ:** 2026-03-08 23:30 JST - Lambda v1.1.0（言語設定システム・全20+ Lambda関数更新）
+**最終作業日:** 2026-03-09 14:45 JST
+**Phase 1進捗:** 100%完了 🎉 | **Phase 2進捗:** Task 2.1完了 ✅ | Task 2.2.1完了 ✅ | Task 2.2.2準備完了 🚀
+**Phase 2.2進捗:** 30% - データベースマイグレーション完了、解析基盤実装済み
+**最新コミット:** (保留中) - Phase 2.2解析機能セットアップ
+**最新デプロイ:** 2026-03-09 14:40 JST - Lambda v1.1.1（解析機能マイグレーション対応）
 
 ---
 
@@ -141,72 +142,125 @@ WebSocketチャンク処理で"Internal server error"が発生。調査の結果
 
 ---
 
-## 🎬 Phase 2: 録画機能実装（進行中）
+## 🎬 Phase 2: 録画・解析・レポート機能実装（進行中）
 
-### ✅ Task 2.1.1 完了確認（2026-03-07）
-
-**実装済みの内容：**
-
-1. ✅ **useVideoRecorder統合** - SessionPlayerに統合済み（Line 374-389）
-2. ✅ **ユーザーカメラ取得** - getUserMedia()実装済み（Line 471-490）
-3. ✅ **録画ステータスUI** - 録画中インジケーター、時間表示実装済み（Line 692-722）
-4. ✅ **録画ボタンUI** - Start/Pause/Stop/Resume実装済み（Line 907-954）
-5. ✅ **VideoComposer統合** - アバター + カメラ合成実装済み（Line 1012-1019）
-6. ✅ **多言語対応** - 英語・日本語翻訳済み
-
-**完了条件チェック：**
-
-- ✅ 録画開始ボタンで録画開始
-- ✅ WebSocketでビデオチャンクが送信される（Line 324-342）
-- ✅ 録画中のステータス表示
-- ✅ ブラウザコンソールにビデオチャンクログ表示（Line 331）
-
-**実装ファイル:**
-
-- `apps/web/components/session-player/index.tsx`
-- `apps/web/hooks/useVideoRecorder.ts`
-- `apps/web/components/session-player/video-composer.tsx`
-
-### 次のタスク: 統合テスト & Task 2.2 解析機能実装
-
-**Phase 2進捗:** Task 2.1（録画機能） ✅ 完了 | デプロイ環境 ✅ 完了 | Task 2.2（解析機能） 次のステップ
-
-**immediate（今すぐ）:**
-
-1. **音声・録画処理の統合テスト** - ブラウザでセッション実行、ffmpeg動作確認
-2. **エラーログ確認** - CloudWatch Logsでffmpegエラーがないか確認
-
-**short-term（1-2日）:** 3. **Task 2.2.1 開始** - 表情・感情解析（AWS Rekognition統合）
-
-**Task 2.1完了内容:**
+### ✅ Task 2.1: 録画機能（完了）
 
 - ✅ 2.1.1 フロントエンド映像キャプチャ（useVideoRecorder, VideoComposer）
 - ✅ 2.1.2 Lambda動画処理（video_chunk_part, ffmpeg結合, S3保存）
 - ✅ 2.1.3 録画再生UI（RecordingPlayer, 再生速度調整, トランスクリプト同期）
 
-**Task 2.2: 解析機能実装（推定: 2-3週間）**
+### ✅ Task 2.2.1: データベースマイグレーション（完了 - 2026-03-09）
 
-#### 2.2.1 表情・感情解析（1週間）
+**実装完了内容:**
 
-- AWS Rekognition統合
-- フレーム抽出（1秒ごと）
-- 表情・感情スコアリング
-- 時系列データ保存
+1. ✅ **Prismaスキーマ拡張** - 3つの新テーブル定義
+   - `EmotionAnalysis` - 表情・感情解析データ（18フィールド）
+   - `AudioAnalysis` - 音声特徴解析データ（18フィールド）
+   - `SessionScore` - セッション総合スコア（23フィールド）
 
-#### 2.2.2 音声特徴解析（1週間）
+2. ✅ **マイグレーションファイル作成**
+   - `20260309134500_add_audio_and_score_tables/migration.sql`
+   - 3テーブル、59フィールド、8インデックス、6外部キー
 
-- Web Audio API統合
-- 音高・速度・間・ピッチ解析
-- フィラーワード検出
-- 話速計算
+3. ✅ **データベースマイグレーション実行**
+   - 46個のSQLステートメント実行成功
+   - 全テーブルがAWS RDS Aurora Serverless v2に作成完了
 
-#### 2.2.3 スコアリングアルゴリズム（3日）
+4. ✅ **Prisma Client再生成**
+   - 新テーブルの型定義が利用可能
 
-- 総合スコア計算
-- カテゴリ別スコア（声・表情・内容・流暢さ）
-- ベンチマーク比較
+**確認方法:**
+```bash
+# Prisma Clientで新テーブルが使えることを確認
+cd packages/database
+npx prisma studio  # emotion_analyses, audio_analyses, session_scoresが表示される
+```
 
-**詳細:** `docs/progress/PHASE_2_PLAN.md` 参照
+### 🚀 Phase 2-3優先度調整完了（2026-03-09）
+
+**重要変更: 優先度ベース実装計画の策定**
+
+全機能を検証し、ゲストユーザーシステムとXLSX一括登録を最優先（P0）として再調整しました。
+
+**優先度マトリクス:**
+
+| 優先度 | Phase | 機能 | 期間 | 理由 |
+|--------|-------|------|------|------|
+| **P0** | 2.2-2.3 | 解析・レポート機能 | Week 1-4 | MVP Release必須 |
+| **P0** | 2.5 | ゲストユーザーシステム | Week 5-7 | 最重要差別化機能 |
+| **P0** | 3.1.1 | XLSX一括登録システム | Week 8-9 | 90%時間削減 |
+| **P1** | 3.1.2 | 基本ATS連携 | Week 10-11 | 既存ワークフロー統合 |
+| **P1** | 3.1.3 | 基本レポート・分析 | Week 12-13 | データドリブン意思決定 |
+
+**詳細実装計画:** `docs/development/PRIORITY_BASED_IMPLEMENTATION_PLAN.md` ✨新規作成
+
+### 🔄 Phase 2.2-2.3: 解析・レポート機能（Week 1-4）
+
+**Phase 2.2全体進捗: 30%**
+
+| Task | ステータス | 進捗 |
+|------|----------|------|
+| 2.2.1 データベース | ✅ 完了 | 100% |
+| 2.2.2 音声解析 | ⏸️ 準備完了 | 0% |
+| 2.2.3 統合処理 | ⏸️ 準備完了 | 0% |
+| 2.2.4 API実装 | ⏸️ 準備完了 | 0% |
+| 2.2.5 フロントエンドUI | ⏸️ 準備完了 | 0% |
+
+**immediate（今すぐ・Day 1-2）:**
+
+1. **AudioAnalyzer実装** - フィラーワード検出、話速計算
+   - `infrastructure/lambda/shared/analysis/audio-analyzer.ts` 作成
+   - 単体テスト実装
+
+**short-term（Week 1-2）:**
+
+2. **AnalysisOrchestrator実装** - 3つの解析統合
+3. **ScoreCalculator統合** - スコア計算・DB保存
+4. **Analysis API実装** - Lambda関数・WebSocket通知
+5. **フロントエンドUI実装** - スコア表示・グラフ
+
+**Week 3-4:**
+
+6. **Phase 2.3: レポート生成実装**
+   - React-PDFテンプレート
+   - AI改善提案（Claude API）
+   - レポート管理UI
+
+### 🆕 Phase 2.5: ゲストユーザーシステム（Week 5-7）
+
+**目的:** ログイン不要の外部ユーザー（候補者・受講者）アクセス
+
+**Week 5: データモデル・認証**
+- GuestSession Prismaスキーマ拡張
+- ゲストセッションAPI実装
+- Lambda Authorizer拡張
+
+**Week 6: フロントエンド**
+- ゲスト招待フォーム実装
+- ゲストログイン画面実装
+- SessionPlayer統合
+
+**Week 7: セキュリティ・テスト**
+- レート制限・アクセスログ実装
+- E2Eテスト実施
+
+### 🆕 Phase 3.1.1: XLSX一括登録システム（Week 8-9）
+
+**目的:** 数百〜数千人の候補者を5分で一括登録（90%時間削減）
+
+**Week 8: バックエンド**
+- XLSXテンプレート生成実装
+- XLSXアップロード・バリデーション実装
+- Step Functionsバッチ処理実装
+- SESメール送信統合
+
+**Week 9: フロントエンド・テスト**
+- アップロードUI実装
+- 進捗表示UI実装
+- 1000件処理パフォーマンステスト
+
+**詳細:** `docs/development/PRIORITY_BASED_IMPLEMENTATION_PLAN.md`
 
 ---
 
@@ -220,7 +274,9 @@ WebSocketチャンク処理で"Internal server error"が発生。調査の結果
 
 ### Phase 2計画
 
-- `docs/progress/PHASE_2_PLAN.md` - Phase 2詳細プラン
+- `docs/progress/PHASE_2_PLAN.md` - Phase 2全体プラン
+- `docs/progress/PHASE_2.2_ANALYSIS_IMPLEMENTATION_PLAN.md` - Phase 2.2詳細実装計画（✨新規）
+- `docs/progress/SESSION_2026-03-09_ANALYSIS_SETUP.md` - 今回セッション記録（✨新規）
 - `docs/modules/RECORDING_MODULE.md` - 録画機能設計
 
 ### 環境・DB
