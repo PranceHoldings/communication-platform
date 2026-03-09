@@ -12,9 +12,10 @@
 2. [XLSX一括登録システム](#xlsx一括登録システム)
 3. [ATS連携](#ats連携)
 4. [AIプロンプト・プロバイダー管理](#aiプロンプトプロバイダー管理)
-5. [ブランディング・カスタマイズ](#ブランディングカスタマイズ)
-6. [実装フェーズ](#実装フェーズ)
-7. [セキュリティ考慮事項](#セキュリティ考慮事項)
+5. [レポート・分析機能](#レポート分析機能)
+6. [ブランディング・カスタマイズ](#ブランディングカスタマイズ)
+7. [実装フェーズ](#実装フェーズ)
+8. [セキュリティ考慮事項](#セキュリティ考慮事項)
 
 ---
 
@@ -38,6 +39,7 @@
 | XLSX一括登録                   | Excelで候補者を一括登録・招待             | CLIENT_ADMIN, CLIENT_USER |
 | ATS連携                        | 主要ATSとのデータ同期・Webhook連携        | CLIENT_ADMIN         |
 | AIプロンプト・プロバイダー管理 | LLMベンダー切り替え、プロンプト編集       | SUPER_ADMIN          |
+| レポート・分析機能             | フィルタ・ソート、Excelエクスポート       | CLIENT_ADMIN, CLIENT_USER |
 | ブランディング・カスタマイズ   | 候補者ページのロゴ・色・メッセージを編集   | SUPER_ADMIN          |
 
 ### ビジネス価値
@@ -45,12 +47,19 @@
 **運用効率化:**
 - **90%の時間削減:** 手動入力 → XLSX一括登録
 - **80%のエラー削減:** ATS連携による二重入力排除
+- **90%のレポート作成時間削減:** 手動集計 → ワンクリックExcelエクスポート
 - **候補者体験向上:** ブランド統一による信頼感向上
+
+**データドリブン意思決定:**
+- 複雑なフィルター条件で候補者を即座に抽出
+- 経営層への報告資料を1クリックで生成
+- 採用基準の標準化と最適化をデータで実現
 
 **スケーラビリティ:**
 - 1000人の候補者を5分で登録
 - ATSからの自動同期で人的リソース不要
 - 複数クライアントのブランド設定を一元管理
+- 数千件のセッションデータから瞬時にフィルタリング
 
 ---
 
@@ -2663,6 +2672,845 @@ async function storeProviderCredentials(providerId: string, credentials: any) {
 
 ---
 
+## レポート・分析機能
+
+### 概要
+
+面接結果およびセッション解析結果を一覧表示し、各項目ごとにフィルタリング・ソーティングを行えます。選択した結果はExcelファイル（.xlsx）としてエクスポート可能です。
+
+### 目的
+
+**データドリブン意思決定:**
+- 候補者のパフォーマンスを定量的に比較
+- 採用基準の標準化と最適化
+- チーム間での評価基準の共有
+
+**業務効率化:**
+- 条件に合致する候補者を即座に抽出
+- レポート作成時間を90%削減（手動集計 → 自動エクスポート）
+- 経営層への報告資料を1クリックで生成
+
+**データ活用:**
+- 過去データの傾向分析
+- ATS連携による候補者追跡
+- プロンプト改善のためのフィードバック収集
+
+### 主要機能
+
+| 機能                 | 説明                                       | 対象ユーザー         |
+| -------------------- | ------------------------------------------ | -------------------- |
+| 高度なフィルタリング | 複数条件での絞り込み（AND/OR条件）         | CLIENT_ADMIN, CLIENT_USER |
+| ソーティング         | 各列でのソート（昇順・降順）               | CLIENT_ADMIN, CLIENT_USER |
+| Excelエクスポート    | フィルタ結果を.xlsx形式でダウンロード      | CLIENT_ADMIN, CLIENT_USER |
+| 保存済みフィルター   | よく使う条件を保存・再利用                 | CLIENT_ADMIN, CLIENT_USER |
+| 一括操作             | 選択した複数セッションの一括処理           | CLIENT_ADMIN         |
+
+### データモデル
+
+#### SavedFilter テーブル
+
+```prisma
+model SavedFilter {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  orgId           String
+  organization    Organization @relation(fields: [orgId], references: [id])
+
+  // フィルター情報
+  name            String   // 'スコア80点以上の候補者'
+  description     String?
+  filterType      FilterType // 'SESSION', 'EVALUATION', 'GUEST'
+
+  // フィルター条件（JSON）
+  conditions      Json     // { field, operator, value }[]
+  sortBy          String?  // 'totalScore', 'createdAt'
+  sortOrder       SortOrder? // 'ASC', 'DESC'
+
+  // 共有設定
+  isPublic        Boolean  @default(false)
+  sharedWith      String[] // ユーザーIDリスト
+
+  // タイムスタンプ
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, orgId])
+  @@index([orgId, isPublic])
+  @@map("saved_filters")
+}
+
+enum FilterType {
+  SESSION         // セッション一覧
+  EVALUATION      // 評価一覧
+  GUEST           // ゲストセッション一覧
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+```
+
+### フィルタリング可能な項目
+
+#### セッション（Session）
+
+| フィールド        | 型       | 演算子                                    | 例                          |
+| ----------------- | -------- | ----------------------------------------- | --------------------------- |
+| status            | Enum     | =, !=, in                                 | COMPLETED, ERROR            |
+| createdAt         | DateTime | =, !=, <, <=, >, >=, between              | 2026-03-01 ~ 2026-03-31     |
+| startedAt         | DateTime | =, !=, <, <=, >, >=, between              | 過去7日間                   |
+| endedAt           | DateTime | =, !=, <, <=, >, >=, between              | 本日                        |
+| durationSec       | Number   | =, !=, <, <=, >, >=, between              | 1800 (30分)                 |
+| scenarioId        | String   | =, !=, in                                 | シナリオA, シナリオB        |
+| avatarId          | String   | =, !=, in                                 | アバター1, アバター2        |
+| userId            | String   | =, !=, in                                 | 特定ユーザー                |
+
+#### 評価（Evaluation）
+
+| フィールド              | 型     | 演算子                   | 例                     |
+| ----------------------- | ------ | ------------------------ | ---------------------- |
+| totalScore              | Number | =, !=, <, <=, >, >=, between | 80以上                 |
+| communicationScore      | Number | =, !=, <, <=, >, >=, between | 70-90                  |
+| logicalThinkingScore    | Number | =, !=, <, <=, >, >=, between | 85以上                 |
+| technicalScore          | Number | =, !=, <, <=, >, >=, between | 60以下                 |
+| overallRating           | Enum   | =, !=, in                | EXCELLENT, GOOD        |
+| aiFeedback              | String | contains, startsWith     | '優秀' を含む          |
+| evaluatorName           | String | =, !=, contains          | '田中'                 |
+| evaluatedAt             | DateTime | =, !=, <, <=, >, >=, between | 過去30日間             |
+
+#### ゲストセッション（GuestSession）
+
+| フィールド   | 型       | 演算子                   | 例                     |
+| ------------ | -------- | ------------------------ | ---------------------- |
+| status       | Enum     | =, !=, in                | COMPLETED, PENDING     |
+| guestName    | String   | =, !=, contains          | '山田' を含む          |
+| guestEmail   | String   | =, !=, contains          | @example.com           |
+| expiresAt    | DateTime | =, !=, <, <=, >, >=, between | 期限切れ（過去）       |
+
+### API設計
+
+#### 1. セッション一覧取得（フィルタリング・ソーティング）
+
+**Endpoint:**
+```
+GET /api/v1/sessions?filter={JSON}&sort={field}&order={ASC|DESC}&limit=50&offset=0
+```
+
+**認証:**
+```
+Authorization: Bearer <JWT>
+```
+
+**権限:**
+- `CLIENT_ADMIN`: 組織内の全セッション
+- `CLIENT_USER`: 自分のセッションのみ
+
+**クエリパラメータ:**
+```typescript
+{
+  filter: {
+    // AND条件（配列内）
+    conditions: [
+      { field: 'totalScore', operator: '>=', value: 80 },
+      { field: 'createdAt', operator: 'between', value: ['2026-03-01', '2026-03-31'] },
+      { field: 'status', operator: 'in', value: ['COMPLETED'] }
+    ],
+    // OR条件（複数フィルターグループ）
+    orConditions?: [
+      [
+        { field: 'scenarioId', operator: '=', value: 'scenario_abc' }
+      ],
+      [
+        { field: 'scenarioId', operator: '=', value: 'scenario_xyz' }
+      ]
+    ]
+  },
+  sort: 'totalScore',
+  order: 'DESC',
+  limit: 50,
+  offset: 0
+}
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  sessions: [
+    {
+      id: 'session_123',
+      userId: 'user_456',
+      userName: '田中太郎',
+      scenarioId: 'scenario_abc',
+      scenarioName: '技術面接シナリオ',
+      avatarId: 'avatar_001',
+      avatarName: '面接官アバターA',
+      status: 'COMPLETED',
+      startedAt: '2026-03-15T10:00:00Z',
+      endedAt: '2026-03-15T10:30:00Z',
+      durationSec: 1800,
+      evaluation: {
+        totalScore: 85,
+        communicationScore: 90,
+        logicalThinkingScore: 82,
+        technicalScore: 83,
+        overallRating: 'EXCELLENT',
+      },
+      createdAt: '2026-03-15T09:50:00Z',
+    },
+    // ...
+  ],
+  pagination: {
+    total: 245,
+    limit: 50,
+    offset: 0,
+    hasMore: true,
+  },
+  summary: {
+    totalSessions: 245,
+    avgScore: 76.5,
+    avgDuration: 1620, // 秒
+    completionRate: 0.92, // 92%
+  }
+}
+```
+
+#### 2. Excelエクスポート
+
+**Endpoint:**
+```
+POST /api/v1/sessions/export
+```
+
+**リクエスト:**
+```typescript
+{
+  filter: {
+    conditions: [
+      { field: 'totalScore', operator: '>=', value: 80 },
+      { field: 'createdAt', operator: 'between', value: ['2026-03-01', '2026-03-31'] }
+    ]
+  },
+  sort: 'totalScore',
+  order: 'DESC',
+  columns: [
+    'userName',
+    'scenarioName',
+    'totalScore',
+    'communicationScore',
+    'logicalThinkingScore',
+    'technicalScore',
+    'overallRating',
+    'startedAt',
+    'durationSec'
+  ],
+  format: 'xlsx', // 'xlsx' | 'csv'
+  includeTranscript: false, // 文字起こしを含めるか
+}
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  downloadUrl: 'https://prance-exports.s3.amazonaws.com/sessions_2026-03-15_123456.xlsx',
+  fileName: 'sessions_2026-03-15_123456.xlsx',
+  fileSize: 245678, // bytes
+  recordCount: 87,
+  expiresAt: '2026-03-15T15:00:00Z', // 1時間後に期限切れ
+}
+```
+
+**Excel出力形式:**
+
+| A: 候補者名 | B: シナリオ | C: 総合スコア | D: コミュニケーション | E: 論理的思考 | F: 技術力 | G: 総合評価 | H: 開始日時 | I: 所要時間（分） |
+|------------|------------|--------------|---------------------|--------------|---------|-----------|-----------|------------------|
+| 田中太郎    | 技術面接    | 85           | 90                  | 82           | 83      | EXCELLENT | 2026-03-15 10:00 | 30 |
+| 鈴木花子    | 技術面接    | 82           | 85                  | 80           | 81      | GOOD      | 2026-03-15 11:00 | 28 |
+| ...        | ...        | ...          | ...                 | ...          | ...     | ...       | ...       | ...              |
+
+#### 3. 保存済みフィルター作成
+
+**Endpoint:**
+```
+POST /api/v1/filters
+```
+
+**リクエスト:**
+```typescript
+{
+  name: 'スコア80点以上の候補者',
+  description: '高評価候補者のリスト',
+  filterType: 'SESSION',
+  conditions: [
+    { field: 'totalScore', operator: '>=', value: 80 },
+    { field: 'status', operator: '=', value: 'COMPLETED' }
+  ],
+  sortBy: 'totalScore',
+  sortOrder: 'DESC',
+  isPublic: false, // 組織内で共有するか
+}
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  id: 'filter_abc123',
+  name: 'スコア80点以上の候補者',
+  filterType: 'SESSION',
+  conditions: [ /* ... */ ],
+  sortBy: 'totalScore',
+  sortOrder: 'DESC',
+  createdAt: '2026-03-15T12:00:00Z',
+}
+```
+
+#### 4. 保存済みフィルター一覧取得
+
+**Endpoint:**
+```
+GET /api/v1/filters?filterType=SESSION
+```
+
+**レスポンス (200 OK):**
+```typescript
+{
+  filters: [
+    {
+      id: 'filter_abc123',
+      name: 'スコア80点以上の候補者',
+      description: '高評価候補者のリスト',
+      filterType: 'SESSION',
+      isPublic: false,
+      createdBy: 'user_456',
+      createdByName: '田中太郎',
+      createdAt: '2026-03-15T12:00:00Z',
+    },
+    // ...
+  ]
+}
+```
+
+### UI実装
+
+#### セッション一覧ページ（フィルタ・ソート機能付き）
+
+**場所:** `apps/web/app/[locale]/dashboard/sessions/page.tsx`
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getSessions, exportSessions } from '@/lib/api/sessions';
+import { getSavedFilters, saveFilter } from '@/lib/api/filters';
+
+export default function SessionsPage() {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [filters, setFilters] = useState<any>({
+    conditions: [],
+  });
+  const [sort, setSort] = useState({ field: 'createdAt', order: 'DESC' });
+  const [savedFilters, setSavedFilters] = useState<any[]>([]);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+
+  useEffect(() => {
+    fetchSessions();
+    fetchSavedFilters();
+  }, [filters, sort]);
+
+  const fetchSessions = async () => {
+    const data = await getSessions({
+      filter: filters,
+      sort: sort.field,
+      order: sort.order,
+    });
+    setSessions(data.sessions);
+  };
+
+  const fetchSavedFilters = async () => {
+    const data = await getSavedFilters('SESSION');
+    setSavedFilters(data.filters);
+  };
+
+  const handleAddCondition = () => {
+    setFilters({
+      ...filters,
+      conditions: [
+        ...filters.conditions,
+        { field: 'totalScore', operator: '>=', value: '' },
+      ],
+    });
+  };
+
+  const handleRemoveCondition = (index: number) => {
+    const newConditions = [...filters.conditions];
+    newConditions.splice(index, 1);
+    setFilters({ ...filters, conditions: newConditions });
+  };
+
+  const handleUpdateCondition = (index: number, field: string, value: any) => {
+    const newConditions = [...filters.conditions];
+    newConditions[index] = { ...newConditions[index], [field]: value };
+    setFilters({ ...filters, conditions: newConditions });
+  };
+
+  const handleExport = async () => {
+    const result = await exportSessions({
+      filter: filters,
+      sort: sort.field,
+      order: sort.order,
+      columns: [
+        'userName',
+        'scenarioName',
+        'totalScore',
+        'communicationScore',
+        'logicalThinkingScore',
+        'technicalScore',
+        'overallRating',
+        'startedAt',
+        'durationSec',
+      ],
+      format: 'xlsx',
+    });
+
+    // ダウンロード
+    window.open(result.downloadUrl, '_blank');
+  };
+
+  const handleSaveFilter = async () => {
+    const name = prompt('フィルター名を入力してください:');
+    if (!name) return;
+
+    await saveFilter({
+      name,
+      filterType: 'SESSION',
+      conditions: filters.conditions,
+      sortBy: sort.field,
+      sortOrder: sort.order,
+    });
+
+    fetchSavedFilters();
+  };
+
+  const handleLoadFilter = (filter: any) => {
+    setFilters({ conditions: filter.conditions });
+    setSort({ field: filter.sortBy, order: filter.sortOrder });
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Session Reports</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowFilterPanel(!showFilterPanel)}
+            className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+          >
+            {showFilterPanel ? 'Hide Filters' : 'Show Filters'}
+          </button>
+          <button
+            onClick={handleExport}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            📊 Export to Excel
+          </button>
+        </div>
+      </div>
+
+      {/* フィルターパネル */}
+      {showFilterPanel && (
+        <div className="bg-white border rounded-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Filters</h2>
+            <button
+              onClick={handleSaveFilter}
+              className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+            >
+              Save Filter
+            </button>
+          </div>
+
+          {/* 保存済みフィルター */}
+          {savedFilters.length > 0 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Saved Filters:</label>
+              <div className="flex gap-2 flex-wrap">
+                {savedFilters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => handleLoadFilter(filter)}
+                    className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                  >
+                    {filter.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* フィルター条件 */}
+          <div className="space-y-3">
+            {filters.conditions.map((condition: any, index: number) => (
+              <div key={index} className="flex gap-2 items-center">
+                <select
+                  value={condition.field}
+                  onChange={(e) => handleUpdateCondition(index, 'field', e.target.value)}
+                  className="p-2 border rounded-lg"
+                >
+                  <option value="totalScore">Total Score</option>
+                  <option value="communicationScore">Communication</option>
+                  <option value="logicalThinkingScore">Logical Thinking</option>
+                  <option value="technicalScore">Technical</option>
+                  <option value="status">Status</option>
+                  <option value="createdAt">Created Date</option>
+                  <option value="durationSec">Duration</option>
+                </select>
+
+                <select
+                  value={condition.operator}
+                  onChange={(e) => handleUpdateCondition(index, 'operator', e.target.value)}
+                  className="p-2 border rounded-lg"
+                >
+                  <option value="=">=</option>
+                  <option value="!=">!=</option>
+                  <option value=">">{'>'}</option>
+                  <option value=">=">{'>='}</option>
+                  <option value="<">{'<'}</option>
+                  <option value="<=">{'<='}</option>
+                  <option value="between">Between</option>
+                  <option value="contains">Contains</option>
+                </select>
+
+                <input
+                  type="text"
+                  value={condition.value}
+                  onChange={(e) => handleUpdateCondition(index, 'value', e.target.value)}
+                  className="flex-1 p-2 border rounded-lg"
+                  placeholder="Value"
+                />
+
+                <button
+                  onClick={() => handleRemoveCondition(index)}
+                  className="px-3 py-2 text-red-600 border border-red-600 rounded hover:bg-red-50"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+
+            <button
+              onClick={handleAddCondition}
+              className="px-4 py-2 text-sm border border-dashed rounded-lg hover:bg-gray-50"
+            >
+              + Add Condition
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* セッション一覧テーブル */}
+      <div className="bg-white border rounded-lg overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th
+                className="px-4 py-3 text-left text-sm font-medium cursor-pointer hover:bg-gray-100"
+                onClick={() =>
+                  setSort({
+                    field: 'userName',
+                    order: sort.field === 'userName' && sort.order === 'ASC' ? 'DESC' : 'ASC',
+                  })
+                }
+              >
+                Candidate {sort.field === 'userName' && (sort.order === 'ASC' ? '↑' : '↓')}
+              </th>
+              <th
+                className="px-4 py-3 text-left text-sm font-medium cursor-pointer hover:bg-gray-100"
+                onClick={() =>
+                  setSort({
+                    field: 'scenarioName',
+                    order: sort.field === 'scenarioName' && sort.order === 'ASC' ? 'DESC' : 'ASC',
+                  })
+                }
+              >
+                Scenario {sort.field === 'scenarioName' && (sort.order === 'ASC' ? '↑' : '↓')}
+              </th>
+              <th
+                className="px-4 py-3 text-left text-sm font-medium cursor-pointer hover:bg-gray-100"
+                onClick={() =>
+                  setSort({
+                    field: 'totalScore',
+                    order: sort.field === 'totalScore' && sort.order === 'ASC' ? 'DESC' : 'ASC',
+                  })
+                }
+              >
+                Total Score {sort.field === 'totalScore' && (sort.order === 'ASC' ? '↑' : '↓')}
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium">Communication</th>
+              <th className="px-4 py-3 text-left text-sm font-medium">Logical</th>
+              <th className="px-4 py-3 text-left text-sm font-medium">Technical</th>
+              <th className="px-4 py-3 text-left text-sm font-medium">Rating</th>
+              <th
+                className="px-4 py-3 text-left text-sm font-medium cursor-pointer hover:bg-gray-100"
+                onClick={() =>
+                  setSort({
+                    field: 'startedAt',
+                    order: sort.field === 'startedAt' && sort.order === 'ASC' ? 'DESC' : 'ASC',
+                  })
+                }
+              >
+                Date {sort.field === 'startedAt' && (sort.order === 'ASC' ? '↑' : '↓')}
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium">Duration</th>
+              <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sessions.map((session) => (
+              <tr key={session.id} className="border-b hover:bg-gray-50">
+                <td className="px-4 py-3 text-sm">{session.userName}</td>
+                <td className="px-4 py-3 text-sm">{session.scenarioName}</td>
+                <td className="px-4 py-3 text-sm font-semibold">
+                  {session.evaluation?.totalScore || '-'}
+                </td>
+                <td className="px-4 py-3 text-sm">{session.evaluation?.communicationScore || '-'}</td>
+                <td className="px-4 py-3 text-sm">{session.evaluation?.logicalThinkingScore || '-'}</td>
+                <td className="px-4 py-3 text-sm">{session.evaluation?.technicalScore || '-'}</td>
+                <td className="px-4 py-3 text-sm">
+                  <span
+                    className={`px-2 py-1 text-xs rounded ${
+                      session.evaluation?.overallRating === 'EXCELLENT'
+                        ? 'bg-green-100 text-green-800'
+                        : session.evaluation?.overallRating === 'GOOD'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {session.evaluation?.overallRating || '-'}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-sm">
+                  {new Date(session.startedAt).toLocaleString()}
+                </td>
+                <td className="px-4 py-3 text-sm">{Math.round(session.durationSec / 60)} min</td>
+                <td className="px-4 py-3 text-sm">
+                  <a
+                    href={`/dashboard/sessions/${session.id}`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    View
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+```
+
+### Backend実装（Excelエクスポート）
+
+**場所:** `infrastructure/lambda/sessions/export/index.ts`
+
+```typescript
+import { APIGatewayProxyHandler } from 'aws-lambda';
+import { prisma } from '../../shared/database/prisma';
+import { S3 } from 'aws-sdk';
+import * as XLSX from 'xlsx';
+
+const s3 = new S3();
+
+export const handler: APIGatewayProxyHandler = async (event) => {
+  const body = JSON.parse(event.body || '{}');
+  const { filter, sort, order, columns, format, includeTranscript } = body;
+
+  // フィルター条件を構築
+  const whereClause = buildWhereClause(filter);
+
+  // セッション取得
+  const sessions = await prisma.session.findMany({
+    where: whereClause,
+    include: {
+      user: true,
+      scenario: true,
+      avatar: true,
+      evaluation: true,
+      transcripts: includeTranscript,
+    },
+    orderBy: sort ? { [sort]: order || 'DESC' } : { createdAt: 'DESC' },
+  });
+
+  // Excelデータ生成
+  const worksheetData = sessions.map((session) => {
+    const row: any = {};
+
+    if (columns.includes('userName')) row['候補者名'] = session.user.name;
+    if (columns.includes('scenarioName')) row['シナリオ'] = session.scenario.name;
+    if (columns.includes('totalScore')) row['総合スコア'] = session.evaluation?.totalScore || '';
+    if (columns.includes('communicationScore'))
+      row['コミュニケーション'] = session.evaluation?.communicationScore || '';
+    if (columns.includes('logicalThinkingScore'))
+      row['論理的思考'] = session.evaluation?.logicalThinkingScore || '';
+    if (columns.includes('technicalScore'))
+      row['技術力'] = session.evaluation?.technicalScore || '';
+    if (columns.includes('overallRating'))
+      row['総合評価'] = session.evaluation?.overallRating || '';
+    if (columns.includes('startedAt'))
+      row['開始日時'] = session.startedAt?.toISOString() || '';
+    if (columns.includes('durationSec'))
+      row['所要時間（分）'] = session.durationSec ? Math.round(session.durationSec / 60) : '';
+
+    return row;
+  });
+
+  // Workbook作成
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+
+  // 列幅自動調整
+  const maxWidth = 50;
+  const columnWidths = Object.keys(worksheetData[0] || {}).map((key) => {
+    const maxLength = Math.max(
+      key.length,
+      ...worksheetData.map((row) => String(row[key] || '').length)
+    );
+    return { wch: Math.min(maxLength + 2, maxWidth) };
+  });
+  worksheet['!cols'] = columnWidths;
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Sessions');
+
+  // Excelファイル生成
+  const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+  // S3にアップロード
+  const fileName = `sessions_${new Date().toISOString().split('T')[0]}_${Date.now()}.xlsx`;
+  const s3Key = `exports/${fileName}`;
+
+  await s3
+    .putObject({
+      Bucket: process.env.EXPORT_BUCKET!,
+      Key: s3Key,
+      Body: excelBuffer,
+      ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ContentDisposition: `attachment; filename="${fileName}"`,
+      Expires: new Date(Date.now() + 3600 * 1000), // 1時間後に期限切れ
+    })
+    .promise();
+
+  // 署名付きURL生成
+  const downloadUrl = s3.getSignedUrl('getObject', {
+    Bucket: process.env.EXPORT_BUCKET!,
+    Key: s3Key,
+    Expires: 3600, // 1時間
+  });
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      downloadUrl,
+      fileName,
+      fileSize: excelBuffer.length,
+      recordCount: sessions.length,
+      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+    }),
+  };
+};
+
+function buildWhereClause(filter: any) {
+  if (!filter || !filter.conditions || filter.conditions.length === 0) {
+    return {};
+  }
+
+  const conditions = filter.conditions.map((condition: any) => {
+    const { field, operator, value } = condition;
+
+    switch (operator) {
+      case '=':
+        return { [field]: value };
+      case '!=':
+        return { [field]: { not: value } };
+      case '>':
+        return { [field]: { gt: value } };
+      case '>=':
+        return { [field]: { gte: value } };
+      case '<':
+        return { [field]: { lt: value } };
+      case '<=':
+        return { [field]: { lte: value } };
+      case 'between':
+        return { [field]: { gte: value[0], lte: value[1] } };
+      case 'contains':
+        return { [field]: { contains: value } };
+      case 'in':
+        return { [field]: { in: Array.isArray(value) ? value : [value] } };
+      default:
+        return {};
+    }
+  });
+
+  return { AND: conditions };
+}
+```
+
+### セキュリティ考慮事項
+
+#### 1. データアクセス制御
+
+```typescript
+// ユーザーロールに基づくフィルタリング
+async function getSessionsWithPermission(userId: string, userRole: string, filter: any) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+
+  // CLIENT_USERは自分のセッションのみ
+  if (userRole === 'CLIENT_USER') {
+    filter.userId = userId;
+  }
+
+  // CLIENT_ADMINは組織内のセッション
+  if (userRole === 'CLIENT_ADMIN') {
+    filter.orgId = user.orgId;
+  }
+
+  // SUPER_ADMINは全アクセス可能
+
+  return prisma.session.findMany({ where: filter });
+}
+```
+
+#### 2. エクスポートファイルのセキュリティ
+
+- S3署名付きURL（1時間の有効期限）
+- ファイル自動削除（24時間後）
+- アクセスログ記録（CloudTrail）
+
+#### 3. SQLインジェクション対策
+
+- Prismaのパラメータ化クエリ使用
+- フィールド名のホワイトリスト検証
+
+```typescript
+const ALLOWED_FIELDS = [
+  'totalScore',
+  'communicationScore',
+  'logicalThinkingScore',
+  'technicalScore',
+  'status',
+  'createdAt',
+  'startedAt',
+  'durationSec',
+];
+
+function validateField(field: string): boolean {
+  return ALLOWED_FIELDS.includes(field);
+}
+```
+
+---
+
 ## ブランディング・カスタマイズ
 
 ### 概要
@@ -3184,7 +4032,7 @@ export default function GuestAccessPage() {
 
 ## 実装フェーズ
 
-### Phase 3.0: エンタープライズ機能（推定5-6週間）
+### Phase 3.0: エンタープライズ機能（推定6-7週間）
 
 #### Week 1: XLSX一括登録（Backend）
 
@@ -3260,46 +4108,74 @@ export default function GuestAccessPage() {
 - [ ] 動的CSS生成
 - [ ] ファビコン、メタタグ適用
 
-#### Week 5: AIプロンプト・プロバイダー管理
+#### Week 4.5: レポート・分析機能
 
-**Day 22-23: Backend（データモデル・API）**
+**Day 21.5-22: Backend（フィルタリング・API）**
+- [ ] `SavedFilter` テーブル追加
+- [ ] セッション一覧API（フィルタリング・ソーティング対応）
+- [ ] フィルター条件パーサー実装
+- [ ] 保存済みフィルターAPI（GET, POST, PUT, DELETE）
+
+**Day 23: Backend（Excelエクスポート）**
+- [ ] Excelエクスポート Lambda実装（XLSX.js使用）
+- [ ] S3署名付きURL生成
+- [ ] 列幅自動調整、スタイル設定
+- [ ] ファイル自動削除（24時間後）
+
+**Day 24-25: Frontend（一覧ページ）**
+- [ ] セッション一覧ページ（フィルタパネル）
+- [ ] 動的フィルター条件追加・削除
+- [ ] ソート機能（クリックでASC/DESC切り替え）
+- [ ] 保存済みフィルター管理UI
+
+**Day 26: Frontend（エクスポート）**
+- [ ] Excelエクスポートボタン
+- [ ] 列選択ダイアログ
+- [ ] エクスポート進行状況表示
+- [ ] ダウンロード完了通知
+
+#### Week 5.5: AIプロンプト・プロバイダー管理
+
+**Day 27-28: Backend（データモデル・API）**
 - [ ] `PromptTemplate`, `PromptVersion`, `AIProvider` テーブル
 - [ ] プロンプトテンプレートAPI（GET, POST, PUT, DELETE）
 - [ ] AIプロバイダーAPI（GET, PUT）
 - [ ] バージョン管理ロジック
 - [ ] プロンプト変数の動的置換処理
 
-**Day 24-25: プロバイダー統合**
+**Day 29-30: プロバイダー統合**
 - [ ] AWS Bedrock連携（Claude Sonnet 4.6）
 - [ ] OpenAI連携（GPT-4 Turbo）
 - [ ] Google AI連携（Gemini Pro）
 - [ ] プロバイダー抽象化レイヤー
 - [ ] フォールバックロジック実装
 
-**Day 26-27: Frontend（プロンプト管理）**
+**Day 31-32: Frontend（プロンプト管理）**
 - [ ] プロンプトテンプレート一覧ページ
 - [ ] プロンプト編集ページ（変数定義、AI設定）
 - [ ] リアルタイムテスト実行UI
 - [ ] バージョン比較・ロールバック機能
 
-**Day 28: Frontend（プロバイダー管理）**
+**Day 33: Frontend（プロバイダー管理）**
 - [ ] AIプロバイダー管理ページ
 - [ ] 優先順位設定、ステータス切り替え
 - [ ] フォールバック設定UI
 - [ ] コスト管理・アラート設定
 
-#### Week 6: 統合テスト・ドキュメント
+#### Week 6.5: 統合テスト・ドキュメント
 
-**Day 29-30: 統合テスト**
+**Day 34-35: 統合テスト**
 - [ ] XLSX → ATS同期の全フロー
 - [ ] ブランディング適用確認
+- [ ] レポートフィルタリング・Excelエクスポート確認
 - [ ] AIプロンプト・プロバイダー切り替えテスト
 - [ ] フォールバック動作確認
-- [ ] パフォーマンステスト（1000候補者）
+- [ ] パフォーマンステスト（1000候補者、複雑なフィルタ条件）
 
-**Day 31-32: ドキュメント・トレーニング**
+**Day 36-37: ドキュメント・トレーニング**
 - [ ] ユーザーガイド作成
 - [ ] ATS設定マニュアル（プロバイダー別）
+- [ ] レポート分析・Excelエクスポートガイド
 - [ ] AIプロンプト編集ガイド
 - [ ] ブランディングガイドライン
 - [ ] API ドキュメント更新
