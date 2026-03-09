@@ -13,14 +13,15 @@ Pranceは、AIアバターとのリアルタイム会話を通じて面接練習
 ### 主要機能
 
 - 🤖 **AIアバター会話** - Claude APIベースの自然な会話体験
-  - リアルタイムUI: ユーザーカメラ映像 + AIアバター映像 + リアルタイム文字起こしを同時表示
-  - 低レイテンシ（50-200ms）、話者別文字起こし、音声とリップシンクの完全同期
-- 📹 **録画・解析** - 感情・非言語行動の自動解析
+  - ⚠️ **重要**: 現在Phase 1は技術的に動作しますが、実用レベルではありません（バッチ処理）
+  - 🔴 **Phase 1.5-1.6で実用レベルに改善中** - リアルタイムストリーミング対応
+  - 目標: リアルタイムUI、低レイテンシ（2-5秒）、話者別文字起こし、音声とリップシンクの完全同期
+- 📹 **録画・解析** - 感情・非言語行動の自動解析（Phase 2）
   - ユーザーとアバターの同時録画、サイドバイサイド合成動画、感情・視線解析
-- 📊 **ベンチマーク** - 全体比較とパーソナライズド改善提案
-- 🔌 **ATS連携** - 国内外主要6社のATS統合
-- 🌍 **多言語対応** - 日本語・英語（将来的に8言語以上）
-- 🔧 **プラグインシステム** - 拡張可能なアーキテクチャ
+- 📊 **ベンチマーク** - 全体比較とパーソナライズド改善提案（Phase 4）
+- 🔌 **ATS連携** - 国内外主要6社のATS統合（Phase 3）
+- 🌍 **多言語対応** - 10言語完全対応（日英中韓西葡仏独伊）✅
+- 🔧 **プラグインシステム** - 拡張可能なアーキテクチャ（Phase 5-7）
 
 ### 🚀 開発を始める前に
 
@@ -37,25 +38,28 @@ Pranceは、AIアバターとのリアルタイム会話を通じて面接練習
 1. **外部サービス登録**（1-2日）
    - Claude API、ElevenLabs、Azure等のアカウント作成
    - APIキー取得・Secrets Manager設定
-   - 👉 [外部ツールセットアップガイド](docs/EXTERNAL_TOOLS_SETUP.md)
+   - 👉 [外部ツールセットアップガイド](docs/reference/EXTERNAL_TOOLS_SETUP.md)
 
 2. **インフラ構築**（2週間）
    - AWS CDKによるサーバーレス基盤構築
-   - 👉 [実装プラン Phase 0](docs/IMPLEMENTATION_PLAN.md#phase-0)
+   - 👉 [実装フェーズ](docs/development/IMPLEMENTATION_PHASES.md)
 
 3. **機能開発**（13ヶ月）
    - Alpha → Beta → v1.0 → v1.x → v2.0
-   - 👉 [機能ロードマップ](docs/FEATURE_ROADMAP.md)
+   - 👉 [機能モジュール一覧](docs/modules/)
 
 **開発スケジュール**:
 
-- **Alpha版（2ヶ月）**: コア会話機能
-- **Beta版（1.5ヶ月）**: カスタマイズ機能
-- **v1.0（2ヶ月）**: 一般公開（解析・レポート・課金）
-- **v1.x（4ヶ月）**: エンタープライズ機能
-- **v2.0（4ヶ月）**: グローバル展開
+- **🔴 Production-Ready（2週間）**: リアルタイム会話・実用レベル化 ← **最優先対応中**
+- **MVP Release（4週間）**: 録画・解析・レポート機能
+- **Beta Release（9週間）**: ゲストユーザー、XLSX一括登録、ATS連携
+- **v1.0 GA（6週間）**: サブスクリプション、外部API、ベンチマーク
+- **v2.0 Enterprise（7週間）**: AIプロンプト管理、高度分析、最適化
+- **v2.5 Advanced（15週間）**: カスタムアバター、音声クローン、プラグイン
 
-詳細は [リリースプラン](docs/RELEASE_PLAN.md) を参照してください。
+**全体期間**: 43週間（約10.5ヶ月）
+
+詳細は [実用レベル対応ロードマップ](docs/development/PRODUCTION_READY_ROADMAP.md) 🔴と [完全実装ロードマップ](docs/development/COMPLETE_IMPLEMENTATION_ROADMAP.md) を参照してください。
 
 ## クイックスタート
 
@@ -121,7 +125,7 @@ prance-communication-platform/
 └── docs/                 # ドキュメント
 ```
 
-詳細は [プロジェクト構造](docs/PROJECT_STRUCTURE.md) を参照してください。
+詳細は [システムアーキテクチャ](docs/architecture/SYSTEM_ARCHITECTURE.md) を参照してください。
 
 ## デプロイ
 
@@ -156,10 +160,15 @@ npm run deploy:production
 
 ### 📋 プロジェクト管理
 
+- **[実装計画](docs/development/)** - 詳細実装ロードマップ
+  - 🔴 [実用レベル対応ロードマップ](docs/development/PRODUCTION_READY_ROADMAP.md) - **最優先対応（Phase 1.5-1.6）**
+  - [完全実装ロードマップ](docs/development/COMPLETE_IMPLEMENTATION_ROADMAP.md) - Phase 0-7全体計画
+  - [優先度ベース実装計画](docs/development/PRIORITY_BASED_IMPLEMENTATION_PLAN.md) - Day単位の詳細タスク
+  - [実装計画サマリー](docs/development/IMPLEMENTATION_SUMMARY.md) - 全体ナビゲーション
 - **[進捗記録](docs/progress/)** - セッション履歴・Phase完了記録
   - [SESSION_HISTORY.md](docs/progress/SESSION_HISTORY.md) - 全セッション詳細
   - [PHASE_2_PLAN.md](docs/progress/PHASE_2_PLAN.md) - Phase 2詳細プラン
-- [実装フェーズ](docs/development/IMPLEMENTATION_PHASES.md) - 技術的実装計画
+- [実装フェーズ](docs/development/IMPLEMENTATION_PHASES.md) - 技術的実装計画（旧版・参考）
 
 ### 🏗️ 技術ドキュメント
 
@@ -208,7 +217,7 @@ git commit -m "feat: implement user authentication"
 git push origin feature/user-authentication
 ```
 
-詳細は [開発ガイド](docs/DEVELOPMENT_GUIDE.md#claude-code) を参照してください。
+詳細は [開発ワークフロー](docs/development/DEVELOPMENT_WORKFLOW.md) を参照してください。
 
 ## CI/CD
 
@@ -244,4 +253,9 @@ Proprietary - All rights reserved
 ---
 
 **開発開始日**: 2026-03-04
-**想定リリース**: 2026-10-01 (Phase 0-4完了)
+**Production-Ready目標**: 2026-04-15 (Phase 1.5-1.6完了) 🔴最優先
+**MVP Release目標**: 2026-05-15 (Phase 0-2完了)
+**Beta Release目標**: 2026-07-15 (Phase 2.5, 3.1完了)
+**v1.0 GA目標**: 2026-09-15 (Phase 4完了)
+**v2.0 Enterprise目標**: 2026-11-15 (Phase 5-6完了)
+**v2.5 Advanced目標**: 2027-01-15 (Phase 7完了)
