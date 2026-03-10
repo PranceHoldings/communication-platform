@@ -1,10 +1,10 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-10 08:00 JST
+**最終更新:** 2026-03-10 19:45 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル） | **Phase 2進捗:** Task 2.1-2.2完了（100%）
-**Phase 1.5進捗:** Day 1-3完了（リアルタイムSTT実装） | **進捗:** 33%
-**最新コミット:** 0e52fc4 - refactor: eliminate hardcoded values and centralize configuration
-**最新デプロイ:** 2026-03-10 01:52 JST - Phase 1.5リアルタイム音声処理実装完了
+**Phase 1.5進捗:** Day 1-5完了（リアルタイムSTT + AI応答実装） | **進捗:** 56%
+**最新コミット:** 68363cc - refactor(infrastructure): rebuild build and deploy process
+**最新デプロイ:** 2026-03-10 19:30 JST - ビルド・デプロイプロセス完全再構築
 
 ---
 
@@ -107,18 +107,25 @@ Role: SUPER_ADMIN
 - ✅ S3チャンク蓄積 → 無音検出時にSTT実行
 - ✅ デプロイ完了
 
-**✅ 完了: コード品質改善（2026-03-10）**
+**✅ 完了: コード品質改善（2026-03-10 午前）**
 - ✅ ハードコード値30+箇所を除去・中央集権化
 - ✅ S3Object deprecated問題解決
 - ✅ ビルドプロセス改善（clean-build.sh, pre-deploy-check.sh, cleanup-broken-files.sh）
 - ✅ apps/api空ワークスペース削除
 - ✅ TypeScript設定改善（テストファイル除外）
 
-**🚀 次: Day 4-5 - リアルタイムAI応答実装（推定2日）**
-- Bedrock Claude Streaming API統合
-- チャンク単位でAI応答を受信
-- WebSocketでストリーミング配信
-- 目標: 文字起こし完了から1-2秒でAI応答開始
+**✅ 完了: Day 4-5 - リアルタイムAI応答実装（2026-03-10 午後）**
+- ✅ Bedrock Claude Streaming API統合（**既に実装済みを確認**）
+- ✅ チャンク単位でAI応答を受信（streamResponse, streamScenarioResponse）
+- ✅ WebSocketでストリーミング配信（avatar_response_partial, avatar_response_final）
+- ✅ フロントエンド受信・表示実装済み
+- ✅ ビルド・デプロイプロセス完全再構築（モノレポワークスペース対応）
+
+**🚀 次: Day 6-7 - リアルタイムTTS実装（推定2日）**
+- ElevenLabs Streaming API統合
+- 音声チャンク単位でTTS生成
+- 即座にブラウザ再生開始
+- 目標: 全体で2-5秒の応答時間達成
 
 **予定: Day 6-7 - リアルタイムTTS実装（推定2日）**
 - ElevenLabs Streaming API統合
@@ -162,28 +169,30 @@ Role: SUPER_ADMIN
    - Phase 1.5-1.6（実用化）を開始するか？
    - Phase 2.3（レポート）を完結させるか？
 
-### Short-term（Day 4-5）
+### Short-term（Day 6-7）
 
-**🎯 Phase 1.5 Day 4-5: リアルタイムAI応答実装（推奨）**
+**🎯 Phase 1.5 Day 6-7: リアルタイムTTS実装（推奨）**
 
-目標: Bedrock Claude Streaming APIでAI応答をリアルタイム配信
+目標: ElevenLabs Streaming APIで音声応答をリアルタイム生成・再生
 
 実装ステップ:
-1. Bedrock invoke-model-with-response-stream API統合
-2. Lambda側でストリーム受信 → WebSocket配信
-3. フロントエンド側でストリーム受信 → UI更新（partial transcript風）
-4. 動作確認: 文字起こし完了から1-2秒でAI応答開始
+1. ElevenLabs WebSocket Streaming API統合
+2. テキストチャンクを送信 → 音声チャンク受信
+3. Lambda側で音声チャンクをWebSocket配信
+4. フロントエンド側で即座に再生開始（Web Audio API）
+5. 動作確認: AI応答開始から1-2秒で音声再生開始
 
 技術スタック:
-- AWS SDK: `@aws-sdk/client-bedrock-runtime` - `InvokeModelWithResponseStreamCommand`
-- WebSocket message type: `avatar_response_partial` + `avatar_response_final`
+- ElevenLabs: `wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream`
+- WebSocket message type: `audio_chunk` (base64 encoded MP3)
+- Web Audio API: AudioContext, AudioBuffer
 
 ### Mid-term（Week 1-2）
 
 **Phase 1.5の継続:**
-- ✅ Day 1-3: リアルタイムSTT実装（完了）
-- 🚀 Day 4-5: リアルタイムAI応答実装（次）
-- Day 6-7: リアルタイムTTS実装
+- ✅ Day 1-3: リアルタイムSTT実装（完了 - 2026-03-10）
+- ✅ Day 4-5: リアルタイムAI応答実装（完了 - 2026-03-10、既存実装を確認）
+- 🚀 Day 6-7: リアルタイムTTS実装（次）
 - Day 8-10: エラーハンドリング強化
 - Day 11-12: UX改善
 - Day 13-14: パフォーマンステスト
