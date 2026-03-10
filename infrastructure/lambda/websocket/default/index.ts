@@ -1090,11 +1090,6 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         await handleUserSpeech(connectionId, message, connectionData);
         break;
 
-      case 'speech_end':
-        // Currently not used - client sends complete audio_data instead
-        console.log('Speech end:', message);
-        break;
-
       case 'session_end':
         // Finalize session and process accumulated audio
         console.log('Session end:', message);
