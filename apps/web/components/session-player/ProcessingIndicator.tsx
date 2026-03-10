@@ -66,7 +66,12 @@ export function ProcessingIndicator({ stage, message, className = '' }: Processi
   const config = getStageConfig(stage);
 
   return (
-    <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3 ${className}`}>
+    <div
+      className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3 ${className}`}
+      role="status"
+      aria-live="polite"
+      aria-label={config.label}
+    >
       <div className="flex items-center space-x-3">
         {/* Spinner */}
         <div className="relative">

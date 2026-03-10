@@ -55,6 +55,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [processingStage, setProcessingStage] = useState<ProcessingStage>('idle');
   const [processingMessage, setProcessingMessage] = useState<string>('');
   const [isMuted, setIsMuted] = useState(false);
+  const [ariaLiveMessage, setAriaLiveMessage] = useState<string>('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const disconnectRef = useRef<(() => void) | null>(null);
@@ -625,6 +626,32 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     };
   }, [stopVisualizer]);
 
+  // Update ARIA live region when status changes
+  useEffect(() => {
+    const statusMessages: Record<SessionPlayerStatus, string> = {
+      IDLE: t('sessions.player.status.notStarted'),
+      READY: t('sessions.player.status.ready'),
+      ACTIVE: t('sessions.player.status.inProgress'),
+      PAUSED: t('sessions.player.status.paused'),
+      COMPLETED: t('sessions.player.status.completed'),
+    };
+
+    setAriaLiveMessage(statusMessages[status]);
+  }, [status, t]);
+
+  // Update ARIA live region when processing stage changes
+  useEffect(() => {
+    if (processingStage !== 'idle') {
+      const processingMessages: Record<ProcessingStage, string> = {
+        idle: '',
+        stt: t('sessions.player.processing.stt'),
+        ai: t('sessions.player.processing.ai'),
+        tts: t('sessions.player.processing.tts'),
+      };
+      setAriaLiveMessage(processingMessages[processingStage]);
+    }
+  }, [processingStage, t]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -672,9 +699,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               if (newMuted) {
                 pauseRecording();
                 toast.info(t('sessions.player.shortcuts.microphoneMuted'));
+                setAriaLiveMessage(t('sessions.player.shortcuts.microphoneMuted'));
               } else {
                 resumeRecording();
                 toast.info(t('sessions.player.shortcuts.microphoneUnmuted'));
+                setAriaLiveMessage(t('sessions.player.shortcuts.microphoneUnmuted'));
               }
               return newMuted;
             });
@@ -1091,9 +1120,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" role="main" aria-label={t('sessions.player.info.scenario') + ': ' + scenario.title}>
+      {/* Screen reader announcements */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {ariaLiveMessage}
+      </div>
+
       {/* ヘッダー */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6" role="region" aria-label={t('sessions.player.details.title')}>
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <h2 className="text-2xl font-bold">{scenario.title}</h2>
@@ -1123,8 +1162,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       {/* メインコンテンツ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 左側: アバター表示エリア */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">{t('sessions.player.avatar.title')}</h3>
+        <div className="bg-white rounded-lg shadow p-6" role="region" aria-label={t('sessions.player.avatar.title')}>
+          <h3 className="text-lg font-semibold mb-4" id="avatar-section">{t('sessions.player.avatar.title')}</h3>
           <div className="aspect-video bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
             {avatar.thumbnailUrl ? (
               <img
@@ -1305,9 +1344,15 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         </div>
 
         {/* 右側: トランスクリプト */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">{t('sessions.player.transcript.title')}</h3>
-          <div className="h-[400px] overflow-y-auto space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
+        <div className="bg-white rounded-lg shadow p-6" role="region" aria-label={t('sessions.player.transcript.title')}>
+          <h3 className="text-lg font-semibold mb-4" id="transcript-section">{t('sessions.player.transcript.title')}</h3>
+          <div
+            className="h-[400px] overflow-y-auto space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50"
+            role="log"
+            aria-live="polite"
+            aria-atomic="false"
+            aria-labelledby="transcript-section"
+          >
             {transcript.length === 0 ? (
               <div className="text-center text-gray-500 py-12">
                 <p>{t('sessions.player.transcript.empty')}</p>
@@ -1405,14 +1450,15 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       />
 
       {/* コントロールパネル */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-center space-x-4">
+      <div className="bg-white rounded-lg shadow p-6" role="region" aria-label={t('sessions.player.actions.start')}>
+        <div className="flex items-center justify-center space-x-4" role="group" aria-label="Session controls">
           {status === 'IDLE' && (
             <button
               onClick={handleStart}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 flex items-center"
+              className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 flex items-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              aria-label={t('sessions.player.actions.start') + ' (Space)'}
             >
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
@@ -1425,13 +1471,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
           {status === 'READY' && (
             <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600" role="status" aria-label={t('sessions.player.websocket.connecting')}></div>
               <span className="text-lg text-gray-600">
                 {t('sessions.player.websocket.connecting')}
               </span>
               <button
                 onClick={handleStop}
-                className="px-6 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 flex items-center"
+                className="px-6 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 flex items-center focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                aria-label={t('sessions.player.actions.cancel') + ' (Escape)'}
               >
                 {t('sessions.player.actions.cancel')}
               </button>
@@ -1442,9 +1489,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             <>
               <button
                 onClick={handleStart}
-                className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center"
+                className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                aria-label={t('sessions.player.actions.resume') + ' (P or Space)'}
               >
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path
                     fillRule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
@@ -1455,9 +1503,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               </button>
               <button
                 onClick={handleStop}
-                className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center"
+                className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                aria-label={t('sessions.player.actions.stop') + ' (Escape)'}
               >
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path
                     fillRule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z"
@@ -1473,9 +1522,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             <>
               <button
                 onClick={handlePause}
-                className="px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 flex items-center"
+                className="px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 flex items-center focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+                aria-label={t('sessions.player.actions.pause') + ' (P)'}
               >
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path
                     fillRule="evenodd"
                     d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
@@ -1486,9 +1536,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               </button>
               <button
                 onClick={handleStop}
-                className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center"
+                className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                aria-label={t('sessions.player.actions.stop') + ' (Space or Escape)'}
               >
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path
                     fillRule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z"

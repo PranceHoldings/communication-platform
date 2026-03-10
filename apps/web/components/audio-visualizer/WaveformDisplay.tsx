@@ -92,6 +92,8 @@ export function WaveformDisplay({
       height={height}
       className={className}
       style={{ width: '100%', height: `${height}px` }}
+      role="img"
+      aria-label={`Audio waveform visualization. Current audio level: ${Math.round(audioLevel * 100)}%`}
     />
   );
 }
