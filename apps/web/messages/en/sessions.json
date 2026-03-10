@@ -172,6 +172,18 @@
             "tts": "Synthesizing speech...",
             "processing": "Processing..."
         },
+        "shortcuts": {
+            "title": "Keyboard Shortcuts",
+            "showHelp": "Show keyboard shortcuts",
+            "space": "Start/Stop session",
+            "escape": "Cancel session",
+            "pause": "Pause/Resume",
+            "mute": "Mute/Unmute microphone",
+            "help": "Show this help",
+            "note": "💡 Tip: Keyboard shortcuts are disabled when typing in text fields.",
+            "microphoneMuted": "Microphone muted",
+            "microphoneUnmuted": "Microphone unmuted"
+        },
         "completed": {
             "title": "Session Completed",
             "duration": "Duration",

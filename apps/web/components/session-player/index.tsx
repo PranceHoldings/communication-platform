@@ -22,6 +22,7 @@ import { checkBrowserCapabilities, getRecommendedBrowserMessage } from '@/lib/br
 import { VideoComposer } from './video-composer';
 import { WaveformDisplay } from '@/components/audio-visualizer/WaveformDisplay';
 import { ProcessingIndicator, ProcessingStage } from './ProcessingIndicator';
+import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { toast } from 'sonner';
 
 type SessionPlayerStatus = 'IDLE' | 'READY' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
@@ -53,6 +54,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [processingStage, setProcessingStage] = useState<ProcessingStage>('idle');
   const [processingMessage, setProcessingMessage] = useState<string>('');
+  const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const disconnectRef = useRef<(() => void) | null>(null);
@@ -623,6 +625,78 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     };
   }, [stopVisualizer]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ignore shortcuts when typing in input fields
+      const target = event.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      switch (event.key.toLowerCase()) {
+        case ' ': // Space
+          event.preventDefault();
+          if (status === 'IDLE' || status === 'PAUSED') {
+            handleStart();
+          } else if (status === 'ACTIVE' || status === 'READY') {
+            handleStop();
+          }
+          break;
+
+        case 'escape': // Escape
+          event.preventDefault();
+          if (status !== 'IDLE' && status !== 'COMPLETED') {
+            handleStop();
+          }
+          break;
+
+        case 'p': // P - Pause/Resume
+          event.preventDefault();
+          if (status === 'ACTIVE') {
+            handlePause();
+          } else if (status === 'PAUSED') {
+            handleStart();
+          }
+          break;
+
+        case 'm': // M - Mute/Unmute
+          event.preventDefault();
+          if (status === 'ACTIVE' || status === 'PAUSED') {
+            setIsMuted(prev => {
+              const newMuted = !prev;
+              if (newMuted) {
+                pauseRecording();
+                toast.info(t('sessions.player.shortcuts.microphoneMuted'));
+              } else {
+                resumeRecording();
+                toast.info(t('sessions.player.shortcuts.microphoneUnmuted'));
+              }
+              return newMuted;
+            });
+          }
+          break;
+
+        case '?': // ? - Show help
+          event.preventDefault();
+          // Help modal is handled by KeyboardShortcuts component
+          break;
+
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [status, handleStart, handleStop, handlePause, pauseRecording, resumeRecording, t]);
+
   // 録画機能 - ビデオチャンクハンドラー
   const handleVideoChunk = useCallback(
     async (chunk: Blob, timestamp: number) => {
@@ -1021,7 +1095,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       {/* ヘッダー */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <h2 className="text-2xl font-bold">{scenario.title}</h2>
             <p className="text-gray-600 mt-1">
               {t('sessions.player.info.avatar')}: <span className="font-medium">{avatar.name}</span>{' '}
@@ -1029,12 +1103,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               <span className="font-medium">{scenario.category}</span>
             </p>
           </div>
-          <div className="text-right">
-            <div className={`text-lg font-semibold ${getStatusColor(status)}`}>
-              {getStatusText(status)}
-            </div>
-            <div className="text-2xl font-mono font-bold text-gray-900 mt-1">
-              {formatTime(currentTime)}
+          <div className="flex items-center gap-4">
+            <KeyboardShortcuts />
+            <div className="text-right">
+              <div className={`text-lg font-semibold ${getStatusColor(status)}`}>
+                {getStatusText(status)}
+                {isMuted && status === 'ACTIVE' && (
+                  <span className="ml-2 text-red-600">🔇</span>
+                )}
+              </div>
+              <div className="text-2xl font-mono font-bold text-gray-900 mt-1">
+                {formatTime(currentTime)}
+              </div>
             </div>
           </div>
         </div>
@@ -1069,27 +1149,46 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center text-gray-600">
                 <svg
-                  className={`w-4 h-4 mr-2 ${isMicRecording ? 'text-red-500' : ''}`}
+                  className={`w-4 h-4 mr-2 ${
+                    isMuted ? 'text-gray-400' : isMicRecording ? 'text-red-500' : ''
+                  }`}
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
-                    clipRule="evenodd"
-                  />
+                  {isMuted ? (
+                    // Muted microphone icon
+                    <path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" />
+                  ) : (
+                    // Normal microphone icon
+                    <path
+                      fillRule="evenodd"
+                      d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
+                      clipRule="evenodd"
+                    />
+                  )}
                 </svg>
                 <span>{t('sessions.player.avatar.microphone')}:</span>
               </div>
-              <span className={`font-medium ${isMicRecording ? 'text-red-600' : 'text-gray-500'}`}>
-                {isMicRecording
-                  ? t('sessions.player.avatar.recording')
-                  : t('sessions.player.avatar.inactive')}
+              <span
+                className={`font-medium flex items-center gap-2 ${
+                  isMuted ? 'text-gray-400' : isMicRecording ? 'text-red-600' : 'text-gray-500'
+                }`}
+              >
+                {isMuted ? (
+                  <>
+                    <span>🔇</span>
+                    <span>Muted</span>
+                  </>
+                ) : isMicRecording ? (
+                  t('sessions.player.avatar.recording')
+                ) : (
+                  t('sessions.player.avatar.inactive')
+                )}
               </span>
             </div>
 
             {/* 音声レベルインジケーター */}
-            {isMicRecording && (
+            {isMicRecording && !isMuted && (
               <div className="flex items-center space-x-2">
                 <span className="text-xs text-gray-500">
                   {t('sessions.player.avatar.audioLevel')}:
@@ -1107,7 +1206,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             )}
 
             {/* 音声波形表示 */}
-            {isMicRecording && isVisualizerActive && (
+            {isMicRecording && isVisualizerActive && !isMuted && (
               <div className="mt-2">
                 <WaveformDisplay
                   waveformData={getWaveformData()}
