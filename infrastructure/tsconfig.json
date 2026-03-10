@@ -22,6 +22,11 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
+  "include": [
+    "bin/**/*",
+    "lib/**/*",
+    "scripts/**/*"
+  ],
   "exclude": [
     "node_modules",
     "cdk.out",

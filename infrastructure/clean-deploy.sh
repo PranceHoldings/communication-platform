@@ -138,44 +138,13 @@ fi
 npx prisma generate
 echo -e "${GREEN}✅ Prisma Client生成完了${NC}"
 
-# 5. TypeScriptビルド
-echo -e "\n${YELLOW}🔨 TypeScriptをビルド中...${NC}"
-cd "$PROJECT_ROOT"
-npm run build
-echo -e "${GREEN}✅ ビルド完了${NC}"
-
-# 6. 環境変数同期とデプロイ
-echo -e "\n${YELLOW}🚢 デプロイ中...${NC}"
+# 5. ビルド準備
+echo -e "\n${YELLOW}📦 Step 1: ビルド準備実行中...${NC}"
 cd "$PROJECT_ROOT/infrastructure"
+./prepare.sh
 
-# 環境変数同期
-echo -e "${YELLOW}🔐 環境変数ファイルを同期中...${NC}"
-ENV_LOCAL="$PROJECT_ROOT/.env.local"
-ENV_INFRA="$PROJECT_ROOT/infrastructure/.env"
-
-if [ ! -f "$ENV_LOCAL" ]; then
-  echo -e "${RED}❌ エラー: .env.local が見つかりません${NC}"
-  exit 1
-fi
-
-cp "$ENV_LOCAL" "$ENV_INFRA"
-echo -e "${GREEN}✅ 環境変数ファイル同期完了${NC}"
-
-# 環境変数読み込み
-set -a
-source "$ENV_INFRA"
-set +a
-
-# CDK Synth
-echo -e "\n${YELLOW}🔍 CloudFormationテンプレートを生成中...${NC}"
-npm run synth -- --context environment=${ENVIRONMENT}
-echo -e "${GREEN}✅ Synth完了${NC}"
-
-# CDK Deploy
-echo -e "\n${YELLOW}🚢 全スタックをデプロイ中...${NC}"
-npm run deploy -- \
-  --context environment=${ENVIRONMENT} \
-  --require-approval never \
-  --progress events
+# 6. デプロイ
+echo -e "\n${YELLOW}🚢 Step 2: デプロイ実行中...${NC}"
+./deploy-simple.sh "$ENVIRONMENT"
 
 echo -e "\n${GREEN}✅ クリーンビルド + デプロイ完了！${NC}"
