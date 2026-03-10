@@ -22,6 +22,7 @@ import scenariosEn from '@/messages/en/scenarios.json';
 import avatarsEn from '@/messages/en/avatars.json';
 import settingsEn from '@/messages/en/settings.json';
 import reportsEn from '@/messages/en/reports.json';
+import errorsEn from '@/messages/en/errors.json';
 
 // Import Japanese
 import commonJa from '@/messages/ja/common.json';
@@ -33,6 +34,7 @@ import scenariosJa from '@/messages/ja/scenarios.json';
 import avatarsJa from '@/messages/ja/avatars.json';
 import settingsJa from '@/messages/ja/settings.json';
 import reportsJa from '@/messages/ja/reports.json';
+import errorsJa from '@/messages/ja/errors.json';
 
 // Import Chinese Simplified
 import commonZhCN from '@/messages/zh-CN/common.json';
@@ -64,6 +66,7 @@ const messages: Record<string, Record<string, any>> = {
     ...homeEn,
     ...authEn,
     ...dashboardEn,
+    ...errorsEn,
     sessions: sessionsEn,
     scenarios: scenariosEn,
     avatars: avatarsEn,
@@ -75,6 +78,7 @@ const messages: Record<string, Record<string, any>> = {
     ...homeJa,
     ...authJa,
     ...dashboardJa,
+    ...errorsJa,
     sessions: sessionsJa,
     scenarios: scenariosJa,
     avatars: avatarsJa,
@@ -87,6 +91,7 @@ const messages: Record<string, Record<string, any>> = {
     ...homeEn,
     ...authEn,
     ...dashboardEn,
+    ...errorsEn,
     sessions: sessionsEn,
     scenarios: scenariosEn,
     avatars: avatarsEn,
@@ -98,6 +103,7 @@ const messages: Record<string, Record<string, any>> = {
     ...homeEn,
     ...authEn,
     ...dashboardEn,
+    ...errorsEn,
     sessions: sessionsEn,
     scenarios: scenariosEn,
     avatars: avatarsEn,
@@ -109,6 +115,7 @@ const messages: Record<string, Record<string, any>> = {
     ...homeEn,
     ...authEn,
     ...dashboardEn,
+    ...errorsEn,
     sessions: sessionsEn,
     scenarios: scenariosEn,
     avatars: avatarsEn,
@@ -120,6 +127,7 @@ const messages: Record<string, Record<string, any>> = {
     ...homeEn,
     ...authEn,
     ...dashboardEn,
+    ...errorsEn,
     sessions: sessionsEn,
     scenarios: scenariosEn,
     avatars: avatarsEn,
@@ -131,6 +139,7 @@ const messages: Record<string, Record<string, any>> = {
     ...homeEn,
     ...authEn,
     ...dashboardEn,
+    ...errorsEn,
     sessions: sessionsEn,
     scenarios: scenariosEn,
     avatars: avatarsEn,
@@ -142,6 +151,7 @@ const messages: Record<string, Record<string, any>> = {
     ...homeEn,
     ...authEn,
     ...dashboardEn,
+    ...errorsEn,
     sessions: sessionsEn,
     scenarios: scenariosEn,
     avatars: avatarsEn,
@@ -153,6 +163,7 @@ const messages: Record<string, Record<string, any>> = {
     ...homeEn,
     ...authEn,
     ...dashboardEn,
+    ...errorsEn,
     sessions: sessionsEn,
     scenarios: scenariosEn,
     avatars: avatarsEn,
@@ -164,6 +175,7 @@ const messages: Record<string, Record<string, any>> = {
     ...homeEn,
     ...authEn,
     ...dashboardEn,
+    ...errorsEn,
     sessions: sessionsEn,
     scenarios: scenariosEn,
     avatars: avatarsEn,

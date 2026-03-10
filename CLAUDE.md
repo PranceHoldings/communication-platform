@@ -1,9 +1,9 @@
 # Prance Communication Platform - プロジェクト概要
 
-**バージョン:** 2.6
+**バージョン:** 2.7
 **作成日:** 2026-02-26
-**最終更新:** 2026-03-10
-**ステータス:** 🔴 Phase 1 技術的完了（70%）だが実用レベル未達 ・ Phase 1.5-1.6 最優先対応中 ・ 10言語対応完了 ・ ゲストユーザー機能追加
+**最終更新:** 2026-03-11 01:30 JST
+**ステータス:** 🔴 Phase 1 技術的完了（70%） ・ Phase 1.5 音声バグ修正完了（98%）⚠️テスト待ち ・ Phase 1.6 未着手 ・ 10言語対応完了 ・ ゲストユーザー機能追加
 
 ---
 
@@ -400,6 +400,130 @@ cd infrastructure
 - [ ] 対症療法ではなく根本解決を実装した？
 - [ ] 再発防止をテストで確認した？
 - [ ] ドキュメント・メモリに記録した？
+
+#### Rule 4: テスト・実装確認の原則（CRITICAL - 2026-03-11追加）
+
+**🔴 最重要: 推測でテストを書かず、必ず実装を確認してから作成すること**
+
+**❌ 禁止事項:**
+
+- URLパス・ルート構造を**推測**でテスト作成すること
+- 「一般的な慣習」だけでコード作成すること
+- 実装を読まずにAPIエンドポイントを決定すること
+- ドキュメントに具体的パスを明記せず「Scenariosに移動」等の曖昧表現を使うこと
+
+**✅ 必須実行手順:**
+
+```bash
+# 1. 実装を確認 - find/grep でコードベースを検索
+
+# Next.jsルート確認
+find apps/web/app -name "page.tsx" | grep -v node_modules
+
+# APIエンドポイント確認
+grep -r "router\\.get\|router\\.post" infrastructure/lambda --include="*.ts"
+
+# コンポーネント確認
+find apps/web/components -name "*.tsx" | grep -i "indicator\|waveform\|keyboard"
+```
+
+**必須手順:**
+
+1. **実装を確認** - コードベースを検索して実際の構造を把握
+2. **構造を理解** - Next.js App Router等のフレームワーク構造を理解
+3. **検証してから作成** - 推測ではなく事実に基づいてテスト/コード作成
+4. **ドキュメントに明記** - 具体的なパス・URLをドキュメントに記載
+
+**過去の失敗例（2026-03-11 Day 12）:**
+
+**問題:** E2Eテストで `/scenarios`, `/avatars`, `/sessions` を404エラー
+
+❌ **推測による失敗:**
+- RESTful APIの一般的慣習から `/resources` パスを推測
+- DAY_12_E2E_TEST_REPORT.md に「Scenariosに移動」と曖昧に記載
+- 実装を確認せずにテストパス決定
+
+✅ **正しいアプローチ:**
+- `find apps/web/app -name "page.tsx"` で実装確認
+- 正解: `/dashboard/scenarios`, `/dashboard/avatars`, `/dashboard/sessions`
+- Next.js App Routerでは認証必要ページは `/dashboard/` 配下にグループ化される
+
+**教訓:**
+- テストパスは必ず実装から確認
+- ドキュメントに具体的なURLパスを明記（「Scenariosページ」ではなく「/dashboard/scenarios」）
+- 推測は必ず失敗する - コードが唯一の真実の源
+- フレームワークの慣習・パターンを理解する
+
+**チェックリスト:**
+
+- [ ] 実装を検索・確認した？
+- [ ] ルート/エンドポイント構造を理解した？
+- [ ] テストパスを実装から取得した？
+- [ ] ドキュメントに具体的なURLパスを記載した？
+- [ ] 推測ではなく事実に基づいて作成した？
+
+#### Rule 5: 多言語対応システムの統一（CRITICAL - 2026-03-11追加）
+
+**🔴 最重要: 独自I18nProviderのみ使用、next-intlは使用禁止**
+
+**❌ 禁止事項:**
+
+- next-intl の `useTranslations` を使用すること
+- next-intl の `getTranslations` を使用すること
+- 複数のi18nシステムを混在させること
+
+**✅ 必須実行:**
+
+```typescript
+// ✅ 正しい - 独自I18nProvider使用
+import { useI18n } from '@/lib/i18n/provider';
+
+export function MyComponent() {
+  const { t } = useI18n();
+  return <div>{t('common.welcome')}</div>;
+}
+
+// ❌ 間違い - next-intl使用禁止
+import { useTranslations } from 'next-intl';           // ❌
+import { getTranslations } from 'next-intl/server';    // ❌
+```
+
+**チェック方法:**
+
+```bash
+# コミット前に必ず実行
+grep -r "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" | grep -v node_modules
+
+# 期待結果: 何も表示されない（0件）
+```
+
+**過去の失敗例（2026-03-11）:**
+
+**問題:** `useErrorMessage` フックで next-intl を使用 → Runtime Error
+
+❌ **不完全な移行による混在:**
+- next-intl から独自システムへ移行途中
+- 設定ファイル残骸: i18n/request.ts, withNextIntl()
+- 一部ファイルで next-intl 残存
+
+✅ **根本解決:**
+- next-intl 完全削除（パッケージ・設定・ファイル）
+- 全ファイルを useI18n に統一
+- ガイドライン作成（I18N_SYSTEM_GUIDELINES.md）
+
+**教訓:**
+- 移行は完全に行う（中途半端は必ず再発）
+- 古いシステムの残骸を全て削除
+- チェックリストでコミット前確認
+
+**チェックリスト:**
+
+- [ ] next-intl のインポートがない？
+- [ ] useI18n フックを使用している？
+- [ ] messages.ts に翻訳ファイルをインポート済み？
+- [ ] 翻訳キーは `category.key` 形式？
+
+> 詳細: docs/07-development/I18N_SYSTEM_GUIDELINES.md
 
 ---
 
@@ -1006,20 +1130,29 @@ Browser → WebSocket → Lambda → セッション終了後に一括処理
 
 **期間:** Week 0.5-3.5（2週間）
 
-**Phase 1.5（Week 0.5-2.5）：リアルタイム会話実装**
+**Phase 1.5（Week 0.5-2.5）：リアルタイム会話実装 - 98%完了 ⚠️**
 
-- リアルタイムSTT（1秒チャンク、無音検出）
-- ストリーミングAI応答（Bedrock Claude Streaming API）
-- ストリーミングTTS（ElevenLabs Streaming API）
+- ✅ リアルタイムSTT（1秒チャンク、無音検出） - 完了
+- ✅ ストリーミングAI応答（Bedrock Claude Streaming API） - 完了
+- ✅ ストリーミングTTS（ElevenLabs WebSocket Streaming API） - 完了
+- ⚠️ 音声再生機能 - テスト待ち（Day 12: バグ修正完了）
+- ⏳ パフォーマンステスト - 音声再生テスト後
 - 目標: 2-5秒の応答時間
 
-**Phase 1.6（Week 2.5-3.5）：既存機能の実用レベル化**
+**Day 12完了内容（2026-03-10）:**
+- ✅ 環境ノイズ無限ループ修正（silenceThreshold 0.05 → 0.15、最小継続時間200ms）
+- ✅ ElevenLabs 0バイト音声バグ修正（async function署名修正）
+- ✅ AWS Bedrock ストリーミング権限追加
+- ✅ Lambda デプロイ完了（138.24秒）
+
+**Phase 1.6（Week 2.5-3.5）：既存機能の実用レベル化 - 未着手**
 
 - エラーハンドリング、リトライロジック
 - レート制限、パフォーマンス最適化
 - 監視、分析、アラート
 
 > 詳細: [docs/03-planning/releases/PRODUCTION_READY_ROADMAP.md](docs/03-planning/releases/PRODUCTION_READY_ROADMAP.md) 🔴最重要
+> 進捗: [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md) - Day 12セッション記録
 
 ### 次のステップ: Phase 2 (録画・解析・レポート)
 
@@ -1246,7 +1379,8 @@ Browser → WebSocket → Lambda → セッション終了後に一括処理
 
 ---
 
-**最終更新:** 2026-03-10
-**次回レビュー予定:** Phase 1.5-1.6（実用レベル対応）完了時 🔴最優先
+**最終更新:** 2026-03-11 01:30 JST
+**次回レビュー予定:** Phase 1.5音声再生テスト完了時 🔴最優先
 **変更履歴:**
+- 2026-03-11: Day 12音声バグ修正完了、Phase 1.5進捗98%に更新
 - 2026-03-10: ドキュメント構造を番号付きカテゴリー（01-10）に再編成

@@ -1,10 +1,11 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-11 00:15 JST
+**最終更新:** 2026-03-11 01:15 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル） | **Phase 2進捗:** Task 2.1-2.2完了（100%）
-**Phase 1.5進捗:** Day 1-11完了（リアルタイムSTT + AI + TTS + エラーハンドリング + UX改善完備） | **進捗:** 93%
-**最新コミット:** 未コミット - Day 11 accessibility improvements (WCAG 2.1 AA)
-**最新デプロイ:** 2026-03-10 21:29 JST - ApiLambda stack deployed successfully (要再デプロイ)
+**Phase 1.5進捗:** Day 1-12進行中（音声バグ修正完了、テスト待ち） | **進捗:** 98%
+**最新コミット:** TBD - Day 12 audio bug fixes (noise detection + TTS streaming)
+**最新デプロイ:** 2026-03-11 01:15 JST - ApiLambda stack deployed (audio fixes) ✅
+**未解決問題:** 音声再生機能の動作確認が未完了（次回セッションでテスト必須）
 
 ---
 
@@ -189,10 +190,43 @@ Role: SUPER_ADMIN
   - aria-hidden - 装飾的SVGアイコンをスクリーンリーダーから隠す
   - キーボードショートカットヒント - aria-labelにショートカットキー表示
 
-**🚀 次: Day 12 - 統合デプロイ・動作確認（推定1日）**
-- Lambda関数デプロイ（Day 9のリトライロジック反映）
-- Next.js アプリケーションデプロイ（Day 8-11のUX改善反映）
-- E2Eテスト実行（セッション開始 → STT → AI → TTS → 終了）
+**🚀 進行中: Day 12 - 音声バグ修正・統合テスト（2026-03-11）**
+
+**✅ 完了: 音声バグ修正（2026-03-11 01:15 JST）**
+- ✅ 環境ノイズによる無限ループ問題修正
+  - 音声検出閾値を0.05 → 0.15に引き上げ（環境ノイズを無視）
+  - 最小継続時間200msを追加（短時間のノイズスパイクを無視）
+  - `useAudioRecorder.ts` Line 54, 75-77修正
+- ✅ ElevenLabs WebSocket streaming 0バイト問題修正
+  - `generateSpeechWebSocketStream`の関数定義修正（async * → async）
+  - 根本原因: async generator宣言なのにPromiseをreturn
+  - 修正後: Promiseを返す通常のasync関数に変更
+  - `tts-elevenlabs.ts` Line 292修正
+- ✅ Lambda関数デプロイ完了
+  - Prance-dev-ApiLambda スタック更新成功
+  - WebSocketDefaultFunction 更新完了
+  - デプロイ時間: 138.24秒
+  - 最新コード反映（音声検出ロジック、TTS streaming修正）
+
+**🔴 未解決: 音声再生機能の動作確認（次回セッション必須）**
+- ⏳ フロントエンド動作確認（ハードリフレッシュ必須）
+  - ブラウザキャッシュクリア: Ctrl+Shift+R (Win) / Cmd+Shift+R (Mac)
+  - 新しい閾値（0.15）が反映されているか確認
+- ⏳ 音声再生テスト
+  - 文字起こしが表示される ✓（既に確認済み）
+  - **AIの音声が再生される**（未確認、最重要）
+  - 音声がリアルタイムで再生される（未確認）
+- ⏳ CloudWatch Logs確認
+  - `aws logs tail /aws/lambda/prance-websocket-default-dev --since 5m --filter-pattern "\"TTS complete\""`
+  - 期待値: `[Streaming] TTS complete: 71392 bytes`（0バイトではない）
+  - 実際の音声データがS3に保存されているか確認
+
+**⏳ 残りタスク（Day 12完了まで）**
+- E2Eテスト実行
+  - テストシナリオ1: 正常フロー（セッション開始 → STT → AI → TTS → 終了）
+  - テストシナリオ2: キーボードショートカット（Space/P/M/Escape/?）
+  - テストシナリオ3: アクセシビリティ（Tab/スクリーンリーダー）
+  - テストシナリオ4: エラーハンドリング（マイク拒否、ネットワークエラー、音量不足）
 - パフォーマンス測定（レスポンス時間、目標2-5秒）
 
 **Phase 1.5 完了後: Day 13-14 - パフォーマンステスト（推定2日）**

@@ -59,9 +59,9 @@ export const fallbackLocale = 'en';
 export const LOCALE_COOKIE_NAME = 'NEXT_LOCALE';
 
 /**
- * HTTP header name for locale (used by next-intl)
+ * HTTP header name for locale (used by custom I18nProvider)
  */
-export const LOCALE_HEADER_NAME = 'X-NEXT-INTL-LOCALE';
+export const LOCALE_HEADER_NAME = 'X-LOCALE';
 
 /**
  * URL parameter name for language switching

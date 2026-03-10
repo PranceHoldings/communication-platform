@@ -866,7 +866,10 @@ export class ApiLambdaStack extends cdk.Stack {
     websocketDefaultFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: ['bedrock:InvokeModel'],
+        actions: [
+          'bedrock:InvokeModel',
+          'bedrock:InvokeModelWithResponseStream', // Required for streaming responses
+        ],
         resources: [
           `arn:aws:bedrock:*::foundation-model/*`,
           `arn:aws:bedrock:*:${this.account}:inference-profile/*`,

@@ -1683,5 +1683,194 @@ aws logs tail /aws/lambda/prance-websocket-default-dev --follow | \
 ---
 
 **Phase 1進捗率:** 100%完了 ✅
+**Phase 1.5進捗率:** 98%完了（音声再生テスト待ち）⚠️
 **Phase 2進捗率:** 録画機能完了・解析機能準備中
-**次の目標:** 音声テスト完了 → Task 2.2 解析機能実装
+**次の目標:** 音声再生テスト → Phase 1.5完全完了 → Task 2.2 解析機能実装
+
+---
+
+## 📅 セッション履歴: 2026-03-10（Day 12）
+
+### セッション: 音声バグ修正・統合テスト準備
+
+**日時:** 2026-03-10 20:00 - 01:30 JST（約5.5時間）
+**目標:** 環境ノイズ無限ループ問題・ElevenLabs音声再生問題の修正
+**結果:** ✅ 修正完了、Lambda デプロイ完了、テスト待ち
+**コミット:** 最新
+
+---
+
+#### 修正した問題
+
+**問題1: 環境ノイズによる無限リスタートループ**
+
+**症状:**
+- セッション開始2秒後に自動的にエラー
+- 何も話していないのに音声インディケーターが反応
+- ログ: "level: '0.056' → リスタート", "level: '0.070' → リスタート（17ms後！）"
+
+**根本原因:**
+- `silenceThreshold = 0.05` が低すぎる
+- 環境ノイズ（0.052-0.070）を音声として誤検出
+- 検出 → リスタート → 環境ノイズ検出 → リスタート（無限ループ）
+
+**修正内容:**
+1. **閾値引き上げ** (`useAudioRecorder.ts:54`)
+   ```typescript
+   // Before: silenceThreshold = 0.05
+   // After:  silenceThreshold = 0.15
+   ```
+
+2. **最小継続時間追加** (`useAudioRecorder.ts:75-77, 134-152`)
+   - 音声開始時刻を記録（`speechStartTimeRef`）
+   - 200ms以上継続した場合のみリスタート
+   - 瞬間的なノイズを無視
+
+**問題2: AI音声が再生されない（0バイトMP3ファイル）**
+
+**症状:**
+- 文字起こしは表示される
+- AI応答テキストも表示される
+- 音声が再生されない
+- S3に保存されたMP3ファイルが0バイト
+
+**CloudWatch Logs証拠:**
+```
+[ElevenLabsTTS] WebSocket streaming complete: {
+  totalChunks: 4,
+  totalAudioBytes: 71392   ← 音声データは生成されている
+}
+[SessionManager] TTS complete: 0 bytes   ← しかし結果は0バイト
+```
+
+**根本原因:**
+- `generateSpeechWebSocketStream` が `async *` (async generator) として宣言
+- 実装は `return new Promise<AsyncGenerator>(...)` で Promise を返す
+- TypeScript は警告を出さない（型定義が曖昧）
+- 実行時に空の結果を返す
+
+**修正内容:** (`tts-elevenlabs.ts:292`)
+```typescript
+// Before (incorrect):
+async *generateSpeechWebSocketStream(
+  options: TTSOptions
+): AsyncGenerator<{ audio: string; isFinal: boolean }>
+
+// After (correct):
+async generateSpeechWebSocketStream(
+  options: TTSOptions
+): Promise<AsyncGenerator<{ audio: string; isFinal: boolean }>>
+```
+
+**問題3: AWS Bedrock 権限不足**
+
+**症状:**
+- AccessDeniedException: User is not authorized to perform bedrock:InvokeModelWithResponseStream
+
+**修正内容:** (`api-lambda-stack.ts:869-871`)
+```typescript
+websocketDefaultFunction.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: [
+      'bedrock:InvokeModel',
+      'bedrock:InvokeModelWithResponseStream', // ← 追加
+    ],
+    resources: [
+      `arn:aws:bedrock:*::foundation-model/*`,
+      `arn:aws:bedrock:*:${this.account}:inference-profile/*`,
+    ],
+  })
+);
+```
+
+---
+
+#### デプロイ記録
+
+**Lambda Functions デプロイ:**
+- デプロイ時間: 138.24秒
+- スタック: Prance-dev-ApiLambda
+- 更新されたリソース:
+  - Lambda関数IAM権限（Bedrock streaming）
+  - Lambda関数コード（tts-elevenlabs.ts）
+- デプロイ完了: 2026-03-11 01:15 JST
+
+---
+
+#### 未解決事項（次回テスト必須）
+
+**🔴 音声再生機能のテスト待ち**
+
+**テスト手順:**
+1. **ブラウザ完全リフレッシュ（必須）**
+   - Windows/Linux: `Ctrl+Shift+R`
+   - Mac: `Cmd+Shift+R`
+   - 理由: 新しい閾値（0.15）をロード
+
+2. **セッション実行テスト**
+   - セッション開始
+   - 5秒間何も話さない（環境ノイズ無限ループが発生しないか確認）
+   - 10-20秒話す
+   - AI応答を待つ
+   - **音声が再生されるか確認** ← 最重要
+
+3. **CloudWatch Logs確認**
+   ```bash
+   aws logs tail /aws/lambda/prance-websocket-default-dev --since 5m --filter-pattern "\"TTS complete\""
+   ```
+   - 期待される結果: `TTS complete: 71392 bytes` (非ゼロ)
+   - ❌ 失敗: `TTS complete: 0 bytes`
+
+4. **S3ファイル確認**
+   - MP3ファイルが非ゼロバイトか確認
+   - ダウンロードして再生可能か確認
+
+**期待される結果:**
+- ✅ 環境ノイズでリスタートしない
+- ✅ 音声認識が正常に動作
+- ✅ AI応答が表示される
+- ✅ **AI音声が再生される**
+- ✅ CloudWatch Logs: 非ゼロバイト数
+- ✅ S3: 非ゼロバイトMP3ファイル
+
+---
+
+#### 技術的メモ
+
+**Async Generator vs Promise<AsyncGenerator>:**
+
+```typescript
+// ❌ 間違い: async * で宣言して Promise を返す
+async *myFunction(): AsyncGenerator<T> {
+  return new Promise<AsyncGenerator<T>>(...);
+}
+
+// ✅ 正しい: async で宣言して Promise<AsyncGenerator> を返す
+async myFunction(): Promise<AsyncGenerator<T>> {
+  return new Promise<AsyncGenerator<T>>(...);
+}
+
+// または: async * で宣言して yield で値を返す
+async *myFunction(): AsyncGenerator<T> {
+  yield value1;
+  yield value2;
+}
+```
+
+**教訓:**
+- TypeScriptの型チェックだけでは実行時エラーを防げない
+- CloudWatch Logsで実際のデータフローを追跡する
+- S3ファイルサイズで結果を検証する
+
+---
+
+#### 関連ドキュメント
+
+- 📋 実装状況: `START_HERE.md` (Day 12セクション)
+- 📋 詳細技術情報: `docs/07-development/AUDIO_STREAMING_FIX.md` (作成予定)
+- 📋 CloudWatch Logs分析: Lambda関数ログ参照
+
+---
+
+**Phase 1.5進捗率:** 98%完了（音声再生テスト待ち）⚠️
+**次の目標:** 音声再生テスト → Phase 1.5完全完了

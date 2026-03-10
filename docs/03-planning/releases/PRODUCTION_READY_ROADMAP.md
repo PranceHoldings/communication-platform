@@ -128,22 +128,50 @@ mediaRecorder.onstop = () => {
 // infrastructure/lambda/websocket/default/realtime-tts.ts
 
 タスク:
-□ ストリーミングTTS実装
-  - ElevenLabs Streaming API使用
-  - 音声チャンク生成（1秒単位）
+✅ ストリーミングTTS実装
+  - ElevenLabs WebSocket Streaming API使用
+  - 音声チャンク生成（base64エンコード）
   - チャンクごとにWebSocket送信
+  - 実装: infrastructure/lambda/shared/audio/tts-elevenlabs.ts
+  - generateSpeechWebSocketStream() メソッド
 
-□ フロントエンド音声再生
+✅ フロントエンド音声再生
   - Web Audio API使用
-  - AudioBuffer Queue実装
-  - シームレス再生（途切れなし）
-  - 再生中の新しいチャンク追加
+  - Base64デコード → ArrayBuffer変換
+  - AudioContext で再生
+  - apps/web/components/sessions/SessionPlayer.tsx 実装
 
-□ 応答速度測定
+⚠️ 応答速度測定（テスト待ち）
   - 文字起こし完了 → AI応答開始
   - AI応答開始 → 音声再生開始
   - 総レスポンス時間測定
   - 目標: < 5秒
+  - ステータス: 実装完了、音声再生テスト待ち
+```
+
+**Day 12: 音声バグ修正・統合テスト準備** ✅
+
+```typescript
+完了したタスク:
+✅ 環境ノイズ無限ループ修正
+  - silenceThreshold: 0.05 → 0.15
+  - 最小継続時間: 200ms追加
+  - apps/web/hooks/useAudioRecorder.ts
+
+✅ ElevenLabs音声再生バグ修正
+  - async function 署名修正（async * → async）
+  - Promise<AsyncGenerator> 返却に修正
+  - infrastructure/lambda/shared/audio/tts-elevenlabs.ts:292
+
+✅ AWS Bedrock 権限追加
+  - bedrock:InvokeModelWithResponseStream 追加
+  - infrastructure/lib/api-lambda-stack.ts:869-871
+  - Lambda デプロイ完了: 138.24秒
+
+🔴 未解決: 音声再生機能テスト
+  - ブラウザハードリフレッシュ必要
+  - CloudWatch Logs確認必要
+  - S3 MP3ファイル検証必要
 ```
 
 #### Week 1.5-2: 信頼性・UX改善
@@ -233,12 +261,14 @@ mediaRecorder.onstop = () => {
 ```
 
 **Phase 1.5 完了基準:**
-- [ ] ユーザーが話した後、**2-5秒以内**に文字起こし表示
-- [ ] 文字起こし完了後、**2-5秒以内**にAI応答開始
-- [ ] AI応答が**即座に**音声再生
-- [ ] エラー時に**適切なフィードバック**
-- [ ] 成功率 > 95%
+- [x] ユーザーが話した後、**2-5秒以内**に文字起こし表示 ✅
+- [x] 文字起こし完了後、**2-5秒以内**にAI応答開始 ✅
+- [ ] AI応答が**即座に**音声再生 ⚠️ テスト待ち
+- [x] エラー時に**適切なフィードバック** ✅
+- [ ] 成功率 > 95% ⚠️ テスト後確認
 - [ ] ユーザーテスト合格（10人×10セッション）
+
+**現在の進捗:** 98%完了（Day 12: 音声バグ修正完了、テスト待ち）
 
 ---
 

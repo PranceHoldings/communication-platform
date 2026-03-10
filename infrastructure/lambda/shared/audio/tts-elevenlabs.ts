@@ -289,9 +289,9 @@ export class ElevenLabsTextToSpeech {
    * @param options - TTS options
    * @returns AsyncGenerator yielding base64-encoded audio chunks (MP3)
    */
-  async *generateSpeechWebSocketStream(
+  async generateSpeechWebSocketStream(
     options: TTSOptions
-  ): AsyncGenerator<{ audio: string; isFinal: boolean }> {
+  ): Promise<AsyncGenerator<{ audio: string; isFinal: boolean }>> {
     const {
       text,
       stability = 0.5,
@@ -353,7 +353,15 @@ export class ElevenLabsTextToSpeech {
         try {
           const message = JSON.parse(data.toString());
 
-          if (message.audio) {
+          // Log message for debugging
+          console.log('[ElevenLabsTTS] Received message:', {
+            hasAudio: 'audio' in message,
+            audioLength: message.audio ? message.audio.length : 0,
+            isFinal: message.isFinal,
+          });
+
+          // Check if 'audio' field exists (not just truthy check)
+          if ('audio' in message && message.audio !== null && message.audio !== undefined) {
             chunks.push({
               audio: message.audio,
               isFinal: message.isFinal || false,
@@ -363,6 +371,7 @@ export class ElevenLabsTextToSpeech {
           if (message.isFinal) {
             console.log('[ElevenLabsTTS] WebSocket streaming complete:', {
               totalChunks: chunks.length,
+              totalAudioBytes: chunks.reduce((sum, c) => sum + (c.audio?.length || 0), 0),
             });
             ws.close();
           }

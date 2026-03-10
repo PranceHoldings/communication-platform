@@ -652,6 +652,172 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     }
   }, [processingStage, t]);
 
+  // Session control handlers (defined before keyboard shortcuts useEffect)
+  const handleStart = useCallback(async () => {
+    console.log('[SessionPlayer] handleStart called', {
+      token: token ? 'exists' : 'missing',
+      status,
+    });
+
+    // Check browser capabilities
+    const capabilities = checkBrowserCapabilities();
+    if (!capabilities.isSupported) {
+      console.error('[SessionPlayer] Browser not supported:', capabilities.unsupportedFeatures);
+      const recommendedMsg = getRecommendedBrowserMessage();
+      toast.error(`${t('errors.microphone.notSupported')}\n\n${recommendedMsg}`, {
+        duration: 15000,
+      });
+      return;
+    }
+
+    if (!token) {
+      console.error('[SessionPlayer] No token found!');
+      toast.error(t('sessions.player.messages.authRequired'));
+      return;
+    }
+
+    if (status === 'IDLE') {
+      console.log('[SessionPlayer] Starting WebSocket connection...');
+
+      // ユーザーカメラを取得
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user',
+          },
+          audio: false, // 音声は useAudioRecorder で取得済み
+        });
+
+        if (userVideoRef.current) {
+          userVideoRef.current.srcObject = stream;
+          await userVideoRef.current.play();
+          console.log('[SessionPlayer] User camera started');
+        }
+      } catch (error) {
+        console.error('[SessionPlayer] Failed to get user camera:', error);
+        toast.warning('カメラへのアクセスが拒否されました。録画機能は利用できません。');
+      }
+
+      // Start audio visualizer
+      try {
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        startVisualizer(audioStream);
+        console.log('[SessionPlayer] Audio visualizer started');
+      } catch (error) {
+        console.error('[SessionPlayer] Failed to start audio visualizer:', error);
+        // Non-critical error, continue without visualization
+      }
+
+      setStatus('READY');
+      // WebSocket接続はuseEffectで自動的に開始される（重複呼び出しを防ぐため削除）
+      toast.info(t('sessions.player.websocket.connecting'));
+      // 接続完了後、useEffectで自動的にACTIVE状態に遷移
+    } else if (status === 'PAUSED') {
+      setStatus('ACTIVE');
+      // セッション再開 + 音声録音再開 + ビデオ録画再開
+      resumeRecording();
+
+      // Restart audio visualizer
+      try {
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        startVisualizer(audioStream);
+        console.log('[SessionPlayer] Audio visualizer restarted after pause');
+      } catch (error) {
+        console.error('[SessionPlayer] Failed to restart audio visualizer:', error);
+        // Non-critical error, continue without visualization
+      }
+
+      if (recordingStatus === 'paused') {
+        try {
+          resumeVideoRecording();
+        } catch (err) {
+          console.error('[SessionPlayer] Failed to resume video recording:', err);
+        }
+      }
+      toast.success(t('sessions.player.messages.sessionResumed'));
+    }
+  }, [token, status, t, startVisualizer, resumeRecording]);
+
+  const handlePause = useCallback(() => {
+    if (status === 'ACTIVE') {
+      setStatus('PAUSED');
+      // 音声録音一時停止 + ビデオ録画一時停止
+      pauseRecording();
+      // Stop visualizer during pause
+      stopVisualizer();
+      if (recordingStatus === 'recording') {
+        try {
+          pauseVideoRecording();
+        } catch (err) {
+          console.error('[SessionPlayer] Failed to pause video recording:', err);
+        }
+      }
+      toast.info(t('sessions.player.status.paused'));
+    }
+  }, [status, pauseRecording, stopVisualizer, t]);
+
+  const handleStop = useCallback(() => {
+    if (status === 'ACTIVE' || status === 'PAUSED' || status === 'READY') {
+      setStatus('COMPLETED');
+      // Note: Do NOT reset isAuthenticated here - audio data needs to be sent first
+      // It will be reset in handleSessionComplete() after all processing is done
+
+      // Check if audio was being recorded
+      const wasRecording = isMicRecording;
+
+      // 1. Stop audio recording first
+      stopRecording();
+
+      // 2. Stop audio visualizer
+      stopVisualizer();
+      console.log('[SessionPlayer] Audio visualizer stopped');
+
+      // 3. Stop video recording if active
+      if (recordingStatus === 'recording' || recordingStatus === 'paused') {
+        try {
+          stopVideoRecording();
+        } catch (err) {
+          console.error('[SessionPlayer] Failed to stop video recording:', err);
+        }
+      }
+
+      // 4. Stop user camera
+      if (userVideoRef.current && userVideoRef.current.srcObject) {
+        const stream = userVideoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => {
+          track.stop();
+          console.log('[SessionPlayer] Stopped camera track:', track.kind);
+        });
+        userVideoRef.current.srcObject = null;
+      }
+
+      // 5. If audio was recording, wait for transcript before sending session_end
+      if (wasRecording) {
+        console.log('[SessionPlayer] Audio was recording, will wait for audio processing before session_end');
+        setPendingSessionEnd(true);
+        // session_end will be sent after transcript_final is received
+      } else {
+        // 5. Send session end notification immediately if no audio to process
+        if (isConnectedRef.current && endSessionRef.current) {
+          console.log('[SessionPlayer] No audio recorded, sending session_end immediately');
+          endSessionRef.current();
+
+          // 6. Set timeout to disconnect after 30 seconds if no session_complete received
+          sessionEndTimeoutRef.current = setTimeout(() => {
+            console.log('[SessionPlayer] Session end timeout - disconnecting WebSocket');
+            if (disconnectRef.current) {
+              disconnectRef.current();
+            }
+          }, 30000); // 30 seconds timeout
+        }
+      }
+
+      toast.success(t('sessions.player.messages.sessionEnded'));
+    }
+  }, [status, isMicRecording, stopRecording, stopVisualizer, t]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -781,7 +947,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         },
       });
     },
-    [t, getErrorMessage, startVideoRecording]
+    [t, getErrorMessage]
   );
 
   // VideoComposer準備完了ハンドラー
@@ -913,171 +1079,6 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       return () => clearInterval(interval);
     }
   }, [status]);
-
-  const handleStart = async () => {
-    console.log('[SessionPlayer] handleStart called', {
-      token: token ? 'exists' : 'missing',
-      status,
-    });
-
-    // Check browser capabilities
-    const capabilities = checkBrowserCapabilities();
-    if (!capabilities.isSupported) {
-      console.error('[SessionPlayer] Browser not supported:', capabilities.unsupportedFeatures);
-      const recommendedMsg = getRecommendedBrowserMessage();
-      toast.error(`${t('errors.microphone.notSupported')}\n\n${recommendedMsg}`, {
-        duration: 15000,
-      });
-      return;
-    }
-
-    if (!token) {
-      console.error('[SessionPlayer] No token found!');
-      toast.error(t('sessions.player.messages.authRequired'));
-      return;
-    }
-
-    if (status === 'IDLE') {
-      console.log('[SessionPlayer] Starting WebSocket connection...');
-
-      // ユーザーカメラを取得
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: 'user',
-          },
-          audio: false, // 音声は useAudioRecorder で取得済み
-        });
-
-        if (userVideoRef.current) {
-          userVideoRef.current.srcObject = stream;
-          await userVideoRef.current.play();
-          console.log('[SessionPlayer] User camera started');
-        }
-      } catch (error) {
-        console.error('[SessionPlayer] Failed to get user camera:', error);
-        toast.warning('カメラへのアクセスが拒否されました。録画機能は利用できません。');
-      }
-
-      // Start audio visualizer
-      try {
-        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        startVisualizer(audioStream);
-        console.log('[SessionPlayer] Audio visualizer started');
-      } catch (error) {
-        console.error('[SessionPlayer] Failed to start audio visualizer:', error);
-        // Non-critical error, continue without visualization
-      }
-
-      setStatus('READY');
-      // WebSocket接続はuseEffectで自動的に開始される（重複呼び出しを防ぐため削除）
-      toast.info(t('sessions.player.websocket.connecting'));
-      // 接続完了後、useEffectで自動的にACTIVE状態に遷移
-    } else if (status === 'PAUSED') {
-      setStatus('ACTIVE');
-      // セッション再開 + 音声録音再開 + ビデオ録画再開
-      resumeRecording();
-
-      // Restart audio visualizer
-      try {
-        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        startVisualizer(audioStream);
-        console.log('[SessionPlayer] Audio visualizer restarted after pause');
-      } catch (error) {
-        console.error('[SessionPlayer] Failed to restart audio visualizer:', error);
-        // Non-critical error, continue without visualization
-      }
-
-      if (recordingStatus === 'paused') {
-        try {
-          resumeVideoRecording();
-        } catch (err) {
-          console.error('[SessionPlayer] Failed to resume video recording:', err);
-        }
-      }
-      toast.success(t('sessions.player.messages.sessionResumed'));
-    }
-  };
-
-  const handlePause = () => {
-    if (status === 'ACTIVE') {
-      setStatus('PAUSED');
-      // 音声録音一時停止 + ビデオ録画一時停止
-      pauseRecording();
-      // Stop visualizer during pause
-      stopVisualizer();
-      if (recordingStatus === 'recording') {
-        try {
-          pauseVideoRecording();
-        } catch (err) {
-          console.error('[SessionPlayer] Failed to pause video recording:', err);
-        }
-      }
-      toast.info(t('sessions.player.status.paused'));
-    }
-  };
-
-  const handleStop = () => {
-    if (status === 'ACTIVE' || status === 'PAUSED' || status === 'READY') {
-      setStatus('COMPLETED');
-      // Note: Do NOT reset isAuthenticated here - audio data needs to be sent first
-      // It will be reset in handleSessionComplete() after all processing is done
-
-      // Check if audio was being recorded
-      const wasRecording = isMicRecording;
-
-      // 1. Stop audio recording first
-      stopRecording();
-
-      // 2. Stop audio visualizer
-      stopVisualizer();
-      console.log('[SessionPlayer] Audio visualizer stopped');
-
-      // 3. Stop video recording if active
-      if (recordingStatus === 'recording' || recordingStatus === 'paused') {
-        try {
-          stopVideoRecording();
-        } catch (err) {
-          console.error('[SessionPlayer] Failed to stop video recording:', err);
-        }
-      }
-
-      // 4. Stop user camera
-      if (userVideoRef.current && userVideoRef.current.srcObject) {
-        const stream = userVideoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => {
-          track.stop();
-          console.log('[SessionPlayer] Stopped camera track:', track.kind);
-        });
-        userVideoRef.current.srcObject = null;
-      }
-
-      // 5. If audio was recording, wait for transcript before sending session_end
-      if (wasRecording) {
-        console.log('[SessionPlayer] Audio was recording, will wait for audio processing before session_end');
-        setPendingSessionEnd(true);
-        // session_end will be sent after transcript_final is received
-      } else {
-        // 5. Send session end notification immediately if no audio to process
-        if (isConnectedRef.current && endSessionRef.current) {
-          console.log('[SessionPlayer] No audio recorded, sending session_end immediately');
-          endSessionRef.current();
-
-          // 6. Set timeout to disconnect after 30 seconds if no session_complete received
-          sessionEndTimeoutRef.current = setTimeout(() => {
-            console.log('[SessionPlayer] Session end timeout - disconnecting WebSocket');
-            if (disconnectRef.current) {
-              disconnectRef.current();
-            }
-          }, 30000); // 30 seconds timeout
-        }
-      }
-
-      toast.success(t('sessions.player.messages.sessionEnded'));
-    }
-  };
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -1411,12 +1412,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                   <span className="text-sm text-red-600">
                     {wsError.startsWith('WEBSOCKET_RECONNECTING:') ? (
                       (() => {
-                        const [, attempt, maxAttempts] = wsError.split(':');
+                        const [, attempt = '1', maxAttempts = '5'] = wsError.split(':');
                         return t('errors.websocket.reconnecting', { attempt, maxAttempts });
                       })()
                     ) : wsError.startsWith('WEBSOCKET_RECONNECT_FAILED:') ? (
                       (() => {
-                        const [, maxAttempts] = wsError.split(':');
+                        const [, maxAttempts = '5'] = wsError.split(':');
                         return t('errors.websocket.reconnectFailed', { maxAttempts });
                       })()
                     ) : (

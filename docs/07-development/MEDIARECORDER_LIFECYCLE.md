@@ -1,13 +1,40 @@
 # MediaRecorder Lifecycle Analysis
 
 **作成日:** 2026-03-10
+**最終更新:** 2026-03-11 (Day 12: timeslice削除に伴う更新)
 **目的:** MediaRecorder API の動作を完全に理解し、再起動メカニズムを正しく設計する
+
+---
+
+## ⚠️ 重要な更新 (2026-03-11)
+
+**Day 12の修正により、timesliceを削除しました:**
+
+```typescript
+// ❌ 旧実装 (削除)
+mediaRecorder.start(250); // 250msごとにチャンク生成
+
+// ✅ 新実装 (現在)
+mediaRecorder.start(); // timesliceなし - stop()時に完全なファイルを取得
+```
+
+**理由:**
+- timesliceによる断片化が原因で、ffmpegが最初のチャンクのみ処理
+- 結果として0.00秒の音声データしか認識されない
+- Azure STTが"NoMatch"エラーを返す
+
+**詳細:** [SESSION_2026-03-10_Day12_Audio_Bug_Fixes.md](../09-progress/archives/SESSION_2026-03-10_Day12_Audio_Bug_Fixes.md)
+
+**このドキュメントの内容:**
+- 以下のtimeslice関連の説明は参考情報として残しています
+- 再起動メカニズムの設計は**timesliceの有無に関わらず適用**されます
+- 現在の実装では、音声は録音停止時に完全なWebMファイルとして取得されます
 
 ---
 
 ## MediaRecorder の基本動作
 
-### 1. start(timeslice) の動作
+### 1. start(timeslice) の動作（参考情報）
 
 ```javascript
 mediaRecorder.start(1000); // 1秒ごとに ondataavailable を発火
@@ -17,6 +44,8 @@ mediaRecorder.start(1000); // 1秒ごとに ondataavailable を発火
 - **最初のチャンク (chunk-0)**: 完全なEBMLヘッダー (1a45dfa3) を含む
 - **2番目以降 (chunk-1, 2, 3...)**: フラグメント (SimpleBlock: 43c38103) のみ
 - **timeslice間隔**: 正確に1000msではなく、ブラウザの実装に依存（900-1100ms程度のブレ）
+
+**⚠️ 現在の実装では使用していません** - 録音完了時に完全なファイルを取得
 
 ### 2. stop() の動作とイベント順序
 

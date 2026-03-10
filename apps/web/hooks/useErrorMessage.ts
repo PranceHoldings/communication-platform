@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useI18n } from '@/lib/i18n/provider';
 
 export interface ErrorDetails {
   code: string;
@@ -14,7 +14,8 @@ export interface ErrorDetails {
 }
 
 export function useErrorMessage() {
-  const t = useTranslations('errors');
+  const { t: translate } = useI18n();
+  const t = (key: string, params?: Record<string, number>) => translate(`errors.${key}`, params as Record<string, string | number>);
 
   /**
    * Get user-friendly error message from error code

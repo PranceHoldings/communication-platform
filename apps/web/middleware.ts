@@ -89,7 +89,7 @@ export function middleware(request: NextRequest) {
     locale = detectLocaleFromHeader(acceptLanguage);
   }
 
-  // Add locale to request headers for next-intl
+  // Add locale to request headers for custom I18nProvider
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(LOCALE_HEADER_NAME, locale);
 

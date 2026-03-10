@@ -73,6 +73,7 @@ AWS、サーバーレス、デプロイ構成。
 - **DEVELOPMENT_WORKFLOW.md** - 開発ワークフロー
 - **BUILD_PROCESS.md** - ビルドプロセスガイド（通常/クリーン/デプロイ前検証） 🆕
 - **TROUBLESHOOTING_NODE_MODULES.md** - node_modulesトラブルシューティング 🆕
+- **MEDIARECORDER_LIFECYCLE.md** - MediaRecorder APIライフサイクル（timeslice削除対応） 🆕
 - **DATABASE_MIGRATION_CHECKLIST.md** - DBマイグレーションチェックリスト
 - **LAMBDA_VERSION_MANAGEMENT.md** - Lambdaバージョン管理
 - **LOCK_MECHANISM_ANALYSIS.md** - ロックメカニズム分析
@@ -92,6 +93,7 @@ AWS、サーバーレス、デプロイ構成。
 - **archives/** - セッション記録
   - ARCHIVE_2026-03-06_Phase1_Completion.md
   - SESSION_2026-03-09_*.md
+  - SESSION_2026-03-10_Day12_Audio_Bug_Fixes.md 🆕
 - **phases/** - Phase計画
   - PHASE_2_PLAN.md
   - PHASE_2.2_ANALYSIS_IMPLEMENTATION_PLAN.md
@@ -125,6 +127,10 @@ AWS、サーバーレス、デプロイ構成。
 
 ## 更新履歴
 
+- **2026-03-11**:
+  - Day 12音声バグ修正セッション記録追加（SESSION_2026-03-10_Day12_Audio_Bug_Fixes.md）
+  - Phase 1.5進捗98%に更新（音声再生テスト待ち）
+  - MediaRecorder Lifecycle文書更新（timeslice削除対応）
 - **2026-03-10**:
   - ビルドプロセスガイド追加（BUILD_PROCESS.md, TROUBLESHOOTING_NODE_MODULES.md）
   - ドキュメント構造を番号付きカテゴリーに再編成
