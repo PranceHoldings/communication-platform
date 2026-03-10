@@ -64,6 +64,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     null
   );
   const endSessionRef = useRef<(() => void) | null>(null);
+  const restartRecordingRef = useRef<(() => void) | null>(null);
 
   // トークン取得
   useEffect(() => {
@@ -408,10 +409,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       // CRITICAL: Restart MediaRecorder to generate new EBML header
       // MediaRecorder timeslice mode only creates complete header for first chunk
       // Subsequent chunks are fragments, so we must restart for each speech segment
-      restartRecording();
-      console.log('[SessionPlayer] MediaRecorder restarted for next speech segment');
+      if (restartRecordingRef.current) {
+        restartRecordingRef.current();
+        console.log('[SessionPlayer] MediaRecorder restarted for next speech segment');
+      }
     }
-  }, [t, restartRecording]);
+  }, [t]);
 
   const handleRecordingError = useCallback(
     (error: Error) => {
@@ -470,6 +473,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     silenceThreshold: 0.05, // Silence threshold (0-1)
     silenceDuration: 500, // 500ms silence triggers speech_end
   });
+
+  // Store restartRecording in ref to avoid circular dependency
+  useEffect(() => {
+    restartRecordingRef.current = restartRecording;
+  }, [restartRecording]);
 
   // 録画機能 - ビデオチャンクハンドラー
   const handleVideoChunk = useCallback(
