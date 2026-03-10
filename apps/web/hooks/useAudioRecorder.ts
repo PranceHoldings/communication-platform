@@ -58,6 +58,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
   // Silence detection
   const lastSpeechTimeRef = useRef<number>(Date.now());
   const speechEndSentRef = useRef(true); // Start as true to prevent initial false detection
+  const isRestartingRef = useRef(false); // Track if we're restarting (to prevent onstop cleanup)
 
   // Monitor audio level for UI feedback and silence detection
   const monitorAudioLevel = useCallback(() => {
@@ -217,6 +218,12 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       };
 
       mediaRecorder.onstop = () => {
+        // Skip cleanup if we're just restarting
+        if (isRestartingRef.current) {
+          console.log('[AudioRecorder] MediaRecorder stopped for restart - skipping cleanup');
+          return;
+        }
+
         setIsRecording(false);
         setIsPaused(false);
         setAudioLevel(0);
@@ -328,6 +335,9 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
     console.log('[AudioRecorder] Restarting MediaRecorder for new EBML header...');
 
+    // Set restart flag to prevent onstop cleanup
+    isRestartingRef.current = true;
+
     // Store current state
     const stream = streamRef.current;
     const timesliceMs = enableRealtime ? 1000 : undefined;
@@ -336,12 +346,9 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     const currentMimeType = mediaRecorderRef.current.mimeType;
 
     // Stop current recorder (but don't close stream)
+    // The onstop handler will check isRestartingRef and skip cleanup
     if (mediaRecorderRef.current.state !== 'inactive') {
-      // Temporarily disable onstop to prevent cleanup
-      const originalOnStop = mediaRecorderRef.current.onstop;
-      mediaRecorderRef.current.onstop = null;
       mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.onstop = originalOnStop;
     }
 
     // Reset sequence number for new stream
@@ -389,6 +396,13 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     };
 
     newRecorder.onstop = () => {
+      // Skip cleanup if we're just restarting
+      if (isRestartingRef.current) {
+        console.log('[AudioRecorder] MediaRecorder stopped for restart - skipping cleanup');
+        return;
+      }
+
+      // NOTE: This onstop is ONLY called when stopRecording() is explicitly called
       setIsRecording(false);
       setIsPaused(false);
       setAudioLevel(0);
@@ -405,6 +419,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         recordedChunksRef.current = [];
       }
 
+      // Clean up stream and audioContext only when session ends
       stream.getTracks().forEach(track => track.stop());
       if (audioContextRef.current) {
         audioContextRef.current.close();
@@ -423,6 +438,9 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     } else {
       newRecorder.start();
     }
+
+    // Clear restart flag
+    isRestartingRef.current = false;
 
     console.log('[AudioRecorder] MediaRecorder restarted with new EBML header');
   }, [enableRealtime, onAudioChunk, onError, onRecordingComplete]);
