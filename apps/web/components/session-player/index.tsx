@@ -16,6 +16,8 @@ import {
 } from '@/hooks/useWebSocket';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useVideoRecorder } from '@/hooks/useVideoRecorder';
+import { useErrorMessage } from '@/hooks/useErrorMessage';
+import { checkBrowserCapabilities, getRecommendedBrowserMessage } from '@/lib/browser-check';
 import { VideoComposer } from './video-composer';
 import { toast } from 'sonner';
 
@@ -37,6 +39,7 @@ interface TranscriptItem {
 
 export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps) {
   const { t } = useI18n();
+  const { getErrorMessage, getMicrophoneInstructions } = useErrorMessage();
   const [status, setStatus] = useState<SessionPlayerStatus>('IDLE');
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
@@ -48,6 +51,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const disconnectRef = useRef<(() => void) | null>(null);
+
+  // Timeout detection
+  const processingStartTimeRef = useRef<number | null>(null);
+  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const PROCESSING_TIMEOUT_MS = 30000; // 30 seconds
 
   // 録画機能用のref
   const avatarCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -144,12 +152,34 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         timestamp: message.timestamp,
       },
     ]);
+
+    // Clear processing timeout (AI response received successfully)
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+      processingTimeoutRef.current = null;
+    }
+    processingStartTimeRef.current = null;
   }, []);
 
   const handleProcessingUpdate = useCallback((message: ProcessingUpdateMessage) => {
     // 処理状況の更新（オプション：UI表示用）
     console.log('Processing:', message.stage, message.progress);
-  }, []);
+
+    // Start timeout detection
+    if (!processingStartTimeRef.current) {
+      processingStartTimeRef.current = Date.now();
+
+      // Set timeout warning
+      processingTimeoutRef.current = setTimeout(() => {
+        const elapsed = Date.now() - (processingStartTimeRef.current || 0);
+        if (elapsed >= PROCESSING_TIMEOUT_MS) {
+          toast.warning(t('errors.api.timeout'), {
+            duration: 5000,
+          });
+        }
+      }, PROCESSING_TIMEOUT_MS);
+    }
+  }, [t, PROCESSING_TIMEOUT_MS]);
 
   const handleSessionComplete = useCallback(
     (_message: SessionCompleteMessage) => {
@@ -254,8 +284,32 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const handleError = useCallback((message: ErrorMessage) => {
     // エラー処理
     console.error('WebSocket error:', message);
-    toast.error(`Error: ${message.message}`);
-  }, []);
+
+    // Clear processing timeout
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+      processingTimeoutRef.current = null;
+    }
+    processingStartTimeRef.current = null;
+
+    // Get user-friendly error message
+    const errorMessage = getErrorMessage({
+      code: message.code || 'UNKNOWN_ERROR',
+      message: message.message,
+      originalError: message.details as string,
+    });
+
+    toast.error(errorMessage, {
+      duration: 8000,
+      action: message.code?.includes('MICROPHONE') ? {
+        label: t('errors.actions.viewDetails'),
+        onClick: () => {
+          const instructions = getMicrophoneInstructions();
+          toast.info(instructions, { duration: 12000 });
+        },
+      } : undefined,
+    });
+  }, [getErrorMessage, getMicrophoneInstructions, t]);
 
   const handleAuthenticated = useCallback(
     (sessionId: string) => {
@@ -419,9 +473,22 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const handleRecordingError = useCallback(
     (error: Error) => {
       console.error('[SessionPlayer] Recording error:', error);
-      toast.error(t('sessions.player.messages.microphoneError'));
+
+      // Get user-friendly error message
+      const errorMessage = getErrorMessage(error);
+
+      toast.error(errorMessage, {
+        duration: 10000,
+        action: (error as any).code?.includes('MICROPHONE') ? {
+          label: t('errors.actions.viewDetails'),
+          onClick: () => {
+            const instructions = getMicrophoneInstructions();
+            toast.info(instructions, { duration: 15000 });
+          },
+        } : undefined,
+      });
     },
-    [t]
+    [t, getErrorMessage, getMicrophoneInstructions]
   );
 
   const handleRecordingComplete = useCallback(
@@ -517,9 +584,24 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const handleVideoRecordingError = useCallback(
     (error: Error) => {
       console.error('[SessionPlayer] Video recording error:', error);
-      toast.error(t('sessions.player.recording.messages.error', { error: error.message }));
+
+      // Get user-friendly error message
+      const errorMessage = getErrorMessage(error);
+
+      toast.error(errorMessage, {
+        duration: 8000,
+        action: {
+          label: t('errors.actions.retry'),
+          onClick: () => {
+            // Retry video recording
+            if (startVideoRecording) {
+              startVideoRecording();
+            }
+          },
+        },
+      });
     },
-    [t]
+    [t, getErrorMessage, startVideoRecording]
   );
 
   // VideoComposer準備完了ハンドラー
@@ -657,6 +739,17 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       token: token ? 'exists' : 'missing',
       status,
     });
+
+    // Check browser capabilities
+    const capabilities = checkBrowserCapabilities();
+    if (!capabilities.isSupported) {
+      console.error('[SessionPlayer] Browser not supported:', capabilities.unsupportedFeatures);
+      const recommendedMsg = getRecommendedBrowserMessage();
+      toast.error(`${t('errors.microphone.notSupported')}\n\n${recommendedMsg}`, {
+        duration: 15000,
+      });
+      return;
+    }
 
     if (!token) {
       console.error('[SessionPlayer] No token found!');
@@ -1050,7 +1143,21 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               {wsError && (
                 <>
                   <div className="h-3 w-3 bg-red-500 rounded-full"></div>
-                  <span className="text-sm text-red-600">{wsError}</span>
+                  <span className="text-sm text-red-600">
+                    {wsError.startsWith('WEBSOCKET_RECONNECTING:') ? (
+                      (() => {
+                        const [, attempt, maxAttempts] = wsError.split(':');
+                        return t('errors.websocket.reconnecting', { attempt, maxAttempts });
+                      })()
+                    ) : wsError.startsWith('WEBSOCKET_RECONNECT_FAILED:') ? (
+                      (() => {
+                        const [, maxAttempts] = wsError.split(':');
+                        return t('errors.websocket.reconnectFailed', { maxAttempts });
+                      })()
+                    ) : (
+                      getErrorMessage(wsError)
+                    )}
+                  </span>
                 </>
               )}
             </div>

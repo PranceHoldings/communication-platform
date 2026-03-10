@@ -1,10 +1,10 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-10 20:40 JST
+**最終更新:** 2026-03-10 22:10 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル） | **Phase 2進捗:** Task 2.1-2.2完了（100%）
-**Phase 1.5進捗:** Day 1-5完了（リアルタイムSTT + AI応答実装） | **進捗:** 56%
-**最新コミット:** f259e34 - fix(websocket): remove duplicate speech_end case
-**最新デプロイ:** 2026-03-10 20:40 JST - ApiLambda stack deployed successfully
+**Phase 1.5進捗:** Day 1-8完了（リアルタイムSTT + AI応答 + TTS + エラーハンドリング） | **進捗:** 57%
+**最新コミット:** 未コミット - Day 8 frontend error handling
+**最新デプロイ:** 2026-03-10 21:29 JST - ApiLambda stack deployed successfully
 
 ---
 
@@ -115,21 +115,36 @@ Role: SUPER_ADMIN
 - ✅ TypeScript設定改善（テストファイル除外）
 
 **✅ 完了: Day 4-5 - リアルタイムAI応答実装（2026-03-10 午後）**
-- ✅ Bedrock Claude Streaming API統合（**既に実装済みを確認**）
+- ✅ Bedrock Claude Streaming API統合（既に実装済みを確認）
 - ✅ チャンク単位でAI応答を受信（streamResponse, streamScenarioResponse）
 - ✅ WebSocketでストリーミング配信（avatar_response_partial, avatar_response_final）
 - ✅ フロントエンド受信・表示実装済み
 - ✅ ビルド・デプロイプロセス完全再構築（モノレポワークスペース対応）
 - ✅ デプロイ完了・動作確認済み（2026-03-10 20:40 JST）
-  - ApiLambda stack: UPDATE_COMPLETE
-  - 重複speech_endケース除去
-  - API health endpoint確認済み
 
-**🚀 次: Day 6-7 - リアルタイムTTS実装（推定2日）**
-- ElevenLabs Streaming API統合
-- 音声チャンク単位でTTS生成
-- 即座にブラウザ再生開始
-- 目標: 全体で2-5秒の応答時間達成
+**✅ 完了: Day 6-7 - リアルタイムTTS実装（2026-03-10）**
+- ✅ ElevenLabs WebSocket Streaming API統合（tts-elevenlabs.ts）
+- ✅ 音声チャンク単位でTTS生成・配信（processAudioStreaming）
+- ✅ WebSocketで即座にブラウザ配信（audio_chunk メッセージ）
+- ✅ フロントエンド Web Audio API実装（useAudioPlayer.ts）
+- ✅ キューイング機能で途切れない再生
+- ✅ デプロイ完了（2026-03-10 21:29 JST）
+
+**✅ 完了: Day 8 - フロントエンドエラーハンドリング強化（2026-03-10）**
+- ✅ getUserMediaエラー詳細処理（6種類のDOMException対応）
+- ✅ エラーメッセージの多言語対応（errors.json, useErrorMessage hook）
+- ✅ タイムアウト処理UI（30秒検出、進捗表示）
+- ✅ WebSocket再接続メッセージ改善（指数バックオフ表示）
+- ✅ ブラウザ互換性チェック（MediaRecorder/WebSocket/Web Audio API）
+- ✅ 音量レベル不足警告（連続5秒RMS < 0.01）
+- 📊 **未デプロイ**: フロントエンドのみの変更、バックエンドAPIリトライは Day 9
+
+**🚀 次: Day 9 - バックエンドAPI呼び出しリトライ（推定1日）**
+- リトライユーティリティ関数作成（指数バックオフ、最大3回）
+- Azure STT APIリトライ統合
+- AWS Bedrock APIリトライ統合
+- ElevenLabs APIリトライ統合
+- CloudWatch Logsエラー監視強化
 
 **Phase 1.6（Week 2.5-3.5）: 既存機能の実用化**
 - エラーハンドリング、リトライロジック
@@ -167,33 +182,47 @@ Role: SUPER_ADMIN
    - Phase 1.5-1.6（実用化）を開始するか？
    - Phase 2.3（レポート）を完結させるか？
 
-### Short-term（Day 6-7）
+### Short-term（Day 8-10）
 
-**🎯 Phase 1.5 Day 6-7: リアルタイムTTS実装（推奨）**
+**🎯 Phase 1.5 Day 8-10: エラーハンドリング強化（推奨）**
 
-目標: ElevenLabs Streaming APIで音声応答をリアルタイム生成・再生
+目標: リアルタイム会話を実用レベルに引き上げる
 
 実装ステップ:
-1. ElevenLabs WebSocket Streaming API統合
-2. テキストチャンクを送信 → 音声チャンク受信
-3. Lambda側で音声チャンクをWebSocket配信
-4. フロントエンド側で即座に再生開始（Web Audio API）
-5. 動作確認: AI応答開始から1-2秒で音声再生開始
+1. **ネットワークエラー対応**
+   - WebSocket再接続ロジック（指数バックオフ）
+   - STT/AI/TTS APIエラー時の自動リトライ（3回まで）
+   - ユーザーへのフレンドリーなエラーメッセージ
+
+2. **タイムアウト処理**
+   - 長時間応答がない場合の自動リトライ（30秒タイムアウト）
+   - ユーザーへの進捗表示（「処理中...」インジケーター）
+
+3. **音声品質チェック**
+   - マイク未接続検出（getUserMediaエラー）
+   - 音量レベル不足警告（RMS < 0.01）
+   - サポートされていないブラウザ検出
+
+4. **エラーログ・監視**
+   - CloudWatch Logsへの詳細エラーログ
+   - エラー発生時の自動アラート
 
 技術スタック:
-- ElevenLabs: `wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream`
-- WebSocket message type: `audio_chunk` (base64 encoded MP3)
-- Web Audio API: AudioContext, AudioBuffer
+- WebSocket: exponential backoff reconnection
+- CloudWatch: error metrics + alarms
+- Frontend: user-friendly error messages
 
 ### Mid-term（Week 1-2）
 
 **Phase 1.5の継続:**
 - ✅ Day 1-3: リアルタイムSTT実装（完了 - 2026-03-10）
-- ✅ Day 4-5: リアルタイムAI応答実装（完了 - 2026-03-10、既存実装を確認）
-- 🚀 Day 6-7: リアルタイムTTS実装（次）
-- Day 8-10: エラーハンドリング強化
-- Day 11-12: UX改善
-- Day 13-14: パフォーマンステスト
+- ✅ Day 4-5: リアルタイムAI応答実装（完了 - 2026-03-10）
+- ✅ Day 6-7: リアルタイムTTS実装（完了 - 2026-03-10）
+- ✅ Day 8: フロントエンドエラーハンドリング強化（完了 - 2026-03-10）
+- 🚀 Day 9: バックエンドAPIリトライ（次 - 1日）
+- Day 10: ブラウザ互換性・音量警告（1日）
+- Day 11-12: UX改善（2日）
+- Day 13-14: パフォーマンステスト（2日）
 
 **代替: Phase 2.3（レポート生成）:**
 - Day 1: レポートテンプレート実装

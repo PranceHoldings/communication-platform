@@ -72,6 +72,12 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
   const lastSpeechTimeRef = useRef<number>(Date.now());
   const speechEndSentRef = useRef(true); // Start as true to prevent initial false detection
 
+  // Low volume detection
+  const lowVolumeStartRef = useRef<number | null>(null);
+  const lowVolumeWarningShownRef = useRef(false);
+  const LOW_VOLUME_THRESHOLD = 0.01; // Very low threshold
+  const LOW_VOLUME_DURATION = 5000; // 5 seconds
+
   // Logger (initialized with session-like ID)
   const loggerRef = useRef<AudioRecorderLogger | null>(null);
   if (!loggerRef.current) {
@@ -91,10 +97,36 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     const normalizedLevel = average / 255;
     setAudioLevel(normalizedLevel);
 
-    // Silence detection
+    // Silence detection and low volume warning
     if (enableRealtime) {
       const now = Date.now();
 
+      // Low volume warning (very low audio level for extended period)
+      if (normalizedLevel < LOW_VOLUME_THRESHOLD) {
+        if (!lowVolumeStartRef.current) {
+          lowVolumeStartRef.current = now;
+        } else {
+          const lowVolumeDuration = now - lowVolumeStartRef.current;
+          if (lowVolumeDuration >= LOW_VOLUME_DURATION && !lowVolumeWarningShownRef.current) {
+            logger.warn(LogPhase.RECORDING, 'Low volume detected', {
+              level: normalizedLevel.toFixed(4),
+              duration: lowVolumeDuration,
+            });
+            lowVolumeWarningShownRef.current = true;
+            const lowVolumeError = new Error('LOW_VOLUME');
+            (lowVolumeError as any).code = 'LOW_VOLUME';
+            onError?.(lowVolumeError);
+          }
+        }
+      } else {
+        // Reset low volume detection when normal audio is detected
+        if (lowVolumeStartRef.current) {
+          lowVolumeStartRef.current = null;
+          lowVolumeWarningShownRef.current = false;
+        }
+      }
+
+      // Speech/silence detection
       if (normalizedLevel > silenceThreshold) {
         // Speech detected
         lastSpeechTimeRef.current = now;
@@ -132,6 +164,17 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
   const startRecording = useCallback(async () => {
     try {
       setError(null);
+
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const error = new Error('BROWSER_NOT_SUPPORTED');
+        logger.error(LogPhase.ERROR, 'getUserMedia not supported', {
+          userAgent: navigator.userAgent,
+        });
+        setError(error.message);
+        onError?.(error);
+        throw error;
+      }
 
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -307,12 +350,58 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       // Start audio level monitoring
       monitorAudioLevel();
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to start recording');
-      logger.error(LogPhase.ERROR, 'Failed to start recording', {
-        error: error.message,
-        stack: error.stack,
+      // Handle getUserMedia specific errors with detailed messages
+      let errorCode = 'RECORDING_FAILED';
+      let errorMessage = 'Failed to start recording';
+
+      if (err instanceof DOMException) {
+        switch (err.name) {
+          case 'NotAllowedError':
+            errorCode = 'MICROPHONE_PERMISSION_DENIED';
+            errorMessage = 'Microphone access was denied. Please allow microphone access in your browser settings.';
+            break;
+          case 'NotFoundError':
+            errorCode = 'MICROPHONE_NOT_FOUND';
+            errorMessage = 'No microphone found. Please connect a microphone and try again.';
+            break;
+          case 'NotReadableError':
+            errorCode = 'MICROPHONE_NOT_READABLE';
+            errorMessage = 'Microphone is already in use by another application. Please close other apps using the microphone.';
+            break;
+          case 'OverconstrainedError':
+            errorCode = 'MICROPHONE_CONSTRAINTS_ERROR';
+            errorMessage = 'Unable to satisfy audio constraints. Please try a different microphone.';
+            break;
+          case 'AbortError':
+            errorCode = 'MICROPHONE_ABORT_ERROR';
+            errorMessage = 'Microphone access was aborted. Please try again.';
+            break;
+          case 'SecurityError':
+            errorCode = 'MICROPHONE_SECURITY_ERROR';
+            errorMessage = 'Microphone access is not allowed due to security restrictions. Please use HTTPS or localhost.';
+            break;
+          default:
+            errorMessage = err.message || errorMessage;
+        }
+      } else if (err instanceof Error) {
+        if (err.message === 'BROWSER_NOT_SUPPORTED') {
+          errorCode = 'BROWSER_NOT_SUPPORTED';
+          errorMessage = 'Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Safari.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      const error = new Error(errorMessage);
+      (error as any).code = errorCode;
+
+      logger.error(LogPhase.ERROR, `Failed to start recording: ${errorCode}`, {
+        error: errorMessage,
+        originalError: err instanceof Error ? err.message : String(err),
+        errorName: err instanceof DOMException ? err.name : 'Unknown',
       });
-      setError(error.message);
+
+      setError(errorMessage);
       onError?.(error);
       throw error;
     }

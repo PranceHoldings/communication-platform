@@ -293,16 +293,22 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         // Attempt reconnection if not a normal closure
         if (event.code !== 1000 && reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+          const attempt = reconnectAttempts.current + 1;
+
           console.log(
-            `Attempting reconnect in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${MAX_RECONNECT_ATTEMPTS})`
+            `Attempting reconnect in ${delay}ms (attempt ${attempt}/${MAX_RECONNECT_ATTEMPTS})`
           );
+
+          // Set error message for UI feedback
+          setError(`WEBSOCKET_RECONNECTING:${attempt}:${MAX_RECONNECT_ATTEMPTS}`);
 
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current += 1;
             connect();
           }, delay);
         } else if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
-          setError('Maximum reconnection attempts reached');
+          const errorMsg = `WEBSOCKET_RECONNECT_FAILED:${MAX_RECONNECT_ATTEMPTS}`;
+          setError(errorMsg);
         }
       };
     } catch (err) {
