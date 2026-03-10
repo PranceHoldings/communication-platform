@@ -10,6 +10,7 @@ import {
   InvokeModelWithResponseStreamCommand,
   InvokeModelWithResponseStreamCommandInput,
 } from '@aws-sdk/client-bedrock-runtime';
+import { retryWithBackoff } from '../utils/retry';
 
 export interface BedrockConfig {
   region: string;
@@ -51,8 +52,47 @@ export class BedrockAI {
 
   /**
    * Generate AI response based on user input and conversation context
+   * Includes automatic retry with exponential backoff for transient errors
    */
   async generateResponse(options: GenerateResponseOptions): Promise<AIResponse> {
+    // Wrap in retry logic
+    const result = await retryWithBackoff(
+      () => this._generateResponseInternal(options),
+      {
+        maxAttempts: 3,
+        initialDelay: 1000,
+        maxDelay: 10000,
+        backoffFactor: 2,
+        retryableErrors: [
+          'ThrottlingException',
+          'ServiceUnavailableException',
+          'InternalServerException',
+          'timeout',
+          'connection',
+        ],
+        onRetry: (error, attempt, delay) => {
+          console.warn('[BedrockAI] Retrying AI request:', {
+            error: error.message,
+            attempt,
+            nextRetryIn: delay,
+          });
+        },
+      }
+    );
+
+    console.log('[BedrockAI] Generation completed:', {
+      attempts: result.attempts,
+      totalDelay: result.totalDelay,
+      responseLength: result.result.text.length,
+    });
+
+    return result.result;
+  }
+
+  /**
+   * Internal generation method (without retry logic)
+   */
+  private async _generateResponseInternal(options: GenerateResponseOptions): Promise<AIResponse> {
     const {
       userMessage,
       conversationHistory = [],

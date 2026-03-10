@@ -5,6 +5,7 @@
 
 import { Readable } from 'stream';
 import WebSocket from 'ws';
+import { retryWithBackoff } from '../utils/retry';
 
 export interface ElevenLabsTTSConfig {
   apiKey: string;
@@ -42,8 +43,48 @@ export class ElevenLabsTextToSpeech {
   /**
    * Generate speech from text
    * Returns audio buffer in MP3 format
+   * Includes automatic retry with exponential backoff for transient errors
    */
   async generateSpeech(options: TTSOptions): Promise<TTSResult> {
+    // Wrap in retry logic
+    const result = await retryWithBackoff(
+      () => this._generateSpeechInternal(options),
+      {
+        maxAttempts: 3,
+        initialDelay: 1000,
+        maxDelay: 5000,
+        backoffFactor: 2,
+        retryableErrors: [
+          'timeout',
+          'connection',
+          'quota',
+          'rate limit',
+          '429',
+          '503',
+        ],
+        onRetry: (error, attempt, delay) => {
+          console.warn('[ElevenLabsTTS] Retrying TTS request:', {
+            error: error.message,
+            attempt,
+            nextRetryIn: delay,
+          });
+        },
+      }
+    );
+
+    console.log('[ElevenLabsTTS] Speech generation completed:', {
+      attempts: result.attempts,
+      totalDelay: result.totalDelay,
+      audioSize: result.result.sizeBytes,
+    });
+
+    return result.result;
+  }
+
+  /**
+   * Internal speech generation method (without retry logic)
+   */
+  private async _generateSpeechInternal(options: TTSOptions): Promise<TTSResult> {
     const {
       text,
       stability = 0.5,

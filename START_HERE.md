@@ -1,10 +1,10 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-10 22:10 JST
+**最終更新:** 2026-03-10 22:45 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル） | **Phase 2進捗:** Task 2.1-2.2完了（100%）
-**Phase 1.5進捗:** Day 1-8完了（リアルタイムSTT + AI応答 + TTS + エラーハンドリング） | **進捗:** 57%
-**最新コミット:** 未コミット - Day 8 frontend error handling
-**最新デプロイ:** 2026-03-10 21:29 JST - ApiLambda stack deployed successfully
+**Phase 1.5進捗:** Day 1-9完了（リアルタイムSTT + AI + TTS + エラーハンドリング + APIリトライ） | **進捗:** 64%
+**最新コミット:** 未コミット - Day 9 backend API retry logic
+**最新デプロイ:** 2026-03-10 21:29 JST - ApiLambda stack deployed successfully (要再デプロイ)
 
 ---
 
@@ -137,14 +137,25 @@ Role: SUPER_ADMIN
 - ✅ WebSocket再接続メッセージ改善（指数バックオフ表示）
 - ✅ ブラウザ互換性チェック（MediaRecorder/WebSocket/Web Audio API）
 - ✅ 音量レベル不足警告（連続5秒RMS < 0.01）
-- 📊 **未デプロイ**: フロントエンドのみの変更、バックエンドAPIリトライは Day 9
 
-**🚀 次: Day 9 - バックエンドAPI呼び出しリトライ（推定1日）**
-- リトライユーティリティ関数作成（指数バックオフ、最大3回）
-- Azure STT APIリトライ統合
-- AWS Bedrock APIリトライ統合
-- ElevenLabs APIリトライ統合
-- CloudWatch Logsエラー監視強化
+**✅ 完了: Day 9 - バックエンドAPI呼び出しリトライ（2026-03-10）**
+- ✅ リトライユーティリティ関数作成（retry.ts）
+  - 指数バックオフ（最大10秒）
+  - 最大3回リトライ
+  - リトライ可能エラー判定（HTTP 408/429/500/502/503/504）
+- ✅ Azure STT APIリトライ統合（stt-azure.ts）
+- ✅ AWS Bedrock APIリトライ統合（bedrock.ts）
+- ✅ ElevenLabs TTSリトライ統合（tts-elevenlabs.ts）
+- ✅ エラーログ強化（error-logger.ts）
+  - 構造化ログ出力
+  - CloudWatch Logs Insightsクエリサンプル
+- 📊 **要デプロイ**: Lambda関数の再デプロイが必要
+
+**🚀 次: Day 10 - 統合テスト・ドキュメント更新（推定1日）**
+- エラーハンドリング統合テスト
+- CloudWatch Logsアラート設定
+- エラーハンドリング実装ドキュメント作成
+- Phase 1.5進捗確認・調整
 
 **Phase 1.6（Week 2.5-3.5）: 既存機能の実用化**
 - エラーハンドリング、リトライロジック
@@ -219,8 +230,8 @@ Role: SUPER_ADMIN
 - ✅ Day 4-5: リアルタイムAI応答実装（完了 - 2026-03-10）
 - ✅ Day 6-7: リアルタイムTTS実装（完了 - 2026-03-10）
 - ✅ Day 8: フロントエンドエラーハンドリング強化（完了 - 2026-03-10）
-- 🚀 Day 9: バックエンドAPIリトライ（次 - 1日）
-- Day 10: ブラウザ互換性・音量警告（1日）
+- ✅ Day 9: バックエンドAPIリトライ（完了 - 2026-03-10）
+- 🚀 Day 10: 統合テスト・ドキュメント更新（次 - 1日）
 - Day 11-12: UX改善（2日）
 - Day 13-14: パフォーマンステスト（2日）
 

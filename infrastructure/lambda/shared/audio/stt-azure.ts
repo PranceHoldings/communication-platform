@@ -1,5 +1,6 @@
 import { LANGUAGE_DEFAULTS } from '../config/defaults';
 import { getSupportedSTTCodes } from '../config/language-config';
+import { retryWithBackoff } from '../utils/retry';
 /**
  * Azure Speech Services - Speech-to-Text Integration
  * Real-time audio transcription using Azure Cognitive Services
@@ -180,8 +181,47 @@ export class AzureSpeechToText {
 
   /**
    * Process single audio file (for non-streaming scenarios)
+   * Includes automatic retry with exponential backoff for transient errors
    */
   async recognizeFromFile(audioFilePath: string): Promise<TranscriptResult> {
+    // Wrap in retry logic
+    const result = await retryWithBackoff(
+      () => this._recognizeFromFileInternal(audioFilePath),
+      {
+        maxAttempts: 3,
+        initialDelay: 1000,
+        maxDelay: 5000,
+        backoffFactor: 2,
+        retryableErrors: [
+          'timeout',
+          'connection',
+          'throttl',
+          'rate limit',
+          'service unavailable',
+        ],
+        onRetry: (error, attempt, delay) => {
+          console.warn('[AzureSTT] Retrying STT request:', {
+            error: error.message,
+            attempt,
+            nextRetryIn: delay,
+          });
+        },
+      }
+    );
+
+    console.log('[AzureSTT] Recognition completed:', {
+      attempts: result.attempts,
+      totalDelay: result.totalDelay,
+      textLength: result.result.text.length,
+    });
+
+    return result.result;
+  }
+
+  /**
+   * Internal recognition method (without retry logic)
+   */
+  private async _recognizeFromFileInternal(audioFilePath: string): Promise<TranscriptResult> {
     return new Promise((resolve, reject) => {
       try {
         const fs = require('fs');

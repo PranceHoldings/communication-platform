@@ -8,6 +8,7 @@ import { AzureSpeechToText } from '../../shared/audio/stt-azure';
 import { ElevenLabsTextToSpeech } from '../../shared/audio/tts-elevenlabs';
 import { BedrockAI } from '../../shared/ai/bedrock';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { logError, logWarning } from '../../shared/utils/error-logger';
 import * as crypto from 'crypto';
 
 export interface AudioProcessorConfig {
