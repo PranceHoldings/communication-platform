@@ -18,10 +18,13 @@ dotenvConfig({ path: resolve(__dirname, '../.env') });
 
 const app = new cdk.App();
 
+// Default AWS region (centralized constant)
+const DEFAULT_AWS_REGION = 'us-east-1';
+
 // 環境変数から設定を取得
 const environment = app.node.tryGetContext('environment') || 'dev';
 const account = process.env.AWS_ACCOUNT_ID || process.env.CDK_DEFAULT_ACCOUNT;
-const region = process.env.AWS_REGION || process.env.CDK_DEFAULT_REGION || 'us-east-1';
+const region = process.env.AWS_REGION || process.env.CDK_DEFAULT_REGION || DEFAULT_AWS_REGION;
 
 // 環境設定を取得
 const config = getConfig(environment);
@@ -34,7 +37,7 @@ const env = {
 // 証明書用のus-east-1環境（CloudFrontで必須）
 const envUsEast1 = {
   account,
-  region: 'us-east-1',
+  region: DEFAULT_AWS_REGION, // CloudFront certificates must be in us-east-1
 };
 
 // Stack名のプレフィックス

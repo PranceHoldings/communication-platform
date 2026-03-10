@@ -5,6 +5,7 @@
 
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { RekognitionAnalyzer, EmotionAnalysisResult } from '../../shared/analysis/rekognition';
+import { AWS_DEFAULTS } from '../../shared/config/defaults';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -49,7 +50,7 @@ export class FrameAnalyzer {
 
     console.log('[FrameAnalyzer] Initialized', {
       bucket: this.bucket,
-      region: config.region || 'us-east-1',
+      region: config.region || AWS_DEFAULTS.REGION,
     });
   }
 

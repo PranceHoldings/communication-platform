@@ -1,7 +1,11 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
+
+// Default media format constants for display
+const DEFAULT_VIDEO_FORMAT = 'webm';
+const DEFAULT_VIDEO_RESOLUTION = '1280x720';
 
 export interface Recording {
   id: string;
@@ -300,11 +304,11 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <span className="font-medium">{t('sessions.player.recording.format')}:</span>{' '}
-            {recording.format || 'webm'}
+            {recording.format || DEFAULT_VIDEO_FORMAT}
           </div>
           <div>
             <span className="font-medium">{t('sessions.player.recording.resolution')}:</span>{' '}
-            {recording.resolution || '1280x720'}
+            {recording.resolution || DEFAULT_VIDEO_RESOLUTION}
           </div>
           <div>
             <span className="font-medium">{t('sessions.player.recording.size')}:</span>{' '}

@@ -3,7 +3,16 @@
  * Common functions for sorting and processing audio/video chunks
  */
 
-import type { _Object as S3Object } from '@aws-sdk/client-s3';
+/**
+ * S3 Object interface (minimal subset for chunk operations)
+ * Replaces deprecated _Object type from AWS SDK v3
+ */
+export interface S3Object {
+  Key?: string;
+  LastModified?: Date;
+  Size?: number;
+  ETag?: string;
+}
 
 /**
  * Sort S3 objects by timestamp and chunk number extracted from filename

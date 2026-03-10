@@ -80,7 +80,7 @@ export function PerformanceRadar({ score }: PerformanceRadarProps) {
               borderRadius: '0.5rem',
               padding: '0.5rem',
             }}
-            formatter={(value: number) => [`${Math.round(value)}`, t('analysis.radar.score')]}
+            formatter={(value) => [`${Math.round(Number(value) || 0)}`, t('analysis.radar.score')]}
           />
         </RadarChart>
       </ResponsiveContainer>

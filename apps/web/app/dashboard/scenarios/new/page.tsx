@@ -18,7 +18,7 @@ export default function NewScenarioPage() {
   // Form fields
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
-  const [language, setLanguage] = useState(defaultLocale);
+  const [language, setLanguage] = useState<string>(defaultLocale);
   const [visibility, setVisibility] = useState<Visibility>('PRIVATE');
   const [configJson, setConfigJson] = useState(
     '{\n  "duration": 30,\n  "difficulty": "beginner"\n}'

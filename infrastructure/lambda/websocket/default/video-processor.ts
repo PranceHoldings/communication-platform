@@ -10,6 +10,7 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
+import { MEDIA_DEFAULTS } from '../../shared/config/defaults';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -62,14 +63,14 @@ export class VideoProcessor {
     timestamp: number,
     chunkIndex: number
   ): Promise<string> {
-    const chunkKey = generateChunkKey(sessionId, 'video', timestamp, chunkIndex, 'webm');
+    const chunkKey = generateChunkKey(sessionId, 'video', timestamp, chunkIndex, MEDIA_DEFAULTS.VIDEO_FORMAT);
 
     await this.s3Client.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: chunkKey,
         Body: chunkData,
-        ContentType: 'video/webm',
+        ContentType: MEDIA_DEFAULTS.VIDEO_CONTENT_TYPE,
         Metadata: {
           sessionId,
           timestamp: timestamp.toString(),
@@ -210,13 +211,13 @@ export class VideoProcessor {
       });
 
       // Upload final video to S3
-      const finalVideoKey = `sessions/${sessionId}/recording.webm`;
+      const finalVideoKey = `sessions/${sessionId}/recording.${MEDIA_DEFAULTS.VIDEO_FORMAT}`;
       await this.s3Client.send(
         new PutObjectCommand({
           Bucket: this.bucket,
           Key: finalVideoKey,
           Body: finalVideoBuffer,
-          ContentType: 'video/webm',
+          ContentType: MEDIA_DEFAULTS.VIDEO_CONTENT_TYPE,
           Metadata: {
             sessionId,
             chunksCount: chunkFiles.length.toString(),

@@ -19,15 +19,21 @@
     "status": "aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE --query \"StackSummaries[?starts_with(StackName, 'Prance')].{Name:StackName,Status:StackStatus}\" --output table"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.161",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.0.0",
     "aws-cdk": "^2.1109.0",
     "dotenv": "^17.3.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.1005.0",
     "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/client-lambda": "^3.1005.0",
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/cloudfront-signer": "^3.1005.0",
     "@aws-sdk/lib-dynamodb": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.1005.0",
     "@prisma/client": "^5.9.0",
     "@types/pg": "^8.18.0",
     "aws-cdk-lib": "^2.170.0",

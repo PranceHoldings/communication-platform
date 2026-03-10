@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
+import type { Visibility } from '../../shared/types';
 
 /**
  * GET /api/v1/scenarios
@@ -12,7 +13,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  * - limit: number (default: 20, max: 100)
  * - offset: number (default: 0)
  * - category: string (optional filter by category)
- * - visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' (optional filter)
+ * - visibility: Visibility enum (optional filter)
  */
 export const handler: APIGatewayProxyHandler = async event => {
   console.log('List scenarios request:', JSON.stringify(event, null, 2));
@@ -29,7 +30,7 @@ export const handler: APIGatewayProxyHandler = async event => {
     const limit = Math.min(parseInt(queryParams.limit || '20'), 100);
     const offset = parseInt(queryParams.offset || '0');
     const category = queryParams.category;
-    const visibility = queryParams.visibility as 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' | undefined;
+    const visibility = queryParams.visibility as Visibility | undefined;
 
     // Build where clause - get scenarios from user's org or public scenarios
     const where: any = {

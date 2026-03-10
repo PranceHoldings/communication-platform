@@ -3,7 +3,7 @@
  * Handles STT -> AI -> TTS flow
  */
 
-import { LANGUAGE_DEFAULTS } from '../../shared/config/defaults';
+import { LANGUAGE_DEFAULTS, MEDIA_DEFAULTS } from '../../shared/config/defaults';
 import { AzureSpeechToText } from '../../shared/audio/stt-azure';
 import { ElevenLabsTextToSpeech } from '../../shared/audio/tts-elevenlabs';
 import { BedrockAI } from '../../shared/ai/bedrock';
@@ -528,12 +528,12 @@ export class AudioProcessor {
     audioData: Buffer,
     sessionId: string,
     type: 'input' | 'output',
-    contentType: string = 'audio/webm'
+    contentType: string = MEDIA_DEFAULTS.AUDIO_CONTENT_TYPE
   ): Promise<string> {
     const timestamp = Date.now();
 
     // Determine file extension based on content type
-    let extension = 'webm';
+    let extension: string = MEDIA_DEFAULTS.AUDIO_FORMAT;
     if (contentType.includes('mpeg') || contentType.includes('mp3')) {
       extension = 'mp3';
     } else if (contentType.includes('wav')) {

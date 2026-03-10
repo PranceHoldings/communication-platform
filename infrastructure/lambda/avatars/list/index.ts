@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
+import type { Visibility } from '../../shared/types';
 
 /**
  * GET /api/v1/avatars
@@ -14,7 +15,7 @@ import { successResponse, errorResponse } from '../../shared/utils/response';
  * - type: 'TWO_D' | 'THREE_D' (optional filter by avatar type)
  * - style: 'ANIME' | 'REALISTIC' (optional filter by style)
  * - source: 'PRESET' | 'GENERATED' | 'ORG_CUSTOM' (optional filter)
- * - visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' (optional filter)
+ * - visibility: Visibility enum (optional filter)
  */
 export const handler: APIGatewayProxyHandler = async event => {
   console.log('List avatars request:', JSON.stringify(event, null, 2));
@@ -33,7 +34,7 @@ export const handler: APIGatewayProxyHandler = async event => {
     const type = queryParams.type as 'TWO_D' | 'THREE_D' | undefined;
     const style = queryParams.style as 'ANIME' | 'REALISTIC' | undefined;
     const source = queryParams.source as 'PRESET' | 'GENERATED' | 'ORG_CUSTOM' | undefined;
-    const visibility = queryParams.visibility as 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' | undefined;
+    const visibility = queryParams.visibility as Visibility | undefined;
 
     // Build where clause - get avatars from user's org, presets, or public avatars
     const where: any = {

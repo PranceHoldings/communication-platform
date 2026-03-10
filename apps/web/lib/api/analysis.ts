@@ -70,6 +70,9 @@ export interface ScoreLevel {
  */
 export async function getAnalysis(sessionId: string): Promise<AnalysisResult> {
   const response = await apiClient.get<AnalysisResult>(`/sessions/${sessionId}/analysis`);
+  if (!response.data) {
+    throw new Error('Analysis data not found');
+  }
   return response.data;
 }
 
@@ -78,6 +81,9 @@ export async function getAnalysis(sessionId: string): Promise<AnalysisResult> {
  */
 export async function triggerAnalysis(sessionId: string): Promise<{ message: string }> {
   const response = await apiClient.post<{ message: string }>(`/sessions/${sessionId}/analyze`);
+  if (!response.data) {
+    throw new Error('Analysis trigger failed');
+  }
   return response.data;
 }
 
@@ -88,6 +94,9 @@ export async function getScore(sessionId: string): Promise<SessionScore & { scor
   const response = await apiClient.get<SessionScore & { scoreLevel: ScoreLevel }>(
     `/sessions/${sessionId}/score`
   );
+  if (!response.data) {
+    throw new Error('Score data not found');
+  }
   return response.data;
 }
 

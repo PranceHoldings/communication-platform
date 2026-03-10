@@ -75,7 +75,7 @@ export class AnalysisOrchestrator {
 
       // Step 2: Find combined recording
       const combinedRecording = session.recordings.find(
-        (r) => r.type === 'COMBINED' && r.processingStatus === 'COMPLETED'
+        (r: any) => r.type === 'COMBINED' && r.processingStatus === 'COMPLETED'
       );
 
       if (!combinedRecording) {

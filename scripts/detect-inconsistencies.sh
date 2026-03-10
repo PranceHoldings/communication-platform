@@ -4,7 +4,7 @@
 
 set -e
 
-REPORT_FILE="docs/development/INCONSISTENCY_REPORT.md"
+REPORT_FILE="docs/03-planning/analysis/INCONSISTENCY_REPORT.md"
 TEMP_DIR="/tmp/inconsistency-detection-$$"
 mkdir -p "$TEMP_DIR"
 mkdir -p "$(dirname "$REPORT_FILE")"
@@ -109,42 +109,48 @@ echo "" >> "$REPORT_FILE"
 echo "📌 [3/8] ハードコードされた設定値を検出中..."
 
 # 言語コード
-HARDCODED_LANG=$(grep -rn "'en-US'\|'ja-JP'\|'en'\|'ja'" infrastructure/lambda --include="*.ts" --exclude="defaults.ts" --exclude="index.ts" | grep -v "// " | wc -l || echo 0)
+HARDCODED_LANG=$(grep -rn "'en-US'\|'ja-JP'\|'zh-CN'\|'zh-TW'\|'ko-KR'\|'es-ES'\|'pt-BR'\|'fr-FR'\|'de-DE'\|'it-IT'" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" --exclude="*.d.ts" --exclude="defaults.ts" --exclude="language-config.ts" --exclude-dir="node_modules" --exclude-dir="__tests__" --exclude-dir=".next*" 2>/dev/null | grep -v "\.broken-\|\.old-\|node_modules" | grep -v "^\s*//" | grep -v "\*/" | grep -v "^\s*\*" | wc -l || echo 0)
 if [ "$HARDCODED_LANG" -gt 0 ]; then
     echo "### ❌ ハードコードされた言語コード" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     echo "**検出数:** $HARDCODED_LANG 件" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
+    echo "**除外対象:** *.d.ts, defaults.ts, language-config.ts, node_modules/, __tests__/, .next*/" >> "$REPORT_FILE"
+    echo "" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
-    grep -rn "'en-US'\|'ja-JP'\|'en'\|'ja'" infrastructure/lambda --include="*.ts" --exclude="defaults.ts" --exclude="index.ts" | grep -v "// " | head -20 >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
+    grep -rn "'en-US'\|'ja-JP'\|'zh-CN'\|'zh-TW'\|'ko-KR'\|'es-ES'\|'pt-BR'\|'fr-FR'\|'de-DE'\|'it-IT'" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" --exclude="*.d.ts" --exclude="defaults.ts" --exclude="language-config.ts" --exclude-dir="node_modules" --exclude-dir="__tests__" --exclude-dir=".next*" 2>/dev/null | grep -v "\.broken-\|\.old-\|node_modules" | grep -v "^\s*//" | grep -v "\*/" | grep -v "^\s*\*" | head -20 >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     TOTAL_ISSUES=$((TOTAL_ISSUES + HARDCODED_LANG))
 fi
 
 # リージョンコード
-HARDCODED_REGION=$(grep -rn "'us-east-1'\|'eastus'" infrastructure/lambda --include="*.ts" --exclude="defaults.ts" --exclude="index.ts" | grep -v "// " | wc -l || echo 0)
+HARDCODED_REGION=$(grep -rn "'us-east-1'\|'eastus'\|'us-west-2'\|'ap-northeast-1'" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" --exclude="*.d.ts" --exclude="defaults.ts" --exclude="language-config.ts" --exclude-dir="node_modules" --exclude-dir="__tests__" --exclude-dir=".next*" 2>/dev/null | grep -v "\.broken-\|\.old-\|node_modules" | grep -v "^\s*//" | grep -v "\*/" | grep -v "^\s*\*" | grep -v "BEDROCK_REGION\|AWS_REGION\|process\.env" | wc -l || echo 0)
 if [ "$HARDCODED_REGION" -gt 0 ]; then
     echo "### ❌ ハードコードされたリージョン" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     echo "**検出数:** $HARDCODED_REGION 件" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
+    echo "**除外対象:** *.d.ts, defaults.ts, language-config.ts, node_modules/, 環境変数参照" >> "$REPORT_FILE"
+    echo "" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
-    grep -rn "'us-east-1'\|'eastus'" infrastructure/lambda --include="*.ts" --exclude="defaults.ts" --exclude="index.ts" | grep -v "// " | head -20 >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
+    grep -rn "'us-east-1'\|'eastus'\|'us-west-2'\|'ap-northeast-1'" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" --exclude="*.d.ts" --exclude="defaults.ts" --exclude="language-config.ts" --exclude-dir="node_modules" --exclude-dir="__tests__" --exclude-dir=".next*" 2>/dev/null | grep -v "\.broken-\|\.old-\|node_modules" | grep -v "^\s*//" | grep -v "\*/" | grep -v "^\s*\*" | grep -v "BEDROCK_REGION\|AWS_REGION\|process\.env" | head -20 >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     TOTAL_ISSUES=$((TOTAL_ISSUES + HARDCODED_REGION))
 fi
 
 # メディアフォーマット
-HARDCODED_FORMAT=$(grep -rn "'webm'\|'mp4'\|'1280x720'" infrastructure/lambda --include="*.ts" --exclude="defaults.ts" --exclude="index.ts" | grep -v "// " | wc -l || echo 0)
+HARDCODED_FORMAT=$(grep -rn "'webm'\|'mp4'\|'1280x720'\|'1920x1080'\|'audio/mpeg'\|'video/webm'" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" --exclude="*.d.ts" --exclude="defaults.ts" --exclude="language-config.ts" --exclude-dir="node_modules" --exclude-dir="__tests__" --exclude-dir=".next*" 2>/dev/null | grep -v "\.broken-\|\.old-\|node_modules" | grep -v "^\s*//" | grep -v "\*/" | grep -v "^\s*\*" | grep -v "MEDIA_DEFAULTS\|VIDEO_FORMAT\|AUDIO_FORMAT\|process\.env" | wc -l || echo 0)
 if [ "$HARDCODED_FORMAT" -gt 0 ]; then
     echo "### ❌ ハードコードされたメディアフォーマット" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     echo "**検出数:** $HARDCODED_FORMAT 件" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
+    echo "**除外対象:** *.d.ts, defaults.ts, language-config.ts, node_modules/, 環境変数・定数参照" >> "$REPORT_FILE"
+    echo "" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
-    grep -rn "'webm'\|'mp4'\|'1280x720'" infrastructure/lambda --include="*.ts" --exclude="defaults.ts" --exclude="index.ts" | grep -v "// " | head -20 >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
+    grep -rn "'webm'\|'mp4'\|'1280x720'\|'1920x1080'\|'audio/mpeg'\|'video/webm'" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" --exclude="*.d.ts" --exclude="defaults.ts" --exclude="language-config.ts" --exclude-dir="node_modules" --exclude-dir="__tests__" --exclude-dir=".next*" 2>/dev/null | grep -v "\.broken-\|\.old-\|node_modules" | grep -v "^\s*//" | grep -v "\*/" | grep -v "^\s*\*" | grep -v "MEDIA_DEFAULTS\|VIDEO_FORMAT\|AUDIO_FORMAT\|process\.env" | head -20 >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     TOTAL_ISSUES=$((TOTAL_ISSUES + HARDCODED_FORMAT))
@@ -164,42 +170,42 @@ echo "" >> "$REPORT_FILE"
 echo "📌 [4/8] 型定義の重複を検出中..."
 
 # Userインターフェースの重複定義
-USER_TYPE_DUP=$(grep -rn "^export interface User {" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v "packages/shared" | wc -l || echo 0)
+USER_TYPE_DUP=$(grep -rn "^export interface User {" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" --exclude-dir="node_modules" --exclude-dir=".next*" 2>/dev/null | grep -v "packages/shared\|\.broken-\|\.old-" | wc -l || echo 0)
 if [ "$USER_TYPE_DUP" -gt 0 ]; then
     echo "### ❌ Userインターフェースの重複定義" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     echo "**検出数:** $USER_TYPE_DUP 件" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
-    grep -rn "^export interface User {" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v "packages/shared" >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
+    grep -rn "^export interface User {" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" --exclude-dir="node_modules" --exclude-dir=".next*" 2>/dev/null | grep -v "packages/shared\|\.broken-\|\.old-" >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     TOTAL_ISSUES=$((TOTAL_ISSUES + USER_TYPE_DUP))
 fi
 
 # Avatarインターフェースの重複定義
-AVATAR_TYPE_DUP=$(grep -rn "^export interface Avatar {" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v "packages/shared" | wc -l || echo 0)
+AVATAR_TYPE_DUP=$(grep -rn "^export interface Avatar {" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" --exclude-dir="node_modules" --exclude-dir=".next*" 2>/dev/null | grep -v "packages/shared\|\.broken-\|\.old-" | wc -l || echo 0)
 if [ "$AVATAR_TYPE_DUP" -gt 0 ]; then
     echo "### ❌ Avatarインターフェースの重複定義" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     echo "**検出数:** $AVATAR_TYPE_DUP 件" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
-    grep -rn "^export interface Avatar {" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v "packages/shared" >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
+    grep -rn "^export interface Avatar {" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" --exclude-dir="node_modules" --exclude-dir=".next*" 2>/dev/null | grep -v "packages/shared\|\.broken-\|\.old-" >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     TOTAL_ISSUES=$((TOTAL_ISSUES + AVATAR_TYPE_DUP))
 fi
 
 # インラインEnum定義
-INLINE_ENUM=$(grep -rn "'PRIVATE'.*|.*'ORGANIZATION'.*|.*'PUBLIC'" apps/web infrastructure/lambda --include="*.ts" | grep -v node_modules | grep -v "from '@prance/shared'" | wc -l || echo 0)
+INLINE_ENUM=$(grep -rn "'PRIVATE'.*|.*'ORGANIZATION'.*|.*'PUBLIC'" apps/web infrastructure/lambda --include="*.ts" --exclude="*.d.ts" --exclude-dir="node_modules" --exclude-dir=".next*" 2>/dev/null | grep -v "\.broken-\|\.old-" | grep -v "from '@prance/shared'\|^\s*//\|^\s*\*" | wc -l || echo 0)
 if [ "$INLINE_ENUM" -gt 0 ]; then
     echo "### ❌ インラインEnum定義（共有型を使うべき）" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     echo "**検出数:** $INLINE_ENUM 件" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
-    grep -rn "'PRIVATE'.*|.*'ORGANIZATION'.*|.*'PUBLIC'" apps/web infrastructure/lambda --include="*.ts" | grep -v node_modules | grep -v "from '@prance/shared'" | head -20 >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
+    grep -rn "'PRIVATE'.*|.*'ORGANIZATION'.*|.*'PUBLIC'" apps/web infrastructure/lambda --include="*.ts" --exclude="*.d.ts" --exclude-dir="node_modules" --exclude-dir=".next*" 2>/dev/null | grep -v "\.broken-\|\.old-" | grep -v "from '@prance/shared'\|^\s*//\|^\s*\*" | head -20 >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     TOTAL_ISSUES=$((TOTAL_ISSUES + INLINE_ENUM))
@@ -328,15 +334,17 @@ echo "" >> "$REPORT_FILE"
 echo "📌 [8/8] Import文の不整合を検出中..."
 
 # 共有型を使わず直接定義している箇所
-MISSING_SHARED_IMPORT=$(grep -rn "interface User\|interface Avatar\|interface Session" apps/web/lib infrastructure/lambda --include="*.ts" 2>/dev/null | grep -v "from '@prance/shared'" | grep -v "from '../shared/types'" | wc -l || echo 0)
+MISSING_SHARED_IMPORT=$(grep -rn "interface User\|interface Avatar\|interface Session" apps/web/lib infrastructure/lambda --include="*.ts" --exclude="*.d.ts" --exclude-dir="node_modules" --exclude-dir=".next*" 2>/dev/null | grep -v "\.broken-\|\.old-" | grep -v "from '@prance/shared'" | grep -v "from '../shared/types'" | grep -v "packages/shared" | wc -l || echo 0)
 
 if [ "$MISSING_SHARED_IMPORT" -gt 0 ]; then
     echo "### ❌ 共有型を使わず直接定義" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     echo "**検出数:** $MISSING_SHARED_IMPORT 件" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
+    echo "**除外対象:** *.d.ts, node_modules/, packages/shared/" >> "$REPORT_FILE"
+    echo "" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
-    grep -rn "interface User\|interface Avatar\|interface Session" apps/web/lib infrastructure/lambda --include="*.ts" 2>/dev/null | grep -v "from '@prance/shared'" | grep -v "from '../shared/types'" | head -20 >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
+    grep -rn "interface User\|interface Avatar\|interface Session" apps/web/lib infrastructure/lambda --include="*.ts" --exclude="*.d.ts" --exclude-dir="node_modules" --exclude-dir=".next*" 2>/dev/null | grep -v "\.broken-\|\.old-" | grep -v "from '@prance/shared'" | grep -v "from '../shared/types'" | grep -v "packages/shared" | head -20 >> "$REPORT_FILE" || echo "なし" >> "$REPORT_FILE"
     echo '```' >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
     TOTAL_ISSUES=$((TOTAL_ISSUES + MISSING_SHARED_IMPORT))

@@ -22,5 +22,11 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "exclude": ["node_modules", "cdk.out"]
+  "exclude": [
+    "node_modules",
+    "cdk.out",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/__tests__/**"
+  ]
 }

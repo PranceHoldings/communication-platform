@@ -3,9 +3,10 @@ import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
+import { AWS_DEFAULTS } from '../../shared/config/defaults';
 
 // Environment variables
-const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
+const AWS_REGION = process.env.AWS_REGION || AWS_DEFAULTS.REGION;
 const ANALYSIS_LAMBDA_FUNCTION_NAME =
   process.env.ANALYSIS_LAMBDA_FUNCTION_NAME || 'prance-session-analysis-dev';
 

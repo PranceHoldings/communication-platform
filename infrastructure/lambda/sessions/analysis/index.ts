@@ -5,10 +5,11 @@
 
 import { S3Client } from '@aws-sdk/client-s3';
 import { AnalysisOrchestrator } from '../../shared/analysis/analysis-orchestrator';
+import { AWS_DEFAULTS } from '../../shared/config/defaults';
 
 // Environment variables
 const S3_BUCKET = process.env.S3_BUCKET || '';
-const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
+const AWS_REGION = process.env.AWS_REGION || AWS_DEFAULTS.REGION;
 
 // Initialize S3 client
 const s3Client = new S3Client({ region: AWS_REGION });

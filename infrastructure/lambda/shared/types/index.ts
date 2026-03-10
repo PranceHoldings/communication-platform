@@ -123,3 +123,34 @@ export interface WebSocketMessage {
     visemeData: object;
   };
 }
+
+// ========================================
+// Pagination Types (copied from @prance/shared)
+// ========================================
+
+export interface PaginationParams {
+  limit: number;
+  offset: number;
+}
+
+export interface PaginationMeta {
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: PaginationMeta;
+}
+
+// ========================================
+// Enum Types (from Prisma schema)
+// ========================================
+
+export enum Visibility {
+  PRIVATE = 'PRIVATE',
+  ORGANIZATION = 'ORGANIZATION',
+  PUBLIC = 'PUBLIC',
+}

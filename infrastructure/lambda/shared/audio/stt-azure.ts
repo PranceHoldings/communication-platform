@@ -1,4 +1,5 @@
 import { LANGUAGE_DEFAULTS } from '../config/defaults';
+import { getSupportedSTTCodes } from '../config/language-config';
 /**
  * Azure Speech Services - Speech-to-Text Integration
  * Real-time audio transcription using Azure Cognitive Services
@@ -279,16 +280,6 @@ export class AzureSpeechToText {
    * Get supported languages
    */
   static getSupportedLanguages(): string[] {
-    return [
-      'en-US', // English (United States)
-      'ja-JP', // Japanese
-      'zh-CN', // Chinese (Simplified)
-      'es-ES', // Spanish
-      'fr-FR', // French
-      'de-DE', // German
-      'it-IT', // Italian
-      'ko-KR', // Korean
-      'pt-BR', // Portuguese (Brazil)
-    ];
+    return getSupportedSTTCodes();
   }
 }

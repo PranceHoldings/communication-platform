@@ -29,33 +29,30 @@ import { AudioProcessor } from './audio-processor';
 import { VideoProcessor } from './video-processor';
 import { sortChunksByTimestampAndIndex, logSortedChunks, generateChunkKey } from './chunk-utils';
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
+import {
+  AWS_DEFAULTS,
+  BEDROCK_DEFAULTS,
+  ELEVENLABS_DEFAULTS,
+  LANGUAGE_DEFAULTS,
+  MEDIA_DEFAULTS,
+} from '../../shared/config/defaults';
 
 // Lambda function version
 const LAMBDA_VERSION = '1.1.0';
 const LAMBDA_NAME = 'websocket-default-handler';
 
-// Default values (centralized configuration)
-// Note: These defaults are defined here instead of importing from shared/config
-// to avoid Docker bundling path resolution issues
-// These values should match those in shared/config/defaults.ts
-const DEFAULT_AWS_REGION = 'us-east-1';
-const DEFAULT_BEDROCK_REGION = 'us-east-1';
-const DEFAULT_BEDROCK_MODEL_ID = 'us.anthropic.claude-sonnet-4-6';
-const DEFAULT_ELEVENLABS_MODEL_ID = 'eleven_flash_v2_5';
-const DEFAULT_STT_LANGUAGE = 'ja-JP'; // Deprecated: 自動言語検出を使用すること
-const DEFAULT_STT_AUTO_DETECT_LANGUAGES = ['ja-JP', 'en-US']; // Phase 1デフォルト
-const DEFAULT_VIDEO_FORMAT = 'webm';
-const DEFAULT_VIDEO_RESOLUTION = '1280x720';
-const DEFAULT_AUDIO_CONTENT_TYPE = 'audio/webm';
-const DEFAULT_VIDEO_CONTENT_TYPE = 'video/webm';
-
-// Language configuration object (for compatibility with AudioProcessor and scenarios)
-const LANGUAGE_DEFAULTS = {
-  STT_LANGUAGE: DEFAULT_STT_LANGUAGE,
-  STT_AUTO_DETECT_LANGUAGES_DEFAULT: DEFAULT_STT_AUTO_DETECT_LANGUAGES,
-  SUPPORTED_LANGUAGES: DEFAULT_STT_AUTO_DETECT_LANGUAGES, // ja-JP, en-US
-  SCENARIO_LANGUAGE: 'ja', // Default scenario language
-};
+// Default values (imported from centralized configuration)
+// Using values from shared/config/defaults.ts to eliminate hardcoding
+const DEFAULT_AWS_REGION = AWS_DEFAULTS.REGION;
+const DEFAULT_BEDROCK_REGION = BEDROCK_DEFAULTS.REGION;
+const DEFAULT_BEDROCK_MODEL_ID = BEDROCK_DEFAULTS.MODEL_ID;
+const DEFAULT_ELEVENLABS_MODEL_ID = ELEVENLABS_DEFAULTS.MODEL_ID;
+const DEFAULT_STT_LANGUAGE = LANGUAGE_DEFAULTS.STT_LANGUAGE;
+const DEFAULT_STT_AUTO_DETECT_LANGUAGES = Array.from(LANGUAGE_DEFAULTS.STT_AUTO_DETECT_LANGUAGES_DEFAULT);
+const DEFAULT_VIDEO_FORMAT = MEDIA_DEFAULTS.VIDEO_FORMAT;
+const DEFAULT_VIDEO_RESOLUTION = MEDIA_DEFAULTS.VIDEO_RESOLUTION;
+const DEFAULT_AUDIO_CONTENT_TYPE = MEDIA_DEFAULTS.AUDIO_CONTENT_TYPE;
+const DEFAULT_VIDEO_CONTENT_TYPE = MEDIA_DEFAULTS.VIDEO_CONTENT_TYPE;
 
 // Environment variables (読み取り優先順位: 環境変数 → デフォルト値)
 const ENDPOINT = process.env.WEBSOCKET_ENDPOINT || '';

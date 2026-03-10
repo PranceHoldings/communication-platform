@@ -1,11 +1,24 @@
 /**
  * Audio Recorder Hook
  * Handles browser microphone access and real-time audio recording
+ *
+ * Design Doc: /docs/07-development/MEDIARECORDER_LIFECYCLE.md
+ *
+ * Key Concepts:
+ * - MediaRecorder.start(timeslice) generates EBML header only for first chunk
+ * - Subsequent chunks are fragments (SimpleBlock)
+ * - stop() fires ondataavailable (final buffer) THEN onstop
+ * - Restart sequence: 3 phases (stop old, reset state, create new)
  */
 
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import {
+  AudioRecorderLogger,
+  LogPhase,
+  verifyEBMLHeader,
+} from '@/lib/logger/audio-recorder-logger';
 
 interface UseAudioRecorderOptions {
   onAudioChunk?: (chunk: Blob, timestamp: number, sequenceNumber: number) => void;
@@ -59,6 +72,13 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
   const lastSpeechTimeRef = useRef<number>(Date.now());
   const speechEndSentRef = useRef(true); // Start as true to prevent initial false detection
 
+  // Logger (initialized with session-like ID)
+  const loggerRef = useRef<AudioRecorderLogger | null>(null);
+  if (!loggerRef.current) {
+    loggerRef.current = new AudioRecorderLogger(`recorder-${Date.now()}`);
+  }
+  const logger = loggerRef.current;
+
   // Monitor audio level for UI feedback and silence detection
   const monitorAudioLevel = useCallback(() => {
     if (!analyserRef.current) return;
@@ -78,29 +98,36 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       if (normalizedLevel > silenceThreshold) {
         // Speech detected
         lastSpeechTimeRef.current = now;
-        speechEndSentRef.current = false;
 
-        // Log when audio level is detected (for debugging)
-        console.log('[AudioRecorder] Audio level detected:', normalizedLevel.toFixed(3));
+        // Only reset speechEndSent if we're NOT in the initial state
+        // This prevents sending chunks during the silent period after speech_end
+        if (!speechEndSentRef.current) {
+          logger.logAudioLevel(normalizedLevel, silenceThreshold);
+        } else {
+          // First speech after silence - reset flag
+          logger.info(LogPhase.RECORDING, 'Speech detected after silence - resuming chunk transmission', {
+            level: normalizedLevel.toFixed(3),
+            threshold: silenceThreshold,
+          });
+        }
+        speechEndSentRef.current = false;
       } else {
         // Silence detected
         const silenceDurationMs = now - lastSpeechTimeRef.current;
 
         if (silenceDurationMs >= silenceDuration && !speechEndSentRef.current) {
-          console.log('[AudioRecorder] Silence detected for', silenceDurationMs, 'ms - triggering speech_end');
+          logger.logSilenceDetected(silenceDurationMs, silenceDuration);
           speechEndSentRef.current = true;
           onSpeechEnd?.();
 
-          // Reset sequence number for next speech segment
-          // This ensures each speech segment starts from chunk-000000.webm
-          sequenceNumberRef.current = 0;
-          console.log('[AudioRecorder] Sequence number reset for next speech segment');
+          // NOTE: sequenceNumber reset is done in restartRecording()
+          // NOT here, to avoid timing issues with old recorder's final chunk
         }
       }
     }
 
     animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
-  }, [enableRealtime, silenceThreshold, silenceDuration, onSpeechEnd]);
+  }, [enableRealtime, silenceThreshold, silenceDuration, onSpeechEnd, logger]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -121,7 +148,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
       // Log stream details for debugging
       const audioTracks = stream.getAudioTracks();
-      if (audioTracks.length > 0) {
+      if (audioTracks.length > 0 && audioTracks[0]) {
         const settings = audioTracks[0].getSettings();
         console.log('[AudioRecorder] Audio track settings:', {
           deviceId: settings.deviceId,
@@ -174,49 +201,55 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       });
 
       mediaRecorder.ondataavailable = event => {
-        console.log('[AudioRecorder] ondataavailable event fired:', {
-          dataSize: event.data.size,
-          type: event.data.type,
-          timestamp: Date.now(),
-        });
-
         if (event.data.size > 0) {
           const timestamp = Date.now();
+          const sequence = sequenceNumberRef.current;
 
           // Store chunk for complete recording
           recordedChunksRef.current.push(event.data);
 
-          console.log('[AudioRecorder] Audio chunk captured:', {
-            size: event.data.size,
-            type: event.data.type,
-            timestamp,
-            totalChunks: recordedChunksRef.current.length,
-            sequenceNumber: sequenceNumberRef.current,
-          });
+          // Log chunk capture
+          logger.logChunk(sequence, event.data.size, sequence === 0);
+
+          // EBML header verification (development only, first chunk only)
+          if (sequence === 0) {
+            verifyEBMLHeader(event.data, logger, sequence);
+          }
 
           // Real-time chunk sending (if enabled)
+          // IMPORTANT: Do NOT send chunks if we're in the silent period after speech_end
+          // Wait until actual speech is detected (speechEndSentRef becomes false)
           if (enableRealtime && onAudioChunk) {
-            const sequenceNumber = sequenceNumberRef.current++;
-            console.log('[AudioRecorder] Sending real-time audio chunk:', {
-              sequenceNumber,
-              size: event.data.size,
-              timestamp,
-            });
-            onAudioChunk(event.data, timestamp, sequenceNumber);
+            if (speechEndSentRef.current) {
+              logger.debug(LogPhase.RECORDING, 'Skipping chunk transmission (waiting for speech after silence)', {
+                sequence,
+                size: event.data.size,
+              });
+            } else {
+              onAudioChunk(event.data, timestamp, sequence);
+              sequenceNumberRef.current++; // Increment AFTER sending
+            }
           }
         } else {
-          console.warn('[AudioRecorder] ondataavailable fired but data.size is 0');
+          logger.warn(LogPhase.RECORDING, 'ondataavailable fired with empty data', {
+            timestamp: Date.now(),
+          });
         }
       };
 
       mediaRecorder.onerror = event => {
         const error = new Error(`MediaRecorder error: ${event}`);
-        console.error(error);
+        logger.error(LogPhase.ERROR, 'MediaRecorder error', {
+          error: error.message,
+          state: mediaRecorder.state,
+        });
         setError(error.message);
         onError?.(error);
       };
 
       mediaRecorder.onstop = () => {
+        logger.info(LogPhase.STOP, 'Recording stopped (session end)');
+
         setIsRecording(false);
         setIsPaused(false);
         setAudioLevel(0);
@@ -224,16 +257,12 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         // Create complete audio blob from all recorded chunks
         if (recordedChunksRef.current.length > 0) {
           const completeBlob = new Blob(recordedChunksRef.current, { type: actualMimeType });
-          console.log('[AudioRecorder] Complete recording:', {
+          logger.info(LogPhase.STOP, 'Complete recording created', {
             chunks: recordedChunksRef.current.length,
             size: completeBlob.size,
-            type: completeBlob.type,
           });
 
-          // Call completion callback
           onRecordingComplete?.(completeBlob);
-
-          // Clear recorded chunks
           recordedChunksRef.current = [];
         }
 
@@ -252,16 +281,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       // Determine recording mode
       const timesliceMs = enableRealtime ? 1000 : undefined;
 
-      console.log('[AudioRecorder] Starting MediaRecorder:', {
-        mimeType: actualMimeType,
-        state: mediaRecorder.state,
-        mode: enableRealtime ? 'real-time' : 'batch',
-        timeslice: timesliceMs ? `${timesliceMs}ms` : 'none',
-        hasOnDataAvailable: !!mediaRecorder.ondataavailable,
-      });
-
       // Start recording with timeslice for real-time mode
-      // Note: We send Base64-encoded chunks via WebSocket to avoid WebM fragmentation issues
       if (timesliceMs) {
         mediaRecorder.start(timesliceMs);
       } else {
@@ -274,116 +294,153 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       speechEndSentRef.current = true; // Prevent initial false detection
       lastSpeechTimeRef.current = Date.now(); // Reset speech timestamp
 
-      console.log('[AudioRecorder] MediaRecorder started:', {
-        state: mediaRecorder.state,
-        mode: enableRealtime ? 'real-time (1s chunks)' : 'batch (complete blob on stop)',
+      // Log initialization
+      logger.info(LogPhase.INIT, 'Recording initialized', {
+        mimeType: actualMimeType,
+        timeslice: timesliceMs || 0,
+        silenceThreshold,
+        silenceDuration,
+        sampleRate: audioContext.sampleRate,
+        recorderState: mediaRecorder.state,
       });
 
       // Start audio level monitoring
       monitorAudioLevel();
-
-      console.log('[AudioRecorder] Recording started', {
-        mimeType: actualMimeType,
-        mode: 'complete blob on stop',
-        sampleRate: audioContext.sampleRate,
-        recorderState: mediaRecorder.state,
-      });
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to start recording');
-      console.error('[AudioRecorder] Error:', error);
+      logger.error(LogPhase.ERROR, 'Failed to start recording', {
+        error: error.message,
+        stack: error.stack,
+      });
       setError(error.message);
       onError?.(error);
       throw error;
     }
-  }, [mimeType, onAudioChunk, onError, monitorAudioLevel]);
+  }, [mimeType, onAudioChunk, onError, monitorAudioLevel, logger]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      logger.info(LogPhase.STOP, 'Stopping recording', {
+        state: mediaRecorderRef.current.state,
+      });
       mediaRecorderRef.current.stop();
-      console.log('[AudioRecorder] Recording stopped');
     }
-  }, []);
+  }, [logger]);
 
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.pause();
       setIsPaused(true);
-      console.log('[AudioRecorder] Recording paused');
+      logger.info(LogPhase.RECORDING, 'Recording paused');
     }
-  }, []);
+  }, [logger]);
 
   const resumeRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
       mediaRecorderRef.current.resume();
       setIsPaused(false);
-      console.log('[AudioRecorder] Recording resumed');
+      logger.info(LogPhase.RECORDING, 'Recording resumed');
     }
-  }, []);
+  }, [logger]);
 
   const restartRecording = useCallback(() => {
     if (!mediaRecorderRef.current || !streamRef.current) {
-      console.warn('[AudioRecorder] Cannot restart - no active recorder or stream');
+      logger.warn(LogPhase.ERROR, 'Cannot restart - no active recorder or stream');
       return;
     }
 
-    console.log('[AudioRecorder] Restarting MediaRecorder for new EBML header...');
-
-    // Store current state
     const stream = streamRef.current;
     const timesliceMs = enableRealtime ? 1000 : undefined;
-
-    // Get MIME type from current recorder
     const currentMimeType = mediaRecorderRef.current.mimeType;
 
-    // Stop current recorder (but don't close stream)
-    // CRITICAL: Set onstop to null BEFORE calling stop() to prevent cleanup
+    // ============================================================
+    // PHASE 1: Stop old recorder and disable handlers
+    // ============================================================
+    // CRITICAL: Disable handlers BEFORE calling stop()
+    // stop() fires final ondataavailable, then onstop
+    // We must prevent these events from firing
+    // ============================================================
+
     if (mediaRecorderRef.current.state !== 'inactive') {
       const oldRecorder = mediaRecorderRef.current;
-      oldRecorder.onstop = null; // Disable cleanup for old recorder
+
+      logger.logRestartPhase1(oldRecorder.state, sequenceNumberRef.current);
+
+      // Disable handlers to prevent final chunk and cleanup
+      oldRecorder.ondataavailable = null;
+      oldRecorder.onstop = null;
+
+      // Stop the old recorder
       oldRecorder.stop();
-      console.log('[AudioRecorder] Old MediaRecorder stopped (onstop disabled)');
+
+      logger.logRestartPhase1Complete({
+        ondataavailable: oldRecorder.ondataavailable === null,
+        onstop: oldRecorder.onstop === null,
+      });
     }
 
-    // Reset sequence number for new stream
+    // ============================================================
+    // PHASE 2: Reset state
+    // ============================================================
+    // Now that old recorder is completely stopped and disabled,
+    // we can safely reset the sequence number
+    // ============================================================
+
     sequenceNumberRef.current = 0;
-    speechEndSentRef.current = true; // Prevent false detection
+    speechEndSentRef.current = true;
     lastSpeechTimeRef.current = Date.now();
 
-    // Create new MediaRecorder with same stream
+    logger.logRestartPhase2(sequenceNumberRef.current, speechEndSentRef.current);
+
+    // ============================================================
+    // PHASE 3: Create and start new recorder
+    // ============================================================
+    // The new recorder's first chunk will have EBML header
+    // ============================================================
+
     const newRecorder = new MediaRecorder(stream, {
       mimeType: currentMimeType,
     });
 
-    // Set up event handlers
+    logger.logRestartPhase3Created(currentMimeType);
+
+    // Set up event handlers for new recorder
     newRecorder.ondataavailable = event => {
       if (event.data.size > 0) {
         const timestamp = Date.now();
+        const sequence = sequenceNumberRef.current;
+
         recordedChunksRef.current.push(event.data);
 
-        console.log('[AudioRecorder] Audio chunk captured:', {
-          size: event.data.size,
-          type: event.data.type,
-          timestamp,
-          totalChunks: recordedChunksRef.current.length,
-          sequenceNumber: sequenceNumberRef.current,
-        });
+        logger.logChunk(sequence, event.data.size, sequence === 0);
+
+        // EBML header verification (development only, first chunk only)
+        if (sequence === 0) {
+          verifyEBMLHeader(event.data, logger, sequence);
+        }
 
         // Real-time chunk sending (if enabled)
+        // IMPORTANT: Do NOT send chunks if we're in the silent period after speech_end
         if (enableRealtime && onAudioChunk) {
-          const sequenceNumber = sequenceNumberRef.current++;
-          console.log('[AudioRecorder] Sending real-time audio chunk:', {
-            sequenceNumber,
-            size: event.data.size,
-            timestamp,
-          });
-          onAudioChunk(event.data, timestamp, sequenceNumber);
+          if (speechEndSentRef.current) {
+            logger.debug(LogPhase.RECORDING, 'Skipping chunk transmission (waiting for speech after silence)', {
+              sequence,
+              size: event.data.size,
+            });
+          } else {
+            onAudioChunk(event.data, timestamp, sequence);
+            sequenceNumberRef.current++;
+          }
         }
       }
     };
 
     newRecorder.onerror = event => {
       const error = new Error(`MediaRecorder error: ${event}`);
-      console.error(error);
+      logger.error(LogPhase.ERROR, 'MediaRecorder error', {
+        error: error.message,
+        state: newRecorder.state,
+      });
       setError(error.message);
       onError?.(error);
     };
@@ -391,16 +448,17 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     newRecorder.onstop = () => {
       // NOTE: This onstop is ONLY called when stopRecording() is explicitly called
       // restartRecording() sets old recorder's onstop to null, so this won't run during restart
+      logger.info(LogPhase.STOP, 'Recording stopped (session end)');
+
       setIsRecording(false);
       setIsPaused(false);
       setAudioLevel(0);
 
       if (recordedChunksRef.current.length > 0) {
         const completeBlob = new Blob(recordedChunksRef.current, { type: currentMimeType });
-        console.log('[AudioRecorder] Complete recording:', {
+        logger.info(LogPhase.STOP, 'Complete recording created', {
           chunks: recordedChunksRef.current.length,
           size: completeBlob.size,
-          type: completeBlob.type,
         });
 
         onRecordingComplete?.(completeBlob);
@@ -427,8 +485,8 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       newRecorder.start();
     }
 
-    console.log('[AudioRecorder] MediaRecorder restarted with new EBML header');
-  }, [enableRealtime, onAudioChunk, onError, onRecordingComplete]);
+    logger.logRestartPhase3Started(newRecorder.state);
+  }, [enableRealtime, onAudioChunk, onError, onRecordingComplete, logger]);
 
   return {
     isRecording,
