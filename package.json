@@ -27,7 +27,6 @@
     "cdk:deploy": "cd infrastructure && npx cdk deploy --all",
     "cdk:destroy": "cd infrastructure && npx cdk destroy --all",
     "deploy:check": "bash scripts/pre-deploy-check.sh",
-    "prepare": "cd infrastructure && ./prepare.sh",
     "deploy:simple": "cd infrastructure && ./deploy-simple.sh dev",
     "deploy:dev": "cd infrastructure && ./deploy.sh dev",
     "deploy:dev:skip-build": "cd infrastructure && ./deploy.sh dev --skip-build",

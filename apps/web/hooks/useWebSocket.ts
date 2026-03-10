@@ -11,6 +11,7 @@ import type {
   TranscriptMessage,
   AvatarResponseMessage,
   AudioResponseMessage,
+  TTSAudioChunkMessage,
   ProcessingUpdateMessage,
   SessionCompleteMessage,
   ErrorMessage,
@@ -22,6 +23,7 @@ export type {
   TranscriptMessage,
   AvatarResponseMessage,
   AudioResponseMessage,
+  TTSAudioChunkMessage,
   ProcessingUpdateMessage,
   SessionCompleteMessage,
   ErrorMessage,
@@ -35,6 +37,7 @@ interface UseWebSocketOptions {
   onTranscript?: (message: TranscriptMessage) => void;
   onAvatarResponse?: (message: AvatarResponseMessage) => void;
   onAudioResponse?: (message: AudioResponseMessage) => void;
+  onAudioChunk?: (message: TTSAudioChunkMessage) => void; // Phase 1.5: Real-time TTS
   onProcessingUpdate?: (message: ProcessingUpdateMessage) => void;
   onSessionComplete?: (message: SessionCompleteMessage) => void;
   onError?: (message: ErrorMessage) => void;
@@ -65,6 +68,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onTranscript,
     onAvatarResponse,
     onAudioResponse,
+    onAudioChunk,
     onProcessingUpdate,
     onSessionComplete,
     onError,
@@ -84,6 +88,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const onTranscriptRef = useRef(onTranscript);
   const onAvatarResponseRef = useRef(onAvatarResponse);
   const onAudioResponseRef = useRef(onAudioResponse);
+  const onAudioChunkRef = useRef(onAudioChunk);
   const onProcessingUpdateRef = useRef(onProcessingUpdate);
   const onSessionCompleteRef = useRef(onSessionComplete);
   const onErrorRef = useRef(onError);
@@ -94,6 +99,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onTranscriptRef.current = onTranscript;
     onAvatarResponseRef.current = onAvatarResponse;
     onAudioResponseRef.current = onAudioResponse;
+    onAudioChunkRef.current = onAudioChunk;
     onProcessingUpdateRef.current = onProcessingUpdate;
     onSessionCompleteRef.current = onSessionComplete;
     onErrorRef.current = onError;
@@ -155,6 +161,11 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
           case 'audio_response':
             onAudioResponseRef.current?.(message as unknown as AudioResponseMessage);
+            break;
+
+          case 'audio_chunk':
+            // Phase 1.5: Real-time TTS streaming
+            onAudioChunkRef.current?.(message as unknown as TTSAudioChunkMessage);
             break;
 
           case 'processing_update':

@@ -318,6 +318,17 @@ export interface AudioResponseMessage extends WebSocketMessageBase {
 }
 
 /**
+ * TTSストリーミング音声チャンクメッセージ（サーバー → クライアント）
+ * Phase 1.5 Day 6-7: Real-time TTS streaming
+ */
+export interface TTSAudioChunkMessage extends WebSocketMessageBase {
+  type: 'audio_chunk';
+  audio: string; // Base64 encoded MP3 chunk
+  isFinal: boolean;
+  timestamp: number;
+}
+
+/**
  * 処理状況更新メッセージ（サーバー → クライアント）
  */
 export interface ProcessingUpdateMessage extends WebSocketMessageBase {
@@ -428,6 +439,7 @@ export type ServerToClientMessage =
   | TranscriptMessage
   | AvatarResponseMessage
   | AudioResponseMessage
+  | TTSAudioChunkMessage
   | ProcessingUpdateMessage
   | VideoReadyMessage
   | SessionCompleteMessage

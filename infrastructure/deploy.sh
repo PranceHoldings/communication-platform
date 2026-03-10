@@ -39,7 +39,46 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Step 1: ビルド準備（スキップ可能）
 if [ "$SKIP_BUILD" = false ]; then
   echo -e "${YELLOW}📦 Step 1: ビルド準備実行中...${NC}"
-  "$SCRIPT_DIR/prepare.sh"
+
+  # 環境変数同期
+  echo -e "${BLUE}   環境変数ファイルを同期中...${NC}"
+  ENV_LOCAL="${PROJECT_ROOT}/.env.local"
+  ENV_INFRA="${SCRIPT_DIR}/.env"
+
+  if [ ! -f "$ENV_LOCAL" ]; then
+    echo -e "${RED}❌ エラー: .env.local が見つかりません${NC}"
+    exit 1
+  fi
+
+  cp "$ENV_LOCAL" "$ENV_INFRA"
+  echo -e "${GREEN}   ✅ 環境変数同期完了${NC}"
+
+  # 依存関係インストール
+  echo -e "${BLUE}   依存関係をインストール中...${NC}"
+  cd "$PROJECT_ROOT"
+  npm install --ignore-scripts
+  echo -e "${GREEN}   ✅ 依存関係インストール完了${NC}"
+
+  # Prisma Client生成
+  echo -e "${BLUE}   Prisma Client生成中...${NC}"
+  cd "$PROJECT_ROOT/packages/database"
+
+  if [ ! -d "node_modules" ]; then
+    mkdir -p node_modules
+  fi
+
+  if [ -d "$PROJECT_ROOT/node_modules/@prisma" ]; then
+    cp -r "$PROJECT_ROOT/node_modules/@prisma" node_modules/
+  fi
+
+  npx prisma generate
+  echo -e "${GREEN}   ✅ Prisma Client生成完了${NC}"
+
+  # TypeScriptビルド
+  echo -e "${BLUE}   TypeScriptをビルド中...${NC}"
+  cd "$PROJECT_ROOT"
+  npm run build
+  echo -e "${GREEN}   ✅ ビルド完了${NC}"
 else
   echo -e "${YELLOW}📦 Step 1: ビルドスキップ${NC}"
   echo -e "${BLUE}   既存のビルド成果物を使用します${NC}"
