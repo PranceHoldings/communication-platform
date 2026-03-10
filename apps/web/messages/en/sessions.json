@@ -166,6 +166,12 @@
             "authenticated": "WebSocket authenticated successfully",
             "authenticationTimeout": "Authentication timeout. Please try again."
         },
+        "processing": {
+            "stt": "Transcribing speech...",
+            "ai": "Generating AI response...",
+            "tts": "Synthesizing speech...",
+            "processing": "Processing..."
+        },
         "completed": {
             "title": "Session Completed",
             "duration": "Duration",

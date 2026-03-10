@@ -16,9 +16,12 @@ import {
 } from '@/hooks/useWebSocket';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useVideoRecorder } from '@/hooks/useVideoRecorder';
+import { useAudioVisualizer } from '@/hooks/useAudioVisualizer';
 import { useErrorMessage } from '@/hooks/useErrorMessage';
 import { checkBrowserCapabilities, getRecommendedBrowserMessage } from '@/lib/browser-check';
 import { VideoComposer } from './video-composer';
+import { WaveformDisplay } from '@/components/audio-visualizer/WaveformDisplay';
+import { ProcessingIndicator, ProcessingStage } from './ProcessingIndicator';
 import { toast } from 'sonner';
 
 type SessionPlayerStatus = 'IDLE' | 'READY' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
@@ -48,6 +51,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [pendingSessionEnd, setPendingSessionEnd] = useState(false);
   const [shouldSendSessionEnd, setShouldSendSessionEnd] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [processingStage, setProcessingStage] = useState<ProcessingStage>('idle');
+  const [processingMessage, setProcessingMessage] = useState<string>('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const disconnectRef = useRef<(() => void) | null>(null);
@@ -130,6 +135,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           ];
         });
 
+        // STT complete, move to AI processing stage
+        if (message.speaker === 'USER') {
+          setProcessingStage('ai');
+          setProcessingMessage('');
+        }
+
         // If session end is pending, trigger it now after receiving transcript
         if (pendingSessionEnd && message.speaker === 'USER') {
           console.log('[SessionPlayer] Transcript received, will send session_end');
@@ -143,22 +154,61 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleAvatarResponse = useCallback((message: AvatarResponseMessage) => {
     // AIアバターの応答
-    setTranscript(prev => [
-      ...prev,
-      {
-        id: `ai-${message.timestamp}`,
-        speaker: 'AI',
-        text: message.text,
-        timestamp: message.timestamp,
-      },
-    ]);
+    if (message.type === 'avatar_response_partial') {
+      // Partial AI response - update transcript
+      setTranscript(prev => {
+        const lastItem = prev[prev.length - 1];
+        if (lastItem && lastItem.partial && lastItem.speaker === 'AI') {
+          // Update existing partial AI response
+          return [
+            ...prev.slice(0, -1),
+            {
+              ...lastItem,
+              text: message.text,
+              timestamp: message.timestamp,
+            },
+          ];
+        } else {
+          // Add new partial AI response
+          return [
+            ...prev,
+            {
+              id: `ai-partial-${Date.now()}`,
+              speaker: 'AI',
+              text: message.text,
+              timestamp: message.timestamp,
+              partial: true,
+            },
+          ];
+        }
+      });
 
-    // Clear processing timeout (AI response received successfully)
-    if (processingTimeoutRef.current) {
-      clearTimeout(processingTimeoutRef.current);
-      processingTimeoutRef.current = null;
+      // AI response started, move to TTS stage
+      setProcessingStage('tts');
+      setProcessingMessage('');
+    } else if (message.type === 'avatar_response_final') {
+      // Final AI response
+      setTranscript(prev => {
+        const filtered = prev.filter(item => !item.partial || item.speaker !== 'AI');
+        return [
+          ...filtered,
+          {
+            id: `ai-${message.timestamp}`,
+            speaker: 'AI',
+            text: message.text,
+            timestamp: message.timestamp,
+            partial: false,
+          },
+        ];
+      });
+
+      // Clear processing timeout (AI response received successfully)
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+      }
+      processingStartTimeRef.current = null;
     }
-    processingStartTimeRef.current = null;
   }, []);
 
   const handleProcessingUpdate = useCallback((message: ProcessingUpdateMessage) => {
@@ -249,6 +299,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         audioRef.current.src = audioUrl;
         audioRef.current.onplay = () => {
           setIsPlayingAudio(true);
+          // TTS complete, audio playback started - return to idle
+          setProcessingStage('idle');
+          setProcessingMessage('');
           console.log('[SessionPlayer] Audio playback started');
         };
         audioRef.current.onended = () => {
@@ -458,6 +511,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     if (isConnectedRef.current && sendSpeechEndRef.current) {
       sendSpeechEndRef.current();
       console.log('[SessionPlayer] speech_end signal sent');
+
+      // Set processing stage to STT
+      setProcessingStage('stt');
+      setProcessingMessage('');
+
       toast.info(t('sessions.player.messages.processingAudio'));
 
       // CRITICAL: Restart MediaRecorder to generate new EBML header
@@ -541,10 +599,29 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     silenceDuration: 500, // 500ms silence triggers speech_end
   });
 
+  // Audio Visualizer統合
+  const {
+    audioLevel: visualizerAudioLevel,
+    isActive: isVisualizerActive,
+    startVisualizer,
+    stopVisualizer,
+    getWaveformData,
+  } = useAudioVisualizer({
+    fftSize: 256,
+    smoothingTimeConstant: 0.8,
+  });
+
   // Store restartRecording in ref to avoid circular dependency
   useEffect(() => {
     restartRecordingRef.current = restartRecording;
   }, [restartRecording]);
+
+  // Cleanup visualizer on unmount
+  useEffect(() => {
+    return () => {
+      stopVisualizer();
+    };
+  }, [stopVisualizer]);
 
   // 録画機能 - ビデオチャンクハンドラー
   const handleVideoChunk = useCallback(
@@ -781,6 +858,16 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         toast.warning('カメラへのアクセスが拒否されました。録画機能は利用できません。');
       }
 
+      // Start audio visualizer
+      try {
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        startVisualizer(audioStream);
+        console.log('[SessionPlayer] Audio visualizer started');
+      } catch (error) {
+        console.error('[SessionPlayer] Failed to start audio visualizer:', error);
+        // Non-critical error, continue without visualization
+      }
+
       setStatus('READY');
       // WebSocket接続はuseEffectで自動的に開始される（重複呼び出しを防ぐため削除）
       toast.info(t('sessions.player.websocket.connecting'));
@@ -789,6 +876,17 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       setStatus('ACTIVE');
       // セッション再開 + 音声録音再開 + ビデオ録画再開
       resumeRecording();
+
+      // Restart audio visualizer
+      try {
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        startVisualizer(audioStream);
+        console.log('[SessionPlayer] Audio visualizer restarted after pause');
+      } catch (error) {
+        console.error('[SessionPlayer] Failed to restart audio visualizer:', error);
+        // Non-critical error, continue without visualization
+      }
+
       if (recordingStatus === 'paused') {
         try {
           resumeVideoRecording();
@@ -805,6 +903,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       setStatus('PAUSED');
       // 音声録音一時停止 + ビデオ録画一時停止
       pauseRecording();
+      // Stop visualizer during pause
+      stopVisualizer();
       if (recordingStatus === 'recording') {
         try {
           pauseVideoRecording();
@@ -828,7 +928,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       // 1. Stop audio recording first
       stopRecording();
 
-      // 2. Stop video recording if active
+      // 2. Stop audio visualizer
+      stopVisualizer();
+      console.log('[SessionPlayer] Audio visualizer stopped');
+
+      // 3. Stop video recording if active
       if (recordingStatus === 'recording' || recordingStatus === 'paused') {
         try {
           stopVideoRecording();
@@ -837,7 +941,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         }
       }
 
-      // 3. Stop user camera
+      // 4. Stop user camera
       if (userVideoRef.current && userVideoRef.current.srcObject) {
         const stream = userVideoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => {
@@ -847,18 +951,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         userVideoRef.current.srcObject = null;
       }
 
-      // 4. If audio was recording, wait for transcript before sending session_end
+      // 5. If audio was recording, wait for transcript before sending session_end
       if (wasRecording) {
         console.log('[SessionPlayer] Audio was recording, will wait for audio processing before session_end');
         setPendingSessionEnd(true);
         // session_end will be sent after transcript_final is received
       } else {
-        // 4. Send session end notification immediately if no audio to process
+        // 5. Send session end notification immediately if no audio to process
         if (isConnectedRef.current && endSessionRef.current) {
           console.log('[SessionPlayer] No audio recorded, sending session_end immediately');
           endSessionRef.current();
 
-          // 5. Set timeout to disconnect after 30 seconds if no session_complete received
+          // 6. Set timeout to disconnect after 30 seconds if no session_complete received
           sessionEndTimeoutRef.current = setTimeout(() => {
             console.log('[SessionPlayer] Session end timeout - disconnecting WebSocket');
             if (disconnectRef.current) {
@@ -999,6 +1103,23 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 <span className="text-xs text-gray-500 w-10 text-right">
                   {Math.round(audioLevel * 100)}%
                 </span>
+              </div>
+            )}
+
+            {/* 音声波形表示 */}
+            {isMicRecording && isVisualizerActive && (
+              <div className="mt-2">
+                <WaveformDisplay
+                  waveformData={getWaveformData()}
+                  audioLevel={visualizerAudioLevel}
+                  isActive={isVisualizerActive}
+                  height={60}
+                  barWidth={3}
+                  barGap={2}
+                  activeColor="rgb(99, 102, 241)"
+                  inactiveColor="rgb(209, 213, 219)"
+                  className="w-full"
+                />
               </div>
             )}
 
@@ -1176,6 +1297,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           </div>
         </div>
       )}
+
+      {/* 処理状態インジケーター */}
+      <ProcessingIndicator
+        stage={processingStage}
+        message={processingMessage}
+        className="transition-all duration-300"
+      />
 
       {/* コントロールパネル */}
       <div className="bg-white rounded-lg shadow p-6">

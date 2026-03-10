@@ -166,6 +166,12 @@
             "authenticated": "WebSocket認証が完了しました",
             "authenticationTimeout": "認証タイムアウト。再度お試しください。"
         },
+        "processing": {
+            "stt": "音声を文字起こし中...",
+            "ai": "AI応答を生成中...",
+            "tts": "音声を合成中...",
+            "processing": "処理中..."
+        },
         "completed": {
             "title": "セッション完了",
             "duration": "所要時間",

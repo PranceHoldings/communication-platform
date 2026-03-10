@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-10 23:15 JST
+**最終更新:** 2026-03-10 23:45 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル） | **Phase 2進捗:** Task 2.1-2.2完了（100%）
-**Phase 1.5進捗:** Day 1-10完了（リアルタイムSTT + AI + TTS + エラーハンドリング完備） | **進捗:** 71%
-**最新コミット:** 未コミット - Day 10 integration tests and documentation
+**Phase 1.5進捗:** Day 1-11進行中（リアルタイムSTT + AI + TTS + エラーハンドリング + UX改善） | **進捗:** 79%
+**最新コミット:** 未コミット - Day 11 UX improvements (waveform + processing indicators)
 **最新デプロイ:** 2026-03-10 21:29 JST - ApiLambda stack deployed successfully (要再デプロイ)
 
 ---
@@ -161,11 +161,18 @@ Role: SUPER_ADMIN
   - 残りタスク（Day 11-14）
 - 📊 **要デプロイ**: Lambda関数 + Next.js アプリケーション
 
-**🚀 次: Day 11-12 - UX改善（推定2日）**
-- 音声波形表示（リアルタイム）
-- 処理状態インジケーター改善
-- キーボードショートカット追加
-- アクセシビリティ改善
+**🚀 進行中: Day 11-12 - UX改善（推定2日）**
+- ✅ 音声波形表示（リアルタイム）
+  - useAudioVisualizer hook実装（Web Audio API, AnalyserNode）
+  - WaveformDisplay component実装（Canvas描画、バースタイル波形）
+  - SessionPlayerに統合（録音時に自動表示）
+- ✅ 処理状態インジケーター改善
+  - ProcessingIndicator component作成（STT/AI/TTS段階表示）
+  - 処理状態追跡（idle → stt → ai → tts → idle）
+  - アニメーション付き視覚フィードバック
+  - 多言語対応（処理状態ラベル）
+- ⏳ キーボードショートカット追加
+- ⏳ アクセシビリティ改善
 
 **Phase 1.6（Week 2.5-3.5）: 既存機能の実用化**
 - エラーハンドリング、リトライロジック
