@@ -71,6 +71,8 @@ AWS、サーバーレス、デプロイ構成。
 日常的な開発作業のガイド。
 
 - **DEVELOPMENT_WORKFLOW.md** - 開発ワークフロー
+- **BUILD_PROCESS.md** - ビルドプロセスガイド（通常/クリーン/デプロイ前検証） 🆕
+- **TROUBLESHOOTING_NODE_MODULES.md** - node_modulesトラブルシューティング 🆕
 - **DATABASE_MIGRATION_CHECKLIST.md** - DBマイグレーションチェックリスト
 - **LAMBDA_VERSION_MANAGEMENT.md** - Lambdaバージョン管理
 - **LOCK_MECHANISM_ANALYSIS.md** - ロックメカニズム分析
@@ -123,6 +125,8 @@ AWS、サーバーレス、デプロイ構成。
 
 ## 更新履歴
 
-- **2026-03-10**: ドキュメント構造を番号付きカテゴリーに再編成
+- **2026-03-10**:
+  - ビルドプロセスガイド追加（BUILD_PROCESS.md, TROUBLESHOOTING_NODE_MODULES.md）
+  - ドキュメント構造を番号付きカテゴリーに再編成
 - **2026-03-09**: DOCUMENTATION_CLEANUP_SUMMARY.md 作成
 - **2026-03-06**: Phase 1 完了記録
