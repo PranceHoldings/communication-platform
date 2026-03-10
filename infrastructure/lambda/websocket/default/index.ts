@@ -438,17 +438,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           totalChunks: totalRealtimeChunks,
         });
 
-        if (lastSequenceNumber < 0 || totalRealtimeChunks === 0) {
-          console.warn('[speech_end] No real-time chunks to process');
-          await sendToConnection(connectionId, {
-            type: 'transcript_final',
-            speaker: 'USER',
-            text: '',
-            timestamp_start: Date.now(),
-            timestamp_end: Date.now(),
-          });
-          break;
-        }
+        // NOTE: Do NOT rely on lastSequenceNumber or totalRealtimeChunks
+        // MediaRecorder restart resets sequence numbers, so we MUST check S3 directly
+        // Early return removed - always attempt to list and process chunks from S3
 
         try {
           // Send processing status
@@ -529,8 +521,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             wavSize: wavBuffer.length,
           });
 
-          // Process through STT -> AI -> TTS pipeline (existing function)
-          await handleAudioProcessing(connectionId, wavBuffer, connectionData);
+          // Process through STT -> AI (streaming) -> TTS pipeline (Phase 1.5)
+          await handleAudioProcessingStreaming(connectionId, wavBuffer, connectionData);
 
           // Clean up real-time chunks from S3 (delete only the chunks we actually downloaded)
           console.log(`[speech_end] Cleaning up ${chunkKeys.length} real-time chunks...`);
@@ -1513,6 +1505,144 @@ async function handleAudioProcessing(
       message: errorMessage,
       detailsPreview: errorDetails?.substring(0, 200),
     });
+
+    await sendToConnection(connectionId, {
+      type: 'error',
+      code: 'AUDIO_PROCESSING_ERROR',
+      message: errorMessage,
+      details: errorDetails,
+      timestamp: Date.now(),
+    });
+  }
+}
+
+/**
+ * Handle audio processing with real-time streaming (Phase 1.5)
+ * Streams AI response chunks to client via WebSocket
+ */
+async function handleAudioProcessingStreaming(
+  connectionId: string,
+  audioBuffer: Buffer,
+  connectionData?: ConnectionData
+): Promise<void> {
+  try {
+    const sessionId = connectionData?.sessionId || 'unknown';
+
+    console.log('[handleAudioProcessingStreaming] Starting:', {
+      sessionId,
+      audioSize: audioBuffer.length,
+      hasScenarioPrompt: !!connectionData?.scenarioPrompt,
+      scenarioLanguage: connectionData?.scenarioLanguage,
+    });
+
+    // Track full AI response for conversation history
+    let fullAIResponse = '';
+
+    // Process audio with streaming callbacks
+    const processor = getAudioProcessor();
+    const result = await processor.processAudioStreaming({
+      audioData: audioBuffer,
+      sessionId,
+      scenarioPrompt: connectionData?.scenarioPrompt,
+      scenarioLanguage: connectionData?.scenarioLanguage,
+      conversationHistory: connectionData?.conversationHistory || [],
+      callbacks: {
+        // Callback: Transcript complete
+        onTranscriptComplete: async (transcript: string) => {
+          console.log('[Streaming] Transcript complete:', transcript);
+          await sendToConnection(connectionId, {
+            type: 'transcript_final',
+            speaker: 'USER',
+            text: transcript,
+            timestamp_start: Date.now(),
+            confidence: 0.95,
+          });
+        },
+
+        // Callback: AI chunk received (stream to client immediately)
+        onAIChunk: async (chunk: string) => {
+          fullAIResponse += chunk;
+          console.log('[Streaming] AI chunk:', chunk.substring(0, 50));
+          await sendToConnection(connectionId, {
+            type: 'avatar_response_partial',
+            speaker: 'AI',
+            text: chunk,
+            timestamp: Date.now(),
+          });
+        },
+
+        // Callback: AI complete
+        onAIComplete: async (fullText: string) => {
+          console.log('[Streaming] AI complete:', fullText.length, 'chars');
+          await sendToConnection(connectionId, {
+            type: 'avatar_response_final',
+            speaker: 'AI',
+            text: fullText,
+            timestamp: Date.now(),
+          });
+        },
+
+        // Callback: TTS complete
+        onTTSComplete: async (audio: Buffer, contentType: string) => {
+          console.log('[Streaming] TTS complete:', audio.length, 'bytes');
+
+          // Upload audio to S3
+          const audioTimestamp = Date.now();
+          const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm'}`;
+
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: S3_BUCKET,
+              Key: audioKey,
+              Body: audio,
+              ContentType: contentType,
+            })
+          );
+
+          // Generate presigned URL
+          const audioUrl = await getSignedUrl(
+            s3Client,
+            new GetObjectCommand({
+              Bucket: S3_BUCKET,
+              Key: audioKey,
+            }),
+            { expiresIn: 3600 }
+          );
+
+          // Send audio URL to client
+          await sendToConnection(connectionId, {
+            type: 'audio_response',
+            audioUrl,
+            audioKey,
+            contentType,
+            timestamp: audioTimestamp,
+          });
+        },
+      },
+    });
+
+    // Update conversation history with full response
+    const updatedHistory = [
+      ...(connectionData?.conversationHistory || []),
+      { role: 'user' as const, content: result.transcript },
+      { role: 'assistant' as const, content: result.aiResponse },
+    ];
+
+    await updateConnectionData(connectionId, {
+      conversationHistory: updatedHistory,
+    });
+
+    console.log('[handleAudioProcessingStreaming] Complete:', {
+      sessionId,
+      transcriptLength: result.transcript.length,
+      responseLength: result.aiResponse.length,
+      audioSize: result.audioResponse.length,
+    });
+  } catch (error) {
+    console.error('[handleAudioProcessingStreaming] Error:', error);
+
+    const errorMessage = error instanceof Error ? error.message : 'Failed to process audio';
+    const errorDetails = error instanceof Error ? error.stack : String(error);
 
     await sendToConnection(connectionId, {
       type: 'error',

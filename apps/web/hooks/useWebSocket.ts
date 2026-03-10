@@ -148,6 +148,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             break;
 
           case 'avatar_response':
+          case 'avatar_response_partial':
+          case 'avatar_response_final':
             onAvatarResponseRef.current?.(message as unknown as AvatarResponseMessage);
             break;
 

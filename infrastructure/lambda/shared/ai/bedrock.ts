@@ -7,6 +7,8 @@ import {
   BedrockRuntimeClient,
   InvokeModelCommand,
   InvokeModelCommandInput,
+  InvokeModelWithResponseStreamCommand,
+  InvokeModelWithResponseStreamCommandInput,
 } from '@aws-sdk/client-bedrock-runtime';
 
 export interface BedrockConfig {
@@ -180,13 +182,109 @@ Format your response as JSON with these fields: score, strengths, improvements, 
   }
 
   /**
-   * Stream AI response (for real-time streaming - future implementation)
-   * Note: Bedrock streaming requires different SDK setup
+   * Stream AI response in real-time (Phase 1.5)
+   * Yields text chunks as they arrive from Claude
    */
   async *streamResponse(options: GenerateResponseOptions): AsyncGenerator<string> {
-    // TODO: Implement streaming using InvokeModelWithResponseStreamCommand
-    // For now, return non-streaming response
-    const response = await this.generateResponse(options);
-    yield response.text;
+    const {
+      userMessage,
+      conversationHistory = [],
+      systemPrompt,
+      temperature = 0.7,
+      maxTokens = 2048,
+    } = options;
+
+    try {
+      // Build message array (same as generateResponse)
+      const messages: ConversationMessage[] = [
+        ...conversationHistory,
+        {
+          role: 'user',
+          content: userMessage,
+        },
+      ];
+
+      // Prepare request body (same as generateResponse)
+      const requestBody = {
+        anthropic_version: 'bedrock-2023-05-31',
+        max_tokens: maxTokens,
+        temperature,
+        messages: messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        ...(systemPrompt && { system: systemPrompt }),
+      };
+
+      const input: InvokeModelWithResponseStreamCommandInput = {
+        modelId: this.modelId,
+        contentType: 'application/json',
+        accept: 'application/json',
+        body: JSON.stringify(requestBody),
+      };
+
+      console.log('[BedrockAI] Invoking streaming model:', {
+        modelId: this.modelId,
+        messageCount: messages.length,
+        userMessageLength: userMessage.length,
+      });
+
+      const command = new InvokeModelWithResponseStreamCommand(input);
+      const response = await this.client.send(command);
+
+      if (!response.body) {
+        throw new Error('No response body from Bedrock streaming');
+      }
+
+      // Process streaming response
+      let totalChunks = 0;
+      let totalLength = 0;
+
+      for await (const event of response.body) {
+        // Check if chunk contains data
+        if (event.chunk?.bytes) {
+          const chunkData = JSON.parse(new TextDecoder().decode(event.chunk.bytes));
+
+          // Claude streaming format: { type: "content_block_delta", delta: { type: "text_delta", text: "..." } }
+          if (chunkData.type === 'content_block_delta' && chunkData.delta?.text) {
+            const textChunk = chunkData.delta.text;
+            totalChunks++;
+            totalLength += textChunk.length;
+            yield textChunk;
+          }
+
+          // Log completion
+          if (chunkData.type === 'message_stop') {
+            console.log('[BedrockAI] Streaming complete:', {
+              totalChunks,
+              totalLength,
+              stopReason: chunkData.stop_reason || 'end_turn',
+            });
+          }
+        }
+      }
+
+      console.log('[BedrockAI] Stream finished:', { totalChunks, totalLength });
+    } catch (error) {
+      console.error('[BedrockAI] Failed to stream response:', error);
+      throw error instanceof Error ? error : new Error('Failed to stream AI response');
+    }
+  }
+
+  /**
+   * Stream response with scenario-specific system prompt (Phase 1.5)
+   */
+  async *streamScenarioResponse(
+    userMessage: string,
+    scenarioPrompt: string,
+    conversationHistory: ConversationMessage[] = []
+  ): AsyncGenerator<string> {
+    yield* this.streamResponse({
+      userMessage,
+      conversationHistory,
+      systemPrompt: scenarioPrompt,
+      temperature: 0.8,
+      maxTokens: 1024,
+    });
   }
 }

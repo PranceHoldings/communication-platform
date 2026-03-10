@@ -296,9 +296,10 @@ export interface TranscriptMessage extends WebSocketMessageBase {
 
 /**
  * アバター応答メッセージ（サーバー → クライアント）
+ * Phase 1.5: Supports streaming with partial/final message types
  */
 export interface AvatarResponseMessage extends WebSocketMessageBase {
-  type: 'avatar_response';
+  type: 'avatar_response' | 'avatar_response_partial' | 'avatar_response_final';
   speaker: 'AI';
   text: string;
   timestamp: number;

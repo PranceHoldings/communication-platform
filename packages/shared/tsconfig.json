@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "outDir": "./dist",
@@ -10,10 +10,12 @@
     "declaration": true,
     "declarationMap": true,
     "composite": true,
+    "noEmit": false,
 
     // Package specific
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
 
     // Path aliases
     "baseUrl": ".",

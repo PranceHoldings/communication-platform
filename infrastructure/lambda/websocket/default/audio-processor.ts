@@ -38,6 +38,17 @@ export interface ProcessAudioResult {
   audioContentType: string;
 }
 
+export interface StreamingCallbacks {
+  onTranscriptComplete?: (transcript: string) => Promise<void>;
+  onAIChunk?: (chunk: string) => Promise<void>;
+  onAIComplete?: (fullText: string) => Promise<void>;
+  onTTSComplete?: (audio: Buffer, contentType: string) => Promise<void>;
+}
+
+export interface ProcessAudioStreamingOptions extends ProcessAudioOptions {
+  callbacks: StreamingCallbacks;
+}
+
 export class AudioProcessor {
   private stt: AzureSpeechToText;
   private tts: ElevenLabsTextToSpeech;
@@ -585,6 +596,128 @@ export class AudioProcessor {
       };
     } catch (error) {
       console.error('[AudioProcessor] Text processing failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process audio with real-time AI streaming (Phase 1.5)
+   * Streams AI response chunks via callbacks for immediate WebSocket delivery
+   */
+  async processAudioStreaming(options: ProcessAudioStreamingOptions): Promise<ProcessAudioResult> {
+    const {
+      audioData,
+      sessionId,
+      scenarioPrompt,
+      scenarioLanguage,
+      conversationHistory = [],
+      callbacks,
+    } = options;
+
+    console.log('[AudioProcessor] Starting streaming pipeline:', {
+      sessionId,
+      audioSize: audioData.length,
+      hasScenarioPrompt: !!scenarioPrompt,
+      scenarioLanguage,
+      historyLength: conversationHistory.length,
+    });
+
+    try {
+      // Step 1: Save audio to S3 temporarily
+      await this.saveAudioToS3(audioData, sessionId, 'input');
+
+      // Step 2: Transcribe audio using Azure STT
+      const transcript = await this.transcribeAudio(audioData, scenarioLanguage);
+
+      if (!transcript || transcript.trim().length === 0) {
+        throw new Error('No speech detected in audio');
+      }
+
+      console.log('[AudioProcessor] Transcription:', transcript);
+
+      // Callback: Transcript complete
+      if (callbacks.onTranscriptComplete) {
+        await callbacks.onTranscriptComplete(transcript);
+      }
+
+      // Step 3: Stream AI response using Bedrock
+      const aiResponseChunks: string[] = [];
+      let chunkCount = 0;
+
+      if (scenarioPrompt) {
+        // Use streaming scenario response
+        for await (const chunk of this.ai.streamScenarioResponse(
+          transcript,
+          scenarioPrompt,
+          conversationHistory
+        )) {
+          aiResponseChunks.push(chunk);
+          chunkCount++;
+
+          // Callback: AI chunk received
+          if (callbacks.onAIChunk) {
+            await callbacks.onAIChunk(chunk);
+          }
+        }
+      } else {
+        // Use streaming general response
+        for await (const chunk of this.ai.streamResponse({
+          userMessage: transcript,
+          conversationHistory,
+        })) {
+          aiResponseChunks.push(chunk);
+          chunkCount++;
+
+          // Callback: AI chunk received
+          if (callbacks.onAIChunk) {
+            await callbacks.onAIChunk(chunk);
+          }
+        }
+      }
+
+      // Combine all chunks into full AI response
+      const aiResponse = aiResponseChunks.join('');
+
+      console.log('[AudioProcessor] AI Streaming complete:', {
+        totalChunks: chunkCount,
+        fullLength: aiResponse.length,
+      });
+
+      // Callback: AI complete
+      if (callbacks.onAIComplete) {
+        await callbacks.onAIComplete(aiResponse);
+      }
+
+      // Step 4: Synthesize full AI response to speech using ElevenLabs
+      const ttsResult = await this.tts.generateSpeech({
+        text: aiResponse,
+        stability: 0.5,
+        similarityBoost: 0.75,
+      });
+
+      // Callback: TTS complete
+      if (callbacks.onTTSComplete) {
+        await callbacks.onTTSComplete(ttsResult.audio, ttsResult.contentType);
+      }
+
+      // Step 5: Save response audio to S3
+      await this.saveAudioToS3(ttsResult.audio, sessionId, 'output', ttsResult.contentType);
+
+      console.log('[AudioProcessor] Streaming pipeline complete:', {
+        transcriptLength: transcript.length,
+        responseLength: aiResponse.length,
+        audioOutputSize: ttsResult.sizeBytes,
+        chunksStreamed: chunkCount,
+      });
+
+      return {
+        transcript,
+        aiResponse,
+        audioResponse: ttsResult.audio,
+        audioContentType: ttsResult.contentType,
+      };
+    } catch (error) {
+      console.error('[AudioProcessor] Streaming pipeline failed:', error);
       throw error;
     }
   }
