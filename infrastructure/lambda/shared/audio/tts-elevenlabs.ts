@@ -4,6 +4,7 @@
  */
 
 import { Readable } from 'stream';
+import WebSocket from 'ws';
 
 export interface ElevenLabsTTSConfig {
   apiKey: string;
@@ -238,5 +239,114 @@ export class ElevenLabsTextToSpeech {
       console.error('[ElevenLabsTTS] Failed to get usage:', error);
       throw error;
     }
+  }
+
+  /**
+   * Generate speech with WebSocket streaming (for real-time playback with minimal latency)
+   * Yields audio chunks as they are generated
+   *
+   * @param options - TTS options
+   * @returns AsyncGenerator yielding base64-encoded audio chunks (MP3)
+   */
+  async *generateSpeechWebSocketStream(
+    options: TTSOptions
+  ): AsyncGenerator<{ audio: string; isFinal: boolean }> {
+    const {
+      text,
+      stability = 0.5,
+      similarityBoost = 0.75,
+      style = 0,
+      useSpeakerBoost = true,
+    } = options;
+
+    return new Promise<AsyncGenerator<{ audio: string; isFinal: boolean }>>((resolve, reject) => {
+      // WebSocket streaming endpoint
+      const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${this.voiceId}/stream-input?model_id=${this.modelId}&optimize_streaming_latency=3`;
+
+      console.log('[ElevenLabsTTS] Opening WebSocket connection:', {
+        voiceId: this.voiceId,
+        modelId: this.modelId,
+        textLength: text.length,
+      });
+
+      const ws = new WebSocket(wsUrl);
+      const chunks: { audio: string; isFinal: boolean }[] = [];
+      let isConnected = false;
+      let hasError = false;
+
+      ws.on('open', () => {
+        console.log('[ElevenLabsTTS] WebSocket connected');
+        isConnected = true;
+
+        // Send initial configuration
+        const initMessage = {
+          text: ' ',
+          voice_settings: {
+            stability,
+            similarity_boost: similarityBoost,
+            style,
+            use_speaker_boost: useSpeakerBoost,
+          },
+          xi_api_key: this.apiKey,
+        };
+
+        ws.send(JSON.stringify(initMessage));
+
+        // Send text content
+        const textMessage = {
+          text,
+          try_trigger_generation: true,
+        };
+
+        ws.send(JSON.stringify(textMessage));
+
+        // Send EOS (End of Stream) signal
+        const eosMessage = {
+          text: '',
+        };
+
+        ws.send(JSON.stringify(eosMessage));
+      });
+
+      ws.on('message', (data: WebSocket.Data) => {
+        try {
+          const message = JSON.parse(data.toString());
+
+          if (message.audio) {
+            chunks.push({
+              audio: message.audio,
+              isFinal: message.isFinal || false,
+            });
+          }
+
+          if (message.isFinal) {
+            console.log('[ElevenLabsTTS] WebSocket streaming complete:', {
+              totalChunks: chunks.length,
+            });
+            ws.close();
+          }
+        } catch (error) {
+          console.error('[ElevenLabsTTS] Failed to parse WebSocket message:', error);
+        }
+      });
+
+      ws.on('close', () => {
+        console.log('[ElevenLabsTTS] WebSocket closed');
+        if (!hasError) {
+          // Resolve with generator that yields collected chunks
+          resolve((async function* () {
+            for (const chunk of chunks) {
+              yield chunk;
+            }
+          })());
+        }
+      });
+
+      ws.on('error', (error) => {
+        console.error('[ElevenLabsTTS] WebSocket error:', error);
+        hasError = true;
+        reject(error);
+      });
+    });
   }
 }

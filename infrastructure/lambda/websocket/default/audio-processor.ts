@@ -42,6 +42,7 @@ export interface StreamingCallbacks {
   onTranscriptComplete?: (transcript: string) => Promise<void>;
   onAIChunk?: (chunk: string) => Promise<void>;
   onAIComplete?: (fullText: string) => Promise<void>;
+  onTTSChunk?: (audioChunk: string, isFinal: boolean) => Promise<void>; // New: Real-time TTS chunks
   onTTSComplete?: (audio: Buffer, contentType: string) => Promise<void>;
 }
 
@@ -688,33 +689,65 @@ export class AudioProcessor {
         await callbacks.onAIComplete(aiResponse);
       }
 
-      // Step 4: Synthesize full AI response to speech using ElevenLabs
-      const ttsResult = await this.tts.generateSpeech({
-        text: aiResponse,
-        stability: 0.5,
-        similarityBoost: 0.75,
-      });
+      // Step 4: Synthesize AI response to speech using ElevenLabs WebSocket Streaming
+      console.log('[AudioProcessor] Starting TTS WebSocket streaming...');
+
+      let ttsChunkCount = 0;
+      const ttsAudioChunks: Buffer[] = [];
+
+      try {
+        for await (const chunk of this.tts.generateSpeechWebSocketStream({
+          text: aiResponse,
+          stability: 0.5,
+          similarityBoost: 0.75,
+        })) {
+          ttsChunkCount++;
+
+          // Callback: TTS chunk received
+          if (callbacks.onTTSChunk) {
+            await callbacks.onTTSChunk(chunk.audio, chunk.isFinal);
+          }
+
+          // Collect audio chunks for final result
+          const audioBuffer = Buffer.from(chunk.audio, 'base64');
+          ttsAudioChunks.push(audioBuffer);
+
+          if (chunk.isFinal) {
+            console.log('[AudioProcessor] TTS streaming complete:', {
+              totalChunks: ttsChunkCount,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('[AudioProcessor] TTS streaming failed:', error);
+        throw error;
+      }
+
+      // Combine all TTS chunks into single audio buffer
+      const ttsAudio = Buffer.concat(ttsAudioChunks);
+      const ttsContentType = 'audio/mpeg'; // ElevenLabs returns MP3
 
       // Callback: TTS complete
       if (callbacks.onTTSComplete) {
-        await callbacks.onTTSComplete(ttsResult.audio, ttsResult.contentType);
+        await callbacks.onTTSComplete(ttsAudio, ttsContentType);
       }
 
       // Step 5: Save response audio to S3
-      await this.saveAudioToS3(ttsResult.audio, sessionId, 'output', ttsResult.contentType);
+      await this.saveAudioToS3(ttsAudio, sessionId, 'output', ttsContentType);
 
       console.log('[AudioProcessor] Streaming pipeline complete:', {
         transcriptLength: transcript.length,
         responseLength: aiResponse.length,
-        audioOutputSize: ttsResult.sizeBytes,
-        chunksStreamed: chunkCount,
+        audioOutputSize: ttsAudio.length,
+        aiChunksStreamed: chunkCount,
+        ttsChunksStreamed: ttsChunkCount,
       });
 
       return {
         transcript,
         aiResponse,
-        audioResponse: ttsResult.audio,
-        audioContentType: ttsResult.contentType,
+        audioResponse: ttsAudio,
+        audioContentType: ttsContentType,
       };
     } catch (error) {
       console.error('[AudioProcessor] Streaming pipeline failed:', error);

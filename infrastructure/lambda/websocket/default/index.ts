@@ -1574,6 +1574,22 @@ async function handleAudioProcessingStreaming(
           });
         },
 
+        // Callback: TTS chunk received (stream to client immediately) - Phase 1.5 Day 6-7
+        onTTSChunk: async (audioChunk: string, isFinal: boolean) => {
+          console.log('[Streaming] TTS chunk:', {
+            chunkSize: audioChunk.length,
+            isFinal,
+          });
+
+          // Send audio chunk to client for immediate playback
+          await sendToConnection(connectionId, {
+            type: 'audio_chunk',
+            audio: audioChunk, // base64-encoded MP3 chunk
+            isFinal,
+            timestamp: Date.now(),
+          });
+        },
+
         // Callback: TTS complete
         onTTSComplete: async (audio: Buffer, contentType: string) => {
           console.log('[Streaming] TTS complete:', audio.length, 'bytes');
