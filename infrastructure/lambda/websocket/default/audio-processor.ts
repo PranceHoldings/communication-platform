@@ -44,8 +44,23 @@ export class AudioProcessor {
   private ai: BedrockAI;
   private s3: S3Client;
   private s3Bucket: string;
+  private ffmpegPath: string;
 
   constructor(private config: AudioProcessorConfig) {
+    // Initialize ffmpeg path
+    this.ffmpegPath = process.env.FFMPEG_PATH || '';
+    if (!this.ffmpegPath) {
+      try {
+        this.ffmpegPath = '/opt/bin/ffmpeg'; // Lambda Layer default
+      } catch (error) {
+        try {
+          this.ffmpegPath = require('ffmpeg-static');
+        } catch (error) {
+          throw new Error('ffmpeg not found. Check Lambda Layer or ffmpeg-static package.');
+        }
+      }
+    }
+    console.log('[AudioProcessor] Using ffmpeg path:', this.ffmpegPath);
     // Initialize STT with auto-detect (推奨) or fixed language (非推奨)
     this.stt = new AzureSpeechToText({
       subscriptionKey: config.azureSpeechKey,
@@ -134,6 +149,93 @@ export class AudioProcessor {
     } catch (error) {
       console.error('[AudioProcessor] Pipeline failed:', error);
       throw error instanceof Error ? error : new Error('Audio processing failed');
+    }
+  }
+
+  /**
+   * Convert multiple WebM chunks to a single WAV file
+   * Each chunk is processed individually then combined
+   */
+  async convertMultipleWebMChunksToWav(chunks: Buffer[]): Promise<Buffer> {
+    const fs = await import('fs');
+    const { promisify } = await import('util');
+    const { exec } = await import('child_process');
+    const execAsync = promisify(exec);
+
+    const tempFiles: string[] = [];
+
+    try {
+      console.log(`[AudioProcessor] Converting ${chunks.length} WebM chunks to WAV`);
+
+      // Convert each chunk to WAV individually
+      const wavBuffers: Buffer[] = [];
+
+      for (let i = 0; i < chunks.length; i++) {
+        const inputFile = `/tmp/chunk-${i}-${crypto.randomUUID()}.webm`;
+        const outputFile = `/tmp/chunk-${i}-${crypto.randomUUID()}.wav`;
+        tempFiles.push(inputFile, outputFile);
+
+        // Write chunk to file
+        fs.writeFileSync(inputFile, chunks[i]);
+
+        // Convert to WAV with audio enhancement
+        const command = `${this.ffmpegPath} -i ${inputFile} -af "volume=3.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000,alimiter=limit=0.9" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
+
+        try {
+          console.log(`[AudioProcessor] Converting chunk ${i + 1}/${chunks.length}...`);
+          await execAsync(command);
+
+          // Read converted WAV
+          const wavBuffer = fs.readFileSync(outputFile);
+          wavBuffers.push(wavBuffer);
+
+          console.log(`[AudioProcessor] Chunk ${i + 1} converted: ${wavBuffer.length} bytes`);
+        } catch (chunkError) {
+          console.warn(`[AudioProcessor] Failed to convert chunk ${i}, skipping:`, chunkError);
+          // Continue with other chunks
+        }
+      }
+
+      if (wavBuffers.length === 0) {
+        throw new Error('No chunks were successfully converted');
+      }
+
+      // Combine WAV files by concatenating raw PCM data
+      // Skip WAV header (44 bytes) from all but first file
+      const combinedParts: Buffer[] = [];
+
+      for (let i = 0; i < wavBuffers.length; i++) {
+        if (i === 0) {
+          // First file: include full WAV header
+          combinedParts.push(wavBuffers[i]);
+        } else {
+          // Subsequent files: skip 44-byte WAV header, append PCM data only
+          combinedParts.push(wavBuffers[i].slice(44));
+        }
+      }
+
+      const combinedBuffer = Buffer.concat(combinedParts);
+
+      // Update WAV header with correct file size
+      const dataSize = combinedBuffer.length - 44;
+      combinedBuffer.writeUInt32LE(dataSize, 40); // Data chunk size
+      combinedBuffer.writeUInt32LE(combinedBuffer.length - 8, 4); // File size
+
+      console.log('[AudioProcessor] Combined WAV:', {
+        chunks: wavBuffers.length,
+        outputSize: combinedBuffer.length,
+      });
+
+      return combinedBuffer;
+    } finally {
+      // Clean up all temp files
+      for (const file of tempFiles) {
+        try {
+          if (fs.existsSync(file)) fs.unlinkSync(file);
+        } catch (error) {
+          console.error('[AudioProcessor] Failed to clean up temp file:', file, error);
+        }
+      }
     }
   }
 
@@ -309,8 +411,8 @@ export class AudioProcessor {
     // Check if WebM format
     else if (audioData.slice(0, 4).toString('hex').startsWith('1a45dfa3')) {
       console.log('[AudioProcessor] Detected WebM format, converting to WAV');
-      audioFormat = 'unknown';
-      wavBuffer = await this.convertToWav(audioData, 'unknown');
+      audioFormat = 'webm';
+      wavBuffer = await this.convertToWav(audioData, 'webm');
     }
     // Check if OGG format
     else if (audioData.slice(0, 4).toString() === 'OggS') {
@@ -319,8 +421,8 @@ export class AudioProcessor {
       wavBuffer = await this.convertToWav(audioData, 'ogg');
     } else {
       console.log('[AudioProcessor] Unknown audio format, assuming WebM');
-      audioFormat = 'unknown';
-      wavBuffer = await this.convertToWav(audioData, 'unknown');
+      audioFormat = 'webm';
+      wavBuffer = await this.convertToWav(audioData, 'webm');
     }
 
     // 🔍 音声品質診断

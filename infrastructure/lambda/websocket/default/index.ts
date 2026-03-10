@@ -496,15 +496,18 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             break;
           }
 
-          // Concatenate all chunks into one audio buffer
-          const completeAudioBuffer = Buffer.concat(rtChunkBuffers);
-          console.log('[speech_end] Combined audio:', {
+          // Convert multiple WebM chunks to WAV (cannot simply concatenate WebM chunks)
+          console.log('[speech_end] Converting WebM chunks to WAV...');
+          const audioProc = getAudioProcessor();
+          const wavBuffer = await audioProc.convertMultipleWebMChunksToWav(rtChunkBuffers);
+
+          console.log('[speech_end] Conversion complete:', {
             totalChunks: rtChunkBuffers.length,
-            combinedSize: completeAudioBuffer.length,
+            wavSize: wavBuffer.length,
           });
 
           // Process through STT -> AI -> TTS pipeline (existing function)
-          await handleAudioProcessing(connectionId, completeAudioBuffer, connectionData);
+          await handleAudioProcessing(connectionId, wavBuffer, connectionData);
 
           // Clean up real-time chunks from S3
           console.log('[speech_end] Cleaning up real-time chunks...');
