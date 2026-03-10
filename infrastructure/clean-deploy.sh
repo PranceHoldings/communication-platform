@@ -123,6 +123,18 @@ echo -e "${GREEN}✅ 依存関係インストール完了${NC}"
 # 4. Prisma Client生成
 echo -e "\n${YELLOW}🔧 Prisma Client生成中...${NC}"
 cd "$PROJECT_ROOT/packages/database"
+
+# Workaround for npm workspaces hoisting
+# Copy @prisma from root node_modules to local node_modules
+if [ ! -d "node_modules" ]; then
+  mkdir -p node_modules
+fi
+
+if [ -d "$PROJECT_ROOT/node_modules/@prisma" ]; then
+  echo -e "${BLUE}   @prismaをコピー中...${NC}"
+  cp -r "$PROJECT_ROOT/node_modules/@prisma" node_modules/
+fi
+
 npx prisma generate
 echo -e "${GREEN}✅ Prisma Client生成完了${NC}"
 

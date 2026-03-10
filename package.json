@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
-    "prebuild": "npm run db:generate",
+    "prebuild": "mkdir -p packages/database/node_modules && cp -r node_modules/@prisma packages/database/node_modules/ 2>/dev/null || true && npm run db:generate",
     "build": "turbo run build",
     "build:clean": "bash scripts/clean-build.sh",
     "test": "turbo run test",
