@@ -180,12 +180,31 @@ export class AudioProcessor {
       // We MUST concatenate all chunks into a single WebM file before conversion.
       // Individual chunks (except chunk 0) cannot be processed by ffmpeg.
 
+      // Verify first chunk has EBML header (1a 45 df a3)
+      const firstChunk = chunks[0];
+      if (!firstChunk || firstChunk.length < 4) {
+        throw new Error('First chunk is missing or too small - cannot process fragmented WebM without header');
+      }
+
+      const headerBytes = firstChunk.slice(0, 4);
+      const hasEBMLHeader =
+        headerBytes[0] === 0x1a && headerBytes[1] === 0x45 && headerBytes[2] === 0xdf && headerBytes[3] === 0xa3;
+
+      if (!hasEBMLHeader) {
+        throw new Error(
+          `First chunk does not have EBML header (found: ${headerBytes.toString('hex')}). ` +
+            `This usually means chunk-000000 was not saved or was deleted before processing. ` +
+            `Each speech segment must start from chunk-000000.`
+        );
+      }
+
       const combinedWebM = Buffer.concat(chunks);
       console.log('[AudioProcessor] Combined WebM chunks:', {
         totalChunks: chunks.length,
         combinedSize: combinedWebM.length,
         chunk0Size: chunks[0]?.length || 0,
         chunk1Size: chunks[1]?.length || 0,
+        hasEBMLHeader: true,
       });
 
       // Write combined WebM to temp file

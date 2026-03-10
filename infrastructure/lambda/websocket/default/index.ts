@@ -458,30 +458,53 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             progress: 0.33,
           });
 
-          // Download all chunks from S3 (0 to lastSequenceNumber)
-          console.log(`[speech_end] Downloading ${totalRealtimeChunks} chunks from S3...`);
+          // List all chunks that actually exist in S3 (more robust than assuming 0-N sequence)
+          const { ListObjectsV2Command } = await import('@aws-sdk/client-s3');
+          const chunkPrefix = `sessions/${speechEndSessionId}/realtime-chunks/`;
+
+          console.log(`[speech_end] Listing chunks from S3: ${chunkPrefix}`);
+          const listResponse = await s3Client.send(
+            new ListObjectsV2Command({
+              Bucket: S3_BUCKET,
+              Prefix: chunkPrefix,
+            })
+          );
+
+          const chunkKeys = (listResponse.Contents || [])
+            .map(obj => obj.Key)
+            .filter((key): key is string => !!key)
+            .sort(); // Sort to maintain order
+
+          console.log(`[speech_end] Found ${chunkKeys.length} chunks in S3`);
+
+          if (chunkKeys.length === 0) {
+            console.warn('[speech_end] No chunks found in S3');
+            await sendToConnection(connectionId, {
+              type: 'error',
+              code: 'NO_AUDIO_DATA',
+              message: 'No audio data received',
+            });
+            break;
+          }
+
+          // Download all existing chunks
           const rtChunkBuffers: Buffer[] = [];
-
-          for (let seq = 0; seq <= lastSequenceNumber; seq++) {
-            const rtChunkKey = `sessions/${speechEndSessionId}/realtime-chunks/chunk-${seq.toString().padStart(6, '0')}.webm`;
-
+          for (const chunkKey of chunkKeys) {
             try {
               const getResponse = await s3Client.send(
                 new GetObjectCommand({
                   Bucket: S3_BUCKET,
-                  Key: rtChunkKey,
+                  Key: chunkKey,
                 })
               );
 
               if (getResponse.Body) {
                 const chunkBuffer = await getResponse.Body.transformToByteArray();
                 rtChunkBuffers.push(Buffer.from(chunkBuffer));
-                console.log(`[speech_end] Downloaded chunk ${seq}: ${chunkBuffer.length} bytes`);
-              } else {
-                console.warn(`[speech_end] Chunk ${seq} has no body, skipping`);
+                console.log(`[speech_end] Downloaded ${chunkKey}: ${chunkBuffer.length} bytes`);
               }
             } catch (error) {
-              console.warn(`[speech_end] Failed to download chunk ${seq}:`, error);
+              console.warn(`[speech_end] Failed to download ${chunkKey}:`, error);
               // Continue with other chunks
             }
           }
@@ -509,19 +532,18 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           // Process through STT -> AI -> TTS pipeline (existing function)
           await handleAudioProcessing(connectionId, wavBuffer, connectionData);
 
-          // Clean up real-time chunks from S3
-          console.log('[speech_end] Cleaning up real-time chunks...');
-          for (let seq = 0; seq <= lastSequenceNumber; seq++) {
-            const rtChunkKey = `sessions/${speechEndSessionId}/realtime-chunks/chunk-${seq.toString().padStart(6, '0')}.webm`;
+          // Clean up real-time chunks from S3 (delete only the chunks we actually downloaded)
+          console.log(`[speech_end] Cleaning up ${chunkKeys.length} real-time chunks...`);
+          for (const chunkKey of chunkKeys) {
             try {
               await s3Client.send(
                 new DeleteObjectCommand({
                   Bucket: S3_BUCKET,
-                  Key: rtChunkKey,
+                  Key: chunkKey,
                 })
               );
             } catch (error) {
-              console.warn(`[speech_end] Failed to delete chunk ${seq}:`, error);
+              console.warn(`[speech_end] Failed to delete ${chunkKey}:`, error);
             }
           }
 

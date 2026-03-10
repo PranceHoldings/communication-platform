@@ -89,6 +89,11 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
           console.log('[AudioRecorder] Silence detected for', silenceDurationMs, 'ms - triggering speech_end');
           speechEndSentRef.current = true;
           onSpeechEnd?.();
+
+          // Reset sequence number for next speech segment
+          // This ensures each speech segment starts from chunk-000000.webm
+          sequenceNumberRef.current = 0;
+          console.log('[AudioRecorder] Sequence number reset for next speech segment');
         }
       }
     }
