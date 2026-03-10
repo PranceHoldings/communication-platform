@@ -71,3 +71,5 @@ apps/web/.next.broken-*
 node_modules.broken-*
 *.backup
 node_modules.broken-*
+console.log
+consolelog.log
