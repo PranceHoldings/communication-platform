@@ -1,9 +1,10 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-10 01:00 JST
+**最終更新:** 2026-03-10 02:00 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル） | **Phase 2進捗:** Task 2.1-2.2完了（100%）
-**最新コミット:** 88a7efb - docs: update START_HERE.md with Phase 2.2 completion status (100%)
-**最新デプロイ:** 2026-03-09 22:54 JST - 解析API 4関数デプロイ完了
+**Phase 1.5進捗:** Day 1-3完了（リアルタイムSTT実装） | **進捗:** 33%
+**最新コミット:** 38c40eb - feat: implement Phase 1.5 real-time audio streaming (Day 1-3)
+**最新デプロイ:** 2026-03-10 01:52 JST - Phase 1.5リアルタイム音声処理実装完了
 
 ---
 
@@ -94,17 +95,29 @@ Role: SUPER_ADMIN
 
 ## 次の優先タスク
 
-### 最優先: Phase 1.5-1.6（実用レベル対応）
+### 🔴 進行中: Phase 1.5（リアルタイム会話実装）
 
 **Phase 1の音声会話を実用レベルに引き上げる（2週間）**
 
 理由: 現在の音声会話はバッチ処理のため、実際のユースケースでは使用不可
 
-**Phase 1.5（Week 0.5-2.5）: リアルタイム会話実装**
-- リアルタイムSTT（1秒チャンク、無音検出）
-- ストリーミングAI応答（Bedrock Claude Streaming API）
-- ストリーミングTTS（ElevenLabs Streaming API）
-- 目標: 2-5秒の応答時間
+**✅ 完了: Day 1-3 - リアルタイムSTT実装（2026-03-10）**
+- ✅ フロントエンド: 1秒チャンク送信 + 無音検出（500ms）
+- ✅ Lambda: audio_chunk_realtime + speech_end ハンドラ
+- ✅ S3チャンク蓄積 → 無音検出時にSTT実行
+- ✅ デプロイ完了
+
+**🚀 次: Day 4-5 - リアルタイムAI応答実装（推定2日）**
+- Bedrock Claude Streaming API統合
+- チャンク単位でAI応答を受信
+- WebSocketでストリーミング配信
+- 目標: 文字起こし完了から1-2秒でAI応答開始
+
+**予定: Day 6-7 - リアルタイムTTS実装（推定2日）**
+- ElevenLabs Streaming API統合
+- 音声チャンク単位でTTS生成
+- 即座にブラウザ再生開始
+- 目標: 全体で2-5秒の応答時間達成
 
 **Phase 1.6（Week 2.5-3.5）: 既存機能の実用化**
 - エラーハンドリング、リトライロジック
@@ -142,35 +155,34 @@ Role: SUPER_ADMIN
    - Phase 1.5-1.6（実用化）を開始するか？
    - Phase 2.3（レポート）を完結させるか？
 
-### Short-term（Day 1）
+### Short-term（Day 4-5）
 
-**Option A: Phase 1.5開始（推奨）**
+**🎯 Phase 1.5 Day 4-5: リアルタイムAI応答実装（推奨）**
 
-Day 1-3: リアルタイムSTT実装
-- MediaRecorder timeslice設定（1秒ごと）
-- 無音検出実装（Web Audio API）
-- WebSocketで音声チャンク送信
-- Lambda側リアルタイム処理
-- Azure STT呼び出し
-- 文字起こし結果をWebSocketで即座に返却
+目標: Bedrock Claude Streaming APIでAI応答をリアルタイム配信
 
-**Option B: Phase 2.3開始**
+実装ステップ:
+1. Bedrock invoke-model-with-response-stream API統合
+2. Lambda側でストリーム受信 → WebSocket配信
+3. フロントエンド側でストリーム受信 → UI更新（partial transcript風）
+4. 動作確認: 文字起こし完了から1-2秒でAI応答開始
 
-Day 1: レポートテンプレート実装
-- React-PDFでテンプレート作成
-- サマリー、スコア詳細、強み・改善点セクション
-- グラフ・チャート統合
+技術スタック:
+- AWS SDK: `@aws-sdk/client-bedrock-runtime` - `InvokeModelWithResponseStreamCommand`
+- WebSocket message type: `avatar_response_partial` + `avatar_response_final`
 
-### Mid-term（Week 1）
+### Mid-term（Week 1-2）
 
-**Phase 1.5の場合:**
-- Day 4-5: リアルタイムAI応答実装
+**Phase 1.5の継続:**
+- ✅ Day 1-3: リアルタイムSTT実装（完了）
+- 🚀 Day 4-5: リアルタイムAI応答実装（次）
 - Day 6-7: リアルタイムTTS実装
 - Day 8-10: エラーハンドリング強化
 - Day 11-12: UX改善
 - Day 13-14: パフォーマンステスト
 
-**Phase 2.3の場合:**
+**代替: Phase 2.3（レポート生成）:**
+- Day 1: レポートテンプレート実装
 - Day 2-3: AI改善提案実装
 - Day 4-5: レポート管理UI
 - Day 6-7: E2Eテスト
@@ -223,6 +235,30 @@ curl https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/sessions/
 
 # CloudWatch Logs確認
 aws logs tail /aws/lambda/prance-session-analysis-dev --since 5m --follow
+```
+
+### リアルタイム音声テスト（Phase 1.5）
+
+```bash
+# Lambda WebSocket Handler ログ確認
+aws logs tail /aws/lambda/prance-websocket-default-dev --since 5m --follow
+
+# 確認ポイント:
+# 1. [audio_chunk_realtime] Received real-time audio chunk: sequenceNumber: 0, 1, 2...
+# 2. [audio_chunk_realtime] Saved chunk to S3: chunk-000000.webm, chunk-000001.webm...
+# 3. [speech_end] Speech ended - processing accumulated chunks
+# 4. [speech_end] Downloaded chunk 0: XXXX bytes
+# 5. [speech_end] Combined audio: totalChunks: N, combinedSize: YYYY bytes
+# 6. STT → AI → TTS パイプライン実行
+
+# S3チャンク確認
+aws s3 ls s3://prance-storage-dev/sessions/{session_id}/realtime-chunks/
+
+# 期待される出力:
+# chunk-000000.webm
+# chunk-000001.webm
+# chunk-000002.webm
+# ...（無音検出後にクリーンアップされる）
 ```
 
 ---
