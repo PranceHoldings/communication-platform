@@ -1,195 +1,128 @@
-# Prance Platform ドキュメント
+# Prance Communication Platform - ドキュメントガイド
 
-このディレクトリにはPranceプラットフォームの包括的な技術ドキュメントが格納されています。
+このディレクトリには、Pranceプラットフォームの全ドキュメントが論理的に整理されています。
 
-**プロジェクトステータス:** Phase 1 完了 (100%) | Phase 2.2 完了 (100%) | Phase 2.3 準備中
+## ドキュメント構造（読む順序）
 
----
+### 01. 初心者向けガイド
+新規開発者はここから始めてください。
 
-## 📂 ドキュメント構成
+- **README.md** - プロジェクト概要
+- **QUICKSTART.md** - 5分で動かすクイックスタート
+- **SETUP.md** - 詳細なセットアップガイド
+- **FAQ.md** - よくある質問
 
-### エントリーポイント
+### 02. アーキテクチャ
+システム全体の設計思想を理解する。
 
-- **[START_HERE.md](../START_HERE.md)** - 次回セッション開始の唯一のエントリーポイント
-- **[CLAUDE.md](../CLAUDE.md)** - プロジェクト全体の概要と重要な方針
+- **SYSTEM_ARCHITECTURE.md** - システム全体構成
+- **MULTITENANCY.md** - マルチテナント設計
+- **ENVIRONMENT_ARCHITECTURE.md** - 環境アーキテクチャ
 
-### アーキテクチャ設計
+### 03. 計画・ロードマップ
+開発計画とリリースロードマップ。
 
-```
-docs/architecture/
-├── SYSTEM_ARCHITECTURE.md     # システム全体構成
-└── MULTITENANCY.md            # マルチテナント設計
-```
+- **releases/** - リリース計画
+  - PRODUCTION_READY_ROADMAP.md 🔴最優先
+  - RELEASE_ROADMAP.md
+- **implementation/** - 実装計画
+  - COMPLETE_IMPLEMENTATION_ROADMAP.md
+  - PRIORITY_BASED_IMPLEMENTATION_PLAN.md
+  - COMPREHENSIVE_IMPLEMENTATION_PLAN.md
+  - IMPLEMENTATION_PHASES.md
+  - IMPLEMENTATION_SUMMARY.md
+- **analysis/** - 分析・ギャップ分析
+  - FEATURE_GAP_ANALYSIS.md
+  - INCONSISTENCY_REPORT.md
 
-### モジュール詳細設計（14モジュール）
+### 04. 技術設計
+API、データベース、その他技術設計詳細。
 
-```
-docs/modules/
-├── AVATAR_MODULE.md           # アバター管理
-├── VOICE_MODULE.md            # 音声処理
-├── SCENARIO_ENGINE.md         # シナリオエンジン
-├── SESSION_RECORDING.md       # セッション・録画
-├── TRANSCRIPT_PLAYER.md       # トランスクリプトプレイヤー
-├── ANALYSIS_MODULE.md         # 感情・非言語解析
-├── REPORT_MODULE.md           # レポート生成
-├── AI_MANAGEMENT.md           # AIプロンプト・プロバイダ管理
-├── BENCHMARK_SYSTEM.md        # ベンチマークシステム
-├── EXTERNAL_API.md            # 外部連携API
-├── SUBSCRIPTION_PLANS.md      # サブスクリプション・プラン管理
-├── MULTILINGUAL_SYSTEM.md     # 多言語対応
-├── ATS_INTEGRATION.md         # ATS連携
-└── PLUGIN_SYSTEM.md           # プラグインシステム
-```
+- **API_DESIGN.md** - RESTful API設計
+- **DATABASE_DESIGN.md** - データベーススキーマ
+- **API_KEY_MANAGEMENT.md** - APIキー管理
+- **CONSISTENCY_GUIDELINES.md** - コード整合性ガイドライン
+- **LOCK_MECHANISM_IMPROVEMENTS.md** - ロックメカニズム改善
 
-### 開発関連
+### 05. 機能モジュール
+各機能モジュールの詳細仕様（17モジュール）。
 
-```
-docs/development/
-├── IMPLEMENTATION_PHASES.md      # 実装フェーズ計画
-├── API_DESIGN.md                 # API設計
-├── DATABASE_DESIGN.md            # データベース設計
-├── API_KEY_MANAGEMENT.md         # APIキー管理
-├── ENVIRONMENT_ARCHITECTURE.md   # 環境アーキテクチャ
-├── DEVELOPMENT_WORKFLOW.md       # 開発ワークフロー完全ガイド ⭐NEW
-├── CODE_DUPLICATION_AUDIT.md     # コード重複監査レポート
-├── CONSISTENCY_GUIDELINES.md     # 整合性ガイドライン
-├── CHUNK_SORTING_REFACTORING.md  # DRY原則実例
-└── その他15ファイル（音声・録画処理、多言語対応等）
-```
+- AI_MANAGEMENT.md
+- ANALYSIS_MODULE.md
+- AVATAR_MODULE.md
+- BENCHMARK_SYSTEM.md
+- EXTERNAL_API.md
+- GUEST_USER_SYSTEM.md
+- MULTILINGUAL_SYSTEM.md
+- REPORT_MODULE.md
+- SESSION_RECORDING.md
+- SUBSCRIPTION_PLANS.md
+- VOICE_MODULE.md
+- ... 他6モジュール
 
-### インフラ構成
+### 06. インフラ構成
+AWS、サーバーレス、デプロイ構成。
 
-```
-docs/infrastructure/
-├── AWS_SERVERLESS.md          # AWSサーバーレス詳細
-├── DOMAIN_SETUP_SUMMARY.md    # ドメイン設定サマリー
-├── NODE22_MIGRATION_REPORT.md # Node.js 22移行完了記録
-└── NODE_EOL_MIGRATION_PLAN.md # Node.js移行計画
-```
+- **AWS_SERVERLESS.md** - AWSサーバーレス詳細
+- **DOMAIN_SETUP_SUMMARY.md** - ドメイン設定
+- **NODE22_MIGRATION_REPORT.md** - Node.js 22移行記録
 
-### 進捗管理
+### 07. 開発ガイド
+日常的な開発作業のガイド。
 
-```
-docs/progress/
-├── SESSION_HISTORY.md                      # 全セッション詳細履歴
-├── ARCHIVE_2026-03-06_Phase1_Completion.md # Phase 1完了記録
-├── ARCHIVE_2026-03-05_session-complete.md  # 過去セッション記録
-├── PHASE_2_PLAN.md                         # Phase 2詳細プラン
-├── PHASE2_RECORDING_TODO.md                # Phase 2録画機能TODO
-├── SESSION_SUMMARY_2026-03-08.md           # 最新セッションサマリー
-├── STT_AUTO_LANGUAGE_DETECTION_PLAN.md     # STT自動言語検出プラン
-└── WEBSOCKET_CDK_INTEGRATION.md            # WebSocket統合記録
-```
+- **DEVELOPMENT_WORKFLOW.md** - 開発ワークフロー
+- **DATABASE_MIGRATION_CHECKLIST.md** - DBマイグレーションチェックリスト
+- **LAMBDA_VERSION_MANAGEMENT.md** - Lambdaバージョン管理
+- **LOCK_MECHANISM_ANALYSIS.md** - ロックメカニズム分析
 
-### リファレンス
+### 08. 運用ガイド
+デプロイ、CI/CD、運用、セキュリティ。
 
-```
-docs/reference/
-├── TECH_STACK.md                       # 技術スタック詳細
-├── FAQ.md                              # よくある質問
-├── GLOSSARY.md                         # 用語集
-├── CLAUDE.en.md                        # プロジェクト概要（英語版）
-├── BUSINESS_OVERVIEW.md                # ビジネス概要
-├── EXTERNAL_TOOLS_SETUP.md             # 外部ツールセットアップ
-├── AUTH_COMPARISON_CLERK_VS_COGNITO.md # 認証サービス比較
-├── AWS_MIGRATION_ANALYSIS.md           # AWS移行分析
-├── AZURE_SETUP_CHECKLIST.md            # Azureセットアップ
-└── CLIENT_PRESENTATION.md              # クライアントプレゼン
-```
+- **DEPLOYMENT.md** - デプロイメント手順
+- **CICD.md** - CI/CDパイプライン
+- **OPERATIONS_GUIDE.md** - 運用ガイド
+- **SECURITY.md** - セキュリティガイドライン
 
-### 運用ガイド
+### 09. 進捗記録
+セッション履歴、Phase計画、タスク完了記録。
 
-```
-docs/
-├── CICD.md                    # CI/CD
-├── DEPLOYMENT.md              # デプロイ手順
-├── OPERATIONS_GUIDE.md        # 運用ガイド
-├── SECURITY.md                # セキュリティ
-├── QUICKSTART.md              # クイックスタート（作業再開）
-└── SETUP.md                   # セットアップガイド（初回）
-```
+- **SESSION_HISTORY.md** - 全セッション詳細履歴
+- **archives/** - セッション記録
+  - ARCHIVE_2026-03-06_Phase1_Completion.md
+  - SESSION_2026-03-09_*.md
+- **phases/** - Phase計画
+  - PHASE_2_PLAN.md
+  - PHASE_2.2_ANALYSIS_IMPLEMENTATION_PLAN.md
+- **tasks/** - タスク完了記録
+  - TASK_2.2.1_EMOTION_ANALYSIS_COMPLETE.md
+  - TASK_2.2.2_AUDIO_ANALYSIS_COMPLETE.md
+  - TASK_2.2.3_SCORING_ALGORITHM_COMPLETE.md
+  - SESSIONPLAYER_REFACTORING_COMPLETE.md
 
-**注意:** コーディング規約は以下に統合されました：
+### 10. リファレンス
+技術スタック、用語集、その他参照資料。
 
-- **[CODING_RULES.md](../CODING_RULES.md)** - 実践的クイックリファレンス（ルート）
-- **[DEVELOPMENT_WORKFLOW.md](development/DEVELOPMENT_WORKFLOW.md)** - 包括的開発ガイド
+- **TECH_STACK.md** - 技術スタック詳細
+- **GLOSSARY.md** - 用語集
+- **CLAUDE.en.md** - CLAUDE.md英語版
+
+### archive/
+削除・変更履歴（参考資料）。
+
+- DELETED_FILES_2026-03-09.md
+- DOCUMENTATION_CLEANUP_SUMMARY.md
 
 ---
 
-## 🔍 目的別の参照先
+## クイックリンク
 
-| 目的                     | 参照先                                                                                   |
-| ------------------------ | ---------------------------------------------------------------------------------------- |
-| **次回作業開始**         | [START_HERE.md](../START_HERE.md)                                                        |
-| **プロジェクト全体理解** | [CLAUDE.md](../CLAUDE.md), [SYSTEM_ARCHITECTURE.md](architecture/SYSTEM_ARCHITECTURE.md) |
-| **開発を始める**         | [IMPLEMENTATION_PHASES.md](development/IMPLEMENTATION_PHASES.md)                         |
-| **特定機能を実装**       | [modules/](modules/) 配下の該当ドキュメント                                              |
-| **API実装**              | [API_DESIGN.md](development/API_DESIGN.md)                                               |
-| **DB設計**               | [DATABASE_DESIGN.md](development/DATABASE_DESIGN.md)                                     |
-| **デプロイ**             | [AWS_SERVERLESS.md](infrastructure/AWS_SERVERLESS.md), [DEPLOYMENT.md](DEPLOYMENT.md)    |
-| **進捗確認**             | [progress/](progress/) 配下のドキュメント                                                |
-| **用語確認**             | [GLOSSARY.md](reference/GLOSSARY.md)                                                     |
+- **開発開始**: [01-getting-started/QUICKSTART.md](01-getting-started/QUICKSTART.md)
+- **最優先タスク**: [03-planning/releases/PRODUCTION_READY_ROADMAP.md](03-planning/releases/PRODUCTION_READY_ROADMAP.md) 🔴
+- **アーキテクチャ理解**: [02-architecture/SYSTEM_ARCHITECTURE.md](02-architecture/SYSTEM_ARCHITECTURE.md)
+- **進捗確認**: [09-progress/SESSION_HISTORY.md](09-progress/SESSION_HISTORY.md)
 
----
+## 更新履歴
 
-## 📋 新規参加者向けガイド
-
-### 1. 全体把握（30分）
-
-1. [START_HERE.md](../START_HERE.md) - 現在のステータス確認
-2. [CLAUDE.md](../CLAUDE.md) - プロジェクト概要
-3. [SYSTEM_ARCHITECTURE.md](architecture/SYSTEM_ARCHITECTURE.md) - アーキテクチャ理解
-
-### 2. 技術理解（1時間）
-
-1. [TECH_STACK.md](reference/TECH_STACK.md) - 使用技術
-2. [AWS_SERVERLESS.md](infrastructure/AWS_SERVERLESS.md) - インフラ構成
-3. [DATABASE_DESIGN.md](development/DATABASE_DESIGN.md) - DB設計
-
-### 3. 開発準備（1時間）
-
-1. [IMPLEMENTATION_PHASES.md](development/IMPLEMENTATION_PHASES.md) - 現在のフェーズ
-2. [API_DESIGN.md](development/API_DESIGN.md) - API仕様
-3. [CODING_STANDARDS.md](CODING_STANDARDS.md) - コーディング規約
-
----
-
-## ✅ ドキュメント管理ルール
-
-### 更新タイミング
-
-**START_HERE.md:**
-
-- ✅ セッション終了時（最新状態を反映）
-- ✅ 重要なマイルストーン達成時
-
-**CLAUDE.md:**
-
-- ✅ アーキテクチャ変更・重要な設計決定
-- ✅ Phase完了時の総括
-
-**docs/ 配下:**
-
-- ✅ 技術仕様の変更
-- ✅ API設計の追加・変更
-- ✅ 新しいモジュールの追加
-
-### 命名規則
-
-- **永続ドキュメント:** 大文字スネークケース（例: `API_DESIGN.md`）
-- **進捗記録:** `ARCHIVE_YYYY-MM-DD_*.md`
-- **プランドキュメント:** `PHASE_N_PLAN.md`
-
----
-
-## 🤝 ドキュメント更新プロセス
-
-1. **小規模修正:** 直接編集してコミット
-2. **大規模変更:** ブランチ作成 → PR提出
-3. **新規ドキュメント:** 適切なディレクトリに配置 → レビュー → コミット
-
----
-
-**最終更新:** 2026-03-06
-**ドキュメントバージョン:** 2.1
-**管理者:** Prance Development Team
+- **2026-03-10**: ドキュメント構造を番号付きカテゴリーに再編成
+- **2026-03-09**: DOCUMENTATION_CLEANUP_SUMMARY.md 作成
+- **2026-03-06**: Phase 1 完了記録
