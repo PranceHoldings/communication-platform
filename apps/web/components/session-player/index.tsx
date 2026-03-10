@@ -404,8 +404,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       sendSpeechEndRef.current();
       console.log('[SessionPlayer] speech_end signal sent');
       toast.info(t('sessions.player.messages.processingAudio'));
+
+      // CRITICAL: Restart MediaRecorder to generate new EBML header
+      // MediaRecorder timeslice mode only creates complete header for first chunk
+      // Subsequent chunks are fragments, so we must restart for each speech segment
+      restartRecording();
+      console.log('[SessionPlayer] MediaRecorder restarted for next speech segment');
     }
-  }, [t]);
+  }, [t, restartRecording]);
 
   const handleRecordingError = useCallback(
     (error: Error) => {
@@ -453,6 +459,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     stopRecording,
     pauseRecording,
     resumeRecording,
+    restartRecording,
     error: recordingError,
   } = useAudioRecorder({
     enableRealtime: true, // Enable real-time audio chunk sending

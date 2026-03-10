@@ -27,6 +27,7 @@ interface UseAudioRecorderReturn {
   stopRecording: () => void;
   pauseRecording: () => void;
   resumeRecording: () => void;
+  restartRecording: () => void; // Restart MediaRecorder for new EBML header
 }
 
 export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudioRecorderReturn {
@@ -319,6 +320,113 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     }
   }, []);
 
+  const restartRecording = useCallback(() => {
+    if (!mediaRecorderRef.current || !streamRef.current) {
+      console.warn('[AudioRecorder] Cannot restart - no active recorder or stream');
+      return;
+    }
+
+    console.log('[AudioRecorder] Restarting MediaRecorder for new EBML header...');
+
+    // Store current state
+    const stream = streamRef.current;
+    const timesliceMs = enableRealtime ? 1000 : undefined;
+
+    // Get MIME type from current recorder
+    const currentMimeType = mediaRecorderRef.current.mimeType;
+
+    // Stop current recorder (but don't close stream)
+    if (mediaRecorderRef.current.state !== 'inactive') {
+      // Temporarily disable onstop to prevent cleanup
+      const originalOnStop = mediaRecorderRef.current.onstop;
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.onstop = originalOnStop;
+    }
+
+    // Reset sequence number for new stream
+    sequenceNumberRef.current = 0;
+    speechEndSentRef.current = true; // Prevent false detection
+    lastSpeechTimeRef.current = Date.now();
+
+    // Create new MediaRecorder with same stream
+    const newRecorder = new MediaRecorder(stream, {
+      mimeType: currentMimeType,
+    });
+
+    // Set up event handlers
+    newRecorder.ondataavailable = event => {
+      if (event.data.size > 0) {
+        const timestamp = Date.now();
+        recordedChunksRef.current.push(event.data);
+
+        console.log('[AudioRecorder] Audio chunk captured:', {
+          size: event.data.size,
+          type: event.data.type,
+          timestamp,
+          totalChunks: recordedChunksRef.current.length,
+          sequenceNumber: sequenceNumberRef.current,
+        });
+
+        // Real-time chunk sending (if enabled)
+        if (enableRealtime && onAudioChunk) {
+          const sequenceNumber = sequenceNumberRef.current++;
+          console.log('[AudioRecorder] Sending real-time audio chunk:', {
+            sequenceNumber,
+            size: event.data.size,
+            timestamp,
+          });
+          onAudioChunk(event.data, timestamp, sequenceNumber);
+        }
+      }
+    };
+
+    newRecorder.onerror = event => {
+      const error = new Error(`MediaRecorder error: ${event}`);
+      console.error(error);
+      setError(error.message);
+      onError?.(error);
+    };
+
+    newRecorder.onstop = () => {
+      setIsRecording(false);
+      setIsPaused(false);
+      setAudioLevel(0);
+
+      if (recordedChunksRef.current.length > 0) {
+        const completeBlob = new Blob(recordedChunksRef.current, { type: currentMimeType });
+        console.log('[AudioRecorder] Complete recording:', {
+          chunks: recordedChunksRef.current.length,
+          size: completeBlob.size,
+          type: completeBlob.type,
+        });
+
+        onRecordingComplete?.(completeBlob);
+        recordedChunksRef.current = [];
+      }
+
+      stream.getTracks().forEach(track => track.stop());
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+
+    // Start new recorder
+    mediaRecorderRef.current = newRecorder;
+    if (timesliceMs) {
+      newRecorder.start(timesliceMs);
+    } else {
+      newRecorder.start();
+    }
+
+    console.log('[AudioRecorder] MediaRecorder restarted with new EBML header');
+  }, [enableRealtime, onAudioChunk, onError, onRecordingComplete]);
+
   return {
     isRecording,
     isPaused,
@@ -328,5 +436,6 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     stopRecording,
     pauseRecording,
     resumeRecording,
+    restartRecording,
   };
 }
