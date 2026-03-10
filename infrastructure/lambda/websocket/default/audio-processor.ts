@@ -173,66 +173,43 @@ export class AudioProcessor {
     try {
       console.log(`[AudioProcessor] Converting ${chunks.length} WebM chunks to WAV`);
 
-      // Convert each chunk to WAV individually
-      const wavBuffers: Buffer[] = [];
+      // IMPORTANT: MediaRecorder with timeslice generates fragmented WebM chunks:
+      // - Chunk 0: [EBML Header + Segment + Data] (complete)
+      // - Chunk 1+: [Data only] (fragments without headers)
+      //
+      // We MUST concatenate all chunks into a single WebM file before conversion.
+      // Individual chunks (except chunk 0) cannot be processed by ffmpeg.
 
-      for (let i = 0; i < chunks.length; i++) {
-        const inputFile = `/tmp/chunk-${i}-${crypto.randomUUID()}.webm`;
-        const outputFile = `/tmp/chunk-${i}-${crypto.randomUUID()}.wav`;
-        tempFiles.push(inputFile, outputFile);
-
-        // Write chunk to file
-        fs.writeFileSync(inputFile, chunks[i]);
-
-        // Convert to WAV with audio enhancement
-        const command = `${this.ffmpegPath} -i ${inputFile} -af "volume=3.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000,alimiter=limit=0.9" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
-
-        try {
-          console.log(`[AudioProcessor] Converting chunk ${i + 1}/${chunks.length}...`);
-          await execAsync(command);
-
-          // Read converted WAV
-          const wavBuffer = fs.readFileSync(outputFile);
-          wavBuffers.push(wavBuffer);
-
-          console.log(`[AudioProcessor] Chunk ${i + 1} converted: ${wavBuffer.length} bytes`);
-        } catch (chunkError) {
-          console.warn(`[AudioProcessor] Failed to convert chunk ${i}, skipping:`, chunkError);
-          // Continue with other chunks
-        }
-      }
-
-      if (wavBuffers.length === 0) {
-        throw new Error('No chunks were successfully converted');
-      }
-
-      // Combine WAV files by concatenating raw PCM data
-      // Skip WAV header (44 bytes) from all but first file
-      const combinedParts: Buffer[] = [];
-
-      for (let i = 0; i < wavBuffers.length; i++) {
-        if (i === 0) {
-          // First file: include full WAV header
-          combinedParts.push(wavBuffers[i]);
-        } else {
-          // Subsequent files: skip 44-byte WAV header, append PCM data only
-          combinedParts.push(wavBuffers[i].slice(44));
-        }
-      }
-
-      const combinedBuffer = Buffer.concat(combinedParts);
-
-      // Update WAV header with correct file size
-      const dataSize = combinedBuffer.length - 44;
-      combinedBuffer.writeUInt32LE(dataSize, 40); // Data chunk size
-      combinedBuffer.writeUInt32LE(combinedBuffer.length - 8, 4); // File size
-
-      console.log('[AudioProcessor] Combined WAV:', {
-        chunks: wavBuffers.length,
-        outputSize: combinedBuffer.length,
+      const combinedWebM = Buffer.concat(chunks);
+      console.log('[AudioProcessor] Combined WebM chunks:', {
+        totalChunks: chunks.length,
+        combinedSize: combinedWebM.length,
+        chunk0Size: chunks[0]?.length || 0,
+        chunk1Size: chunks[1]?.length || 0,
       });
 
-      return combinedBuffer;
+      // Write combined WebM to temp file
+      const inputFile = `/tmp/combined-${crypto.randomUUID()}.webm`;
+      const outputFile = `/tmp/output-${crypto.randomUUID()}.wav`;
+      tempFiles.push(inputFile, outputFile);
+
+      fs.writeFileSync(inputFile, combinedWebM);
+
+      // Convert combined WebM to WAV with audio enhancement
+      const command = `${this.ffmpegPath} -i ${inputFile} -af "volume=3.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000,alimiter=limit=0.9" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
+
+      console.log('[AudioProcessor] Converting combined WebM to WAV...');
+      await execAsync(command);
+
+      // Read converted WAV
+      const wavBuffer = fs.readFileSync(outputFile);
+
+      console.log('[AudioProcessor] Conversion complete:', {
+        inputSize: combinedWebM.length,
+        outputSize: wavBuffer.length,
+      });
+
+      return wavBuffer;
     } finally {
       // Clean up all temp files
       for (const file of tempFiles) {

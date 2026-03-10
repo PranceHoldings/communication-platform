@@ -56,7 +56,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
   // Silence detection
   const lastSpeechTimeRef = useRef<number>(Date.now());
-  const speechEndSentRef = useRef(false);
+  const speechEndSentRef = useRef(true); // Start as true to prevent initial false detection
 
   // Monitor audio level for UI feedback and silence detection
   const monitorAudioLevel = useCallback(() => {
@@ -263,8 +263,10 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       }
       setIsRecording(true);
 
-      // Reset sequence number
+      // Reset sequence number and silence detection state
       sequenceNumberRef.current = 0;
+      speechEndSentRef.current = true; // Prevent initial false detection
+      lastSpeechTimeRef.current = Date.now(); // Reset speech timestamp
 
       console.log('[AudioRecorder] MediaRecorder started:', {
         state: mediaRecorder.state,
