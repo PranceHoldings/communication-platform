@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
+    "prebuild": "npm run db:generate",
     "build": "turbo run build",
     "build:clean": "bash scripts/clean-build.sh",
     "test": "turbo run test",
@@ -26,8 +27,12 @@
     "cdk:deploy": "cd infrastructure && npx cdk deploy --all",
     "cdk:destroy": "cd infrastructure && npx cdk destroy --all",
     "deploy:check": "bash scripts/pre-deploy-check.sh",
-    "deploy:staging": "npm run build && npm run cdk:deploy -- -c environment=staging",
-    "deploy:production": "npm run build && npm run cdk:deploy -- -c environment=production",
+    "deploy:dev": "cd infrastructure && ./deploy.sh dev",
+    "deploy:dev:clean": "cd infrastructure && ./clean-deploy.sh dev",
+    "deploy:staging": "cd infrastructure && ./deploy.sh staging",
+    "deploy:staging:clean": "cd infrastructure && ./clean-deploy.sh staging",
+    "deploy:production": "cd infrastructure && ./deploy.sh production",
+    "deploy:production:clean": "cd infrastructure && ./clean-deploy.sh production",
     "consistency:check": "bash scripts/detect-inconsistencies.sh",
     "consistency:fix": "bash scripts/fix-inconsistencies.sh",
     "consistency:validate": "ts-node scripts/validate-consistency.ts",
@@ -50,6 +55,7 @@
     "npm": ">=10.0.0"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "ws": "^8.19.0"
   }
 }

@@ -161,22 +161,31 @@ if [[ ! "$CONFIRM" =~ ^[Yy][Ee][Ss]$ ]]; then
     exit 0
 fi
 
-# 2. 依存関係インストール
+# 2. 依存関係インストール（プロジェクトルートで実行）
 echo -e "\n${YELLOW}📦 依存関係をインストール中...${NC}"
+cd "$PROJECT_ROOT"
 npm ci
 echo -e "${GREEN}✅ 依存関係インストール完了${NC}"
 
-# 3. TypeScriptビルド
+# 3. Prisma Client生成
+echo -e "\n${YELLOW}🔧 Prisma Client生成中...${NC}"
+cd "$PROJECT_ROOT/packages/database"
+npx prisma generate
+echo -e "${GREEN}✅ Prisma Client生成完了${NC}"
+
+# 4. TypeScriptビルド（プロジェクトルートで実行）
 echo -e "\n${YELLOW}🔨 TypeScriptをビルド中...${NC}"
+cd "$PROJECT_ROOT"
 npm run build
 echo -e "${GREEN}✅ ビルド完了${NC}"
 
-# 4. CDK Synth（確認）
+# 5. CDK Synth（確認）
 echo -e "\n${YELLOW}🔍 CloudFormationテンプレートを生成中...${NC}"
+cd "$PROJECT_ROOT/infrastructure"
 npm run synth -- --context environment=${ENVIRONMENT}
 echo -e "${GREEN}✅ Synth完了${NC}"
 
-# 5. CDK Bootstrap（初回のみ）
+# 6. CDK Bootstrap（初回のみ）
 echo -e "\n${YELLOW}🔧 CDK Bootstrap をチェック中...${NC}"
 BOOTSTRAP_STACK_NAME="CDKToolkit"
 
@@ -188,7 +197,7 @@ else
     echo -e "${GREEN}✅ Bootstrap完了${NC}"
 fi
 
-# 6. 全スタックデプロイ
+# 7. 全スタックデプロイ
 echo -e "\n${YELLOW}🚢 全スタックをデプロイ中...${NC}"
 echo -e "${BLUE}   これには数分かかる場合があります...${NC}"
 
@@ -197,7 +206,7 @@ npm run deploy -- \
   --require-approval never \
   --progress events
 
-# 7. デプロイ結果の取得
+# 8. デプロイ結果の取得
 echo -e "\n${YELLOW}📊 デプロイされたスタック一覧:${NC}"
 aws cloudformation list-stacks \
   --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
@@ -205,14 +214,19 @@ aws cloudformation list-stacks \
   --output table \
   --region ${AWS_REGION}
 
-# 8. Lambda関数のバージョン確認
+# 9. Lambda関数のバージョン確認
 echo -e "\n${YELLOW}🔍 Lambda関数のバージョンを確認中...${NC}"
 
 # WebSocket Lambda関数のバージョンを確認
 WEBSOCKET_FUNCTION="prance-websocket-default-${ENVIRONMENT}"
-LOCAL_VERSION=$(cat lambda/websocket/default/package.json | grep '"version"' | sed 's/.*"version": "\(.*\)".*/\1/')
+WEBSOCKET_PACKAGE="$PROJECT_ROOT/infrastructure/lambda/websocket/default/package.json"
 
-echo -e "${BLUE}📦 ローカルバージョン:${NC} ${LOCAL_VERSION}"
+if [ -f "$WEBSOCKET_PACKAGE" ]; then
+  LOCAL_VERSION=$(cat "$WEBSOCKET_PACKAGE" | grep '"version"' | sed 's/.*"version": "\(.*\)".*/\1/')
+  echo -e "${BLUE}📦 ローカルバージョン:${NC} ${LOCAL_VERSION}"
+else
+  echo -e "${YELLOW}⚠️  package.jsonが見つかりません${NC}"
+fi
 
 # Lambda関数情報を取得
 FUNCTION_INFO=$(aws lambda get-function --function-name ${WEBSOCKET_FUNCTION} --query 'Configuration.LastModified' --output text 2>/dev/null || echo "NOT_FOUND")
