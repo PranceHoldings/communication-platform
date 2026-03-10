@@ -47,12 +47,18 @@ export class AudioProcessor {
   private ffmpegPath: string;
 
   constructor(private config: AudioProcessorConfig) {
-    // Initialize ffmpeg path
-    this.ffmpegPath = process.env.FFMPEG_PATH || '';
-    if (!this.ffmpegPath) {
-      try {
-        this.ffmpegPath = '/opt/bin/ffmpeg'; // Lambda Layer default
-      } catch (error) {
+    // Initialize ffmpeg path with fallback options (same as convertToWav)
+    this.ffmpegPath = '';
+
+    if (process.env.FFMPEG_PATH) {
+      this.ffmpegPath = process.env.FFMPEG_PATH;
+    } else {
+      // Try Lambda Layer path first
+      const fs = require('fs');
+      if (fs.existsSync('/opt/bin/ffmpeg')) {
+        this.ffmpegPath = '/opt/bin/ffmpeg';
+      } else {
+        // Fallback to npm package (ffmpeg-static)
         try {
           this.ffmpegPath = require('ffmpeg-static');
         } catch (error) {
