@@ -8,10 +8,14 @@
 import { useState, useRef, useCallback } from 'react';
 
 interface UseAudioRecorderOptions {
-  onAudioChunk?: (chunk: Blob, timestamp: number) => void;
+  onAudioChunk?: (chunk: Blob, timestamp: number, sequenceNumber: number) => void;
   onRecordingComplete?: (audioBlob: Blob) => void;
+  onSpeechEnd?: () => void; // Called when silence is detected
   onError?: (error: Error) => void;
   mimeType?: string;
+  enableRealtime?: boolean; // Enable real-time chunk sending (default: true)
+  silenceThreshold?: number; // Silence detection threshold (0-1, default: 0.05)
+  silenceDuration?: number; // Silence duration in ms to trigger speech_end (default: 500)
 }
 
 interface UseAudioRecorderReturn {
@@ -29,8 +33,12 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
   const {
     onAudioChunk,
     onRecordingComplete,
+    onSpeechEnd,
     onError,
     mimeType = 'audio/webm;codecs=opus',
+    enableRealtime = true,
+    silenceThreshold = 0.05,
+    silenceDuration = 500,
   } = options;
 
   const [isRecording, setIsRecording] = useState(false);
@@ -44,8 +52,13 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const sequenceNumberRef = useRef(0);
 
-  // Monitor audio level for UI feedback
+  // Silence detection
+  const lastSpeechTimeRef = useRef<number>(Date.now());
+  const speechEndSentRef = useRef(false);
+
+  // Monitor audio level for UI feedback and silence detection
   const monitorAudioLevel = useCallback(() => {
     if (!analyserRef.current) return;
 
@@ -57,13 +70,31 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     const normalizedLevel = average / 255;
     setAudioLevel(normalizedLevel);
 
-    // Log when audio level is detected (for debugging)
-    if (normalizedLevel > 0.05) {
-      console.log('[AudioRecorder] Audio level detected:', normalizedLevel.toFixed(3));
+    // Silence detection
+    if (enableRealtime) {
+      const now = Date.now();
+
+      if (normalizedLevel > silenceThreshold) {
+        // Speech detected
+        lastSpeechTimeRef.current = now;
+        speechEndSentRef.current = false;
+
+        // Log when audio level is detected (for debugging)
+        console.log('[AudioRecorder] Audio level detected:', normalizedLevel.toFixed(3));
+      } else {
+        // Silence detected
+        const silenceDurationMs = now - lastSpeechTimeRef.current;
+
+        if (silenceDurationMs >= silenceDuration && !speechEndSentRef.current) {
+          console.log('[AudioRecorder] Silence detected for', silenceDurationMs, 'ms - triggering speech_end');
+          speechEndSentRef.current = true;
+          onSpeechEnd?.();
+        }
+      }
     }
 
     animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
-  }, []);
+  }, [enableRealtime, silenceThreshold, silenceDuration, onSpeechEnd]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -154,11 +185,19 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
             type: event.data.type,
             timestamp,
             totalChunks: recordedChunksRef.current.length,
+            sequenceNumber: sequenceNumberRef.current,
           });
 
-          // Note: onAudioChunk is intentionally NOT called here
-          // Reason: MediaRecorder with timeslice creates fragmented WebM chunks
-          // that cannot be simply concatenated. We only process the complete blob.
+          // Real-time chunk sending (if enabled)
+          if (enableRealtime && onAudioChunk) {
+            const sequenceNumber = sequenceNumberRef.current++;
+            console.log('[AudioRecorder] Sending real-time audio chunk:', {
+              sequenceNumber,
+              size: event.data.size,
+              timestamp,
+            });
+            onAudioChunk(event.data, timestamp, sequenceNumber);
+          }
         } else {
           console.warn('[AudioRecorder] ondataavailable fired but data.size is 0');
         }
@@ -204,21 +243,32 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
       mediaRecorderRef.current = mediaRecorder;
 
-      console.log('[AudioRecorder] Starting MediaRecorder (no timeslice):', {
+      // Determine recording mode
+      const timesliceMs = enableRealtime ? 1000 : undefined;
+
+      console.log('[AudioRecorder] Starting MediaRecorder:', {
         mimeType: actualMimeType,
         state: mediaRecorder.state,
+        mode: enableRealtime ? 'real-time' : 'batch',
+        timeslice: timesliceMs ? `${timesliceMs}ms` : 'none',
         hasOnDataAvailable: !!mediaRecorder.ondataavailable,
       });
 
-      // Start recording WITHOUT timeslice to get one complete WebM blob
-      // Note: Previously used timeslice=250ms, but this created fragmented chunks
-      // that cannot be properly concatenated into a valid WebM file
-      mediaRecorder.start();
+      // Start recording with timeslice for real-time mode
+      // Note: We send Base64-encoded chunks via WebSocket to avoid WebM fragmentation issues
+      if (timesliceMs) {
+        mediaRecorder.start(timesliceMs);
+      } else {
+        mediaRecorder.start();
+      }
       setIsRecording(true);
+
+      // Reset sequence number
+      sequenceNumberRef.current = 0;
 
       console.log('[AudioRecorder] MediaRecorder started:', {
         state: mediaRecorder.state,
-        timeslice: 'none (complete blob on stop)',
+        mode: enableRealtime ? 'real-time (1s chunks)' : 'batch (complete blob on stop)',
       });
 
       // Start audio level monitoring

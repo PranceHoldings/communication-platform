@@ -219,6 +219,9 @@ interface ConnectionData {
   audioProcessingInProgress?: boolean; // Flag set by audio_data_part when lock is acquired
   currentAudioChunkId?: string | null; // ChunkId currently being processed
   sessionEndReceived?: boolean; // Flag to indicate session_end was received while audio_data_part was processing
+  // Real-time audio streaming (Phase 1.5)
+  realtimeAudioSequenceNumber?: number; // Latest sequence number received
+  realtimeAudioChunkCount?: number; // Total count of real-time chunks
   // Note: videoChunkParts removed - parts are stored directly in S3 to avoid DynamoDB 400KB limit
   [key: string]: unknown;
 }
@@ -362,6 +365,177 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             stage: 'receiving_audio',
             progress: 0.1,
             chunksReceived: chunkCount,
+          });
+        }
+        break;
+
+      case 'audio_chunk_realtime':
+        // Handle real-time audio chunks (Phase 1.5 - streaming STT)
+        const rtAudioData = message.data as string;
+        const rtTimestamp = message.timestamp as number;
+        const rtSequenceNumber = message.sequenceNumber as number;
+        const rtContentType = message.contentType as string;
+        const rtSessionId = connectionData?.sessionId || 'unknown';
+
+        console.log('[audio_chunk_realtime] Received real-time audio chunk:', {
+          sequenceNumber: rtSequenceNumber,
+          timestamp: rtTimestamp,
+          dataSize: rtAudioData ? rtAudioData.length : 0,
+          contentType: rtContentType,
+          sessionId: rtSessionId,
+        });
+
+        try {
+          // Save this chunk to S3 for later processing (on speech_end)
+          const rtChunkKey = `sessions/${rtSessionId}/realtime-chunks/chunk-${rtSequenceNumber.toString().padStart(6, '0')}.webm`;
+          const rtAudioBuffer = Buffer.from(rtAudioData, 'base64');
+
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: S3_BUCKET,
+              Key: rtChunkKey,
+              Body: rtAudioBuffer,
+              ContentType: rtContentType || AUDIO_CONTENT_TYPE,
+              Metadata: {
+                sequenceNumber: rtSequenceNumber.toString(),
+                timestamp: rtTimestamp.toString(),
+                sessionId: rtSessionId,
+              },
+            })
+          );
+
+          console.log('[audio_chunk_realtime] Saved chunk to S3:', {
+            key: rtChunkKey,
+            sequenceNumber: rtSequenceNumber,
+            size: rtAudioBuffer.length,
+          });
+
+          // Update connection data with latest sequence number
+          await updateConnectionData(connectionId, {
+            realtimeAudioSequenceNumber: rtSequenceNumber,
+            realtimeAudioChunkCount: (connectionData?.realtimeAudioChunkCount || 0) + 1,
+          });
+        } catch (error) {
+          console.error('[audio_chunk_realtime] Failed to save chunk to S3:', error);
+          await sendToConnection(connectionId, {
+            type: 'error',
+            code: 'REALTIME_AUDIO_CHUNK_ERROR',
+            message: 'Failed to save real-time audio chunk',
+            sequenceNumber: rtSequenceNumber,
+          });
+        }
+        break;
+
+      case 'speech_end':
+        // User stopped speaking - process accumulated real-time chunks (Phase 1.5)
+        const speechEndSessionId = connectionData?.sessionId || 'unknown';
+        const lastSequenceNumber = connectionData?.realtimeAudioSequenceNumber || -1;
+        const totalRealtimeChunks = connectionData?.realtimeAudioChunkCount || 0;
+
+        console.log('[speech_end] Speech ended - processing accumulated chunks:', {
+          sessionId: speechEndSessionId,
+          lastSequenceNumber,
+          totalChunks: totalRealtimeChunks,
+        });
+
+        if (lastSequenceNumber < 0 || totalRealtimeChunks === 0) {
+          console.warn('[speech_end] No real-time chunks to process');
+          await sendToConnection(connectionId, {
+            type: 'transcript_final',
+            speaker: 'USER',
+            text: '',
+            timestamp_start: Date.now(),
+            timestamp_end: Date.now(),
+          });
+          break;
+        }
+
+        try {
+          // Send processing status
+          await sendToConnection(connectionId, {
+            type: 'processing_update',
+            stage: 'transcribing',
+            progress: 0.33,
+          });
+
+          // Download all chunks from S3 (0 to lastSequenceNumber)
+          console.log(`[speech_end] Downloading ${totalRealtimeChunks} chunks from S3...`);
+          const rtChunkBuffers: Buffer[] = [];
+
+          for (let seq = 0; seq <= lastSequenceNumber; seq++) {
+            const rtChunkKey = `sessions/${speechEndSessionId}/realtime-chunks/chunk-${seq.toString().padStart(6, '0')}.webm`;
+
+            try {
+              const getResponse = await s3Client.send(
+                new GetObjectCommand({
+                  Bucket: S3_BUCKET,
+                  Key: rtChunkKey,
+                })
+              );
+
+              if (getResponse.Body) {
+                const chunkBuffer = await getResponse.Body.transformToByteArray();
+                rtChunkBuffers.push(Buffer.from(chunkBuffer));
+                console.log(`[speech_end] Downloaded chunk ${seq}: ${chunkBuffer.length} bytes`);
+              } else {
+                console.warn(`[speech_end] Chunk ${seq} has no body, skipping`);
+              }
+            } catch (error) {
+              console.warn(`[speech_end] Failed to download chunk ${seq}:`, error);
+              // Continue with other chunks
+            }
+          }
+
+          if (rtChunkBuffers.length === 0) {
+            console.warn('[speech_end] No chunks downloaded, cannot process');
+            await sendToConnection(connectionId, {
+              type: 'error',
+              code: 'NO_AUDIO_DATA',
+              message: 'No audio data received',
+            });
+            break;
+          }
+
+          // Concatenate all chunks into one audio buffer
+          const completeAudioBuffer = Buffer.concat(rtChunkBuffers);
+          console.log('[speech_end] Combined audio:', {
+            totalChunks: rtChunkBuffers.length,
+            combinedSize: completeAudioBuffer.length,
+          });
+
+          // Process through STT -> AI -> TTS pipeline (existing function)
+          await handleAudioProcessing(connectionId, completeAudioBuffer, connectionData);
+
+          // Clean up real-time chunks from S3
+          console.log('[speech_end] Cleaning up real-time chunks...');
+          for (let seq = 0; seq <= lastSequenceNumber; seq++) {
+            const rtChunkKey = `sessions/${speechEndSessionId}/realtime-chunks/chunk-${seq.toString().padStart(6, '0')}.webm`;
+            try {
+              await s3Client.send(
+                new DeleteObjectCommand({
+                  Bucket: S3_BUCKET,
+                  Key: rtChunkKey,
+                })
+              );
+            } catch (error) {
+              console.warn(`[speech_end] Failed to delete chunk ${seq}:`, error);
+            }
+          }
+
+          // Reset real-time chunk tracking
+          await updateConnectionData(connectionId, {
+            realtimeAudioSequenceNumber: -1,
+            realtimeAudioChunkCount: 0,
+          });
+
+          console.log('[speech_end] Real-time audio processing complete');
+        } catch (error) {
+          console.error('[speech_end] Failed to process real-time audio:', error);
+          await sendToConnection(connectionId, {
+            type: 'error',
+            code: 'SPEECH_END_PROCESSING_ERROR',
+            message: 'Failed to process speech',
+            details: error instanceof Error ? error.message : 'Unknown error',
           });
         }
         break;

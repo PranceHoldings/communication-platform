@@ -57,6 +57,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   // WebSocket value refs (to break circular dependencies)
   const isConnectedRef = useRef<boolean>(false);
   const isAuthenticatedRef = useRef<boolean>(false);
+  const sendMessageRef = useRef<((message: Record<string, unknown>) => void) | null>(null);
+  const sendSpeechEndRef = useRef<(() => void) | null>(null);
   const sendAudioDataRef = useRef<((blob: Blob) => Promise<void>) | null>(null);
   const sendVideoChunkRef = useRef<((chunk: Blob, timestamp: number) => Promise<void>) | null>(
     null
@@ -271,7 +273,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     error: wsError,
     connect,
     disconnect,
+    sendMessage,
     sendUserSpeech,
+    sendSpeechEnd,
     sendAudioData,
     sendVideoChunk,
     endSession,
@@ -292,6 +296,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   useEffect(() => {
     isConnectedRef.current = isConnected;
   }, [isConnected]);
+
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  }, [sendMessage]);
+
+  useEffect(() => {
+    sendSpeechEndRef.current = sendSpeechEnd;
+  }, [sendSpeechEnd]);
 
   useEffect(() => {
     sendAudioDataRef.current = sendAudioData;
@@ -338,21 +350,62 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   // Audio Recorder統合
   const handleAudioChunk = useCallback(
-    (chunk: Blob, timestamp: number) => {
-      console.log('[SessionPlayer] handleAudioChunk called (buffering only):', {
+    async (chunk: Blob, timestamp: number, sequenceNumber: number) => {
+      console.log('[SessionPlayer] handleAudioChunk called (real-time mode):', {
         chunkSize: chunk.size,
         chunkType: chunk.type,
         timestamp,
+        sequenceNumber,
         isConnected,
         status,
       });
 
-      // Audio chunks are buffered by useAudioRecorder
-      // They will be sent together in handleRecordingComplete
-      // This prevents duplicate processing (one per chunk + one complete)
+      // Send audio chunk in real-time via WebSocket
+      if (isConnectedRef.current && isAuthenticatedRef.current && sendMessageRef.current) {
+        try {
+          // Convert chunk to ArrayBuffer and send as Base64
+          const arrayBuffer = await chunk.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+
+          // Convert to Base64
+          let binary = '';
+          for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]!);
+          }
+          const base64 = btoa(binary);
+
+          // Send via WebSocket
+          sendMessageRef.current({
+            type: 'audio_chunk_realtime',
+            data: base64,
+            timestamp,
+            sequenceNumber,
+            contentType: chunk.type,
+          });
+
+          console.log('[SessionPlayer] Real-time audio chunk sent:', {
+            sequenceNumber,
+            size: chunk.size,
+            base64Length: base64.length,
+          });
+        } catch (error) {
+          console.error('[SessionPlayer] Failed to send real-time audio chunk:', error);
+        }
+      }
     },
     [isConnected, status]
   );
+
+  const handleSpeechEnd = useCallback(() => {
+    console.log('[SessionPlayer] Speech end detected (silence)');
+
+    // Send speech_end signal via WebSocket
+    if (isConnectedRef.current && sendSpeechEndRef.current) {
+      sendSpeechEndRef.current();
+      console.log('[SessionPlayer] speech_end signal sent');
+      toast.info(t('sessions.player.messages.processingAudio'));
+    }
+  }, [t]);
 
   const handleRecordingError = useCallback(
     (error: Error) => {
@@ -402,10 +455,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     resumeRecording,
     error: recordingError,
   } = useAudioRecorder({
-    onRecordingComplete: handleRecordingComplete,
+    enableRealtime: true, // Enable real-time audio chunk sending
+    onAudioChunk: handleAudioChunk, // Real-time chunk callback
+    onSpeechEnd: handleSpeechEnd, // Silence detection callback
+    onRecordingComplete: handleRecordingComplete, // Still keep for complete recording
     onError: handleRecordingError,
-    // Note: timeslice removed - we now get one complete WebM blob on stop
-    // instead of fragmented chunks that cannot be properly concatenated
+    silenceThreshold: 0.05, // Silence threshold (0-1)
+    silenceDuration: 500, // 500ms silence triggers speech_end
   });
 
   // 録画機能 - ビデオチャンクハンドラー
