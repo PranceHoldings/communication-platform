@@ -138,13 +138,15 @@ fi
 npx prisma generate
 echo -e "${GREEN}✅ Prisma Client生成完了${NC}"
 
-# 5. ビルド準備
-echo -e "\n${YELLOW}📦 Step 1: ビルド準備実行中...${NC}"
-cd "$PROJECT_ROOT/infrastructure"
-./prepare.sh
+# 5. TypeScriptビルド
+echo -e "\n${YELLOW}🔨 TypeScriptをビルド中...${NC}"
+cd "$PROJECT_ROOT"
+npm run build
+echo -e "${GREEN}✅ ビルド完了${NC}"
 
 # 6. デプロイ
-echo -e "\n${YELLOW}🚢 Step 2: デプロイ実行中...${NC}"
+echo -e "\n${YELLOW}🚢 デプロイ実行中...${NC}"
+cd "$PROJECT_ROOT/infrastructure"
 ./deploy-simple.sh "$ENVIRONMENT"
 
 echo -e "\n${GREEN}✅ クリーンビルド + デプロイ完了！${NC}"
