@@ -10,6 +10,7 @@ import {
   TranscriptMessage,
   AvatarResponseMessage,
   AudioResponseMessage,
+  TTSAudioChunkMessage,
   ProcessingUpdateMessage,
   SessionCompleteMessage,
   ErrorMessage,
@@ -258,6 +259,22 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     [t]
   );
 
+  // Phase 1.5: Handle TTS streaming chunks
+  const handleTTSAudioChunk = useCallback(
+    (message: TTSAudioChunkMessage) => {
+      console.log('[SessionPlayer] TTS audio chunk received:', {
+        audioLength: message.audio?.length || 0,
+        isFinal: message.isFinal,
+        timestamp: message.timestamp,
+      });
+
+      // For now, we'll wait for the final audio_response message with the complete audio URL
+      // Real-time streaming playback would require MediaSource API or Web Audio API
+      // This is a placeholder for future implementation
+    },
+    []
+  );
+
   const handleAudioResponse = useCallback(
     (message: AudioResponseMessage) => {
       // AI音声レスポンスを再生
@@ -299,13 +316,16 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           audioRef.current = new Audio();
         }
 
+        // CRITICAL FIX: Set volume to ensure audio is audible
+        audioRef.current.volume = 1.0;
+
         audioRef.current.src = audioUrl;
         audioRef.current.onplay = () => {
           setIsPlayingAudio(true);
           // TTS complete, audio playback started - return to idle
           setProcessingStage('idle');
           setProcessingMessage('');
-          console.log('[SessionPlayer] Audio playback started');
+          console.log('[SessionPlayer] Audio playback started, volume:', audioRef.current?.volume);
         };
         audioRef.current.onended = () => {
           setIsPlayingAudio(false);
@@ -326,6 +346,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         // 再生開始
         audioRef.current.play().catch(error => {
           console.error('[SessionPlayer] Failed to play audio:', error);
+          console.error('[SessionPlayer] Error details:', {
+            name: (error as Error).name,
+            message: (error as Error).message,
+          });
           toast.error(t('sessions.player.messages.audioPlaybackError'));
           setIsPlayingAudio(false);
         });
@@ -397,6 +421,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onTranscript: handleTranscript,
     onAvatarResponse: handleAvatarResponse,
     onAudioResponse: handleAudioResponse,
+    onAudioChunk: handleTTSAudioChunk, // Phase 1.5: Real-time TTS streaming
     onProcessingUpdate: handleProcessingUpdate,
     onSessionComplete: handleSessionComplete,
     onError: handleError,
