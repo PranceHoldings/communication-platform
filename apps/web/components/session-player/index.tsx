@@ -467,24 +467,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       setIsAuthenticated(true);
       isAuthenticatedRef.current = true;
 
-      // If initial greeting is provided, add it to transcript immediately
+      // If initial greeting is provided, Lambda will automatically:
+      // 1. Send avatar_response_final (transcript will be added by handleAvatarResponse)
+      // 2. Generate TTS and send audio_response (audio will play automatically)
+      // 3. When audio finishes, initialGreetingCompleted will be set to true
       if (receivedInitialGreeting) {
-        console.log('[SessionPlayer] Adding initial greeting to transcript:', receivedInitialGreeting);
-        setTranscript(prev => [
-          ...prev,
-          {
-            id: `ai-initial-${Date.now()}`,
-            speaker: 'AI',
-            text: receivedInitialGreeting,
-            timestamp: Date.now(),
-            partial: false,
-          },
-        ]);
-
-        // Generate and play TTS for initial greeting
-        // Note: The Lambda handler should automatically generate TTS and send audio_response
-        // This is just logging for debugging
-        console.log('[SessionPlayer] Initial greeting will be converted to speech by Lambda');
+        console.log('[SessionPlayer] Initial greeting configured:', {
+          text: receivedInitialGreeting.substring(0, 50) + '...',
+          note: 'Lambda will send avatar_response_final and audio_response automatically',
+        });
+      } else {
+        // No initial greeting - start silence timer immediately
+        console.log('[SessionPlayer] No initial greeting - silence timer will start immediately');
+        setInitialGreetingCompleted(true);
       }
 
       toast.success(t('sessions.player.messages.authenticated'));

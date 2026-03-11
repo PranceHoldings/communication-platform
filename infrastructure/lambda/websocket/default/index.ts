@@ -281,9 +281,20 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           enableSilencePrompt,
         });
 
+        // Initialize conversation history
+        const initialConversationHistory: any[] = [];
+
+        // If initial greeting is provided, add to conversation history
+        if (initialGreeting) {
+          initialConversationHistory.push({
+            role: 'assistant',
+            content: initialGreeting,
+          });
+        }
+
         await updateConnectionData(connectionId, {
           sessionId,
-          conversationHistory: [],
+          conversationHistory: initialConversationHistory,
           scenarioLanguage, // Store language for audio processing
           scenarioPrompt, // Store system prompt for AI context
           initialGreeting, // Store initial AI greeting
@@ -291,6 +302,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           enableSilencePrompt, // Store silence prompt flag
         });
 
+        // Send authenticated response
         await sendToConnection(connectionId, {
           type: 'authenticated',
           message: 'Session initialized',
@@ -299,6 +311,62 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           silenceTimeout,
           enableSilencePrompt,
         });
+
+        // If initial greeting is provided, generate TTS and send audio
+        if (initialGreeting) {
+          console.log('[authenticate] Generating TTS for initial greeting:', {
+            textLength: initialGreeting.length,
+            language: scenarioLanguage,
+          });
+
+          try {
+            // Generate TTS for initial greeting
+            const audioProc = getAudioProcessor();
+            const ttsResult = await audioProc.generateSimpleSpeech(initialGreeting);
+
+            console.log('[authenticate] Initial greeting TTS generated:', {
+              audioSize: ttsResult.audio.length,
+              contentType: ttsResult.contentType,
+            });
+
+            // Save audio to S3
+            const audioKey = `sessions/${sessionId}/initial-greeting/audio-${Date.now()}.mp3`;
+            await s3Client.send(
+              new PutObjectCommand({
+                Bucket: S3_BUCKET,
+                Key: audioKey,
+                Body: ttsResult.audio,
+                ContentType: ttsResult.contentType,
+              })
+            );
+
+            // Generate audio URL (CloudFront)
+            const audioUrl = `https://${CLOUDFRONT_DOMAIN}/${audioKey}`;
+
+            console.log('[authenticate] Initial greeting audio saved to S3:', audioKey);
+
+            // Send avatar_response_final for transcript display
+            await sendToConnection(connectionId, {
+              type: 'avatar_response_final',
+              text: initialGreeting,
+              timestamp: Date.now(),
+            });
+
+            // Send audio_response with S3 URL
+            await sendToConnection(connectionId, {
+              type: 'audio_response',
+              audioUrl: audioUrl,
+              contentType: ttsResult.contentType,
+              timestamp: Date.now(),
+            });
+
+            console.log('[authenticate] Initial greeting sent successfully');
+          } catch (error) {
+            console.error('[authenticate] Failed to generate initial greeting TTS:', error);
+            // Don't break authentication - just log the error
+            // The text will still be displayed in the transcript
+          }
+        }
         break;
 
       case 'version':
