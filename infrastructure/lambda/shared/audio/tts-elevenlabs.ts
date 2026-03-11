@@ -289,7 +289,7 @@ export class ElevenLabsTextToSpeech {
    * @param options - TTS options
    * @returns AsyncGenerator yielding base64-encoded audio chunks (MP3)
    */
-  async generateSpeechWebSocketStream(
+  generateSpeechWebSocketStream(
     options: TTSOptions
   ): Promise<AsyncGenerator<{ audio: string; isFinal: boolean }>> {
     const {
