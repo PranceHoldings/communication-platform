@@ -77,7 +77,7 @@ export const handler: APIGatewayProxyHandler = async event => {
       );
     }
 
-    // Validate language if provided
+    // Validate language if provided (ISO 639-1 format: 'ja', 'en', 'zh-CN', etc.)
     if (language && !LANGUAGE_DEFAULTS.SUPPORTED_LANGUAGES.includes(language)) {
       return errorResponse(
         400,

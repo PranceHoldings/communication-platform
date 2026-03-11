@@ -3,11 +3,9 @@
  * Runs SQL migration files in sequence
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../shared/database/prisma';
 import * as fs from 'fs';
 import * as path from 'path';
-
-const prisma = new PrismaClient();
 
 interface MigrationFile {
   name: string;

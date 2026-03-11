@@ -231,6 +231,8 @@ export interface WebSocketMessageBase {
 export interface AuthenticateMessage extends WebSocketMessageBase {
   type: 'authenticate';
   sessionId: string;
+  scenarioPrompt?: string; // Optional: System prompt from scenario configJson
+  scenarioLanguage?: string; // Optional: Scenario language ('ja', 'en', etc.)
 }
 
 /**

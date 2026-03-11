@@ -73,3 +73,17 @@ node_modules.broken-*
 node_modules.broken-*
 console.log
 consolelog.log
+
+# next-intl migration - DEPRECATED, DO NOT USE
+# This directory was removed during migration to custom i18n system
+# Keep in .gitignore to prevent accidental re-creation
+apps/web/i18n/
+**/i18n/request.ts
+
+# Old package.json backups
+package.json.old
+*.old
+
+# Infrastructure temporary directories
+infrastructure/apps/
+infrastructure/*.broken-*

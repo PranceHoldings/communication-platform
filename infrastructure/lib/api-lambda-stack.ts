@@ -379,6 +379,12 @@ export class ApiLambdaStack extends cdk.Stack {
             // Copy Prisma schema
             `mkdir -p ${outputDir}/prisma`,
             `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+            // Copy shared modules (CRITICAL: Required by some Lambda functions)
+            `mkdir -p ${outputDir}/shared`,
+            `cp -r /asset-input/infrastructure/lambda/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
+            `cp -r /asset-input/infrastructure/lambda/shared/config ${outputDir}/shared/ 2>/dev/null || true`,
+            `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
+            `cp -r /asset-input/infrastructure/lambda/shared/utils ${outputDir}/shared/ 2>/dev/null || true`,
           ];
         },
         beforeInstall(): string[] {
@@ -717,6 +723,22 @@ export class ApiLambdaStack extends cdk.Stack {
         sourceMap: true,
         target: 'es2020',
         externalModules: ['aws-sdk'],
+        commandHooks: {
+          beforeBundling(inputDir: string, outputDir: string): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            return [
+              // Copy shared modules (JWT auth)
+              `mkdir -p ${outputDir}/shared`,
+              `cp -r /asset-input/shared/auth ${outputDir}/shared/`,
+              `cp -r /asset-input/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
+            ];
+          },
+          beforeInstall(): string[] {
+            return [];
+          },
+        },
       },
     });
 
@@ -827,11 +849,17 @@ export class ApiLambdaStack extends cdk.Stack {
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
             return [
-              // Copy shared modules (AI, Audio, and Analysis processors)
+              // Copy ALL shared modules (CRITICAL: Without these, Lambda will fail with ImportModuleError)
               `mkdir -p ${outputDir}/shared`,
               `cp -r /asset-input/shared/ai ${outputDir}/shared/`,
               `cp -r /asset-input/shared/audio ${outputDir}/shared/`,
               `cp -r /asset-input/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r /asset-input/shared/config ${outputDir}/shared/`,      // CRITICAL: defaults.ts, language-config.ts
+              `cp -r /asset-input/shared/utils ${outputDir}/shared/`,       // CRITICAL: error-logger.ts
+              `cp -r /asset-input/shared/types ${outputDir}/shared/`,       // CRITICAL: Type definitions
+              `cp -r /asset-input/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r /asset-input/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
+              `echo "Shared modules copied successfully"`,
             ];
           },
           beforeInstall(): string[] {

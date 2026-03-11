@@ -24,6 +24,7 @@ export default function EditScenarioPage() {
   const [category, setCategory] = useState('');
   const [language, setLanguage] = useState<string>(defaultLocale);
   const [visibility, setVisibility] = useState<Visibility>('PRIVATE');
+  const [systemPrompt, setSystemPrompt] = useState('');
   const [configJson, setConfigJson] = useState('');
 
   // Load existing scenario data
@@ -35,7 +36,18 @@ export default function EditScenarioPage() {
         setCategory(scenario.category);
         setLanguage(scenario.language);
         setVisibility(scenario.visibility);
-        setConfigJson(JSON.stringify(scenario.configJson, null, 2));
+
+        // Extract systemPrompt from configJson
+        const config = scenario.configJson as any;
+        if (config.systemPrompt) {
+          setSystemPrompt(config.systemPrompt);
+          // Remove systemPrompt from config display
+          const { systemPrompt: _, ...restConfig } = config;
+          setConfigJson(JSON.stringify(restConfig, null, 2));
+        } else {
+          setConfigJson(JSON.stringify(scenario.configJson, null, 2));
+        }
+
         setIsLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load scenario');
@@ -68,6 +80,11 @@ export default function EditScenarioPage() {
     } catch (err) {
       setError(t('scenarios.create.validation.invalidJson'));
       return;
+    }
+
+    // Add systemPrompt to config
+    if (systemPrompt.trim()) {
+      parsedConfig.systemPrompt = systemPrompt.trim();
     }
 
     setIsSubmitting(true);
@@ -204,19 +221,36 @@ export default function EditScenarioPage() {
           </div>
         </div>
 
+        {/* System Prompt */}
+        <div>
+          <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 mb-2">
+            {t('scenarios.create.form.systemPrompt')}
+          </label>
+          <textarea
+            id="systemPrompt"
+            value={systemPrompt}
+            onChange={e => setSystemPrompt(e.target.value)}
+            placeholder={t('scenarios.create.form.systemPromptPlaceholder')}
+            rows={6}
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+          <p className="mt-2 text-sm text-gray-500">
+            {t('scenarios.create.form.systemPromptHelp')}
+          </p>
+        </div>
+
         {/* Configuration JSON */}
         <div>
           <label htmlFor="configJson" className="block text-sm font-medium text-gray-700 mb-2">
-            {t('scenarios.create.form.config')} *
+            {t('scenarios.create.form.config')}
           </label>
           <textarea
             id="configJson"
             value={configJson}
             onChange={e => setConfigJson(e.target.value)}
             placeholder={t('scenarios.create.form.configPlaceholder')}
-            rows={10}
+            rows={6}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            required
           />
           <p className="mt-2 text-sm text-gray-500">{t('scenarios.edit.configHelp')}</p>
         </div>

@@ -78,6 +78,15 @@ remove_directory_robust "packages/shared/node_modules" "packages/sharedのnode_m
 remove_directory_robust "packages/database/node_modules" "packages/databaseのnode_modules"
 remove_directory_robust "apps/web/node_modules" "apps/webのnode_modules"
 
+# Delete Lambda function node_modules (CRITICAL - prevents stale SDK issues)
+echo -e "${BLUE}   Lambda関数のnode_modulesを削除中...${NC}"
+remove_directory_robust "infrastructure/lambda/websocket/default/node_modules" "WebSocket default handler"
+remove_directory_robust "infrastructure/lambda/websocket/connect/node_modules" "WebSocket connect handler"
+remove_directory_robust "infrastructure/lambda/websocket/disconnect/node_modules" "WebSocket disconnect handler"
+if [ -d "infrastructure/lambda/sessions/analysis/node_modules" ]; then
+  remove_directory_robust "infrastructure/lambda/sessions/analysis/node_modules" "Sessions analysis handler"
+fi
+
 echo -e "${GREEN}✅ node_modulesクリーンアップ完了${NC}"
 
 # 2. ビルドキャッシュクリーンアップ
@@ -151,13 +160,23 @@ fi
 npx prisma generate
 echo -e "${GREEN}✅ Prisma Client生成完了${NC}"
 
-# 6. TypeScriptビルド
+# 6. Lambda Dependencies Installation (CRITICAL)
+echo -e "\n${YELLOW}📦 Lambda依存関係を再インストール中...${NC}"
+if [ -f "$PROJECT_ROOT/scripts/fix-lambda-node-modules.sh" ]; then
+    "$PROJECT_ROOT/scripts/fix-lambda-node-modules.sh"
+    echo -e "${GREEN}✅ Lambda依存関係インストール完了${NC}"
+else
+    echo -e "${YELLOW}⚠️  修復スクリプトが見つかりません${NC}"
+    echo -e "${YELLOW}   手動でLambda依存関係をインストールしてください${NC}"
+fi
+
+# 7. TypeScriptビルド
 echo -e "\n${YELLOW}🔨 TypeScriptをビルド中...${NC}"
 cd "$PROJECT_ROOT"
 npm run build
 echo -e "${GREEN}✅ ビルド完了${NC}"
 
-# 7. デプロイ
+# 8. デプロイ
 echo -e "\n${YELLOW}🚢 デプロイ実行中...${NC}"
 cd "$PROJECT_ROOT/infrastructure"
 ./deploy-simple.sh "$ENVIRONMENT"

@@ -38,8 +38,11 @@
       "categoryPlaceholder": "e.g., interview, training, sales",
       "language": "Language",
       "visibility": "Visibility",
-      "config": "Configuration (JSON)",
-      "configPlaceholder": "Enter scenario configuration as JSON",
+      "systemPrompt": "AI System Prompt",
+      "systemPromptPlaceholder": "Enter the system prompt for the AI avatar (e.g., You are a hiring manager conducting a job interview...)",
+      "systemPromptHelp": "This prompt defines the AI avatar's role and behavior during the conversation",
+      "config": "Additional Configuration (JSON)",
+      "configPlaceholder": "Enter additional configuration as JSON (optional)",
       "submit": "Create Scenario",
       "cancel": "Cancel",
       "creating": "Creating..."

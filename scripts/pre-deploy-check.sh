@@ -220,6 +220,79 @@ else
 fi
 
 # =============================================================================
+# Check 9: コード整合性検証（ハードコード検出）
+# =============================================================================
+log_section "Check 9: コード整合性検証"
+
+log_info "ハードコードされた言語コード、リージョン、設定値を検出中..."
+
+# consistency:validate を実行（TypeScript型整合性チェック）
+if npm run consistency:validate > /dev/null 2>&1; then
+  pass_check "TypeScript型整合性チェック passed"
+else
+  fail_check "TypeScript型整合性に問題があります"
+  log_info "詳細: npm run consistency:validate を実行してください"
+fi
+
+# detect-inconsistencies.sh を実行（ハードコード検出）
+TEMP_REPORT=$(mktemp)
+if bash scripts/detect-inconsistencies.sh > "$TEMP_REPORT" 2>&1; then
+  # レポートから問題数を取得
+  TOTAL_ISSUES=$(grep "合計問題数:" "$TEMP_REPORT" | grep -o "[0-9]*" | head -1 || echo "0")
+
+  if [ "$TOTAL_ISSUES" -eq 0 ]; then
+    pass_check "ハードコード検出: 0件"
+  else
+    fail_check "ハードコードが検出されました: $TOTAL_ISSUES 件"
+    log_info "詳細: npm run consistency:check でレポートを確認してください"
+    log_info "自動修正: npm run consistency:fix を実行"
+  fi
+else
+  warn_check "ハードコード検出スクリプトの実行に失敗しました"
+fi
+rm -f "$TEMP_REPORT"
+
+# =============================================================================
+# Check 10: Infrastructure (CDK) TypeScriptコンパイルチェック
+# =============================================================================
+log_section "Check 10: Infrastructure (CDK) TypeScriptコンパイルチェック"
+
+log_info "Infrastructure (CDK) のTypeScriptコンパイルエラーを検出中..."
+
+if cd infrastructure && npx tsc --noEmit > /dev/null 2>&1; then
+  cd ..
+  pass_check "Infrastructure (CDK) TypeScriptコンパイルチェック passed"
+else
+  cd ..
+  fail_check "Infrastructure (CDK) にTypeScriptコンパイルエラーがあります"
+  log_info "詳細: cd infrastructure && npx tsc --noEmit を実行してください"
+fi
+
+# =============================================================================
+# Check 11: Lambda関数のworkspace依存関係チェック
+# =============================================================================
+log_section "Check 11: Lambda関数のworkspace依存関係チェック"
+
+log_info "Lambda関数内の@prance/shared importを検出中..."
+
+# Lambda関数内で@prance/sharedをimportしている箇所を検出（.d.tsファイルとコメント行は除外）
+WORKSPACE_IMPORTS=$(grep -r "from '@prance/shared'" infrastructure/lambda --include="*.ts" --exclude="*.d.ts" | grep -v "//" | wc -l)
+
+if [ "$WORKSPACE_IMPORTS" -eq 0 ]; then
+  pass_check "Lambda関数でworkspace依存関係は使用されていません"
+else
+  fail_check "Lambda関数で@prance/sharedが使用されています（${WORKSPACE_IMPORTS}箇所）"
+  log_info "Lambda関数はworkspace:*依存関係を使用できません"
+  log_info "検出された箇所:"
+  grep -rn "from '@prance/shared'" infrastructure/lambda --include="*.ts" --exclude="*.d.ts" | grep -v "//" | head -5
+  log_info ""
+  log_info "対応方法:"
+  log_info "  1. 共有コードを infrastructure/lambda/shared/ にコピーする"
+  log_info "  2. または、ハードコードした定数配列を使用する"
+  log_info "  例: const SUPPORTED_LANGUAGES = ['ja', 'en', 'zh-CN', ...] // From: language-config.ts"
+fi
+
+# =============================================================================
 # サマリー
 # =============================================================================
 log_section "チェック結果サマリー"

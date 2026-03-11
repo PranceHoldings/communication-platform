@@ -4,11 +4,9 @@
  */
 
 import { Handler } from 'aws-lambda';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../shared/database/prisma';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-
-const prisma = new PrismaClient();
 
 export const handler: Handler = async (event, context) => {
   console.log('Starting database migration...');

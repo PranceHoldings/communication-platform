@@ -38,8 +38,11 @@
       "categoryPlaceholder": "例: 面接、研修、営業",
       "language": "言語",
       "visibility": "公開設定",
-      "config": "設定（JSON）",
-      "configPlaceholder": "シナリオ設定をJSON形式で入力",
+      "systemPrompt": "AIシステムプロンプト",
+      "systemPromptPlaceholder": "AIアバターのシステムプロンプトを入力（例: あなたは採用面接官です。応募者のスキルを評価してください...）",
+      "systemPromptHelp": "このプロンプトがAIアバターの役割と振る舞いを定義します",
+      "config": "追加設定（JSON）",
+      "configPlaceholder": "追加設定をJSON形式で入力（オプション）",
       "submit": "シナリオを作成",
       "cancel": "キャンセル",
       "creating": "作成中..."

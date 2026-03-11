@@ -1,6 +1,6 @@
 # 不整合検出レポート
 
-**生成日時:** 2026-03-10 09:54:45
+**生成日時:** 2026-03-11 13:07:50
 
 ---
 
@@ -22,81 +22,49 @@ infrastructure/lambda/auth/authorizer/index.ts:91:    // IMPORTANT: Context fiel
 
 ### ❌ ハードコードされた言語コード
 
-**検出数:** 18 件
+**検出数:** 11 件
 
 **除外対象:** *.d.ts, defaults.ts, language-config.ts, node_modules/, __tests__/, .next*/
 
 ```
-infrastructure/lambda/websocket/default/index.ts:45:const DEFAULT_STT_LANGUAGE = 'ja-JP'; // Deprecated: 自動言語検出を使用すること
-infrastructure/lambda/websocket/default/index.ts:46:const DEFAULT_STT_AUTO_DETECT_LANGUAGES = ['ja-JP', 'en-US']; // Phase 1デフォルト
-infrastructure/lambda/shared/audio/stt-azure.ts:13:  autoDetectLanguages?: string[]; // 自動言語検出候補（推奨: ['ja-JP', 'en-US']）
-infrastructure/lambda/shared/audio/stt-azure.ts:283:      'en-US', // English (United States)
-infrastructure/lambda/shared/audio/stt-azure.ts:284:      'ja-JP', // Japanese
-infrastructure/lambda/shared/audio/stt-azure.ts:285:      'zh-CN', // Chinese (Simplified)
-infrastructure/lambda/shared/audio/stt-azure.ts:286:      'es-ES', // Spanish
-infrastructure/lambda/shared/audio/stt-azure.ts:287:      'fr-FR', // French
-infrastructure/lambda/shared/audio/stt-azure.ts:288:      'de-DE', // German
-infrastructure/lambda/shared/audio/stt-azure.ts:289:      'it-IT', // Italian
-infrastructure/lambda/shared/audio/stt-azure.ts:290:      'ko-KR', // Korean
-infrastructure/lambda/shared/audio/stt-azure.ts:291:      'pt-BR', // Portuguese (Brazil)
+infrastructure/lambda/websocket/default/index.ts:44:// Supported languages (ISO 639-1 format: 'ja', 'en', 'zh-CN', 'zh-TW', etc.)
+infrastructure/lambda/websocket/default/index.ts:46:const SUPPORTED_LANGUAGES = ['ja', 'en', 'zh-CN', 'zh-TW', 'ko', 'es', 'pt', 'fr', 'de', 'it'];
+infrastructure/lambda/shared/audio/stt-azure.ts:15:  autoDetectLanguages?: string[]; // 自動言語検出候補（推奨: ['ja-JP', 'en-US']）
+infrastructure/lambda/scenarios/update/index.ts:80:    // Validate language if provided (ISO 639-1 format: 'ja', 'en', 'zh-CN', etc.)
+infrastructure/lambda/scenarios/create/index.ts:62:    // Validate language if provided (ISO 639-1 format: 'ja', 'en', 'zh-CN', etc.)
 apps/web/components/language-switcher.tsx:24:  'zh-CN': '🇨🇳',
 apps/web/components/language-switcher.tsx:25:  'zh-TW': '🇹🇼',
-apps/web/lib/i18n/messages.ts:84:  'zh-CN': {
-apps/web/lib/i18n/messages.ts:96:  'zh-TW': {
+apps/web/lib/i18n/messages.ts:88:  'zh-CN': {
+apps/web/lib/i18n/messages.ts:101:  'zh-TW': {
 apps/web/lib/i18n/config.ts:33:  'zh-CN',   // Chinese (Simplified)
 apps/web/lib/i18n/config.ts:34:  'zh-TW',   // Chinese (Traditional)
 ```
 
-### ❌ ハードコードされたリージョン
-
-**検出数:** 1 件
-
-**除外対象:** *.d.ts, defaults.ts, language-config.ts, node_modules/, 環境変数参照
-
-```
-infrastructure/lambda/websocket/default/frame-analyzer.ts:52:      region: config.region || 'us-east-1',
-```
-
 ### ❌ ハードコードされたメディアフォーマット
 
-**検出数:** 19 件
+**検出数:** 13 件
 
 **除外対象:** *.d.ts, defaults.ts, language-config.ts, node_modules/, 環境変数・定数参照
 
 ```
-infrastructure/lambda/websocket/default/chunk-utils.ts:142: * @param extension - File extension (e.g., 'webm', 'wav')
-infrastructure/lambda/websocket/default/chunk-utils.ts:146: * generateChunkKey('abc123', 'audio', 1772952987123, 5, 'webm')
-infrastructure/lambda/websocket/default/chunk-utils.ts:167: * // Returns: { sessionId: 'abc123', chunkType: 'audio', timestamp: 1772952987123, chunkNumber: 5, extension: 'webm' }
-infrastructure/lambda/websocket/default/audio-processor.ts:427:      audioFormat = 'webm';
-infrastructure/lambda/websocket/default/audio-processor.ts:428:      wavBuffer = await this.convertToWav(audioData, 'webm');
-infrastructure/lambda/websocket/default/audio-processor.ts:437:      audioFormat = 'webm';
-infrastructure/lambda/websocket/default/audio-processor.ts:438:      wavBuffer = await this.convertToWav(audioData, 'webm');
-infrastructure/lambda/websocket/default/audio-processor.ts:536:    let extension = 'webm';
-infrastructure/lambda/websocket/default/video-processor.ts:65:    const chunkKey = generateChunkKey(sessionId, 'video', timestamp, chunkIndex, 'webm');
-infrastructure/lambda/websocket/default/video-processor.ts:72:        ContentType: 'video/webm',
-infrastructure/lambda/websocket/default/video-processor.ts:219:          ContentType: 'video/webm',
-infrastructure/lambda/websocket/default/index.ts:48:const DEFAULT_VIDEO_RESOLUTION = '1280x720';
-infrastructure/lambda/websocket/default/index.ts:50:const DEFAULT_VIDEO_CONTENT_TYPE = 'video/webm';
-infrastructure/lambda/websocket/default/index.ts:1459:    const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm'}`;
-infrastructure/lambda/websocket/default/index.ts:1591:          const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm'}`;
-infrastructure/lambda/websocket/default/index.ts:1723:    const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm'}`;
-infrastructure/lambda/shared/audio/tts-elevenlabs.ts:81:      const contentType = response.headers.get('content-type') || 'audio/mpeg';
-apps/web/components/session-player/recording-player.tsx:303:            {recording.format || 'webm'}
-apps/web/components/session-player/recording-player.tsx:307:            {recording.resolution || '1280x720'}
+infrastructure/lambda/websocket/default/chunk-utils.ts:151: * @param extension - File extension (e.g., 'webm', 'wav')
+infrastructure/lambda/websocket/default/chunk-utils.ts:155: * generateChunkKey('abc123', 'audio', 1772952987123, 5, 'webm')
+infrastructure/lambda/websocket/default/chunk-utils.ts:176: * // Returns: { sessionId: 'abc123', chunkType: 'audio', timestamp: 1772952987123, chunkNumber: 5, extension: 'webm' }
+infrastructure/lambda/websocket/default/audio-processor.ts:429:      audioFormat = 'webm';
+infrastructure/lambda/websocket/default/audio-processor.ts:430:      wavBuffer = await this.convertToWav(audioData, 'webm');
+infrastructure/lambda/websocket/default/audio-processor.ts:439:      audioFormat = 'webm';
+infrastructure/lambda/websocket/default/audio-processor.ts:440:      wavBuffer = await this.convertToWav(audioData, 'webm');
+infrastructure/lambda/websocket/default/audio-processor.ts:733:      const ttsContentType = 'audio/mpeg'; // ElevenLabs returns MP3
+infrastructure/lambda/websocket/default/index.ts:1445:    const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm'}`;
+infrastructure/lambda/websocket/default/index.ts:1593:          const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm'}`;
+infrastructure/lambda/websocket/default/index.ts:1725:    const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm'}`;
+infrastructure/lambda/shared/audio/tts-elevenlabs.ts:123:      const contentType = response.headers.get('content-type') || 'audio/mpeg';
+apps/web/components/session-player/recording-player.tsx:8:const DEFAULT_VIDEO_RESOLUTION = '1280x720';
 ```
 
 ## 4. 型定義の重複
 
-### ❌ インラインEnum定義（共有型を使うべき）
-
-**検出数:** 4 件
-
-```
-infrastructure/lambda/scenarios/list/index.ts:15: * - visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' (optional filter)
-infrastructure/lambda/scenarios/list/index.ts:32:    const visibility = queryParams.visibility as 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' | undefined;
-infrastructure/lambda/avatars/list/index.ts:17: * - visibility: 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' (optional filter)
-infrastructure/lambda/avatars/list/index.ts:36:    const visibility = queryParams.visibility as 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC' | undefined;
-```
+✅ 型定義の重複は検出されませんでした
 
 ## 5. 多言語対応の不整合
 
@@ -147,9 +115,9 @@ apps/web/lib/api/sessions.ts:16:export interface Session {
 
 ## 📊 サマリー
 
-**検出された不整合の総数:** 46 件
+**検出された不整合の総数:** 28 件
 
-⚠️ **46 件の不整合が検出されました。修正が必要です。**
+⚠️ **28 件の不整合が検出されました。修正が必要です。**
 
 ### 次のアクション
 

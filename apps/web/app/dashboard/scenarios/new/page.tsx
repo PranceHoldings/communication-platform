@@ -20,6 +20,7 @@ export default function NewScenarioPage() {
   const [category, setCategory] = useState('');
   const [language, setLanguage] = useState<string>(defaultLocale);
   const [visibility, setVisibility] = useState<Visibility>('PRIVATE');
+  const [systemPrompt, setSystemPrompt] = useState('');
   const [configJson, setConfigJson] = useState(
     '{\n  "duration": 30,\n  "difficulty": "beginner"\n}'
   );
@@ -46,6 +47,11 @@ export default function NewScenarioPage() {
     } catch (err) {
       setError(t('scenarios.create.validation.invalidJson'));
       return;
+    }
+
+    // Add systemPrompt to config
+    if (systemPrompt.trim()) {
+      parsedConfig.systemPrompt = systemPrompt.trim();
     }
 
     setIsSubmitting(true);
@@ -172,22 +178,38 @@ export default function NewScenarioPage() {
           </div>
         </div>
 
+        {/* System Prompt */}
+        <div>
+          <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 mb-2">
+            {t('scenarios.create.form.systemPrompt')}
+          </label>
+          <textarea
+            id="systemPrompt"
+            value={systemPrompt}
+            onChange={e => setSystemPrompt(e.target.value)}
+            placeholder={t('scenarios.create.form.systemPromptPlaceholder')}
+            rows={6}
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+          <p className="mt-2 text-sm text-gray-500">
+            {t('scenarios.create.form.systemPromptHelp')}
+          </p>
+        </div>
+
         {/* Configuration JSON */}
         <div>
           <label htmlFor="configJson" className="block text-sm font-medium text-gray-700 mb-2">
-            {t('scenarios.create.form.config')} *
+            {t('scenarios.create.form.config')}
           </label>
           <textarea
             id="configJson"
             value={configJson}
             onChange={e => setConfigJson(e.target.value)}
             placeholder={t('scenarios.create.form.configPlaceholder')}
-            rows={10}
+            rows={6}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            required
           />
           <p className="mt-2 text-sm text-gray-500">
-            Enter scenario configuration as valid JSON. Example:{' '}
             {`{ "duration": 30, "difficulty": "beginner" }`}
           </p>
         </div>

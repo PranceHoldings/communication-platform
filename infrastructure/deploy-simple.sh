@@ -67,13 +67,41 @@ echo -e "${GREEN}✅ AWS認証確認完了${NC}"
 echo -e "   アカウント: ${AWS_ACCOUNT}"
 echo -e "   リージョン: ${AWS_REGION}"
 
-# 4. CDK Synth
+# 4. Lambda Dependencies Validation (CRITICAL)
+echo -e "\n${YELLOW}🔍 Lambda依存関係を検証中...${NC}"
+if [ -f "$PROJECT_ROOT/scripts/validate-lambda-dependencies.sh" ]; then
+    if "$PROJECT_ROOT/scripts/validate-lambda-dependencies.sh"; then
+        echo -e "${GREEN}✅ Lambda依存関係検証完了${NC}"
+    else
+        echo -e "${RED}❌ Lambda依存関係検証失敗${NC}"
+        echo -e "${YELLOW}必須SDKが欠けています。本番環境で500エラーが発生します。${NC}"
+        echo ""
+        read -p "自動修復を実行しますか？ (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${BLUE}🔧 Lambda依存関係を修復中...${NC}"
+            "$PROJECT_ROOT/scripts/fix-lambda-node-modules.sh"
+            echo -e "${GREEN}✅ 修復完了。再検証します...${NC}"
+            "$PROJECT_ROOT/scripts/validate-lambda-dependencies.sh" || {
+                echo -e "${RED}❌ 修復後も検証失敗。手動確認が必要です。${NC}"
+                exit 1
+            }
+        else
+            echo -e "${RED}デプロイを中止します。${NC}"
+            exit 1
+        fi
+    fi
+else
+    echo -e "${YELLOW}⚠️  検証スクリプトが見つかりません（スキップ）${NC}"
+fi
+
+# 5. CDK Synth
 echo -e "\n${YELLOW}🔍 CloudFormationテンプレートを生成中...${NC}"
 cd "$PROJECT_ROOT/infrastructure"
 npm run synth -- --context environment=${ENVIRONMENT} > /dev/null
 echo -e "${GREEN}✅ Synth完了${NC}"
 
-# 5. CDK Deploy
+# 6. CDK Deploy
 echo -e "\n${YELLOW}🚢 スタックをデプロイ中...${NC}"
 npm run deploy -- \
   --context environment=${ENVIRONMENT} \

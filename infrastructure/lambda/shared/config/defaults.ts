@@ -130,13 +130,9 @@ export const LANGUAGE_DEFAULTS = {
     return ['ja-JP', 'en-US'] as const;
   },
 
-  // サポートされている言語コード（@prance/shared から動的取得）
-  // 実際の使用: import { getSupportedSTTCodes } from '@prance/shared'
-  get SUPPORTED_LANGUAGES() {
-    // NOTE: この getter は後方互換性のため
-    // 実際の実装では getSupportedSTTCodes() を使用すること
-    return this.STT_AUTO_DETECT_LANGUAGES_DEFAULT;
-  },
+  // サポートされている言語コード（ISO 639-1形式）
+  // シナリオで使用される言語コード: 'ja', 'en', 'zh-CN', 'zh-TW', etc.
+  SUPPORTED_LANGUAGES: ['ja', 'en', 'zh-CN', 'zh-TW', 'ko', 'es', 'pt', 'fr', 'de', 'it'] as const,
 
   // デフォルトのシナリオ言語
   // 実際の使用: import { getBaseLanguageCode } from '@prance/shared'

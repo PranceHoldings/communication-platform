@@ -30,6 +30,7 @@
   "exclude": [
     "node_modules",
     "cdk.out",
+    "lambda/**/*",
     "**/*.test.ts",
     "**/*.spec.ts",
     "**/__tests__/**"

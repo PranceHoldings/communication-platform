@@ -101,6 +101,32 @@ handle_error() {
 # 堅牢な削除関数（3段階リトライ + リネーム退避）
 # =============================================================================
 
+# スペース付きディレクトリ名を修正（" 2" を削除）
+fix_space_in_directory_names() {
+  local target="$1"
+
+  if [ ! -d "$target" ]; then
+    return 0
+  fi
+
+  # スペース+数字が付いたディレクトリをリネーム
+  cd "$target" 2>/dev/null || return 1
+
+  for item in *" 2" *" 3" *" 4"; do
+    if [ -e "$item" ]; then
+      # スペース+数字を削除した新しい名前
+      new_name=$(echo "$item" | sed 's/ [0-9]$//')
+      if [ "$item" != "$new_name" ] && [ -n "$new_name" ]; then
+        log_retry "ディレクトリ名修正: '$item' → '$new_name'"
+        sudo mv "$item" "$new_name" 2>/dev/null || true
+      fi
+    fi
+  done
+
+  cd - > /dev/null
+  return 0
+}
+
 # 単一ディレクトリの削除（リトライロジック付き）
 remove_directory_robust() {
   local target="$1"
@@ -112,6 +138,9 @@ remove_directory_robust() {
   fi
 
   log_info "削除中: $description ($target)"
+
+  # スペース付きディレクトリ名を修正
+  fix_space_in_directory_names "$target"
 
   # Strategy 1: 通常削除
   if rm -rf "$target" 2>/dev/null; then
