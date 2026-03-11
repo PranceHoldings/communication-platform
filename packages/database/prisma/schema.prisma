@@ -125,6 +125,14 @@ model Scenario {
   configJson  Json         @map("config_json")
   createdAt   DateTime     @default(now()) @map("created_at")
 
+  // 無音時間管理（Silence Management）
+  initialGreeting      String?  @db.Text @map("initial_greeting") // AI初回挨拶テキスト
+  silenceTimeout       Int?     @default(10) @map("silence_timeout") // 無音タイマー（秒）
+  enableSilencePrompt  Boolean? @default(true) @map("enable_silence_prompt") // 無音促し有効/無効
+  showSilenceTimer     Boolean? @default(false) @map("show_silence_timer") // UIにタイマー表示
+  silenceThreshold     Float?   @default(0.05) @map("silence_threshold") // 音量閾値（0.01-0.2）
+  minSilenceDuration   Int?     @default(500) @map("min_silence_duration") // 最小無音継続時間（ms）
+
   organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   sessions     Session[]
 

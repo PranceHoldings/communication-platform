@@ -90,6 +90,14 @@ export interface Scenario {
   visibility: Visibility;
   configJson: Record<string, unknown>;
   createdAt: Date;
+
+  // 無音時間管理（Silence Management）
+  initialGreeting?: string; // AI初回挨拶テキスト
+  silenceTimeout?: number; // 無音タイマー（秒）
+  enableSilencePrompt?: boolean; // 無音促し有効/無効
+  showSilenceTimer?: boolean; // UIにタイマー表示
+  silenceThreshold?: number; // 音量閾値（0.01-0.2）
+  minSilenceDuration?: number; // 最小無音継続時間（ms）
 }
 
 // ============================================================
