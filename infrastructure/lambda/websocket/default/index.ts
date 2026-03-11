@@ -611,6 +611,133 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         }
         break;
 
+      case 'silence_prompt_request':
+        // User has been silent for too long - generate and send an encouraging prompt
+        console.log('[silence_prompt_request] Received silence prompt request');
+
+        try {
+          // Check rate limiting - prevent spam (max 1 prompt per 30 seconds)
+          const lastPromptTime = (connectionData?.lastSilencePromptTime as number | undefined) || 0;
+          const timeSinceLastPrompt = Date.now() - lastPromptTime;
+          if (timeSinceLastPrompt < 30000) {
+            console.log('[silence_prompt_request] Too soon after last prompt, skipping:', {
+              timeSinceLastPrompt: `${timeSinceLastPrompt}ms`,
+            });
+            break;
+          }
+
+          // Update timestamp immediately to prevent concurrent requests
+          await updateConnectionData(connectionId, {
+            lastSilencePromptTime: Date.now(),
+          });
+
+          // Import generateSilencePrompt utility
+          const { generateSilencePrompt } = await import('../../shared/utils/generateSilencePrompt');
+
+          // Extract conversation history and convert to the expected format
+          const rawHistory = connectionData?.conversationHistory || [];
+          const conversationHistory = rawHistory.map((msg: any) => ({
+            speaker: msg.role === 'user' ? 'USER' as const : 'AI' as const,
+            text: msg.content || msg.text || '',
+          }));
+
+          const scenarioPrompt = connectionData?.scenarioPrompt;
+          const scenarioLanguage = connectionData?.scenarioLanguage || 'en';
+          const silencePromptStyle = (connectionData as any)?.silencePromptStyle || 'neutral';
+
+          // Get last user message for context
+          const lastUserMessage = conversationHistory
+            .slice()
+            .reverse()
+            .find((msg: any) => msg.speaker === 'USER')?.text;
+
+          console.log('[silence_prompt_request] Generating silence prompt:', {
+            conversationLength: conversationHistory.length,
+            language: scenarioLanguage,
+            style: silencePromptStyle,
+            hasLastUserMessage: !!lastUserMessage,
+          });
+
+          // Generate contextual prompt
+          const promptText = await generateSilencePrompt({
+            conversationHistory,
+            scenarioPrompt,
+            scenarioLanguage,
+            style: silencePromptStyle,
+            lastUserMessage,
+          });
+
+          console.log('[silence_prompt_request] Generated prompt:', promptText);
+
+          // Add to conversation history in the same format
+          const promptMessage = {
+            role: 'assistant' as const,
+            content: promptText,
+          };
+
+          await updateConnectionData(connectionId, {
+            conversationHistory: [...rawHistory, promptMessage],
+          });
+
+          // Send as avatar_response_final
+          await sendToConnection(connectionId, {
+            type: 'avatar_response_final',
+            text: promptText,
+            timestamp: Date.now(),
+          });
+
+          // Generate TTS for the prompt using ElevenLabs
+          const silenceSessionId = connectionData?.sessionId || 'unknown';
+          const audioProc = getAudioProcessor();
+
+          console.log('[silence_prompt_request] Generating TTS for silence prompt...');
+
+          // Use the simple TTS method
+          const ttsResult = await audioProc.generateSimpleSpeech(promptText);
+
+          console.log('[silence_prompt_request] TTS generation complete:', {
+            audioSize: ttsResult.audio.length,
+            contentType: ttsResult.contentType,
+          });
+
+          // Save audio to S3
+          const audioKey = `sessions/${silenceSessionId}/silence-prompts/audio-${Date.now()}.mp3`;
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: S3_BUCKET,
+              Key: audioKey,
+              Body: ttsResult.audio,
+              ContentType: ttsResult.contentType,
+            })
+          );
+
+          // Generate signed URL
+          const audioUrl = `https://${CLOUDFRONT_DOMAIN}/${audioKey}`;
+
+          console.log('[silence_prompt_request] Audio saved to S3:', audioKey);
+
+          // Send final audio_response with S3 URL
+          await sendToConnection(connectionId, {
+            type: 'audio_response',
+            audioUrl: audioUrl,
+            contentType: ttsResult.contentType,
+            timestamp: Date.now(),
+          });
+
+          console.log('[silence_prompt_request] Silence prompt sent successfully');
+        } catch (error) {
+          console.error('[silence_prompt_request] Failed to generate silence prompt:', error);
+
+          // Send error but don't break the session
+          await sendToConnection(connectionId, {
+            type: 'error',
+            code: 'SILENCE_PROMPT_ERROR',
+            message: 'Failed to generate silence prompt',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+        break;
+
       case 'video_chunk_part':
         // Handle split video chunk parts (to overcome 32KB WebSocket limit)
         const chunkId = message.chunkId as string;

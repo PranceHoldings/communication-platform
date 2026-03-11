@@ -759,4 +759,36 @@ export class AudioProcessor {
       throw error;
     }
   }
+
+  /**
+   * Generate speech from text (simple TTS without STT or AI processing)
+   * Used for silence prompts and initial greetings
+   */
+  async generateSimpleSpeech(text: string): Promise<{ audio: Buffer; contentType: string }> {
+    console.log('[AudioProcessor] Generating simple speech:', {
+      textLength: text.length,
+      textPreview: text.substring(0, 50),
+    });
+
+    try {
+      const ttsResult = await this.tts.generateSpeech({
+        text,
+        stability: 0.5,
+        similarityBoost: 0.75,
+      });
+
+      console.log('[AudioProcessor] Simple speech generated:', {
+        audioSize: ttsResult.audio.length,
+        contentType: ttsResult.contentType,
+      });
+
+      return {
+        audio: ttsResult.audio,
+        contentType: ttsResult.contentType,
+      };
+    } catch (error) {
+      console.error('[AudioProcessor] Simple speech generation failed:', error);
+      throw error;
+    }
+  }
 }

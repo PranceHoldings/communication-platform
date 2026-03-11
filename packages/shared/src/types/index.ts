@@ -411,6 +411,13 @@ export interface PingMessage extends WebSocketMessageBase {
 }
 
 /**
+ * 無音促しリクエストメッセージ（クライアント → サーバー）
+ */
+export interface SilencePromptRequestMessage extends WebSocketMessageBase {
+  type: 'silence_prompt_request';
+}
+
+/**
  * Pongメッセージ（サーバー → クライアント）
  */
 export interface PongMessage extends WebSocketMessageBase {
@@ -443,6 +450,7 @@ export type ClientToServerMessage =
   | VideoChunkPartMessage
   | SessionEndMessage
   | UserSpeechMessage
+  | SilencePromptRequestMessage
   | PingMessage;
 
 /**
