@@ -697,11 +697,15 @@ export class AudioProcessor {
       const ttsAudioChunks: Buffer[] = [];
 
       try {
-        for await (const chunk of this.tts.generateSpeechWebSocketStream({
+        // CRITICAL: generateSpeechWebSocketStream returns Promise<AsyncGenerator>
+        // Must await the Promise first to get the generator
+        const ttsStream = await this.tts.generateSpeechWebSocketStream({
           text: aiResponse,
           stability: 0.5,
           similarityBoost: 0.75,
-        })) {
+        });
+
+        for await (const chunk of ttsStream) {
           ttsChunkCount++;
 
           // Callback: TTS chunk received
