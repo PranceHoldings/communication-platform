@@ -36,6 +36,9 @@ interface UseWebSocketOptions {
   token: string;
   scenarioPrompt?: string; // System prompt from scenario
   scenarioLanguage?: string; // Scenario language
+  initialGreeting?: string; // Initial AI greeting from scenario
+  silenceTimeout?: number; // Silence timeout in seconds from scenario
+  enableSilencePrompt?: boolean; // Enable silence prompt from scenario
   onTranscript?: (message: TranscriptMessage) => void;
   onAvatarResponse?: (message: AvatarResponseMessage) => void;
   onAudioResponse?: (message: AudioResponseMessage) => void;
@@ -43,7 +46,7 @@ interface UseWebSocketOptions {
   onProcessingUpdate?: (message: ProcessingUpdateMessage) => void;
   onSessionComplete?: (message: SessionCompleteMessage) => void;
   onError?: (message: ErrorMessage) => void;
-  onAuthenticated?: (sessionId: string) => void;
+  onAuthenticated?: (sessionId: string, initialGreeting?: string) => void;
   autoConnect?: boolean;
 }
 
@@ -69,6 +72,9 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     token,
     scenarioPrompt,
     scenarioLanguage,
+    initialGreeting,
+    silenceTimeout,
+    enableSilencePrompt,
     onTranscript,
     onAvatarResponse,
     onAudioResponse,
@@ -193,9 +199,11 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
           case 'authenticated':
             console.log('Authentication confirmed:', message);
-            const authSessionId = (message as any).sessionId;
+            const authMessage = message as any;
+            const authSessionId = authMessage.sessionId;
+            const authInitialGreeting = authMessage.initialGreeting;
             if (authSessionId) {
-              onAuthenticatedRef.current?.(authSessionId);
+              onAuthenticatedRef.current?.(authSessionId, authInitialGreeting);
             }
             break;
 
@@ -277,12 +285,18 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
           sessionId: sessionId,
           scenarioPrompt,
           scenarioLanguage,
+          initialGreeting,
+          silenceTimeout,
+          enableSilencePrompt,
           timestamp: Date.now(),
         };
         ws.send(JSON.stringify(authenticateMsg));
         console.log('[WebSocket] Sent authenticate with scenario data:', {
           hasPrompt: !!scenarioPrompt,
           language: scenarioLanguage,
+          hasInitialGreeting: !!initialGreeting,
+          silenceTimeout,
+          enableSilencePrompt,
         });
       };
 

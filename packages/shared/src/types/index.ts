@@ -241,6 +241,9 @@ export interface AuthenticateMessage extends WebSocketMessageBase {
   sessionId: string;
   scenarioPrompt?: string; // Optional: System prompt from scenario configJson
   scenarioLanguage?: string; // Optional: Scenario language ('ja', 'en', etc.)
+  initialGreeting?: string; // Optional: Initial AI greeting text from scenario
+  silenceTimeout?: number; // Optional: Silence timeout in seconds from scenario
+  enableSilencePrompt?: boolean; // Optional: Enable silence prompt from scenario
 }
 
 /**
@@ -250,6 +253,9 @@ export interface AuthenticatedMessage extends WebSocketMessageBase {
   type: 'authenticated';
   message: string;
   sessionId: string;
+  initialGreeting?: string; // Optional: Initial AI greeting text
+  silenceTimeout?: number; // Optional: Silence timeout in seconds
+  enableSilencePrompt?: boolean; // Optional: Enable silence prompt
 }
 
 /**

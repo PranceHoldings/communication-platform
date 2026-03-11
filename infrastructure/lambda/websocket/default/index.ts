@@ -267,11 +267,18 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         // Get scenario data directly from authenticate message (sent from frontend)
         const scenarioLanguage = (message as any).scenarioLanguage || DEFAULT_SCENARIO_LANGUAGE;
         const scenarioPrompt = (message as any).scenarioPrompt as string | undefined;
+        const initialGreeting = (message as any).initialGreeting as string | undefined;
+        const silenceTimeout = (message as any).silenceTimeout as number | undefined;
+        const enableSilencePrompt = (message as any).enableSilencePrompt as boolean | undefined;
 
         console.log('[authenticate] Received scenario data:', {
           hasPrompt: !!scenarioPrompt,
           promptPreview: scenarioPrompt ? scenarioPrompt.substring(0, 100) + '...' : 'none',
           language: scenarioLanguage,
+          hasInitialGreeting: !!initialGreeting,
+          initialGreetingPreview: initialGreeting ? initialGreeting.substring(0, 50) + '...' : 'none',
+          silenceTimeout,
+          enableSilencePrompt,
         });
 
         await updateConnectionData(connectionId, {
@@ -279,12 +286,18 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           conversationHistory: [],
           scenarioLanguage, // Store language for audio processing
           scenarioPrompt, // Store system prompt for AI context
+          initialGreeting, // Store initial AI greeting
+          silenceTimeout, // Store silence timeout
+          enableSilencePrompt, // Store silence prompt flag
         });
 
         await sendToConnection(connectionId, {
           type: 'authenticated',
           message: 'Session initialized',
           sessionId,
+          initialGreeting, // Send initial greeting back to client
+          silenceTimeout,
+          enableSilencePrompt,
         });
         break;
 

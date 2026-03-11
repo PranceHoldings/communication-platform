@@ -459,10 +459,34 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   }, [getErrorMessage, getMicrophoneInstructions, t]);
 
   const handleAuthenticated = useCallback(
-    (sessionId: string) => {
-      console.log('[SessionPlayer] WebSocket authenticated:', sessionId);
+    (sessionId: string, receivedInitialGreeting?: string) => {
+      console.log('[SessionPlayer] WebSocket authenticated:', {
+        sessionId,
+        hasInitialGreeting: !!receivedInitialGreeting,
+      });
       setIsAuthenticated(true);
       isAuthenticatedRef.current = true;
+
+      // If initial greeting is provided, add it to transcript immediately
+      if (receivedInitialGreeting) {
+        console.log('[SessionPlayer] Adding initial greeting to transcript:', receivedInitialGreeting);
+        setTranscript(prev => [
+          ...prev,
+          {
+            id: `ai-initial-${Date.now()}`,
+            speaker: 'AI',
+            text: receivedInitialGreeting,
+            timestamp: Date.now(),
+            partial: false,
+          },
+        ]);
+
+        // Generate and play TTS for initial greeting
+        // Note: The Lambda handler should automatically generate TTS and send audio_response
+        // This is just logging for debugging
+        console.log('[SessionPlayer] Initial greeting will be converted to speech by Lambda');
+      }
+
       toast.success(t('sessions.player.messages.authenticated'));
     },
     [t]
@@ -486,6 +510,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     token: token || '',
     scenarioPrompt: (scenario.configJson as any)?.systemPrompt, // Extract system prompt from scenario config
     scenarioLanguage: scenario.language,
+    initialGreeting: scenario.initialGreeting, // Initial AI greeting from scenario
+    silenceTimeout: scenario.silenceTimeout, // Silence timeout in seconds
+    enableSilencePrompt: scenario.enableSilencePrompt, // Enable silence prompt flag
     autoConnect: false,
     onTranscript: handleTranscript,
     onAvatarResponse: handleAvatarResponse,
