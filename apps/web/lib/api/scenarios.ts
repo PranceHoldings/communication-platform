@@ -12,6 +12,13 @@ export interface Scenario {
   createdAt: string;
   userId: string | null;
   orgId: string;
+  // Silence management fields
+  initialGreeting?: string;
+  silenceTimeout?: number;
+  enableSilencePrompt?: boolean;
+  showSilenceTimer?: boolean;
+  silenceThreshold?: number;
+  minSilenceDuration?: number;
 }
 
 export interface ScenarioListResponse {
@@ -25,6 +32,13 @@ export interface CreateScenarioRequest {
   configJson: Record<string, unknown>;
   language?: string;
   visibility?: Visibility;
+  // Silence management fields
+  initialGreeting?: string;
+  silenceTimeout?: number;
+  enableSilencePrompt?: boolean;
+  showSilenceTimer?: boolean;
+  silenceThreshold?: number;
+  minSilenceDuration?: number;
 }
 
 export interface UpdateScenarioRequest {
@@ -33,6 +47,13 @@ export interface UpdateScenarioRequest {
   configJson?: Record<string, unknown>;
   language?: string;
   visibility?: Visibility;
+  // Silence management fields
+  initialGreeting?: string;
+  silenceTimeout?: number;
+  enableSilencePrompt?: boolean;
+  showSilenceTimer?: boolean;
+  silenceThreshold?: number;
+  minSilenceDuration?: number;
 }
 
 /**
