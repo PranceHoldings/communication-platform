@@ -34,6 +34,8 @@ export type {
 interface UseWebSocketOptions {
   sessionId: string;
   token: string;
+  scenarioPrompt?: string; // System prompt from scenario
+  scenarioLanguage?: string; // Scenario language
   onTranscript?: (message: TranscriptMessage) => void;
   onAvatarResponse?: (message: AvatarResponseMessage) => void;
   onAudioResponse?: (message: AudioResponseMessage) => void;
@@ -65,6 +67,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const {
     sessionId,
     token,
+    scenarioPrompt,
+    scenarioLanguage,
     onTranscript,
     onAvatarResponse,
     onAudioResponse,
@@ -267,13 +271,19 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         setError(null);
         reconnectAttempts.current = 0;
 
-        // Send initial message with session ID
+        // Send initial message with session ID and scenario data
         const authenticateMsg: AuthenticateMessage = {
           type: 'authenticate',
           sessionId: sessionId,
+          scenarioPrompt,
+          scenarioLanguage,
           timestamp: Date.now(),
         };
         ws.send(JSON.stringify(authenticateMsg));
+        console.log('[WebSocket] Sent authenticate with scenario data:', {
+          hasPrompt: !!scenarioPrompt,
+          language: scenarioLanguage,
+        });
       };
 
       ws.onmessage = handleMessage;

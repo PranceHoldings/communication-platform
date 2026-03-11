@@ -37,7 +37,13 @@
     "consistency:check": "bash scripts/detect-inconsistencies.sh",
     "consistency:fix": "bash scripts/fix-inconsistencies.sh",
     "consistency:validate": "ts-node scripts/validate-consistency.ts",
-    "pre-commit": "npm run consistency:validate && npm run lint && npm run typecheck",
+    "i18n:validate": "bash scripts/validate-i18n-system.sh",
+    "lambda:validate": "bash scripts/validate-lambda-dependencies.sh",
+    "lambda:fix": "bash scripts/fix-lambda-node-modules.sh",
+    "lambda:build": "bash scripts/build-lambda-functions.sh",
+    "lambda:predeploy": "bash scripts/pre-deploy-lambda-check.sh",
+    "deploy:lambda": "npm run deploy:check && cd infrastructure && npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never",
+    "pre-commit": "npm run i18n:validate && npm run lambda:validate && npm run consistency:validate && npm run lint && npm run typecheck",
     "env:validate": "bash scripts/validate-env.sh"
   },
   "devDependencies": {
