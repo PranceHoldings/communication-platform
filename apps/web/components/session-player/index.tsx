@@ -19,6 +19,7 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useVideoRecorder } from '@/hooks/useVideoRecorder';
 import { useAudioVisualizer } from '@/hooks/useAudioVisualizer';
 import { useErrorMessage } from '@/hooks/useErrorMessage';
+import { useSilenceTimer } from '@/hooks/useSilenceTimer';
 import { checkBrowserCapabilities, getRecommendedBrowserMessage } from '@/lib/browser-check';
 import { VideoComposer } from './video-composer';
 import { WaveformDisplay } from '@/components/audio-visualizer/WaveformDisplay';
@@ -57,6 +58,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [processingMessage, setProcessingMessage] = useState<string>('');
   const [isMuted, setIsMuted] = useState(false);
   const [ariaLiveMessage, setAriaLiveMessage] = useState<string>('');
+
+  // Silence management state
+  const [initialGreetingCompleted, setInitialGreetingCompleted] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const speechEndQueueRef = useRef<boolean>(false);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const disconnectRef = useRef<(() => void) | null>(null);
@@ -82,6 +89,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   );
   const endSessionRef = useRef<(() => void) | null>(null);
   const restartRecordingRef = useRef<(() => void) | null>(null);
+  const isMicRecordingRef = useRef<boolean>(false);
 
   // トークン取得
   useEffect(() => {
@@ -90,6 +98,44 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       setToken(accessToken);
     }
   }, []);
+
+  // Silence timeout handler with 500ms grace period
+  const handleSilenceTimeout = useCallback(() => {
+    console.log('[SessionPlayer] Silence timeout detected, checking conditions...');
+
+    // Implement 500ms grace period with final check
+    setTimeout(() => {
+      // Final check: ensure AI is not playing and user is not speaking
+      if (isPlayingAudio) {
+        console.log('[SessionPlayer] Silence timeout canceled: AI is playing audio');
+        return;
+      }
+
+      if (isMicRecordingRef.current) {
+        console.log('[SessionPlayer] Silence timeout canceled: User is speaking');
+        return;
+      }
+
+      if (isProcessing) {
+        console.log('[SessionPlayer] Silence timeout canceled: Processing speech_end');
+        return;
+      }
+
+      if (!isConnectedRef.current || !isAuthenticatedRef.current) {
+        console.log('[SessionPlayer] Silence timeout canceled: Not connected or authenticated');
+        return;
+      }
+
+      // All checks passed, send silence_prompt_request
+      console.log('[SessionPlayer] Sending silence_prompt_request');
+      if (sendMessageRef.current) {
+        sendMessageRef.current({
+          type: 'silence_prompt_request',
+          timestamp: Date.now(),
+        });
+      }
+    }, 500); // 500ms grace period
+  }, [isPlayingAudio, isProcessing]);
 
   // Memoize callbacks to prevent unnecessary re-renders
   const handleTranscript = useCallback(
@@ -143,6 +189,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         if (message.speaker === 'USER') {
           setProcessingStage('ai');
           setProcessingMessage('');
+          // Reset isProcessing flag - speech_end processing is complete
+          setIsProcessing(false);
+          console.log('[SessionPlayer] speech_end processing complete, silence timer can resume');
         }
 
         // If session end is pending, trigger it now after receiving transcript
@@ -212,8 +261,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         processingTimeoutRef.current = null;
       }
       processingStartTimeRef.current = null;
+
+      // Check if this is the initial greeting (first AI message)
+      if (!initialGreetingCompleted) {
+        console.log('[SessionPlayer] Initial AI greeting completed, silence timer will start after audio playback');
+        // Note: We'll set initialGreetingCompleted=true when audio playback finishes
+      }
     }
-  }, []);
+  }, [initialGreetingCompleted]);
 
   const handleProcessingUpdate = useCallback((message: ProcessingUpdateMessage) => {
     // 処理状況の更新（オプション：UI表示用）
@@ -333,6 +388,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             URL.revokeObjectURL(audioUrl);
           }
           console.log('[SessionPlayer] Audio playback ended');
+
+          // Mark initial greeting as complete when first AI audio finishes
+          if (!initialGreetingCompleted) {
+            setInitialGreetingCompleted(true);
+            console.log('[SessionPlayer] Initial AI greeting audio complete, silence timer will now start');
+          }
         };
         audioRef.current.onerror = error => {
           setIsPlayingAudio(false);
@@ -341,6 +402,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           }
           console.error('[SessionPlayer] Audio playback error:', error);
           toast.error(t('sessions.player.messages.audioPlaybackError'));
+
+          // Still mark initial greeting as complete even if audio playback fails
+          if (!initialGreetingCompleted) {
+            setInitialGreetingCompleted(true);
+            console.log('[SessionPlayer] Initial greeting marked as complete (audio error)');
+          }
         };
 
         // 再生開始
@@ -358,7 +425,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         toast.error(t('sessions.player.messages.audioPlaybackError'));
       }
     },
-    [t]
+    [t, initialGreetingCompleted]
   );
 
   const handleError = useCallback((message: ErrorMessage) => {
@@ -537,8 +604,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const handleSpeechEnd = useCallback(() => {
     console.log('[SessionPlayer] Speech end detected (silence)');
 
+    // Implement speech_end queueing to prevent duplicate processing
+    if (speechEndQueueRef.current) {
+      console.log('[SessionPlayer] speech_end already queued, skipping duplicate');
+      return;
+    }
+
     // Send speech_end signal via WebSocket
     if (isConnectedRef.current && sendSpeechEndRef.current) {
+      // Set queue flag and processing flag
+      speechEndQueueRef.current = true;
+      setIsProcessing(true);
+      console.log('[SessionPlayer] speech_end processing started, silence timer will stop');
+
       sendSpeechEndRef.current();
       console.log('[SessionPlayer] speech_end signal sent');
 
@@ -547,6 +625,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       setProcessingMessage('');
 
       toast.info(t('sessions.player.messages.processingAudio'));
+
+      // Reset queue flag after a short delay (allows transcript to arrive)
+      setTimeout(() => {
+        speechEndQueueRef.current = false;
+        console.log('[SessionPlayer] speech_end queue cleared');
+      }, 2000);
 
       // CRITICAL: Restart MediaRecorder to generate new EBML header
       // MediaRecorder timeslice mode only creates complete header for first chunk
@@ -641,10 +725,27 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     smoothingTimeConstant: 0.8,
   });
 
+  // Silence Timer統合
+  const { elapsedTime: _silenceElapsedTime, resetTimer: _resetSilenceTimer } = useSilenceTimer({
+    enabled: status === 'ACTIVE' &&
+             initialGreetingCompleted &&
+             (scenario.enableSilencePrompt ?? true),
+    timeoutSeconds: scenario.silenceTimeout ?? 10,
+    isAIPlaying: isPlayingAudio,
+    isUserSpeaking: isMicRecording,
+    isProcessing: isProcessing,
+    onTimeout: handleSilenceTimeout,
+  });
+
   // Store restartRecording in ref to avoid circular dependency
   useEffect(() => {
     restartRecordingRef.current = restartRecording;
   }, [restartRecording]);
+
+  // Sync isMicRecording to ref for handleSilenceTimeout
+  useEffect(() => {
+    isMicRecordingRef.current = isMicRecording;
+  }, [isMicRecording]);
 
   // Cleanup visualizer on unmount
   useEffect(() => {
