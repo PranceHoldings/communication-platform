@@ -417,6 +417,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   } = useWebSocket({
     sessionId: session.id,
     token: token || '',
+    scenarioPrompt: (scenario.configJson as any)?.systemPrompt, // Extract system prompt from scenario config
+    scenarioLanguage: scenario.language,
     autoConnect: false,
     onTranscript: handleTranscript,
     onAvatarResponse: handleAvatarResponse,

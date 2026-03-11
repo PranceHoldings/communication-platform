@@ -41,6 +41,10 @@ import {
 const LAMBDA_VERSION = '1.1.0';
 const LAMBDA_NAME = 'websocket-default-handler';
 
+// Supported languages (ISO 639-1 format: 'ja', 'en', 'zh-CN', 'zh-TW', etc.)
+// Source of truth: packages/shared/src/language/index.ts
+const SUPPORTED_LANGUAGES = ['ja', 'en', 'zh-CN', 'zh-TW', 'ko', 'es', 'pt', 'fr', 'de', 'it'];
+
 // Default values (imported from centralized configuration)
 // Using values from shared/config/defaults.ts to eliminate hardcoding
 const DEFAULT_AWS_REGION = AWS_DEFAULTS.REGION;
@@ -49,6 +53,7 @@ const DEFAULT_BEDROCK_MODEL_ID = BEDROCK_DEFAULTS.MODEL_ID;
 const DEFAULT_ELEVENLABS_MODEL_ID = ELEVENLABS_DEFAULTS.MODEL_ID;
 const DEFAULT_STT_LANGUAGE = LANGUAGE_DEFAULTS.STT_LANGUAGE;
 const DEFAULT_STT_AUTO_DETECT_LANGUAGES = Array.from(LANGUAGE_DEFAULTS.STT_AUTO_DETECT_LANGUAGES_DEFAULT);
+const DEFAULT_SCENARIO_LANGUAGE = SUPPORTED_LANGUAGES[0]; // First supported language ('ja')
 const DEFAULT_VIDEO_FORMAT = MEDIA_DEFAULTS.VIDEO_FORMAT;
 const DEFAULT_VIDEO_RESOLUTION = MEDIA_DEFAULTS.VIDEO_RESOLUTION;
 const DEFAULT_AUDIO_CONTENT_TYPE = MEDIA_DEFAULTS.AUDIO_CONTENT_TYPE;
@@ -219,6 +224,8 @@ interface ConnectionData {
   // Real-time audio streaming (Phase 1.5)
   realtimeAudioSequenceNumber?: number; // Latest sequence number received
   realtimeAudioChunkCount?: number; // Total count of real-time chunks
+  realtimeAudioProcessing?: boolean; // Flag to prevent duplicate speech_end processing (Phase 1.5 Day 12)
+  lastAudioProcessingStartTime?: number; // Timestamp when audio processing started
   // Note: videoChunkParts removed - parts are stored directly in S3 to avoid DynamoDB 400KB limit
   [key: string]: unknown;
 }
@@ -257,32 +264,21 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         // Store session information in connection data
         const sessionId = message.sessionId as string;
 
-        // Fetch scenario language from database
-        let scenarioLanguage = 'ja'; // Default
-        try {
-          const { PrismaClient } = await import('@prisma/client');
-          const prisma = new PrismaClient();
+        // Get scenario data directly from authenticate message (sent from frontend)
+        const scenarioLanguage = (message as any).scenarioLanguage || DEFAULT_SCENARIO_LANGUAGE;
+        const scenarioPrompt = (message as any).scenarioPrompt as string | undefined;
 
-          const session = await prisma.session.findUnique({
-            where: { id: sessionId },
-            include: { scenario: true },
-          });
-
-          if (session?.scenario?.language) {
-            scenarioLanguage = session.scenario.language;
-            console.log('[authenticate] Scenario language:', scenarioLanguage);
-          }
-
-          await prisma.$disconnect();
-        } catch (error) {
-          console.error('[authenticate] Failed to fetch scenario language:', error);
-          // Continue with default language
-        }
+        console.log('[authenticate] Received scenario data:', {
+          hasPrompt: !!scenarioPrompt,
+          promptPreview: scenarioPrompt ? scenarioPrompt.substring(0, 100) + '...' : 'none',
+          language: scenarioLanguage,
+        });
 
         await updateConnectionData(connectionId, {
           sessionId,
           conversationHistory: [],
           scenarioLanguage, // Store language for audio processing
+          scenarioPrompt, // Store system prompt for AI context
         });
 
         await sendToConnection(connectionId, {
@@ -435,6 +431,31 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           totalChunks: totalRealtimeChunks,
         });
 
+        // Check if audio processing is already in progress (prevent duplicate processing)
+        if (connectionData?.realtimeAudioProcessing) {
+          const processingDuration = Date.now() - (connectionData.lastAudioProcessingStartTime || 0);
+          console.warn('[speech_end] Audio processing already in progress, skipping duplicate request:', {
+            sessionId: speechEndSessionId,
+            processingDuration: `${processingDuration}ms`,
+            startTime: connectionData.lastAudioProcessingStartTime,
+          });
+
+          // Send acknowledgment but don't process again
+          await sendToConnection(connectionId, {
+            type: 'processing_update',
+            stage: 'already_processing',
+            progress: 0.5,
+            message: 'Audio processing already in progress',
+          });
+          break;
+        }
+
+        // Set processing flag to prevent duplicate processing
+        await updateConnectionData(connectionId, {
+          realtimeAudioProcessing: true,
+          lastAudioProcessingStartTime: Date.now(),
+        });
+
         // NOTE: Do NOT rely on lastSequenceNumber or totalRealtimeChunks
         // MediaRecorder restart resets sequence numbers, so we MUST check S3 directly
         // Early return removed - always attempt to list and process chunks from S3
@@ -468,6 +489,13 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
           if (chunkKeys.length === 0) {
             console.warn('[speech_end] No chunks found in S3');
+
+            // Clear processing flag
+            await updateConnectionData(connectionId, {
+              realtimeAudioProcessing: false,
+              lastAudioProcessingStartTime: undefined,
+            });
+
             await sendToConnection(connectionId, {
               type: 'error',
               code: 'NO_AUDIO_DATA',
@@ -500,6 +528,13 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
           if (rtChunkBuffers.length === 0) {
             console.warn('[speech_end] No chunks downloaded, cannot process');
+
+            // Clear processing flag
+            await updateConnectionData(connectionId, {
+              realtimeAudioProcessing: false,
+              lastAudioProcessingStartTime: undefined,
+            });
+
             await sendToConnection(connectionId, {
               type: 'error',
               code: 'NO_AUDIO_DATA',
@@ -536,15 +571,24 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             }
           }
 
-          // Reset real-time chunk tracking
+          // Reset real-time chunk tracking and clear processing flag
           await updateConnectionData(connectionId, {
             realtimeAudioSequenceNumber: -1,
             realtimeAudioChunkCount: 0,
+            realtimeAudioProcessing: false,
+            lastAudioProcessingStartTime: undefined,
           });
 
           console.log('[speech_end] Real-time audio processing complete');
         } catch (error) {
           console.error('[speech_end] Failed to process real-time audio:', error);
+
+          // Clear processing flag on error
+          await updateConnectionData(connectionId, {
+            realtimeAudioProcessing: false,
+            lastAudioProcessingStartTime: undefined,
+          });
+
           await sendToConnection(connectionId, {
             type: 'error',
             code: 'SPEECH_END_PROCESSING_ERROR',
