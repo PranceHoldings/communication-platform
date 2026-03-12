@@ -1,0 +1,14 @@
+{
+  "name": "prance-users-me",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "aws-lambda": "^1.0.7",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.138",
+    "@types/jsonwebtoken": "^9.0.6"
+  }
+}

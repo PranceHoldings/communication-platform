@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { useI18n } from '@/lib/i18n/provider';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { getOrganizationSettings, updateOrganizationSettings } from '@/lib/api/settings';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -18,6 +20,88 @@ export default function SettingsPage() {
   const [showSilenceTimer, setShowSilenceTimer] = useState(false);
   const [silenceThreshold, setSilenceThreshold] = useState(0.12);
   const [minSilenceDuration, setMinSilenceDuration] = useState(500);
+
+  // Loading & error states
+  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  // Load settings from API
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!isAuthenticated) return;
+
+      try {
+        setIsLoadingSettings(true);
+        setSettingsError(null);
+        const settings = await getOrganizationSettings();
+
+        // Update state with loaded settings
+        if (settings.enableSilencePrompt !== undefined) {
+          setEnableSilencePrompt(settings.enableSilencePrompt);
+        }
+        if (settings.silenceTimeout !== undefined) {
+          setSilenceTimeout(settings.silenceTimeout);
+        }
+        if (settings.silencePromptStyle !== undefined) {
+          setSilencePromptStyle(settings.silencePromptStyle);
+        }
+        if (settings.showSilenceTimer !== undefined) {
+          setShowSilenceTimer(settings.showSilenceTimer);
+        }
+        if (settings.silenceThreshold !== undefined) {
+          setSilenceThreshold(settings.silenceThreshold);
+        }
+        if (settings.minSilenceDuration !== undefined) {
+          setMinSilenceDuration(settings.minSilenceDuration);
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        setSettingsError(error instanceof Error ? error.message : 'Failed to load settings');
+        toast.error('Failed to load settings');
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+
+    loadSettings();
+  }, [isAuthenticated]);
+
+  // Save settings to API
+  const handleSaveSettings = async () => {
+    try {
+      setIsSaving(true);
+      setSettingsError(null);
+
+      await updateOrganizationSettings({
+        enableSilencePrompt,
+        silenceTimeout,
+        silencePromptStyle,
+        showSilenceTimer,
+        silenceThreshold,
+        minSilenceDuration,
+      });
+
+      toast.success('Settings saved successfully');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      setSettingsError(error instanceof Error ? error.message : 'Failed to save settings');
+      toast.error('Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Reset to default settings
+  const handleResetSettings = () => {
+    setEnableSilencePrompt(true);
+    setSilenceTimeout(10);
+    setSilencePromptStyle('neutral');
+    setShowSilenceTimer(false);
+    setSilenceThreshold(0.12);
+    setMinSilenceDuration(500);
+    toast.info('Settings reset to defaults');
+  };
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -329,21 +413,17 @@ export default function SettingsPage() {
             <div className="pt-4 border-t border-gray-200 flex space-x-3">
               <button
                 type="button"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={handleSaveSettings}
+                disabled={isSaving}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {t('settings.aiAudio.saveButton')}
+                {isSaving ? 'Saving...' : t('settings.aiAudio.saveButton')}
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setEnableSilencePrompt(true);
-                  setSilenceTimeout(10);
-                  setSilencePromptStyle('neutral');
-                  setShowSilenceTimer(false);
-                  setSilenceThreshold(0.12);
-                  setMinSilenceDuration(500);
-                }}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={handleResetSettings}
+                disabled={isSaving}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('settings.aiAudio.resetButton')}
               </button>

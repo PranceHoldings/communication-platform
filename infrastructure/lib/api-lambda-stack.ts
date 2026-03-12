@@ -31,6 +31,7 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly registerFunction: nodejs.NodejsFunction;
   public readonly loginFunction: nodejs.NodejsFunction;
   public readonly getCurrentUserFunction: nodejs.NodejsFunction;
+  public readonly organizationSettingsFunction: nodejs.NodejsFunction;
   public readonly migrationFunction: nodejs.NodejsFunction;
   public readonly populateScenarioDefaultsFunction: nodejs.NodejsFunction;
   public readonly listSessionsFunction: nodejs.NodejsFunction;
@@ -309,6 +310,56 @@ export class ApiLambdaStack extends cdk.Stack {
         },
       },
     });
+
+    // 組織設定（AI & Audio Settings）Lambda関数
+    this.organizationSettingsFunction = new nodejs.NodejsFunction(
+      this,
+      'OrganizationSettingsFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-organizations-settings-${props.environment}`,
+        description: 'Get and update organization settings (AI & Audio)',
+        entry: path.join(__dirname, '../lambda/organizations/settings/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: {
+          minify: props.environment === 'production',
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk', '@aws-sdk/*'],
+          nodeModules: ['@prisma/client'],
+          commandHooks: {
+            beforeBundling(inputDir: string, outputDir: string): string[] {
+              return [];
+            },
+            afterBundling(inputDir: string, outputDir: string): string[] {
+              return [
+                // Copy Prisma generated client
+                `mkdir -p ${outputDir}/node_modules/.prisma`,
+                `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+                // Copy Prisma schema
+                `mkdir -p ${outputDir}/prisma`,
+                `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+                // Copy shared modules
+                `mkdir -p ${outputDir}/shared`,
+                `cp -r /asset-input/infrastructure/lambda/shared/config ${outputDir}/shared/`,
+                `cp -r /asset-input/infrastructure/lambda/shared/utils ${outputDir}/shared/`,
+                `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/`,
+                `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/`,
+                `cp -r /asset-input/infrastructure/lambda/shared/database ${outputDir}/shared/`,
+              ];
+            },
+            beforeInstall(): string[] {
+              return [];
+            },
+          },
+        },
+      }
+    );
 
     // データベースマイグレーション実行Lambda関数（一時的な使用のみ）
     this.migrationFunction = new nodejs.NodejsFunction(this, 'MigrationFunction', {
@@ -969,6 +1020,14 @@ export class ApiLambdaStack extends cdk.Stack {
       }
     );
 
+    const organizationSettingsIntegration = new apigateway.LambdaIntegration(
+      this.organizationSettingsFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
     const listSessionsIntegration = new apigateway.LambdaIntegration(this.listSessionsFunction, {
       proxy: true,
       allowTestInvoke: props.environment !== 'production',
@@ -1094,6 +1153,23 @@ export class ApiLambdaStack extends cdk.Stack {
 
     const meResource = usersResource.addResource('me');
     meResource.addMethod('GET', getCurrentUserIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Organizations endpoints
+    const organizationsResource = apiV1.addResource('organizations');
+
+    const settingsResource = organizationsResource.addResource('settings');
+    // GET /api/v1/organizations/settings (Get organization settings)
+    settingsResource.addMethod('GET', organizationSettingsIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+    // PUT /api/v1/organizations/settings (Update organization settings)
+    settingsResource.addMethod('PUT', organizationSettingsIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
