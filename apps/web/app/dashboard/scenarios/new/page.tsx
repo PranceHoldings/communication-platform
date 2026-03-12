@@ -33,7 +33,7 @@ export default function NewScenarioPage() {
   const [silencePromptStyle, setSilencePromptStyle] = useState<'formal' | 'casual' | 'neutral'>('neutral');
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [showSilenceTimer, setShowSilenceTimer] = useState(false);
-  const [silenceThreshold, setSilenceThreshold] = useState(0.05);
+  const [silenceThreshold, setSilenceThreshold] = useState(0.12);
   const [minSilenceDuration, setMinSilenceDuration] = useState(500);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -408,7 +408,7 @@ export default function NewScenarioPage() {
                       max="0.2"
                       step="0.01"
                       value={silenceThreshold}
-                      onChange={e => setSilenceThreshold(parseFloat(e.target.value) || 0.05)}
+                      onChange={e => setSilenceThreshold(parseFloat(e.target.value) || 0.12)}
                       className="block w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     />
                     <p className="mt-1 text-sm text-gray-500">

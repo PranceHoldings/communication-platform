@@ -1,12 +1,16 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-12 00:00 JST
+**最終更新:** 2026-03-12 16:30 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル） | **Phase 2進捗:** Task 2.1-2.2完了（100%）
-**Phase 1.5進捗:** Day 12完了（Silence Settings API実装修正完了） | **進捗:** 98% → ブラウザE2Eテスト待ち
+**Phase 1.5進捗:** Day 13完了（Silence Settings UI統合完了） | **進捗:** 100% ✅
 **Phase 2.5進捗:** ゲストユーザー機能 - Day 1-2完了（基礎実装） | **進捗:** 15%
-**最新コミット:** TBD - Silence Settings API implementation fix (GET/LIST/CREATE/UPDATE + CDK bundling fix)
-**最新デプロイ:** 2026-03-11 23:52 JST - ApiLambda stack + DB migration (silence columns) ✅
-**次回タスク:** ブラウザでSessionPlayer動作確認（silenceThreshold=0.15, minSilenceDuration=700が使用されているか検証）
+**アバター機能:** 仕様ドキュメント完成（リップシンク・表情・画像生成を追加） ✅
+**最新コミット:** TBD - Clean deployment completed (silence settings + i18n fix + .next cleanup)
+**最新デプロイ:** 2026-03-12 16:27 JST - ApiLambda stack + DB migration + Next.js clean build ✅
+**次回タスク:**
+1. ✅ **クリーンデプロイ完了** - Lambda関数、DBマイグレーション、Next.jsサーバー全て正常稼働
+2. **シナリオ編集UIでsilenceThreshold調整テスト** - http://localhost:3000/dashboard/scenarios/[id]/edit
+3. **動作確認** - WebSocket認証メッセージにsilenceThreshold/minSilenceDurationが含まれるか検証
 
 ---
 

@@ -244,6 +244,8 @@ export interface AuthenticateMessage extends WebSocketMessageBase {
   initialGreeting?: string; // Optional: Initial AI greeting text from scenario
   silenceTimeout?: number; // Optional: Silence timeout in seconds from scenario
   enableSilencePrompt?: boolean; // Optional: Enable silence prompt from scenario
+  silenceThreshold?: number; // Optional: Audio level threshold (0.0-1.0) to detect speech vs silence
+  minSilenceDuration?: number; // Optional: Minimum silence duration in milliseconds to trigger speech_end
 }
 
 /**
@@ -256,6 +258,8 @@ export interface AuthenticatedMessage extends WebSocketMessageBase {
   initialGreeting?: string; // Optional: Initial AI greeting text
   silenceTimeout?: number; // Optional: Silence timeout in seconds
   enableSilencePrompt?: boolean; // Optional: Enable silence prompt
+  silenceThreshold?: number; // Optional: Audio level threshold (0.0-1.0) to detect speech vs silence
+  minSilenceDuration?: number; // Optional: Minimum silence duration in milliseconds to trigger speech_end
 }
 
 /**

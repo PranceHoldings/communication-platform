@@ -76,8 +76,14 @@ export class InternalServerError extends AppError {
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER';
+  role: 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';  // ✅ GUEST追加
   orgId: string; // Aligned with Prisma schema
+
+  // ✅ ゲストユーザー対応フィールド（オプション）
+  type?: 'user' | 'guest';  // ユーザータイプ識別
+  guestSessionId?: string;  // ゲストセッションID
+  sessionId?: string;       // 紐づくセッションID
+
   iat?: number;
   exp?: number;
 }

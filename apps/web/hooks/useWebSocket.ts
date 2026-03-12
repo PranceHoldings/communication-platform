@@ -39,6 +39,8 @@ interface UseWebSocketOptions {
   initialGreeting?: string; // Initial AI greeting from scenario
   silenceTimeout?: number; // Silence timeout in seconds from scenario
   enableSilencePrompt?: boolean; // Enable silence prompt from scenario
+  silenceThreshold?: number; // Audio level threshold (0.0-1.0) to detect speech vs silence
+  minSilenceDuration?: number; // Minimum silence duration in milliseconds to trigger speech_end
   onTranscript?: (message: TranscriptMessage) => void;
   onAvatarResponse?: (message: AvatarResponseMessage) => void;
   onAudioResponse?: (message: AudioResponseMessage) => void;
@@ -75,6 +77,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     initialGreeting,
     silenceTimeout,
     enableSilencePrompt,
+    silenceThreshold,
+    minSilenceDuration,
     onTranscript,
     onAvatarResponse,
     onAudioResponse,
@@ -288,6 +292,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
           initialGreeting,
           silenceTimeout,
           enableSilencePrompt,
+          silenceThreshold,
+          minSilenceDuration,
           timestamp: Date.now(),
         };
         ws.send(JSON.stringify(authenticateMsg));
@@ -297,6 +303,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
           hasInitialGreeting: !!initialGreeting,
           silenceTimeout,
           enableSilencePrompt,
+          silenceThreshold,
+          minSilenceDuration,
         });
       };
 

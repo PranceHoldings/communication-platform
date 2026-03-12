@@ -62,7 +62,7 @@
       "showSilenceTimer": "UIに無音タイマーを表示",
       "showSilenceTimerHelp": "ユーザーに無音カウントダウンタイマーを表示（プレッシャーを与える可能性）",
       "silenceThreshold": "無音閾値",
-      "silenceThresholdHelp": "無音検出の音量閾値（0.01-0.2、デフォルト: 0.05）",
+      "silenceThresholdHelp": "無音検出の音量閾値（0.01-0.2、デフォルト: 0.12）。環境ノイズレベルに応じて調整してください。",
       "minSilenceDuration": "最小無音継続時間（ミリ秒）",
       "minSilenceDurationHelp": "speech_end送信前の最小無音継続時間（100-2000ms、デフォルト: 500ms）",
       "submit": "シナリオを作成",

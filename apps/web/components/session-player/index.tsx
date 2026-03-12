@@ -508,6 +508,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     initialGreeting: scenario.initialGreeting, // Initial AI greeting from scenario
     silenceTimeout: scenario.silenceTimeout, // Silence timeout in seconds
     enableSilencePrompt: scenario.enableSilencePrompt, // Enable silence prompt flag
+    silenceThreshold: scenario.silenceThreshold, // Audio level threshold to detect speech vs silence
+    minSilenceDuration: scenario.minSilenceDuration, // Minimum silence duration to trigger speech_end
     autoConnect: false,
     onTranscript: handleTranscript,
     onAvatarResponse: handleAvatarResponse,
@@ -731,7 +733,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onSpeechEnd: handleSpeechEnd, // Silence detection callback
     onRecordingComplete: handleRecordingComplete, // Still keep for complete recording
     onError: handleRecordingError,
-    silenceThreshold: scenario.silenceThreshold ?? 0.15, // Use scenario setting or default 0.15 (raised from 0.05 to avoid ambient noise)
+    silenceThreshold: scenario.silenceThreshold ?? 0.12, // Use scenario setting or default 0.12 (raised to avoid ambient noise ~10%)
     silenceDuration: scenario.minSilenceDuration ?? 500, // Use scenario setting or default 500ms
   });
 
