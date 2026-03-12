@@ -29,6 +29,7 @@ interface UseAudioRecorderOptions {
   enableRealtime?: boolean; // Enable real-time chunk sending (default: true)
   silenceThreshold?: number; // Silence detection threshold (0-1, default: 0.05)
   silenceDuration?: number; // Silence duration in ms to trigger speech_end (default: 500)
+  isAiRespondingRef?: React.RefObject<boolean>; // Ref to check if AI is speaking (always latest value)
 }
 
 interface UseAudioRecorderReturn {
@@ -53,6 +54,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     enableRealtime = true,
     silenceThreshold = 0.15, // Raised from 0.05 to avoid false positives from ambient noise
     silenceDuration = 500,
+    isAiRespondingRef,
   } = options;
 
   const [isRecording, setIsRecording] = useState(false);
@@ -72,7 +74,8 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
   const lastSpeechTimeRef = useRef<number>(Date.now());
   const speechEndSentRef = useRef(true); // Start as true to prevent initial false detection
   const speechStartTimeRef = useRef<number | null>(null); // Track when continuous speech started
-  const MINIMUM_SPEECH_DURATION = 200; // Minimum 200ms of continuous speech to trigger restart
+  const MINIMUM_SPEECH_DURATION = 800; // Minimum 800ms of continuous speech before allowing speech_end
+  const SPEECH_START_THRESHOLD = 0.08; // Higher threshold for starting speech detection (reduced false positives)
 
   // Low volume detection
   const lowVolumeStartRef = useRef<number | null>(null);
@@ -260,7 +263,9 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       const now = Date.now();
 
       // Low volume warning (very low audio level for extended period)
-      if (normalizedLevel < LOW_VOLUME_THRESHOLD) {
+      // Skip LOW_VOLUME check when AI is responding (user is expected to be silent)
+      const isAiResponding = isAiRespondingRef?.current ?? false;
+      if (!isAiResponding && normalizedLevel < LOW_VOLUME_THRESHOLD) {
         if (!lowVolumeStartRef.current) {
           lowVolumeStartRef.current = now;
         } else {
@@ -269,6 +274,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
             logger.warn(LogPhase.RECORDING, 'Low volume detected', {
               level: normalizedLevel.toFixed(4),
               duration: lowVolumeDuration,
+              isAiResponding, // Log current AI responding state
             });
             lowVolumeWarningShownRef.current = true;
             const lowVolumeError = new Error('LOW_VOLUME');
@@ -277,7 +283,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
           }
         }
       } else {
-        // Reset low volume detection when normal audio is detected
+        // Reset low volume detection when normal audio is detected or AI is responding
         if (lowVolumeStartRef.current) {
           lowVolumeStartRef.current = null;
           lowVolumeWarningShownRef.current = false;
@@ -285,7 +291,10 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       }
 
       // Speech/silence detection
-      if (normalizedLevel > silenceThreshold) {
+      // Use higher threshold for speech start detection to avoid ambient noise
+      const speechDetectionThreshold = speechEndSentRef.current ? SPEECH_START_THRESHOLD : silenceThreshold;
+
+      if (normalizedLevel > speechDetectionThreshold) {
         // Speech detected
         lastSpeechTimeRef.current = now;
 
@@ -295,7 +304,8 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
             speechStartTimeRef.current = now;
             logger.debug(LogPhase.RECORDING, 'Potential speech detected - waiting for confirmation', {
               level: normalizedLevel.toFixed(3),
-              threshold: silenceThreshold,
+              threshold: speechDetectionThreshold,
+              minDuration: MINIMUM_SPEECH_DURATION,
             });
           } else {
             // Check if speech has continued for minimum duration
@@ -304,7 +314,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
               // Confirmed speech - RESTART to get fresh EBML header
               logger.info(LogPhase.RECORDING, 'Confirmed speech detected - restarting recorder for fresh EBML header', {
                 level: normalizedLevel.toFixed(3),
-                threshold: silenceThreshold,
+                threshold: speechDetectionThreshold,
                 speechDuration,
                 currentSequence: sequenceNumberRef.current,
               });

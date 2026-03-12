@@ -113,6 +113,17 @@ export class StorageStack extends cdk.Stack {
             minTtl: cdk.Duration.seconds(0),
           }),
         },
+        '/sessions/*': {
+          origin: new origins.S3Origin(this.recordingsBucket),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+          cachePolicy: new cloudfront.CachePolicy(this, 'SessionsCachePolicy', {
+            cachePolicyName: `prance-sessions-${config.environment}`,
+            defaultTtl: cdk.Duration.hours(1),
+            maxTtl: cdk.Duration.days(7),
+            minTtl: cdk.Duration.seconds(0),
+          }),
+        },
       },
       // カスタムドメインとSSL証明書の設定
       domainNames: certificate && hostedZone ? [config.domain.fullDomain] : undefined,

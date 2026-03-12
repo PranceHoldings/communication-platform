@@ -51,6 +51,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [currentTime, setCurrentTime] = useState(0);
   const [token, setToken] = useState<string | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const isPlayingAudioRef = useRef(false); // Ref for real-time access in callbacks
   const [pendingSessionEnd, setPendingSessionEnd] = useState(false);
   const [shouldSendSessionEnd, setShouldSendSessionEnd] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -366,24 +367,55 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           throw new Error('No audio data or URL provided');
         }
 
-        // Audio要素で再生
+        // Use existing audio element (initialized during handleStart for autoplay unlock)
         if (!audioRef.current) {
           audioRef.current = new Audio();
+          console.log('[SessionPlayer] Created new Audio element (fallback)');
         }
 
-        // CRITICAL FIX: Set volume to ensure audio is audible
+        // CRITICAL FIX: Ensure audio is unmuted and audible
         audioRef.current.volume = 1.0;
+        audioRef.current.muted = false;
+        audioRef.current.preload = 'auto';
 
+        console.log('[SessionPlayer] Audio element configured:', {
+          volume: audioRef.current.volume,
+          muted: audioRef.current.muted,
+          preload: audioRef.current.preload,
+        });
+
+        // Setting src will automatically stop any previous audio
         audioRef.current.src = audioUrl;
+
+        // Enhanced audio event logging
+        audioRef.current.onloadedmetadata = () => {
+          console.log('[SessionPlayer] Audio metadata loaded:', {
+            duration: audioRef.current?.duration,
+            src: audioUrl.substring(0, 100),
+          });
+        };
+
+        audioRef.current.oncanplaythrough = () => {
+          console.log('[SessionPlayer] Audio can play through');
+        };
+
         audioRef.current.onplay = () => {
           setIsPlayingAudio(true);
+          isPlayingAudioRef.current = true; // Update ref
           // TTS complete, audio playback started - return to idle
           setProcessingStage('idle');
           setProcessingMessage('');
-          console.log('[SessionPlayer] Audio playback started, volume:', audioRef.current?.volume);
+          console.log('[SessionPlayer] Audio playback started:', {
+            volume: audioRef.current?.volume,
+            muted: audioRef.current?.muted,
+            paused: audioRef.current?.paused,
+            readyState: audioRef.current?.readyState,
+          });
         };
+
         audioRef.current.onended = () => {
           setIsPlayingAudio(false);
+          isPlayingAudioRef.current = false; // Update ref
           if (needsCleanup) {
             URL.revokeObjectURL(audioUrl);
           }
@@ -395,12 +427,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             console.log('[SessionPlayer] Initial AI greeting audio complete, silence timer will now start');
           }
         };
+
         audioRef.current.onerror = error => {
           setIsPlayingAudio(false);
+          isPlayingAudioRef.current = false; // Update ref
           if (needsCleanup) {
             URL.revokeObjectURL(audioUrl);
           }
           console.error('[SessionPlayer] Audio playback error:', error);
+          console.error('[SessionPlayer] Audio error details:', {
+            error: audioRef.current?.error,
+            networkState: audioRef.current?.networkState,
+            readyState: audioRef.current?.readyState,
+          });
           toast.error(t('sessions.player.messages.audioPlaybackError'));
 
           // Still mark initial greeting as complete even if audio playback fails
@@ -411,14 +450,27 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         };
 
         // 再生開始
+        console.log('[SessionPlayer] Attempting to play audio:', {
+          src: audioUrl.substring(0, 100),
+          readyState: audioRef.current.readyState,
+        });
+
         audioRef.current.play().catch(error => {
-          console.error('[SessionPlayer] Failed to play audio:', error);
+          console.error('[SessionPlayer] Failed to play audio (Promise rejected):', error);
           console.error('[SessionPlayer] Error details:', {
             name: (error as Error).name,
             message: (error as Error).message,
+            code: (error as any).code,
           });
           toast.error(t('sessions.player.messages.audioPlaybackError'));
           setIsPlayingAudio(false);
+          isPlayingAudioRef.current = false; // Update ref
+
+          // Mark initial greeting as complete even if play() fails
+          if (!initialGreetingCompleted) {
+            setInitialGreetingCompleted(true);
+            console.log('[SessionPlayer] Initial greeting marked as complete (play failed)');
+          }
         });
       } catch (error) {
         console.error('[SessionPlayer] Failed to process audio response:', error);
@@ -431,6 +483,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const handleError = useCallback((message: ErrorMessage) => {
     // エラー処理
     console.error('WebSocket error:', message);
+
+    // Filter non-critical errors (user silence is normal during AI responses)
+    const isNonCritical =
+      message.code === 'NO_AUDIO_DATA' ||
+      (message.code === 'AUDIO_PROCESSING_ERROR' && (
+        message.message?.includes('RMS level') ||
+        message.message?.includes('No speech recognized')
+      ));
+
+    if (isNonCritical) {
+      console.warn('[SessionPlayer] Non-critical error (user silence):', message.code);
+      return; // Don't show toast for expected silence
+    }
 
     // Clear processing timeout
     if (processingTimeoutRef.current) {
@@ -670,6 +735,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     (error: Error) => {
       console.error('[SessionPlayer] Recording error:', error);
 
+      // Filter LOW_VOLUME errors (user silence during AI response is normal)
+      if ((error as any).code === 'LOW_VOLUME') {
+        console.warn('[SessionPlayer] Low volume detected (user silence is normal during AI response)');
+        return; // Don't show toast for LOW_VOLUME
+      }
+
       // Get user-friendly error message
       const errorMessage = getErrorMessage(error);
 
@@ -735,6 +806,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onError: handleRecordingError,
     silenceThreshold: scenario.silenceThreshold ?? 0.12, // Use scenario setting or default 0.12 (raised to avoid ambient noise ~10%)
     silenceDuration: scenario.minSilenceDuration ?? 500, // Use scenario setting or default 500ms
+    isAiRespondingRef: isPlayingAudioRef, // Ref for real-time AI audio state (fixes closure issue)
   });
 
   // Audio Visualizer統合
@@ -860,6 +932,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       } catch (error) {
         console.error('[SessionPlayer] Failed to start audio visualizer:', error);
         // Non-critical error, continue without visualization
+      }
+
+      // Initialize audio element for AI responses (unlock autoplay policy)
+      if (!audioRef.current) {
+        audioRef.current = new Audio();
+        audioRef.current.volume = 1.0;
+        audioRef.current.muted = false;
+        console.log('[SessionPlayer] Audio element initialized for AI responses');
       }
 
       setStatus('READY');

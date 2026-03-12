@@ -10,10 +10,8 @@ import type { OrganizationSettings } from '@prance/shared';
  * 組織設定を取得
  */
 export async function getOrganizationSettings(): Promise<OrganizationSettings> {
-  const response = await apiClient<OrganizationSettings>('/organizations/settings', {
-    method: 'GET',
-  });
-  return response;
+  const response = await apiClient.get<OrganizationSettings>('/organizations/settings');
+  return apiClient.unwrapResponse(response);
 }
 
 /**
@@ -22,9 +20,6 @@ export async function getOrganizationSettings(): Promise<OrganizationSettings> {
 export async function updateOrganizationSettings(
   settings: Partial<OrganizationSettings>
 ): Promise<OrganizationSettings> {
-  const response = await apiClient<OrganizationSettings>('/organizations/settings', {
-    method: 'PUT',
-    body: JSON.stringify(settings),
-  });
-  return response;
+  const response = await apiClient.put<OrganizationSettings>('/organizations/settings', settings);
+  return apiClient.unwrapResponse(response);
 }
