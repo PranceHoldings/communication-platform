@@ -24,20 +24,8 @@ export interface AudioProcessorConfig {
   autoDetectLanguages?: string[]; // 自動言語検出候補（推奨）
 }
 
-export interface ProcessAudioOptions {
-  audioData: Buffer;
-  sessionId: string;
-  scenarioPrompt?: string;
-  scenarioLanguage?: string; // Scenario language ('ja', 'en', etc.) for STT priority
-  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
-}
-
-export interface ProcessAudioResult {
-  transcript: string;
-  aiResponse: string;
-  audioResponse: Buffer;
-  audioContentType: string;
-}
+// Phase B: Batch processing types removed - only streaming version used
+// ProcessAudioOptions and ProcessAudioResult removed
 
 export interface StreamingCallbacks {
   onTranscriptComplete?: (transcript: string) => Promise<void>;
@@ -109,67 +97,7 @@ export class AudioProcessor {
   /**
    * Process audio through complete STT -> AI -> TTS pipeline
    */
-  async processAudio(options: ProcessAudioOptions): Promise<ProcessAudioResult> {
-    const { audioData, sessionId, scenarioPrompt, scenarioLanguage, conversationHistory = [] } =
-      options;
-
-    console.log('[AudioProcessor] Starting pipeline:', {
-      sessionId,
-      audioSize: audioData.length,
-      hasScenarioPrompt: !!scenarioPrompt,
-      scenarioLanguage,
-      historyLength: conversationHistory.length,
-    });
-
-    try {
-      // Step 1: Save audio to S3 temporarily (for debugging/audit)
-      const audioKey = await this.saveAudioToS3(audioData, sessionId, 'input');
-
-      // Step 2: Transcribe audio using Azure STT
-      const transcript = await this.transcribeAudio(audioData, scenarioLanguage);
-
-      if (!transcript || transcript.trim().length === 0) {
-        throw new Error('No speech detected in audio');
-      }
-
-      console.log('[AudioProcessor] Transcription:', transcript);
-
-      // Step 3: Generate AI response using Bedrock
-      const aiResponse = await this.generateAIResponse(
-        transcript,
-        scenarioPrompt,
-        conversationHistory
-      );
-
-      console.log('[AudioProcessor] AI Response:', aiResponse.substring(0, 100));
-
-      // Step 4: Synthesize AI response to speech using ElevenLabs
-      const ttsResult = await this.tts.generateSpeech({
-        text: aiResponse,
-        stability: 0.5,
-        similarityBoost: 0.75,
-      });
-
-      // Step 5: Save response audio to S3 (for debugging/audit)
-      await this.saveAudioToS3(ttsResult.audio, sessionId, 'output', ttsResult.contentType);
-
-      console.log('[AudioProcessor] Pipeline complete:', {
-        transcriptLength: transcript.length,
-        responseLength: aiResponse.length,
-        audioOutputSize: ttsResult.sizeBytes,
-      });
-
-      return {
-        transcript,
-        aiResponse,
-        audioResponse: ttsResult.audio,
-        audioContentType: ttsResult.contentType,
-      };
-    } catch (error) {
-      console.error('[AudioProcessor] Pipeline failed:', error);
-      throw error instanceof Error ? error : new Error('Audio processing failed');
-    }
-  }
+  // Phase B: Batch version (processAudio) removed - only streaming version (processAudioStreaming) used
 
   /**
    * Convert multiple WebM chunks to a single WAV file
@@ -544,7 +472,8 @@ export class AudioProcessor {
       extension = 'ogg';
     }
 
-    const key = `sessions/${sessionId}/audio/${type}-${timestamp}.${extension}`;
+    const { getAudioKey } = await import('../../shared/config/s3-paths');
+    const key = getAudioKey(sessionId, type, timestamp, extension);
 
     try {
       await this.s3.send(

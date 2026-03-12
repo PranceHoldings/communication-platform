@@ -126,7 +126,8 @@ export class FrameAnalyzer {
           const processingTime = Date.now() - frameStartTime;
 
           // Upload frame to S3
-          const frameKey = `sessions/${sessionId}/frames/frame-${frame.index.toString().padStart(5, '0')}.jpg`;
+          const { getFrameKey } = await import('../../shared/config/s3-paths');
+          const frameKey = getFrameKey(sessionId, frame.index);
           await this.s3Client.send(
             new PutObjectCommand({
               Bucket: this.bucket,

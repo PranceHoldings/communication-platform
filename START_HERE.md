@@ -1,16 +1,19 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-12 14:10 JST
+**最終更新:** 2026-03-12 14:51 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル） | **Phase 2進捗:** Task 2.1-2.2完了（100%）
 **Phase 1.5進捗:** Day 13完了（Silence Settings UI統合完了） | **進捗:** 100% ✅
 **Phase 2.5進捗:** ゲストユーザー機能 - Day 1-2完了（基礎実装） | **進捗:** 15%
 **アバター機能:** 仕様ドキュメント完成（リップシンク・表情・画像生成を追加） ✅
-**最新コミット:** da22241 - feat(silence): complete Silence Settings deployment and cleanup
-**最新デプロイ:** 2026-03-12 14:03 JST - ApiLambda stack ✅（WebSocket ImportModuleError 修正完了）
+**コードリファクタリング:** Phase A+B+C+D完了（コード重複削減） | **進捗:** 100% ✅
+**最新コミット:** (次回作成予定)
+**最新デプロイ:** 2026-03-12 14:51 JST - ApiLambda stack ✅（Phase C+D: S3パス統一+ロック最適化）
 **次回タスク:**
-1. ✅ **WebSocket ImportModuleError 修正完了** - Lambda関数が正常動作
-2. **エンドツーエンドテスト** - 実際のWebSocket接続でセッション開始・音声会話テスト
-3. **ドキュメント更新** - ROOT_CAUSE_ANALYSIS完成、START_HERE更新済み
+1. ✅ **Phase A完了** - チャンク処理の共通化（145行削減）
+2. ✅ **Phase B完了** - 音声パイプラインの統一（312行削減）
+3. ✅ **Phase C完了** - S3パス構造のクリーンアップ（30行削減）
+4. ✅ **Phase D完了** - フラグとロックの整理（13行削減）
+5. 🔴 **エンドツーエンドテスト** - WebSocket音声会話の動作確認
 
 ---
 
@@ -39,6 +42,20 @@ aws sts get-caller-identity  # Account: 010438500933
 # Lambda関数バージョン確認
 ./scripts/check-lambda-version.sh
 ```
+
+### クイックビルド・デプロイ（1分）
+
+```bash
+# 🚀 すべてを一括実行（推奨）
+npm run build:deploy
+
+# または個別実行
+npm run build:infra        # Infrastructureビルド
+npm run lambda:predeploy   # デプロイ前検証
+npm run deploy:lambda      # Lambda関数デプロイ
+```
+
+> 詳細: `docs/07-development/BUILD_AND_DEPLOY_GUIDE.md`
 
 ### 主要URL
 
@@ -294,6 +311,60 @@ Role: SUPER_ADMIN
   - テストシナリオ4: エラーハンドリング（マイク拒否、ネットワークエラー、音量不足）
 - パフォーマンス測定（レスポンス時間、目標2-5秒）
 
+**✅ 完了: Day 12補足 - コード重複・無駄処理の分析（2026-03-12 16:00 JST）**
+- ✅ 音声処理フロー全体の調査完了
+- ✅ 4つの主要問題を特定:
+  1. チャンク処理ロジックの重複（約100行）
+  2. 音声パイプラインの二重実装（約300行）
+  3. 無駄なS3 API呼び出し（session_endで不要なListObjects）
+  4. S3パス構造の混乱（使用されていない`audio-chunks/`パス）
+- ✅ 4フェーズ改善計画策定（推定工数8時間、削減コード約400行）
+- 📊 詳細分析: `docs/09-progress/CODE_DUPLICATION_ANALYSIS_2026-03-12.md`
+
+**🔴 次の優先対応: コード重複改善（推定8時間）**
+
+実装する理由:
+- 保守性向上: バグ修正時の変更箇所が1/2に削減
+- パフォーマンス改善: 無駄なS3 API呼び出し削減
+- コード品質: 重複コード400行削減（14%削減）
+
+**Phase A: チャンク処理の共通化（🔴 優先度高・推定2時間）**
+- 目的: S3チャンク取得・結合ロジックを共通関数化
+- 実装内容:
+  - `chunk-utils.ts`に`downloadAndCombineChunks()`関数追加
+  - speech_end/session_endで共通関数使用
+  - ソートロジック統一（sortChunksByTimestampAndIndex）
+- 期待効果: コード削減約80行、バグ修正工数1/2
+
+**Phase B: 音声処理パイプラインの統一（🔴 優先度高・推定3時間）**
+- 目的: バッチ版削除、ストリーミング版のみ使用
+- 実装内容:
+  - `handleAudioProcessing()`削除（index.ts）
+  - `processAudio()`削除（audio-processor.ts）
+  - session_endの音声処理ブロック削除（speech_endで完結）
+- 期待効果: コード削減約250行、S3 API呼び出し削減1回/セッション
+
+**Phase C: S3パス構造のクリーンアップ（🟡 優先度中・推定1時間）**
+- 目的: 不要なS3パス削除、構造明確化
+- 実装内容:
+  - `audio-chunks/`パス完全削除
+  - S3パス命名規則統一
+  - S3パス定数の一元管理（`shared/config/s3-paths.ts`新規）
+- 期待効果: 可読性向上、新規開発者オンボーディング時間短縮
+
+**Phase D: フラグとロックの整理（🟡 優先度中・推定2時間）**
+- 目的: 不要なフラグ削除、処理フロー簡潔化
+- 実装内容:
+  - フラグ統合（audioProcessingInProgress/realtimeAudioProcessing → audioProcessing）
+  - 不要フラグ削除（audioChunksCount, currentAudioChunkId）
+  - ロックTTL最適化（5分 → 2分）
+- 期待効果: ConnectionData型簡素化、条件分岐削減
+
+**実装順序:**
+1. Phase A（2時間）→ テスト → デプロイ
+2. Phase B（3時間）→ テスト → デプロイ
+3. Phase C（1時間）→ Phase D（2時間）→ 統合テスト → デプロイ
+
 **Phase 1.5 完了後: Day 13-14 - パフォーマンステスト（推定2日）**
 - レスポンス時間測定（10回以上、平均・最小・最大値）
 - 同時接続負荷テスト（5-10セッション同時実行）
@@ -359,35 +430,37 @@ Role: SUPER_ADMIN
    - Phase 1.5-1.6（実用化）を開始するか？
    - Phase 2.3（レポート）を完結させるか？
 
-### Short-term（Day 8-10）
+### Short-term（Day 12+）
 
-**🎯 Phase 1.5 Day 8-10: エラーハンドリング強化（推奨）**
+**🔴 最優先: コード重複・無駄処理の改善（推奨・8時間）**
 
-目標: リアルタイム会話を実用レベルに引き上げる
+目標: 保守性・パフォーマンス・コード品質を向上
 
 実装ステップ:
-1. **ネットワークエラー対応**
-   - WebSocket再接続ロジック（指数バックオフ）
-   - STT/AI/TTS APIエラー時の自動リトライ（3回まで）
-   - ユーザーへのフレンドリーなエラーメッセージ
+1. **Phase A: チャンク処理の共通化（2時間）**
+   - `chunk-utils.ts`に`downloadAndCombineChunks()`追加
+   - speech_end/session_endで共通関数使用
+   - ソートロジック統一
 
-2. **タイムアウト処理**
-   - 長時間応答がない場合の自動リトライ（30秒タイムアウト）
-   - ユーザーへの進捗表示（「処理中...」インジケーター）
+2. **Phase B: 音声パイプラインの統一（3時間）**
+   - バッチ版処理削除（handleAudioProcessing, processAudio）
+   - session_end音声処理ブロック削除
+   - ストリーミング版のみ使用
 
-3. **音声品質チェック**
-   - マイク未接続検出（getUserMediaエラー）
-   - 音量レベル不足警告（RMS < 0.01）
-   - サポートされていないブラウザ検出
+3. **Phase C: S3パス構造のクリーンアップ（1時間）**
+   - `audio-chunks/`パス削除
+   - S3パス定数一元管理
 
-4. **エラーログ・監視**
-   - CloudWatch Logsへの詳細エラーログ
-   - エラー発生時の自動アラート
+4. **Phase D: フラグとロックの整理（2時間）**
+   - フラグ統合・削減
+   - ロックTTL最適化
 
-技術スタック:
-- WebSocket: exponential backoff reconnection
-- CloudWatch: error metrics + alarms
-- Frontend: user-friendly error messages
+期待効果:
+- コード削減: 約400行（14%削減）
+- S3 API呼び出し削減: 1回/セッション
+- 保守性向上: バグ修正工数1/2
+
+詳細: `docs/09-progress/CODE_DUPLICATION_ANALYSIS_2026-03-12.md`
 
 ### Mid-term（Week 1-2）
 
@@ -509,6 +582,7 @@ aws s3 ls s3://prance-storage-dev/sessions/{session_id}/realtime-chunks/
 - **セッション履歴:** `docs/09-progress/SESSION_HISTORY.md`
 - **Phase 1完了記録:** `docs/09-progress/archives/ARCHIVE_2026-03-06_Phase1_Completion.md`
 - **Phase 2.2統合記録:** `docs/09-progress/archives/SESSION_2026-03-09_PHASE_2.2_INTEGRATION.md`
+- **コード重複分析:** `docs/09-progress/CODE_DUPLICATION_ANALYSIS_2026-03-12.md` 🆕
 
 ---
 
@@ -522,9 +596,10 @@ aws s3 ls s3://prance-storage-dev/sessions/{session_id}/realtime-chunks/
 | 2.5 ゲストユーザー機能 | 15% | 進行中（Day 1-2完了） |
 
 **次のマイルストーン:**
-1. Phase 1.5-1.6（実用化対応）- 2週間 - **音声再生テスト待ち**
-2. Phase 2.5（ゲストユーザー）Day 3-4 - レート制限ユーティリティ - **次回推奨**
-3. Phase 2.3（レポート生成）- 1-2週間
+1. 🔴 **コード重複・無駄処理の改善** - 8時間（4フェーズ） - **最優先・今すぐ実施**
+2. Phase 1.5-1.6（実用化対応）- 2週間 - **音声再生テスト待ち**
+3. Phase 2.5（ゲストユーザー）Day 3-4 - レート制限ユーティリティ - **並行可能**
+4. Phase 2.3（レポート生成）- 1-2週間
 
 ---
 

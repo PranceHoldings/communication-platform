@@ -161,6 +161,19 @@ export const MEDIA_DEFAULTS = {
 } as const;
 
 // ============================================================
+// DynamoDB Defaults
+// ============================================================
+
+export const DYNAMODB_DEFAULTS = {
+  // ビデオチャンクロックのTTL（秒）
+  // Phase D: 5分 (300秒) → 2分 (120秒) に最適化
+  VIDEO_LOCK_TTL_SECONDS: 120, // 2 minutes
+
+  // WebSocket接続のTTL（秒）
+  CONNECTION_TTL_SECONDS: 3600 * 4, // 4 hours
+} as const;
+
+// ============================================================
 // すべてのデフォルト値を統合
 // ============================================================
 
@@ -176,6 +189,7 @@ export const ALL_DEFAULTS = {
   APP: APP_DEFAULTS,
   LANGUAGE: LANGUAGE_DEFAULTS,
   MEDIA: MEDIA_DEFAULTS,
+  DYNAMODB: DYNAMODB_DEFAULTS,
 } as const;
 
 // ============================================================

@@ -35,6 +35,7 @@ import {
   ELEVENLABS_DEFAULTS,
   LANGUAGE_DEFAULTS,
   MEDIA_DEFAULTS,
+  DYNAMODB_DEFAULTS,
 } from '../../shared/config/defaults';
 
 // Lambda function version
@@ -187,7 +188,7 @@ async function deleteLockWithRetry(lockKey: string, maxRetries: number = 3): Pro
   }
 
   console.error(
-    `CRITICAL: Failed to delete lock ${lockKey} after ${maxRetries} attempts. TTL will clean up in 5 minutes.`
+    `CRITICAL: Failed to delete lock ${lockKey} after ${maxRetries} attempts. TTL will clean up in ${DYNAMODB_DEFAULTS.VIDEO_LOCK_TTL_SECONDS / 60} minutes.`
   );
   return false;
 }
@@ -213,20 +214,25 @@ interface ConnectionData {
   scenarioPrompt?: string;
   scenarioLanguage?: string; // Scenario language ('ja', 'en', etc.) for STT/TTS
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
-  audioS3Key?: string; // S3 key for accumulated audio chunks
-  audioChunksCount?: number;
-  lastChunkTime?: number;
+
+  // Video processing (Phase 2)
   videoChunksCount?: number; // Count of video chunks received
   lastVideoChunkTime?: number;
-  audioProcessingInProgress?: boolean; // Flag set by audio_data_part when lock is acquired
-  currentAudioChunkId?: string | null; // ChunkId currently being processed
-  sessionEndReceived?: boolean; // Flag to indicate session_end was received while audio_data_part was processing
-  // Real-time audio streaming (Phase 1.5)
+
+  // Real-time audio processing (Phase 1.5)
   realtimeAudioSequenceNumber?: number; // Latest sequence number received
   realtimeAudioChunkCount?: number; // Total count of real-time chunks
-  realtimeAudioProcessing?: boolean; // Flag to prevent duplicate speech_end processing (Phase 1.5 Day 12)
+  realtimeAudioProcessing?: boolean; // Flag to prevent duplicate speech_end processing
   lastAudioProcessingStartTime?: number; // Timestamp when audio processing started
-  // Note: videoChunkParts removed - parts are stored directly in S3 to avoid DynamoDB 400KB limit
+  sessionEndReceived?: boolean; // Flag to indicate session_end was received while speech_end was processing
+
+  // Phase B: Removed legacy fields (batch audio processing)
+  // - audioS3Key (unused)
+  // - audioChunksCount (replaced by realtimeAudioChunkCount)
+  // - lastChunkTime (unused)
+  // - audioProcessingInProgress (replaced by realtimeAudioProcessing)
+  // - currentAudioChunkId (unused)
+
   [key: string]: unknown;
 }
 
@@ -330,7 +336,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             });
 
             // Save audio to S3
-            const audioKey = `sessions/${sessionId}/initial-greeting/audio-${Date.now()}.mp3`;
+            const { getInitialGreetingKey } = await import('../../shared/config/s3-paths');
+            const audioKey = getInitialGreetingKey(sessionId);
             await s3Client.send(
               new PutObjectCommand({
                 Bucket: S3_BUCKET,
@@ -388,59 +395,14 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         console.log('[Version] Sent version info:', LAMBDA_VERSION);
         break;
 
+      // Phase B: Legacy audio_chunk handler removed - use audio_chunk_realtime instead
       case 'audio_chunk':
-        // Handle streaming audio chunks (browser recording)
-        // Audio data is sent as Base64 string
-        const audioData = message.data as string;
-        const timestamp = message.timestamp as number;
-        const audioSessionId = connectionData?.sessionId || 'unknown';
-
-        console.log('Received audio chunk:', {
-          timestamp,
-          dataSize: audioData ? audioData.length : 0,
-          connectionId,
-          sessionId: audioSessionId,
+        console.log('[DEPRECATED] audio_chunk handler removed - use audio_chunk_realtime instead');
+        await sendToConnection(connectionId, {
+          type: 'error',
+          code: 'DEPRECATED_MESSAGE_TYPE',
+          message: 'audio_chunk is deprecated, use audio_chunk_realtime instead',
         });
-
-        // Save audio chunk to S3 (to avoid DynamoDB 400KB limit)
-        const chunkCount = (connectionData?.audioChunksCount || 0) + 1;
-        const chunkKey = generateChunkKey(
-          audioSessionId,
-          'audio',
-          timestamp,
-          chunkCount,
-          VIDEO_FORMAT
-        );
-
-        try {
-          await s3Client.send(
-            new PutObjectCommand({
-              Bucket: S3_BUCKET,
-              Key: chunkKey,
-              Body: Buffer.from(audioData, 'base64'),
-              ContentType: AUDIO_CONTENT_TYPE,
-            })
-          );
-
-          console.log('Saved audio chunk to S3:', chunkKey);
-        } catch (error) {
-          console.error('Failed to save audio chunk to S3:', error);
-        }
-
-        await updateConnectionData(connectionId, {
-          lastChunkTime: timestamp,
-          audioChunksCount: chunkCount,
-        });
-
-        // Acknowledge receipt periodically (every 20th chunk to reduce traffic)
-        if (chunkCount % 20 === 0) {
-          await sendToConnection(connectionId, {
-            type: 'processing_update',
-            stage: 'receiving_audio',
-            progress: 0.1,
-            chunksReceived: chunkCount,
-          });
-        }
         break;
 
       case 'audio_chunk_realtime':
@@ -461,7 +423,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
         try {
           // Save this chunk to S3 for later processing (on speech_end)
-          const rtChunkKey = `sessions/${rtSessionId}/realtime-chunks/chunk-${rtSequenceNumber.toString().padStart(6, '0')}.webm`;
+          const { getRealtimeChunkKey } = await import('../../shared/config/s3-paths');
+          const rtChunkKey = getRealtimeChunkKey(rtSessionId, rtSequenceNumber);
           const rtAudioBuffer = Buffer.from(rtAudioData, 'base64');
 
           await s3Client.send(
@@ -549,26 +512,20 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             progress: 0.33,
           });
 
-          // List all chunks that actually exist in S3 (more robust than assuming 0-N sequence)
-          const { ListObjectsV2Command } = await import('@aws-sdk/client-s3');
-          const chunkPrefix = `sessions/${speechEndSessionId}/realtime-chunks/`;
+          // Download and combine chunks using shared utility (Phase A: Code Deduplication)
+          const { downloadAndCombineChunks, cleanupChunks } = await import('./chunk-utils');
+          const { getRealtimeChunksPrefix } = await import('../../shared/config/s3-paths');
+          const chunkPrefix = getRealtimeChunksPrefix(speechEndSessionId);
 
-          console.log(`[speech_end] Listing chunks from S3: ${chunkPrefix}`);
-          const listResponse = await s3Client.send(
-            new ListObjectsV2Command({
-              Bucket: S3_BUCKET,
-              Prefix: chunkPrefix,
-            })
+          console.log(`[speech_end] Downloading chunks from S3: ${chunkPrefix}`);
+          const result = await downloadAndCombineChunks(
+            s3Client,
+            S3_BUCKET,
+            chunkPrefix
+            // Uses sortChunksByTimestampAndIndex by default
           );
 
-          const chunkKeys = (listResponse.Contents || [])
-            .map(obj => obj.Key)
-            .filter((key): key is string => !!key)
-            .sort(); // Sort to maintain order
-
-          console.log(`[speech_end] Found ${chunkKeys.length} chunks in S3`);
-
-          if (chunkKeys.length === 0) {
+          if (result.chunkCount === 0) {
             console.warn('[speech_end] No chunks found in S3');
 
             // Clear processing flag
@@ -585,72 +542,26 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             break;
           }
 
-          // Download all existing chunks
-          const rtChunkBuffers: Buffer[] = [];
-          for (const chunkKey of chunkKeys) {
-            try {
-              const getResponse = await s3Client.send(
-                new GetObjectCommand({
-                  Bucket: S3_BUCKET,
-                  Key: chunkKey,
-                })
-              );
-
-              if (getResponse.Body) {
-                const chunkBuffer = await getResponse.Body.transformToByteArray();
-                rtChunkBuffers.push(Buffer.from(chunkBuffer));
-                console.log(`[speech_end] Downloaded ${chunkKey}: ${chunkBuffer.length} bytes`);
-              }
-            } catch (error) {
-              console.warn(`[speech_end] Failed to download ${chunkKey}:`, error);
-              // Continue with other chunks
-            }
-          }
-
-          if (rtChunkBuffers.length === 0) {
-            console.warn('[speech_end] No chunks downloaded, cannot process');
-
-            // Clear processing flag
-            await updateConnectionData(connectionId, {
-              realtimeAudioProcessing: false,
-              lastAudioProcessingStartTime: undefined,
-            });
-
-            await sendToConnection(connectionId, {
-              type: 'error',
-              code: 'NO_AUDIO_DATA',
-              message: 'No audio data received',
-            });
-            break;
-          }
+          console.log('[speech_end] Downloaded chunks:', {
+            chunkCount: result.chunkCount,
+            totalSize: result.totalSize,
+          });
 
           // Convert multiple WebM chunks to WAV (cannot simply concatenate WebM chunks)
           console.log('[speech_end] Converting WebM chunks to WAV...');
           const audioProc = getAudioProcessor();
-          const wavBuffer = await audioProc.convertMultipleWebMChunksToWav(rtChunkBuffers);
+          const wavBuffer = await audioProc.convertMultipleWebMChunksToWav(result.buffers);
 
           console.log('[speech_end] Conversion complete:', {
-            totalChunks: rtChunkBuffers.length,
+            totalChunks: result.buffers.length,
             wavSize: wavBuffer.length,
           });
 
           // Process through STT -> AI (streaming) -> TTS pipeline (Phase 1.5)
           await handleAudioProcessingStreaming(connectionId, wavBuffer, connectionData);
 
-          // Clean up real-time chunks from S3 (delete only the chunks we actually downloaded)
-          console.log(`[speech_end] Cleaning up ${chunkKeys.length} real-time chunks...`);
-          for (const chunkKey of chunkKeys) {
-            try {
-              await s3Client.send(
-                new DeleteObjectCommand({
-                  Bucket: S3_BUCKET,
-                  Key: chunkKey,
-                })
-              );
-            } catch (error) {
-              console.warn(`[speech_end] Failed to delete ${chunkKey}:`, error);
-            }
-          }
+          // Clean up real-time chunks from S3 using shared utility
+          await cleanupChunks(s3Client, S3_BUCKET, result.chunkKeys);
 
           // Reset real-time chunk tracking and clear processing flag
           await updateConnectionData(connectionId, {
@@ -769,7 +680,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           });
 
           // Save audio to S3
-          const audioKey = `sessions/${silenceSessionId}/silence-prompts/audio-${Date.now()}.mp3`;
+          const { getSilencePromptKey } = await import('../../shared/config/s3-paths');
+          const audioKey = getSilencePromptKey(silenceSessionId);
           await s3Client.send(
             new PutObjectCommand({
               Bucket: S3_BUCKET,
@@ -826,7 +738,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
         try {
           // Save this part directly to S3 (avoid DynamoDB 400KB limit)
-          const partKey = `sessions/${partSessionId}/chunks/temp/${chunkId}/part-${partIndex}.bin`;
+          const { getTempChunkPartKey } = await import('../../shared/config/s3-paths');
+          const partKey = getTempChunkPartKey(partSessionId, chunkId, partIndex);
           const partBuffer = Buffer.from(partData, 'base64');
 
           await s3Client.send(
@@ -847,10 +760,11 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           console.log(`Saved part ${partIndex + 1}/${totalParts} to S3:`, partKey);
 
           // Check if all parts received by listing S3 objects
+          const { getTempChunkPartPrefix } = await import('../../shared/config/s3-paths');
           const listResponse = await s3Client.send(
             new ListObjectsV2Command({
               Bucket: S3_BUCKET,
-              Prefix: `sessions/${partSessionId}/chunks/temp/${chunkId}/`,
+              Prefix: getTempChunkPartPrefix(partSessionId, chunkId),
             })
           );
 
@@ -872,7 +786,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                     sessionId: partSessionId,
                     chunkId: chunkId,
                     lockedAt: Date.now(),
-                    ttl: Math.floor(Date.now() / 1000) + 300, // 5 minute TTL
+                    ttl: Math.floor(Date.now() / 1000) + DYNAMODB_DEFAULTS.VIDEO_LOCK_TTL_SECONDS,
                   },
                   ConditionExpression: 'attribute_not_exists(connection_id)',
                 })
@@ -899,9 +813,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               console.log(`Reassembling video chunk ${chunkId}...`);
 
               // Download all parts in order
+              const { getTempChunkPartKey: getTempPartKey } = await import('../../shared/config/s3-paths');
               const partBuffers: Buffer[] = [];
               for (let i = 0; i < totalParts; i++) {
-                const partKey = `sessions/${partSessionId}/chunks/temp/${chunkId}/part-${i}.bin`;
+                const partKey = getTempPartKey(partSessionId, chunkId, i);
                 const getResponse = await s3Client.send(
                   new GetObjectCommand({
                     Bucket: S3_BUCKET,
@@ -944,8 +859,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               });
 
               // Clean up temporary parts from S3
+              const { getTempChunkPartKey: getTempPartKeyCleanup } = await import('../../shared/config/s3-paths');
               for (let i = 0; i < totalParts; i++) {
-                const partKey = `sessions/${partSessionId}/chunks/temp/${chunkId}/part-${i}.bin`;
+                const partKey = getTempPartKeyCleanup(partSessionId, chunkId, i);
                 try {
                   await s3Client.send(
                     new DeleteObjectCommand({
@@ -1072,264 +988,17 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         }
         break;
 
+      // REMOVED: case 'audio_data_part' - Dual audio flow unification (2026-03-12)
+      // リアルタイムチャンク方式 (audio_chunk_realtime + speech_end) に統一
+      // 完全音声データ方式 (audio_data_part) は廃止
+      // 詳細: 無駄な処理の複数箇所実行を排除するため削除
       case 'audio_data_part':
-        // Handle split audio data parts (to overcome 32KB WebSocket limit)
-        const audioChunkId = message.chunkId as string;
-        const audioPartIndex = message.partIndex as number;
-        const audioTotalParts = message.totalParts as number;
-        const audioPartData = message.data as string;
-        const audioPartTimestamp = message.timestamp as number;
-        const audioDataSessionId = connectionData?.sessionId || 'unknown';
-        const audioContentType = message.contentType as string;
-
-        console.log('Received audio data part:', {
-          chunkId: audioChunkId,
-          partIndex: audioPartIndex,
-          totalParts: audioTotalParts,
-          dataSize: audioPartData ? audioPartData.length : 0,
-          timestamp: audioPartTimestamp,
-          sessionId: audioDataSessionId,
+        console.log('[DEPRECATED] audio_data_part handler removed - use realtime chunks instead');
+        await sendToConnection(connectionId, {
+          type: 'error',
+          code: 'DEPRECATED_MESSAGE_TYPE',
+          message: 'audio_data_part is deprecated, use audio_chunk_realtime + speech_end instead',
         });
-
-        try {
-          // Save this part directly to S3 (avoid DynamoDB 400KB limit)
-          const audioPartKey = `sessions/${audioDataSessionId}/chunks/temp/audio/${audioChunkId}/part-${audioPartIndex}.bin`;
-          const audioPartBuffer = Buffer.from(audioPartData, 'base64');
-
-          await s3Client.send(
-            new PutObjectCommand({
-              Bucket: S3_BUCKET,
-              Key: audioPartKey,
-              Body: audioPartBuffer,
-              ContentType: 'application/octet-stream',
-              Metadata: {
-                chunkId: audioChunkId,
-                partIndex: audioPartIndex.toString(),
-                totalParts: audioTotalParts.toString(),
-                timestamp: audioPartTimestamp.toString(),
-                contentType: audioContentType,
-              },
-            })
-          );
-
-          console.log(
-            `Saved audio part ${audioPartIndex + 1}/${audioTotalParts} to S3:`,
-            audioPartKey
-          );
-
-          // Check if all parts received by listing S3 objects
-          const audioListResponse = await s3Client.send(
-            new ListObjectsV2Command({
-              Bucket: S3_BUCKET,
-              Prefix: `sessions/${audioDataSessionId}/chunks/temp/audio/${audioChunkId}/`,
-            })
-          );
-
-          const audioReceivedParts = audioListResponse.Contents?.length || 0;
-          console.log(
-            `Received ${audioReceivedParts}/${audioTotalParts} audio parts for chunk ${audioChunkId}`
-          );
-
-          if (audioReceivedParts === audioTotalParts) {
-            // All parts received, try to acquire processing lock
-            console.log(`All audio parts received for chunk ${audioChunkId}, acquiring lock...`);
-
-            // Use DynamoDB conditional write to ensure only ONE Lambda processes this chunk
-            const lockKey = `audio-lock-${audioChunkId}`;
-            try {
-              await ddb.send(
-                new PutCommand({
-                  TableName: CONNECTIONS_TABLE,
-                  Item: {
-                    connection_id: lockKey,
-                    sessionId: audioDataSessionId,
-                    chunkId: audioChunkId,
-                    lockedAt: Date.now(),
-                    ttl: Math.floor(Date.now() / 1000) + 300, // 5 minute TTL
-                  },
-                  ConditionExpression: 'attribute_not_exists(connection_id)',
-                })
-              );
-              console.log(`Lock acquired for chunk ${audioChunkId}, proceeding with processing`);
-
-              // Mark that audio processing is in progress
-              await updateConnectionData(connectionId, {
-                audioProcessingInProgress: true,
-                currentAudioChunkId: audioChunkId,
-              });
-            } catch (error: any) {
-              if (error.name === 'ConditionalCheckFailedException') {
-                console.log(
-                  `Lock already held for chunk ${audioChunkId}, skipping duplicate processing`
-                );
-                // Another Lambda is already processing this chunk - return success
-                return {
-                  statusCode: 200,
-                  body: JSON.stringify({ message: 'Audio chunk already being processed' }),
-                };
-              }
-              throw error; // Re-throw unexpected errors
-            }
-
-            // Lock acquired, now reassemble and process
-            let audioProcessingSuccess = false;
-            try {
-              console.log(`Reassembling audio chunk ${audioChunkId}...`);
-
-              // Download all parts in order
-              const audioPartBuffers: Buffer[] = [];
-              for (let i = 0; i < audioTotalParts; i++) {
-                const partKey = `sessions/${audioDataSessionId}/chunks/temp/audio/${audioChunkId}/part-${i}.bin`;
-                const getResponse = await s3Client.send(
-                  new GetObjectCommand({
-                    Bucket: S3_BUCKET,
-                    Key: partKey,
-                  })
-                );
-
-                if (getResponse.Body) {
-                  const partBuffer = await getResponse.Body.transformToByteArray();
-                  audioPartBuffers.push(Buffer.from(partBuffer));
-                } else {
-                  throw new Error(`Missing audio part ${i} for chunk ${audioChunkId}`);
-                }
-              }
-
-              // Concatenate all parts
-              const completeAudioBuffer = Buffer.concat(audioPartBuffers);
-
-              console.log(`Reassembled complete audio:`, {
-                chunkId: audioChunkId,
-                totalParts: audioTotalParts,
-                combinedSize: completeAudioBuffer.length,
-              });
-
-              // Send processing status
-              await sendToConnection(connectionId, {
-                type: 'processing_update',
-                stage: 'transcribing',
-                progress: 0.33,
-              });
-
-              // Process through STT -> AI -> TTS pipeline
-              await handleAudioProcessing(connectionId, completeAudioBuffer, connectionData);
-
-              // Clean up temporary parts from S3
-              console.log('Cleaning up temporary audio parts...');
-              for (let i = 0; i < audioTotalParts; i++) {
-                const partKey = `sessions/${audioDataSessionId}/chunks/temp/audio/${audioChunkId}/part-${i}.bin`;
-                try {
-                  await s3Client.send(
-                    new DeleteObjectCommand({
-                      Bucket: S3_BUCKET,
-                      Key: partKey,
-                    })
-                  );
-                } catch (error) {
-                  console.error(`Failed to delete audio part ${i}:`, error);
-                }
-              }
-
-              audioProcessingSuccess = true;
-            } catch (processingError) {
-              console.error(
-                `[audio_data_part] Processing failed for chunk ${audioChunkId}:`,
-                processingError
-              );
-
-              // Notify client of error
-              try {
-                await sendToConnection(connectionId, {
-                  type: 'error',
-                  code: 'AUDIO_PROCESSING_ERROR',
-                  message: 'Failed to process audio',
-                  details:
-                    processingError instanceof Error ? processingError.message : 'Unknown error',
-                  chunkId: audioChunkId,
-                });
-              } catch (sendError) {
-                console.error('[audio_data_part] Failed to send error notification:', sendError);
-              }
-            } finally {
-              // Always clean up lock (success or failure)
-              const lockDeleted = await deleteLockWithRetry(lockKey);
-              if (lockDeleted) {
-                console.log(
-                  `Lock cleanup completed for chunk ${audioChunkId} (success=${audioProcessingSuccess})`
-                );
-              }
-            }
-
-            // Only perform cleanup if processing succeeded
-            if (audioProcessingSuccess) {
-              // Clear audio processing flags
-              await updateConnectionData(connectionId, {
-                audioChunksCount: 0,
-                audioProcessingInProgress: false,
-                currentAudioChunkId: null,
-              });
-              console.log('[audio_data_part] Audio processing complete, cleared flags');
-
-              // Check if session_end was received while we were processing
-              const updatedConnectionData = await getConnectionData(connectionId);
-              if (updatedConnectionData?.sessionEndReceived) {
-                console.log('[audio_data_part] session_end was received, sending session_complete now');
-                // Audio processing is complete and session_end was waiting for us
-                await sendToConnection(connectionId, {
-                  type: 'session_complete',
-                  sessionId: audioDataSessionId,
-                  message: 'Session ended successfully',
-                });
-              }
-
-              // Delete audio-chunks from S3 to prevent session_end from re-processing
-              try {
-                const chunksPrefix = `sessions/${audioDataSessionId}/audio-chunks/`;
-                const listResponse = await s3Client.send(
-                  new ListObjectsV2Command({
-                    Bucket: S3_BUCKET,
-                    Prefix: chunksPrefix,
-                  })
-                );
-
-                if (listResponse.Contents && listResponse.Contents.length > 0) {
-                  console.log(
-                    `Deleting ${listResponse.Contents.length} audio-chunks from S3 to prevent duplicate processing`
-                  );
-                  for (const obj of listResponse.Contents) {
-                    if (obj.Key) {
-                      await s3Client.send(
-                        new DeleteObjectCommand({
-                          Bucket: S3_BUCKET,
-                          Key: obj.Key,
-                        })
-                      );
-                    }
-                  }
-                  console.log('[audio_data_part] Deleted audio-chunks from S3');
-                }
-              } catch (error) {
-                console.error('[audio_data_part] Failed to delete audio-chunks:', error);
-                // Non-critical error, continue
-              }
-            }
-          } else {
-            // Send acknowledgment that part was received
-            await sendToConnection(connectionId, {
-              type: 'audio_part_ack',
-              chunkId: audioChunkId,
-              partsReceived: audioReceivedParts,
-              totalParts: audioTotalParts,
-            });
-          }
-        } catch (error) {
-          console.error('Failed to process audio data part:', error);
-          await sendToConnection(connectionId, {
-            type: 'error',
-            code: 'AUDIO_PART_ERROR',
-            message: error instanceof Error ? error.message : 'Failed to process audio part',
-          });
-        }
         break;
 
       case 'audio_data':
@@ -1346,93 +1015,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         // Finalize session and process accumulated audio
         console.log('Session end:', message);
 
-        // Process accumulated audio chunks if any
-        if (connectionData?.audioChunksCount && connectionData.audioChunksCount > 0) {
-          console.log(
-            `Processing ${connectionData.audioChunksCount} accumulated audio chunks from S3`
-          );
-
-          try {
-            await sendToConnection(connectionId, {
-              type: 'processing_update',
-              stage: 'processing_audio',
-              progress: 0.3,
-            });
-
-            // Load and combine audio chunks from S3
-            const sessionId = connectionData.sessionId || 'unknown';
-            const chunksPrefix = `sessions/${sessionId}/audio-chunks/`;
-
-            console.log('Listing audio chunks in S3:', chunksPrefix);
-
-            const listResponse = await s3Client.send(
-              new ListObjectsV2Command({
-                Bucket: S3_BUCKET,
-                Prefix: chunksPrefix,
-              })
-            );
-
-            if (!listResponse.Contents || listResponse.Contents.length === 0) {
-              console.log(
-                '[session_end] No audio chunks found in S3 - already processed by audio_data_part, skipping audio re-processing'
-              );
-              // Reset counter and skip audio processing (audio was already processed by audio_data_part)
-              await updateConnectionData(connectionId, {
-                audioChunksCount: 0,
-              });
-            } else {
-              console.log(`Found ${listResponse.Contents.length} chunks in S3`);
-
-              // Sort chunks using shared utility function
-              const sortedChunks = sortChunksByTimestampAndIndex(listResponse.Contents);
-
-              // Log sorted chunks with validation
-              logSortedChunks(sortedChunks, 'session_end:audio', 5);
-
-              // Download and combine all chunks
-              const audioBuffers: Buffer[] = [];
-              for (const chunk of sortedChunks) {
-                if (!chunk.Key) continue;
-
-                const getResponse = await s3Client.send(
-                  new GetObjectCommand({
-                    Bucket: S3_BUCKET,
-                    Key: chunk.Key,
-                  })
-                );
-
-                if (getResponse.Body) {
-                  const chunkBuffer = await getResponse.Body.transformToByteArray();
-                  audioBuffers.push(Buffer.from(chunkBuffer));
-                }
-              }
-
-              const combinedAudioBuffer = Buffer.concat(audioBuffers);
-              console.log('Combined audio size:', combinedAudioBuffer.length, 'bytes');
-
-              await sendToConnection(connectionId, {
-                type: 'processing_update',
-                stage: 'transcribing',
-                progress: 0.5,
-              });
-
-              // Process through STT -> AI -> TTS pipeline
-              await handleAudioProcessing(connectionId, combinedAudioBuffer, connectionData);
-
-              // Clear audio chunks count after processing
-              await updateConnectionData(connectionId, {
-                audioChunksCount: 0,
-              });
-            } // End of else block (audio chunks found)
-          } catch (error) {
-            console.error('Failed to process accumulated audio:', error);
-            await sendToConnection(connectionId, {
-              type: 'error',
-              code: 'AUDIO_PROCESSING_ERROR',
-              message: 'Failed to process recorded audio',
-            });
-          }
-        }
+        // Phase B: Audio processing removed - handled by speech_end in real-time
+        // Phase 1.5 uses realtime-chunks/ path processed by speech_end handler
+        // Legacy audio-chunks/ path is no longer used
+        console.log('[session_end] Audio processing already completed by speech_end handler (Phase 1.5)');
 
         // Process video chunks if any
         if (connectionData?.videoChunksCount && connectionData.videoChunksCount > 0) {
@@ -1504,6 +1090,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             try {
               const sessionId = connectionData.sessionId || 'unknown';
               const recordingId = `rec-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+              const { getRecordingKey } = await import('../../shared/config/s3-paths');
               await ddb.send(
                 new PutCommand({
                   TableName: RECORDINGS_TABLE,
@@ -1511,7 +1098,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                     recording_id: recordingId,
                     sessionId: sessionId,
                     type: 'COMBINED',
-                    s3_key: `sessions/${sessionId}/recording.${VIDEO_FORMAT}`,
+                    s3_key: getRecordingKey(sessionId, VIDEO_FORMAT),
                     s3_url: '',
                     file_size_bytes: 0,
                     video_chunks_count: connectionData.videoChunksCount || 0,
@@ -1543,22 +1130,18 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           });
         }
 
-        // Check if audio processing is still in progress
-        // audio_data_part sets audioProcessingInProgress flag when lock is acquired
+        // Check if audio processing is still in progress (Phase B: simplified check)
+        // speech_end sets realtimeAudioProcessing flag when processing real-time chunks
         const currentConnectionData = await getConnectionData(connectionId);
+        const isProcessing = currentConnectionData?.realtimeAudioProcessing;
 
-        // Check if audio data exists or processing is in progress
-        const hasAudioData = (currentConnectionData?.audioChunksCount || 0) > 0;
-        const isProcessing = currentConnectionData?.audioProcessingInProgress;
-
-        if (isProcessing || hasAudioData) {
-          console.log('[session_end] Audio data exists or processing in progress, marking session_end_received flag');
+        if (isProcessing) {
+          console.log('[session_end] Audio processing in progress, marking session_end_received flag');
           console.log('[session_end] Current state:', {
-            audioChunksCount: currentConnectionData?.audioChunksCount,
-            audioProcessingInProgress: isProcessing,
-            currentAudioChunkId: currentConnectionData?.currentAudioChunkId,
+            realtimeAudioProcessing: isProcessing,
+            lastAudioProcessingStartTime: currentConnectionData?.lastAudioProcessingStartTime,
           });
-          // Mark that session_end was received, audio_data_part will send session_complete when done
+          // Mark that session_end was received, speech_end will send session_complete when done
           await updateConnectionData(connectionId, {
             sessionEndReceived: true,
           });
@@ -1635,134 +1218,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 };
 
 /**
- * Handle accumulated audio chunks processing
- * Process: STT -> AI -> TTS -> Send back to client
- */
-async function handleAudioProcessing(
-  connectionId: string,
-  audioBuffer: Buffer,
-  connectionData?: ConnectionData
-): Promise<void> {
-  try {
-    const sessionId = connectionData?.sessionId || 'unknown';
-
-    console.log('[handleAudioProcessing] Starting:', {
-      sessionId,
-      audioSize: audioBuffer.length,
-      hasScenarioPrompt: !!connectionData?.scenarioPrompt,
-      scenarioLanguage: connectionData?.scenarioLanguage,
-    });
-
-    // Send processing status
-    await sendToConnection(connectionId, {
-      type: 'processing_update',
-      stage: 'transcribing',
-      progress: 0.33,
-    });
-
-    // Process through STT -> AI -> TTS pipeline
-    const processor = getAudioProcessor();
-    const result = await processor.processAudio({
-      audioData: audioBuffer,
-      sessionId,
-      scenarioPrompt: connectionData?.scenarioPrompt,
-      scenarioLanguage: connectionData?.scenarioLanguage, // Pass scenario language for STT priority
-      conversationHistory: connectionData?.conversationHistory || [],
-    });
-
-    // Send transcript (partial result)
-    await sendToConnection(connectionId, {
-      type: 'transcript_final',
-      speaker: 'USER',
-      text: result.transcript,
-      timestamp_start: Date.now(),
-      confidence: 0.95,
-    });
-
-    // Update conversation history
-    const updatedHistory = [
-      ...(connectionData?.conversationHistory || []),
-      { role: 'user' as const, content: result.transcript },
-      { role: 'assistant' as const, content: result.aiResponse },
-    ];
-
-    await updateConnectionData(connectionId, {
-      conversationHistory: updatedHistory,
-    });
-
-    // Send AI response text
-    await sendToConnection(connectionId, {
-      type: 'avatar_response',
-      speaker: 'AI',
-      text: result.aiResponse,
-      timestamp: Date.now(),
-    });
-
-    // Upload AI response audio to S3 (to avoid WebSocket 32KB limit)
-    const audioTimestamp = Date.now();
-    const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm'}`;
-
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: S3_BUCKET,
-        Key: audioKey,
-        Body: result.audioResponse,
-        ContentType: result.audioContentType,
-      })
-    );
-
-    console.log('[handleAudioProcessing] Uploaded audio to S3:', audioKey);
-
-    // Generate presigned URL for audio (valid for 1 hour)
-    const audioUrl = await getSignedUrl(
-      s3Client,
-      new GetObjectCommand({
-        Bucket: S3_BUCKET,
-        Key: audioKey,
-      }),
-      { expiresIn: 3600 }
-    );
-
-    // Send AI response audio URL (instead of base64 data)
-    await sendToConnection(connectionId, {
-      type: 'audio_response',
-      audioUrl,
-      audioKey,
-      contentType: result.audioContentType,
-      timestamp: audioTimestamp,
-    });
-
-    console.log('[handleAudioProcessing] Complete:', {
-      sessionId,
-      transcriptLength: result.transcript.length,
-      responseLength: result.aiResponse.length,
-      audioSize: result.audioResponse.length,
-    });
-  } catch (error) {
-    console.error('[handleAudioProcessing] Error:', error);
-
-    const errorMessage = error instanceof Error ? error.message : 'Failed to process audio';
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.log('[handleAudioProcessing] Sending error to client:', {
-      code: 'AUDIO_PROCESSING_ERROR',
-      message: errorMessage,
-      detailsPreview: errorDetails?.substring(0, 200),
-    });
-
-    await sendToConnection(connectionId, {
-      type: 'error',
-      code: 'AUDIO_PROCESSING_ERROR',
-      message: errorMessage,
-      details: errorDetails,
-      timestamp: Date.now(),
-    });
-  }
-}
-
-/**
  * Handle audio processing with real-time streaming (Phase 1.5)
  * Streams AI response chunks to client via WebSocket
+ *
+ * Phase B: Batch version (handleAudioProcessing) removed - only streaming version used
  */
 async function handleAudioProcessingStreaming(
   connectionId: string,
@@ -1848,7 +1307,10 @@ async function handleAudioProcessingStreaming(
 
           // Upload audio to S3
           const audioTimestamp = Date.now();
-          const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm'}`;
+          const { getAudioKey } = await import('../../shared/config/s3-paths');
+          const { AudioFileType } = await import('../../shared/config/s3-paths');
+          const extension = contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm';
+          const audioKey = getAudioKey(sessionId, AudioFileType.AI_RESPONSE, audioTimestamp, extension);
 
           await s3Client.send(
             new PutObjectCommand({
@@ -1980,7 +1442,10 @@ async function handleAudioData(
 
     // Upload AI response audio to S3 (to avoid WebSocket 32KB limit)
     const audioTimestamp = Date.now();
-    const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm'}`;
+    const { getAudioKey: getAudioKeyLegacy } = await import('../../shared/config/s3-paths');
+    const { AudioFileType: AudioFileTypeLegacy } = await import('../../shared/config/s3-paths');
+    const extensionLegacy = result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm';
+    const audioKey = getAudioKeyLegacy(sessionId, AudioFileTypeLegacy.AI_RESPONSE, audioTimestamp, extensionLegacy);
 
     await s3Client.send(
       new PutObjectCommand({

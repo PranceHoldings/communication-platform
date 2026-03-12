@@ -98,7 +98,8 @@ export class VideoProcessor {
 
     try {
       // List all video chunks for this session
-      const chunksPrefix = `sessions/${sessionId}/video-chunks/`;
+      const { getVideoChunksPrefix } = await import('../../shared/config/s3-paths');
+      const chunksPrefix = getVideoChunksPrefix(sessionId);
       console.log('[VideoProcessor] Listing video chunks:', chunksPrefix);
 
       const listResponse = await this.s3Client.send(
@@ -211,7 +212,8 @@ export class VideoProcessor {
       });
 
       // Upload final video to S3
-      const finalVideoKey = `sessions/${sessionId}/recording.${MEDIA_DEFAULTS.VIDEO_FORMAT}`;
+      const { getRecordingKey } = await import('../../shared/config/s3-paths');
+      const finalVideoKey = getRecordingKey(sessionId);
       await this.s3Client.send(
         new PutObjectCommand({
           Bucket: this.bucket,
@@ -295,7 +297,8 @@ export class VideoProcessor {
     sessionId: string
   ): Promise<{ exists: boolean; size?: number; url?: string }> {
     try {
-      const videoKey = `sessions/${sessionId}/recording.webm`;
+      const { getRecordingKey: getRecKey } = await import('../../shared/config/s3-paths');
+      const videoKey = getRecKey(sessionId);
 
       const response = await this.s3Client.send(
         new GetObjectCommand({
