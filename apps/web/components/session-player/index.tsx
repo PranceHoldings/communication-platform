@@ -494,6 +494,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
     if (isNonCritical) {
       console.warn('[SessionPlayer] Non-critical error (user silence):', message.code);
+      // Reset processing flag to allow silence timer to resume
+      setIsProcessing(false);
+      setProcessingStage('idle');
+      setProcessingMessage('');
+      console.log('[SessionPlayer] Processing flags reset, silence timer can resume');
       return; // Don't show toast for expected silence
     }
 
