@@ -731,8 +731,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onSpeechEnd: handleSpeechEnd, // Silence detection callback
     onRecordingComplete: handleRecordingComplete, // Still keep for complete recording
     onError: handleRecordingError,
-    silenceThreshold: 0.05, // Silence threshold (0-1)
-    silenceDuration: 500, // 500ms silence triggers speech_end
+    silenceThreshold: scenario.silenceThreshold ?? 0.15, // Use scenario setting or default 0.15 (raised from 0.05 to avoid ambient noise)
+    silenceDuration: scenario.minSilenceDuration ?? 500, // Use scenario setting or default 500ms
   });
 
   // Audio Visualizer統合

@@ -30,7 +30,20 @@ export const handler: APIGatewayProxyHandler = async event => {
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { title, category, configJson, language, visibility } = body;
+    const {
+      title,
+      category,
+      configJson,
+      language,
+      visibility,
+      // Silence management fields
+      initialGreeting,
+      silenceTimeout,
+      enableSilencePrompt,
+      showSilenceTimer,
+      silenceThreshold,
+      minSilenceDuration,
+    } = body;
 
     // Validate required fields
     if (!title) {
@@ -78,6 +91,13 @@ export const handler: APIGatewayProxyHandler = async event => {
         configJson,
         language: language || LANGUAGE_DEFAULTS.SUPPORTED_LANGUAGES[0], // Default: first supported language ('ja')
         visibility: visibility || 'PRIVATE',
+        // Silence management fields (optional, will use DB defaults if not provided)
+        initialGreeting,
+        silenceTimeout,
+        enableSilencePrompt,
+        showSilenceTimer,
+        silenceThreshold,
+        minSilenceDuration,
       },
       select: {
         id: true,
@@ -88,6 +108,13 @@ export const handler: APIGatewayProxyHandler = async event => {
         createdAt: true,
         userId: true,
         orgId: true,
+        // Silence management fields
+        initialGreeting: true,
+        silenceTimeout: true,
+        enableSilencePrompt: true,
+        showSilenceTimer: true,
+        silenceThreshold: true,
+        minSilenceDuration: true,
       },
     });
 

@@ -59,7 +59,20 @@ export const handler: APIGatewayProxyHandler = async event => {
 
     // Parse request body
     const body = JSON.parse(event.body || '{}');
-    const { title, category, configJson, language, visibility } = body;
+    const {
+      title,
+      category,
+      configJson,
+      language,
+      visibility,
+      // Silence management fields
+      initialGreeting,
+      silenceTimeout,
+      enableSilencePrompt,
+      showSilenceTimer,
+      silenceThreshold,
+      minSilenceDuration,
+    } = body;
 
     // Validate configJson if provided
     if (configJson !== undefined) {
@@ -93,6 +106,13 @@ export const handler: APIGatewayProxyHandler = async event => {
     if (configJson !== undefined) updateData.configJson = configJson;
     if (language !== undefined) updateData.language = language;
     if (visibility !== undefined) updateData.visibility = visibility;
+    // Silence management fields
+    if (initialGreeting !== undefined) updateData.initialGreeting = initialGreeting;
+    if (silenceTimeout !== undefined) updateData.silenceTimeout = silenceTimeout;
+    if (enableSilencePrompt !== undefined) updateData.enableSilencePrompt = enableSilencePrompt;
+    if (showSilenceTimer !== undefined) updateData.showSilenceTimer = showSilenceTimer;
+    if (silenceThreshold !== undefined) updateData.silenceThreshold = silenceThreshold;
+    if (minSilenceDuration !== undefined) updateData.minSilenceDuration = minSilenceDuration;
 
     // Check if there's anything to update
     if (Object.keys(updateData).length === 0) {
@@ -113,6 +133,13 @@ export const handler: APIGatewayProxyHandler = async event => {
         createdAt: true,
         userId: true,
         orgId: true,
+        // Silence management fields
+        initialGreeting: true,
+        silenceTimeout: true,
+        enableSilencePrompt: true,
+        showSilenceTimer: true,
+        silenceThreshold: true,
+        minSilenceDuration: true,
       },
     });
 

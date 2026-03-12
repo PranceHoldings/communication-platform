@@ -1,11 +1,12 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-11 01:15 JST
+**最終更新:** 2026-03-12 00:00 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル） | **Phase 2進捗:** Task 2.1-2.2完了（100%）
-**Phase 1.5進捗:** Day 1-12進行中（音声バグ修正完了、テスト待ち） | **進捗:** 98%
-**最新コミット:** TBD - Day 12 audio bug fixes (noise detection + TTS streaming)
-**最新デプロイ:** 2026-03-11 01:15 JST - ApiLambda stack deployed (audio fixes) ✅
-**未解決問題:** 音声再生機能の動作確認が未完了（次回セッションでテスト必須）
+**Phase 1.5進捗:** Day 12完了（Silence Settings API実装修正完了） | **進捗:** 98% → ブラウザE2Eテスト待ち
+**Phase 2.5進捗:** ゲストユーザー機能 - Day 1-2完了（基礎実装） | **進捗:** 15%
+**最新コミット:** TBD - Silence Settings API implementation fix (GET/LIST/CREATE/UPDATE + CDK bundling fix)
+**最新デプロイ:** 2026-03-11 23:52 JST - ApiLambda stack + DB migration (silence columns) ✅
+**次回タスク:** ブラウザでSessionPlayer動作確認（silenceThreshold=0.15, minSilenceDuration=700が使用されているか検証）
 
 ---
 
@@ -91,6 +92,37 @@ Role: SUPER_ADMIN
 - フロントエンドUI（ScoreDashboard + PerformanceRadar + DetailStats）
 
 **Task 2.3: レポート生成機能** - 0%（未着手）
+
+### Phase 2.5: ゲストユーザー機能（進行中）
+
+**目標:** ログイン不要の外部ユーザー（面接候補者、研修受講者）をサポート
+
+**✅ 完了: Phase 1 Week 1 Day 1-2 - 基礎実装（2026-03-11）**
+- ✅ JWTPayload型拡張（GUEST role追加）
+- ✅ guest-token.ts 実装（4関数 + 単体テスト36件）
+  - `generateGuestToken()` - ゲスト用JWT生成
+  - `verifyGuestToken()` - ゲストトークン検証
+  - `isGuestToken()` - トークンタイプ判定
+  - `extractGuestSessionId()` - セッションID抽出
+- ✅ pinHash.ts 実装（3関数 + 単体テスト30件）
+  - `hashPin()` - bcryptでPINハッシュ化（SALT_ROUNDS=10）
+  - `verifyPin()` - PIN検証（タイミングアタック耐性）
+  - `isValidPinFormat()` - フォーマット検証
+- ✅ tokenGenerator.ts 実装（5関数 + 単体テスト24件）
+  - `generateToken()` - UUID v4トークン生成（32文字）
+  - `generatePin()` - 4-8桁PIN生成（暗号学的に安全）
+  - `validateCustomPin()` - カスタムPIN検証
+  - `generateTokenAndPin()` - トークン+PIN一括生成
+  - `generateInviteUrl()` - 招待URL生成
+- ✅ Jest設定・型定義問題解決
+- 📊 **テスト結果:** 89/89テスト成功（100%）
+
+**⏳ 次回: Phase 1 Week 1 Day 3-4 - レート制限ユーティリティ（推定2日）**
+- DynamoDB-based rate limiter（ブルートフォース攻撃対策）
+- IPアドレス・トークン単位のレート制限
+- 指数バックオフ + 自動ロック解除
+
+> 詳細計画: `docs/05-modules/GUEST_USER_IMPLEMENTATION_PLAN.md`
 
 ---
 
@@ -252,6 +284,29 @@ Role: SUPER_ADMIN
 - PDF生成・ダウンロード機能
 
 > 詳細計画: `docs/09-progress/phases/PHASE_2_PLAN.md`
+
+### 🚀 Option C: Phase 2.5（ゲストユーザー機能）- 継続中
+
+**外部ユーザー向け認証なしアクセス機能を完成させる（3週間）**
+
+**✅ 完了:** Day 1-2 - 型定義・共通ユーティリティ（2026-03-11）
+
+**⏳ 次回タスク:** Phase 1 Week 1 Day 3-4 - レート制限ユーティリティ
+
+実装内容:
+- DynamoDBベースのレート制限（ブルートフォース攻撃対策）
+- IPアドレス・トークン単位の制限
+- 指数バックオフ + 自動ロック解除
+- 単体テスト作成
+
+推定時間: 2日（Day 3-4）
+
+**残りタスク:**
+- Day 5-7: Prismaスキーママイグレーション（GuestSession, GuestSessionLog）
+- Week 2: API実装（13 Lambda関数）
+- Week 3: UI実装（6画面） + E2Eテスト
+
+> 詳細計画: `docs/05-modules/GUEST_USER_IMPLEMENTATION_PLAN.md`
 
 ---
 
@@ -431,11 +486,12 @@ aws s3 ls s3://prance-storage-dev/sessions/{session_id}/realtime-chunks/
 | 2.1 録画機能 | 100% | 完了 |
 | 2.2 解析機能 | 100% | 完了 |
 | 2.3 レポート生成 | 0% | 未着手 |
+| 2.5 ゲストユーザー機能 | 15% | 進行中（Day 1-2完了） |
 
 **次のマイルストーン:**
-1. Phase 1.5-1.6（実用化対応）- 2週間
-2. Phase 2.3（レポート生成）- 1-2週間
-3. Phase 2.5（ゲストユーザー）- 3週間
+1. Phase 1.5-1.6（実用化対応）- 2週間 - **音声再生テスト待ち**
+2. Phase 2.5（ゲストユーザー）Day 3-4 - レート制限ユーティリティ - **次回推奨**
+3. Phase 2.3（レポート生成）- 1-2週間
 
 ---
 

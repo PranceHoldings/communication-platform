@@ -32,6 +32,7 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly loginFunction: nodejs.NodejsFunction;
   public readonly getCurrentUserFunction: nodejs.NodejsFunction;
   public readonly migrationFunction: nodejs.NodejsFunction;
+  public readonly populateScenarioDefaultsFunction: nodejs.NodejsFunction;
   public readonly listSessionsFunction: nodejs.NodejsFunction;
   public readonly createSessionFunction: nodejs.NodejsFunction;
   public readonly getSessionFunction: nodejs.NodejsFunction;
@@ -339,16 +340,8 @@ export class ApiLambdaStack extends cdk.Stack {
               // Copy Prisma schema
               `mkdir -p ${outputDir}/prisma`,
               `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
-              // Copy migration SQL files
-              `cp /asset-input/infrastructure/lambda/migrations/migration.sql ${outputDir}/`,
-              `cp /asset-input/infrastructure/lambda/migrations/schema-update.sql ${outputDir}/`,
-              `cp /asset-input/infrastructure/lambda/migrations/add-allow-cloning.sql ${outputDir}/`,
-              `cp /asset-input/infrastructure/lambda/migrations/create-users.sql ${outputDir}/`,
-              `cp /asset-input/infrastructure/lambda/migrations/update-admin-password.sql ${outputDir}/`,
-              `cp /asset-input/infrastructure/lambda/migrations/add-recording-video-fields.sql ${outputDir}/`,
-              `cp /asset-input/infrastructure/lambda/migrations/add-emotion-analysis.sql ${outputDir}/`,
-              `cp /asset-input/infrastructure/lambda/migrations/add-audio-analysis.sql ${outputDir}/`,
-              `cp /asset-input/infrastructure/lambda/migrations/add-session-score.sql ${outputDir}/`,
+              // Copy all migration SQL files
+              `cp /asset-input/infrastructure/lambda/migrations/*.sql ${outputDir}/ || true`,
             ];
           },
           beforeInstall(): string[] {
@@ -357,6 +350,49 @@ export class ApiLambdaStack extends cdk.Stack {
         },
       },
     });
+
+    // データベース保守Lambda関数（Scenario Default Values設定）
+    this.populateScenarioDefaultsFunction = new nodejs.NodejsFunction(
+      this,
+      'PopulateScenarioDefaultsFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-populate-scenario-defaults-${props.environment}`,
+        description: 'Populate silence management default values for existing scenarios (one-time maintenance)',
+        entry: path.join(__dirname, '../lambda/maintenance/populate-scenario-defaults/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(300), // 5分
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: {
+          minify: false,
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk', '@aws-sdk/*'],
+          nodeModules: ['@prisma/client'],
+          commandHooks: {
+            beforeBundling(inputDir: string, outputDir: string): string[] {
+              return [];
+            },
+            afterBundling(inputDir: string, outputDir: string): string[] {
+              return [
+                // Copy Prisma generated client
+                `mkdir -p ${outputDir}/node_modules/.prisma`,
+                `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+                // Copy Prisma schema
+                `mkdir -p ${outputDir}/prisma`,
+                `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+              ];
+            },
+            beforeInstall(): string[] {
+              return [];
+            },
+          },
+        },
+      }
+    );
 
     // ==================== Session Management Lambda Functions ====================
 

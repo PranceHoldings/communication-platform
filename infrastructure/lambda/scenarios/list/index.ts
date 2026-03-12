@@ -70,6 +70,13 @@ export const handler: APIGatewayProxyHandler = async event => {
           createdAt: true,
           userId: true,
           orgId: true,
+          // Silence management fields
+          initialGreeting: true,
+          silenceTimeout: true,
+          enableSilencePrompt: true,
+          showSilenceTimer: true,
+          silenceThreshold: true,
+          minSilenceDuration: true,
         },
       }),
       prisma.scenario.count({ where }),
@@ -95,3 +102,4 @@ export const handler: APIGatewayProxyHandler = async event => {
     );
   }
 };
+// Force rebuild - Wed Mar 11 11:32:33 PM UTC 2026
