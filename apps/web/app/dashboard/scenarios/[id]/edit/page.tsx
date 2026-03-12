@@ -30,6 +30,9 @@ export default function EditScenarioPage() {
   // Initial greeting field
   const [initialGreeting, setInitialGreeting] = useState('');
 
+  // Silence timer display setting
+  const [showSilenceTimer, setShowSilenceTimer] = useState<boolean | undefined>(undefined);
+
   // Load existing scenario data
   useEffect(() => {
     const loadScenario = async () => {
@@ -52,6 +55,9 @@ export default function EditScenarioPage() {
 
         // Load initial greeting
         setInitialGreeting(scenario.initialGreeting || '');
+
+        // Load silence timer display setting
+        setShowSilenceTimer(scenario.showSilenceTimer);
 
         setIsLoading(false);
       } catch (err) {
@@ -103,6 +109,8 @@ export default function EditScenarioPage() {
         configJson: parsedConfig,
         // Initial greeting
         initialGreeting: initialGreeting.trim() || undefined,
+        // Silence timer display (undefined = use organization default)
+        showSilenceTimer,
       });
 
       toast.success(t('scenarios.edit.success'));
@@ -266,6 +274,43 @@ export default function EditScenarioPage() {
             <p className="mt-2 text-sm text-gray-500">
               {t('scenarios.create.form.initialGreetingHelp')}
             </p>
+          </div>
+        </div>
+
+        {/* Silence Timer Display */}
+        <div className="border-t pt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h3 className="text-lg font-medium text-gray-900">
+                {t('scenarios.create.form.showSilenceTimer', 'Show Silence Timer')}
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                {t('scenarios.create.form.showSilenceTimerDescription',
+                   'Display silence countdown in the session player UI. Leave unchecked to use organization default.')}
+              </p>
+            </div>
+            <div className="ml-4 flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => setShowSilenceTimer(showSilenceTimer === true ? undefined : true)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  showSilenceTimer === true ? 'bg-indigo-600' : 'bg-gray-200'
+                }`}
+                role="switch"
+                aria-checked={showSilenceTimer === true}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    showSilenceTimer === true ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className="text-sm text-gray-600">
+                {showSilenceTimer === true ? t('common.enabled', 'Enabled') :
+                 showSilenceTimer === false ? t('common.disabled', 'Disabled') :
+                 t('common.useDefault', 'Use Default')}
+              </span>
+            </div>
           </div>
         </div>
 

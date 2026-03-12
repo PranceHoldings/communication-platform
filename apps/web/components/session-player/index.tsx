@@ -5,6 +5,8 @@ import { useI18n } from '@/lib/i18n/provider';
 import { Session } from '@/lib/api/sessions';
 import { Avatar } from '@/lib/api/avatars';
 import { Scenario } from '@/lib/api/scenarios';
+import { getOrganizationSettings } from '@/lib/api/settings';
+import type { OrganizationSettings } from '@prance/shared';
 import {
   useWebSocket,
   TranscriptMessage,
@@ -63,6 +65,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   // Silence management state
   const [initialGreetingCompleted, setInitialGreetingCompleted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Organization settings for fallback values
+  const [orgSettings, setOrgSettings] = useState<OrganizationSettings | null>(null);
   const speechEndQueueRef = useRef<boolean>(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -600,6 +605,25 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     sendMessageRef.current = sendMessage;
   }, [sendMessage]);
 
+  // Load organization settings on mount for fallback values
+  useEffect(() => {
+    const loadOrgSettings = async () => {
+      try {
+        const settings = await getOrganizationSettings();
+        setOrgSettings(settings);
+        console.log('[SessionPlayer] Organization settings loaded:', {
+          showSilenceTimer: settings.showSilenceTimer,
+          enableSilencePrompt: settings.enableSilencePrompt,
+          silenceTimeout: settings.silenceTimeout,
+        });
+      } catch (error) {
+        console.error('[SessionPlayer] Failed to load organization settings:', error);
+        // Continue with default values if settings fail to load
+      }
+    };
+    loadOrgSettings();
+  }, []); // Run once on mount
+
   useEffect(() => {
     sendSpeechEndRef.current = sendSpeechEnd;
   }, [sendSpeechEnd]);
@@ -826,12 +850,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     smoothingTimeConstant: 0.8,
   });
 
+  // Determine silence timer settings with hierarchical fallback
+  // Priority: Scenario > Organization Settings > Default
+  const effectiveShowSilenceTimer = scenario.showSilenceTimer ?? orgSettings?.showSilenceTimer ?? false;
+  const effectiveSilenceTimeout = scenario.silenceTimeout ?? orgSettings?.silenceTimeout ?? 10;
+  const effectiveEnableSilencePrompt = scenario.enableSilencePrompt ?? orgSettings?.enableSilencePrompt ?? true;
+
   // Silence Timer統合
-  const { elapsedTime: _silenceElapsedTime, resetTimer: _resetSilenceTimer } = useSilenceTimer({
+  const { elapsedTime: silenceElapsedTime, resetTimer: resetSilenceTimer } = useSilenceTimer({
     enabled: status === 'ACTIVE' &&
              initialGreetingCompleted &&
-             (scenario.enableSilencePrompt ?? true),
-    timeoutSeconds: scenario.silenceTimeout ?? 10,
+             effectiveEnableSilencePrompt,
+    timeoutSeconds: effectiveSilenceTimeout,
     isAIPlaying: isPlayingAudio,
     isUserSpeaking: isMicRecording,
     isProcessing: isProcessing,
@@ -1382,6 +1412,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           </div>
           <div className="flex items-center gap-4">
             <KeyboardShortcuts />
+
+            {/* Silence Timer Display (if enabled) */}
+            {effectiveShowSilenceTimer && status === 'ACTIVE' && initialGreetingCompleted && (
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2 min-w-[120px]">
+                <div className="text-xs text-indigo-600 font-medium uppercase tracking-wide">
+                  {t('sessions.player.silenceTimer.label', 'Silence')}
+                </div>
+                <div className="text-xl font-mono font-bold text-indigo-900 mt-0.5">
+                  {silenceElapsedTime}s / {effectiveSilenceTimeout}s
+                </div>
+              </div>
+            )}
+
             <div className="text-right">
               <div className={`text-lg font-semibold ${getStatusColor(status)}`}>
                 {getStatusText(status)}
