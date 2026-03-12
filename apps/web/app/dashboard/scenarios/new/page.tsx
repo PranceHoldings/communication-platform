@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/provider';
 import { createScenario } from '@/lib/api/scenarios';
+import { getOrganizationSettings } from '@/lib/api/settings';
+import type { OrganizationSettings } from '@prance/shared';
 import { locales, defaultLocale } from '@/lib/i18n/config';
 import type { Visibility } from '@prance/shared';
 import Link from 'next/link';
@@ -30,6 +32,22 @@ export default function NewScenarioPage() {
 
   // Silence timer display setting
   const [showSilenceTimer, setShowSilenceTimer] = useState<boolean | undefined>(undefined);
+
+  // Organization settings for showing defaults
+  const [orgSettings, setOrgSettings] = useState<OrganizationSettings | null>(null);
+
+  // Load organization settings on mount
+  useEffect(() => {
+    const loadOrgSettings = async () => {
+      try {
+        const settings = await getOrganizationSettings();
+        setOrgSettings(settings);
+      } catch (error) {
+        console.error('Failed to load organization settings:', error);
+      }
+    };
+    loadOrgSettings();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,27 +259,47 @@ export default function NewScenarioPage() {
                    'Display silence countdown in the session player UI. Leave unchecked to use organization default.')}
               </p>
             </div>
-            <div className="ml-4 flex items-center space-x-2">
+            <div className="ml-4 flex flex-col items-end space-y-2">
               <button
                 type="button"
-                onClick={() => setShowSilenceTimer(showSilenceTimer === true ? undefined : true)}
+                onClick={() => {
+                  // 3-state cycle: undefined → true → false → undefined
+                  if (showSilenceTimer === undefined) {
+                    setShowSilenceTimer(true);
+                  } else if (showSilenceTimer === true) {
+                    setShowSilenceTimer(false);
+                  } else {
+                    setShowSilenceTimer(undefined);
+                  }
+                }}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  showSilenceTimer === true ? 'bg-indigo-600' : 'bg-gray-200'
+                  showSilenceTimer === true ? 'bg-indigo-600' :
+                  showSilenceTimer === false ? 'bg-red-400' :
+                  'bg-gray-300'
                 }`}
                 role="switch"
                 aria-checked={showSilenceTimer === true}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    showSilenceTimer === true ? 'translate-x-6' : 'translate-x-1'
+                    showSilenceTimer === true ? 'translate-x-6' :
+                    showSilenceTimer === false ? 'translate-x-1' :
+                    'translate-x-3'
                   }`}
                 />
               </button>
-              <span className="text-sm text-gray-600">
-                {showSilenceTimer === true ? t('common.enabled', 'Enabled') :
-                 showSilenceTimer === false ? t('common.disabled', 'Disabled') :
-                 t('common.useDefault', 'Use Default')}
-              </span>
+              <div className="text-right">
+                <div className="text-sm font-medium text-gray-700">
+                  {showSilenceTimer === true ? t('common.enabled', 'Enabled') :
+                   showSilenceTimer === false ? t('common.disabled', 'Disabled') :
+                   t('common.useDefault', 'Use Default')}
+                </div>
+                {showSilenceTimer === undefined && orgSettings && (
+                  <div className="text-xs text-gray-500">
+                    ({orgSettings.showSilenceTimer ? t('common.enabled', 'Enabled') : t('common.disabled', 'Disabled')})
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
