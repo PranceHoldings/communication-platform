@@ -856,6 +856,21 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const effectiveSilenceTimeout = scenario.silenceTimeout ?? orgSettings?.silenceTimeout ?? 10;
   const effectiveEnableSilencePrompt = scenario.enableSilencePrompt ?? orgSettings?.enableSilencePrompt ?? true;
 
+  // Debug logging for silence timer configuration
+  console.log('[SessionPlayer] Silence timer configuration:', {
+    'scenario.showSilenceTimer': scenario.showSilenceTimer,
+    'orgSettings?.showSilenceTimer': orgSettings?.showSilenceTimer,
+    effectiveShowSilenceTimer,
+    'scenario.enableSilencePrompt': scenario.enableSilencePrompt,
+    'orgSettings?.enableSilencePrompt': orgSettings?.enableSilencePrompt,
+    effectiveEnableSilencePrompt,
+    'scenario.silenceTimeout': scenario.silenceTimeout,
+    'orgSettings?.silenceTimeout': orgSettings?.silenceTimeout,
+    effectiveSilenceTimeout,
+    status,
+    initialGreetingCompleted,
+  });
+
   // Silence Timer統合
   const { elapsedTime: silenceElapsedTime, resetTimer: resetSilenceTimer } = useSilenceTimer({
     enabled: status === 'ACTIVE' &&
