@@ -109,6 +109,9 @@
             "completed": "Completed",
             "unknown": "Unknown"
         },
+        "silenceTimer": {
+            "label": "Silence"
+        },
         "help": {
             "startSession": "Click \"Start Session\" to begin the conversation with {avatarName}",
             "listening": "🎤 Listening... Speak clearly into your microphone"

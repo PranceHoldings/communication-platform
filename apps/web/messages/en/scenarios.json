@@ -47,6 +47,8 @@
       "initialGreetingDescription": "This message is played when the session starts",
       "initialGreetingPlaceholder": "Hello. Let's start the interview. Please introduce yourself.",
       "initialGreetingHelp": "The AI will speak this greeting at the start of the session. Leave empty to skip.",
+      "showSilenceTimer": "Show Silence Timer",
+      "showSilenceTimerDescription": "Display silence countdown in the session player UI. Leave unchecked to use organization default.",
       "submit": "Create Scenario",
       "cancel": "Cancel",
       "creating": "Creating..."

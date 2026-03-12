@@ -47,6 +47,8 @@
       "initialGreetingDescription": "セッション開始時に再生されるメッセージです",
       "initialGreetingPlaceholder": "こんにちは。面接を始めましょう。自己紹介をお願いします。",
       "initialGreetingHelp": "セッション開始時にAIがこの挨拶を話します。空欄の場合はスキップされます。",
+      "showSilenceTimer": "沈黙タイマーを表示",
+      "showSilenceTimerDescription": "セッションプレーヤーUIに沈黙タイマーを表示します。未設定の場合は組織のデフォルト設定を使用します。",
       "submit": "シナリオを作成",
       "cancel": "キャンセル",
       "creating": "作成中..."
