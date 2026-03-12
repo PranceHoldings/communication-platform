@@ -74,6 +74,11 @@ handle_error() {
   log_error "ビルドプロセスがステップ $1 で失敗しました"
   log_info "トラブルシューティング:"
   case $1 in
+    "space-cleanup")
+      log_info "  - 空白を含むディレクトリが削除できません"
+      log_info "  - 手動削除: find . -name \"* *\" -type d"
+      log_info "  - 完全クリーン: rm -rf apps/web/.next infrastructure/cdk.out"
+      ;;
     "cleanup")
       log_info "  - 開発サーバーを停止: pkill -f 'next dev'"
       log_info "  - 破損ファイルは自動的にリネームされています"
@@ -205,6 +210,23 @@ remove_directory_robust() {
   log_warning "  このディレクトリは手動削除が必要です"
   return 1
 }
+
+# =============================================================================
+# Step 0: 空白文字を含むディレクトリのクリーンアップ (CRITICAL)
+# =============================================================================
+log_step "Step 0: 空白文字を含むディレクトリの検出・削除"
+
+if [ -f "scripts/clean-space-directories.sh" ]; then
+  log_info "実行中: clean-space-directories.sh"
+  if bash scripts/clean-space-directories.sh; then
+    log_success "空白文字チェック完了"
+  else
+    log_error "空白文字を含むディレクトリの削除に失敗しました"
+    handle_error "space-cleanup"
+  fi
+else
+  log_warning "clean-space-directories.sh が見つかりません（スキップ）"
+fi
 
 # =============================================================================
 # Step 1: クリーンアップ

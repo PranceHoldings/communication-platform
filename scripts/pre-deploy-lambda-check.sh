@@ -33,10 +33,29 @@ TOTAL_CHECKS=0
 FAILED_CHECKS=0
 
 # =============================================================================
+# Check 0: Space-Containing Directories (CRITICAL)
+# =============================================================================
+
+echo -e "${MAGENTA}[CHECK 0/7]${NC} 空白文字を含むディレクトリの検証"
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+if [ -f "scripts/clean-space-directories.sh" ]; then
+  if bash scripts/clean-space-directories.sh > /dev/null 2>&1; then
+    echo -e "  ${GREEN}✓${NC} 空白文字チェック: OK"
+  else
+    echo -e "  ${RED}✗${NC} 空白文字チェック: FAILED"
+    echo -e "  ${YELLOW}→ Run: bash scripts/clean-space-directories.sh${NC}"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+  fi
+else
+  echo -e "  ${YELLOW}⚠${NC} 検証スクリプトなし（スキップ）"
+fi
+
+# =============================================================================
 # Check 1: Environment Variables
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 1/6]${NC} 環境変数の検証"
+echo -e "${MAGENTA}[CHECK 1/7]${NC} 環境変数の検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -f "scripts/validate-env.sh" ]; then
@@ -54,7 +73,7 @@ fi
 # Check 2: Lambda Dependencies
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 2/6]${NC} Lambda依存関係の検証"
+echo -e "${MAGENTA}[CHECK 2/7]${NC} Lambda依存関係の検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -f "scripts/validate-lambda-dependencies.sh" ]; then
@@ -74,7 +93,7 @@ fi
 # Check 3: i18n System
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 3/6]${NC} i18nシステムの検証"
+echo -e "${MAGENTA}[CHECK 3/7]${NC} i18nシステムの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -f "scripts/validate-i18n-system.sh" ]; then
@@ -92,7 +111,7 @@ fi
 # Check 4: TypeScript Build
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 4/6]${NC} TypeScriptビルドの検証"
+echo -e "${MAGENTA}[CHECK 4/7]${NC} TypeScriptビルドの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -d "infrastructure/lib" ]; then
@@ -113,7 +132,7 @@ fi
 # Check 5: Prisma Client
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 5/6]${NC} Prisma Clientの検証"
+echo -e "${MAGENTA}[CHECK 5/7]${NC} Prisma Clientの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -d "packages/database/node_modules/.prisma/client" ]; then
@@ -128,7 +147,7 @@ fi
 # Check 6: CDK Synthesize
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 6/6]${NC} CDK Synthesizeの検証"
+echo -e "${MAGENTA}[CHECK 6/7]${NC} CDK Synthesizeの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 cd infrastructure
