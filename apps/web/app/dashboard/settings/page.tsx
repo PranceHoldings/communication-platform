@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { useI18n } from '@/lib/i18n/provider';
@@ -10,6 +10,14 @@ export default function SettingsPage() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
   const { t } = useI18n();
+
+  // AI & Audio Settings state
+  const [enableSilencePrompt, setEnableSilencePrompt] = useState(true);
+  const [silenceTimeout, setSilenceTimeout] = useState(10);
+  const [silencePromptStyle, setSilencePromptStyle] = useState<'formal' | 'casual' | 'neutral'>('neutral');
+  const [showSilenceTimer, setShowSilenceTimer] = useState(false);
+  const [silenceThreshold, setSilenceThreshold] = useState(0.12);
+  const [minSilenceDuration, setMinSilenceDuration] = useState(500);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -137,6 +145,209 @@ export default function SettingsPage() {
             >
               {t('settings.security.changePassword')}
             </button>
+          </div>
+        </div>
+
+        {/* AI & Audio Settings Section */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-5 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">{t('settings.aiAudio.title')}</h3>
+            <p className="mt-1 text-sm text-gray-500">{t('settings.aiAudio.subtitle')}</p>
+          </div>
+          <div className="px-6 py-5 space-y-8">
+            {/* AI Response Behavior */}
+            <div>
+              <h4 className="text-base font-medium text-gray-900 mb-4">
+                {t('settings.aiAudio.aiResponseBehavior.title')}
+              </h4>
+              <p className="text-sm text-gray-500 mb-4">
+                {t('settings.aiAudio.aiResponseBehavior.description')}
+              </p>
+
+              <div className="space-y-4">
+                {/* Enable Silence Prompt */}
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium text-gray-900">
+                      {t('settings.aiAudio.aiResponseBehavior.enableSilencePrompt')}
+                    </label>
+                    <p className="text-sm text-gray-500">
+                      {t('settings.aiAudio.aiResponseBehavior.enableSilencePromptHelp')}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEnableSilencePrompt(!enableSilencePrompt)}
+                    className={`${
+                      enableSilencePrompt ? 'bg-indigo-600' : 'bg-gray-200'
+                    } relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                    role="switch"
+                    aria-checked={enableSilencePrompt}
+                  >
+                    <span
+                      className={`${
+                        enableSilencePrompt ? 'translate-x-5' : 'translate-x-0'
+                      } pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200`}
+                    ></span>
+                  </button>
+                </div>
+
+                {/* Silence Timeout */}
+                {enableSilencePrompt && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('settings.aiAudio.aiResponseBehavior.silenceTimeout')}
+                      </label>
+                      <div className="flex items-center space-x-4">
+                        <input
+                          type="number"
+                          min="5"
+                          max="60"
+                          value={silenceTimeout}
+                          onChange={e => setSilenceTimeout(parseInt(e.target.value) || 10)}
+                          className="block w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                        <span className="text-sm text-gray-600">
+                          {t('settings.aiAudio.aiResponseBehavior.silenceTimeoutSeconds')}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {t('settings.aiAudio.aiResponseBehavior.silenceTimeoutHelp')}
+                      </p>
+                    </div>
+
+                    {/* Silence Prompt Style */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('settings.aiAudio.aiResponseBehavior.silencePromptStyle')}
+                      </label>
+                      <div className="flex space-x-4">
+                        {(['formal', 'casual', 'neutral'] as const).map(style => (
+                          <label key={style} className="flex items-center">
+                            <input
+                              type="radio"
+                              name="silencePromptStyle"
+                              value={style}
+                              checked={silencePromptStyle === style}
+                              onChange={e => setSilencePromptStyle(e.target.value as any)}
+                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">
+                              {t(`settings.aiAudio.aiResponseBehavior.silencePromptStyle${style.charAt(0).toUpperCase() + style.slice(1)}`)}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Show Silence Timer */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <label className="text-sm font-medium text-gray-900">
+                          {t('settings.aiAudio.aiResponseBehavior.showSilenceTimer')}
+                        </label>
+                        <p className="text-sm text-gray-500">
+                          {t('settings.aiAudio.aiResponseBehavior.showSilenceTimerHelp')}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowSilenceTimer(!showSilenceTimer)}
+                        className={`${
+                          showSilenceTimer ? 'bg-indigo-600' : 'bg-gray-200'
+                        } relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                        role="switch"
+                        aria-checked={showSilenceTimer}
+                      >
+                        <span
+                          className={`${
+                            showSilenceTimer ? 'translate-x-5' : 'translate-x-0'
+                          } pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200`}
+                        ></span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Audio Detection Settings */}
+            <div className="pt-6 border-t border-gray-200">
+              <h4 className="text-base font-medium text-gray-900 mb-4">
+                {t('settings.aiAudio.audioDetectionSettings.title')}
+              </h4>
+              <p className="text-sm text-gray-500 mb-4">
+                {t('settings.aiAudio.audioDetectionSettings.description')}
+              </p>
+
+              <div className="space-y-4">
+                {/* Silence Threshold */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('settings.aiAudio.audioDetectionSettings.silenceThreshold')}
+                  </label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    max="0.2"
+                    step="0.01"
+                    value={silenceThreshold}
+                    onChange={e => setSilenceThreshold(parseFloat(e.target.value) || 0.12)}
+                    className="block w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    {t('settings.aiAudio.audioDetectionSettings.silenceThresholdHelp')}
+                  </p>
+                </div>
+
+                {/* Min Silence Duration */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('settings.aiAudio.audioDetectionSettings.minSilenceDuration')}
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="number"
+                      min="100"
+                      max="2000"
+                      step="100"
+                      value={minSilenceDuration}
+                      onChange={e => setMinSilenceDuration(parseInt(e.target.value) || 500)}
+                      className="block w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    <span className="text-sm text-gray-600">ms</span>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {t('settings.aiAudio.audioDetectionSettings.minSilenceDurationHelp')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-4 border-t border-gray-200 flex space-x-3">
+              <button
+                type="button"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                {t('settings.aiAudio.saveButton')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEnableSilencePrompt(true);
+                  setSilenceTimeout(10);
+                  setSilencePromptStyle('neutral');
+                  setShowSilenceTimer(false);
+                  setSilenceThreshold(0.12);
+                  setMinSilenceDuration(500);
+                }}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                {t('settings.aiAudio.resetButton')}
+              </button>
+            </div>
           </div>
         </div>
 

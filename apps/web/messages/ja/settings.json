@@ -22,5 +22,34 @@
     "title": "セキュリティ",
     "changePassword": "パスワードを変更"
   },
+  "aiAudio": {
+    "title": "AI・音声設定",
+    "subtitle": "AI応答と音声検出のデフォルト設定",
+    "aiResponseBehavior": {
+      "title": "AI応答動作",
+      "description": "無音時のAI応答方法を設定します",
+      "enableSilencePrompt": "無音時に会話を促す",
+      "enableSilencePromptHelp": "一定時間無音が続くとAIが自動的にユーザーに話しかけます",
+      "silenceTimeout": "無音待機時間",
+      "silenceTimeoutHelp": "AIがユーザーに話しかけるまでの待機時間（秒）",
+      "silenceTimeoutSeconds": "秒",
+      "silencePromptStyle": "促し言葉のトーン",
+      "silencePromptStyleFormal": "フォーマル",
+      "silencePromptStyleCasual": "カジュアル",
+      "silencePromptStyleNeutral": "中立",
+      "showSilenceTimer": "UIに無音タイマーを表示",
+      "showSilenceTimerHelp": "ユーザーに無音カウントダウンタイマーを表示"
+    },
+    "audioDetectionSettings": {
+      "title": "音声検出設定",
+      "description": "音声検出の技術的パラメータ",
+      "silenceThreshold": "無音閾値",
+      "silenceThresholdHelp": "無音検出の音量閾値（0.01-0.2、デフォルト: 0.12）",
+      "minSilenceDuration": "最小無音継続時間（ミリ秒）",
+      "minSilenceDurationHelp": "speech_end送信前の最小無音継続時間（100-2000ms、デフォルト: 500ms）"
+    },
+    "saveButton": "設定を保存",
+    "resetButton": "デフォルトに戻す"
+  },
   "comingSoon": "プロフィール編集とその他の設定は近日公開予定です。現在は読み取り専用の情報を表示しています。"
 }

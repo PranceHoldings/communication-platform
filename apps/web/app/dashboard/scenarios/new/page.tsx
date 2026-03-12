@@ -25,15 +25,8 @@ export default function NewScenarioPage() {
     '{\n  "duration": 30,\n  "difficulty": "beginner"\n}'
   );
 
-  // Silence management fields
+  // Initial greeting field
   const [initialGreeting, setInitialGreeting] = useState('');
-  const [enableSilencePrompt, setEnableSilencePrompt] = useState(true);
-  const [silenceTimeout, setSilenceTimeout] = useState(10);
-  const [silenceTimeoutPreset, setSilenceTimeoutPreset] = useState<string>('10');
-  const [silencePromptStyle, setSilencePromptStyle] = useState<'formal' | 'casual' | 'neutral'>('neutral');
-  const [showSilenceTimer, setShowSilenceTimer] = useState(false);
-  const [silenceThreshold, setSilenceThreshold] = useState(0.12);
-  const [minSilenceDuration, setMinSilenceDuration] = useState(500);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,11 +57,6 @@ export default function NewScenarioPage() {
       parsedConfig.systemPrompt = systemPrompt.trim();
     }
 
-    // Add silencePromptStyle to config
-    if (enableSilencePrompt) {
-      parsedConfig.silencePromptStyle = silencePromptStyle;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -78,13 +66,8 @@ export default function NewScenarioPage() {
         language,
         visibility,
         configJson: parsedConfig,
-        // Silence management fields
+        // Initial greeting
         initialGreeting: initialGreeting.trim() || undefined,
-        silenceTimeout,
-        enableSilencePrompt,
-        showSilenceTimer,
-        silenceThreshold,
-        minSilenceDuration,
       });
 
       // Success - redirect to scenario detail page
@@ -226,7 +209,7 @@ export default function NewScenarioPage() {
           <p className="text-sm text-gray-500 mb-4">
             {t('scenarios.create.form.initialGreetingDescription')}
           </p>
-          <div className="mb-6">
+          <div>
             <textarea
               id="initialGreeting"
               value={initialGreeting}
@@ -237,196 +220,6 @@ export default function NewScenarioPage() {
             />
             <p className="mt-2 text-sm text-gray-500">
               {t('scenarios.create.form.initialGreetingHelp')}
-            </p>
-          </div>
-        </div>
-
-        {/* AI Response Behavior */}
-        <div className="border-t pt-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {t('scenarios.create.form.aiResponseBehavior')}
-          </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            {t('scenarios.create.form.aiResponseBehaviorDescription')}
-          </p>
-
-          {/* Enable Silence Prompt */}
-          <div className="mb-6">
-            <label className="flex items-start">
-              <input
-                type="checkbox"
-                checked={enableSilencePrompt}
-                onChange={e => setEnableSilencePrompt(e.target.checked)}
-                className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <span className="ml-2">
-                <span className="block text-sm font-medium text-gray-700">
-                  {t('scenarios.create.form.enableSilencePrompt')}
-                </span>
-                <span className="block text-sm text-gray-500">
-                  {t('scenarios.create.form.enableSilencePromptHelp')}
-                </span>
-              </span>
-            </label>
-          </div>
-
-          {/* Silence Timeout - Show only if enabled */}
-          {enableSilencePrompt && (
-            <>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('scenarios.create.form.silenceTimeout')}
-                </label>
-                <div className="space-y-3">
-                  {/* Presets */}
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-2">
-                      {t('scenarios.create.form.silenceTimeoutPresets')}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {[5, 10, 15, 30].map(seconds => (
-                        <button
-                          key={seconds}
-                          type="button"
-                          onClick={() => {
-                            setSilenceTimeoutPreset(seconds.toString());
-                            setSilenceTimeout(seconds);
-                          }}
-                          className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                            silenceTimeoutPreset === seconds.toString()
-                              ? 'bg-indigo-600 text-white border-indigo-600'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {seconds}{t('scenarios.create.form.silenceTimeoutSeconds')}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setSilenceTimeoutPreset('custom')}
-                        className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                          silenceTimeoutPreset === 'custom'
-                            ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {t('scenarios.create.form.silenceTimeoutCustom')}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Custom Input */}
-                  {silenceTimeoutPreset === 'custom' && (
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="number"
-                        min="1"
-                        max="60"
-                        value={silenceTimeout}
-                        onChange={e => setSilenceTimeout(parseInt(e.target.value) || 10)}
-                        className="block w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                      <span className="text-sm text-gray-600">
-                        {t('scenarios.create.form.silenceTimeoutSeconds')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Silence Prompt Style */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('scenarios.create.form.silencePromptStyle')}
-                </label>
-                <div className="flex space-x-4">
-                  {(['formal', 'casual', 'neutral'] as const).map(style => (
-                    <label key={style} className="flex items-center">
-                      <input
-                        type="radio"
-                        name="silencePromptStyle"
-                        value={style}
-                        checked={silencePromptStyle === style}
-                        onChange={e => setSilencePromptStyle(e.target.value as any)}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">
-                        {t(`scenarios.create.form.silencePromptStyle${style.charAt(0).toUpperCase() + style.slice(1)}`)}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Show Silence Timer */}
-              <div className="mb-6">
-                <label className="flex items-start">
-                  <input
-                    type="checkbox"
-                    checked={showSilenceTimer}
-                    onChange={e => setShowSilenceTimer(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <span className="ml-2">
-                    <span className="block text-sm font-medium text-gray-700">
-                      {t('scenarios.create.form.showSilenceTimer')}
-                    </span>
-                    <span className="block text-sm text-gray-500">
-                      {t('scenarios.create.form.showSilenceTimerHelp')}
-                    </span>
-                  </span>
-                </label>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Audio Detection Settings */}
-        <div className="border-t pt-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {t('scenarios.create.form.audioDetectionSettings')}
-          </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            {t('scenarios.create.form.audioDetectionSettingsDescription')}
-          </p>
-
-          {/* Silence Threshold */}
-          <div className="mb-6">
-            <label htmlFor="silenceThreshold" className="block text-sm font-medium text-gray-700 mb-2">
-              {t('scenarios.create.form.silenceThreshold')}
-            </label>
-            <input
-              type="number"
-              id="silenceThreshold"
-              min="0.01"
-              max="0.2"
-              step="0.01"
-              value={silenceThreshold}
-              onChange={e => setSilenceThreshold(parseFloat(e.target.value) || 0.12)}
-              className="block w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              {t('scenarios.create.form.silenceThresholdHelp')}
-            </p>
-          </div>
-
-          {/* Min Silence Duration */}
-          <div className="mb-6">
-            <label htmlFor="minSilenceDuration" className="block text-sm font-medium text-gray-700 mb-2">
-              {t('scenarios.create.form.minSilenceDuration')}
-            </label>
-            <input
-              type="number"
-              id="minSilenceDuration"
-              min="100"
-              max="2000"
-              step="100"
-              value={minSilenceDuration}
-              onChange={e => setMinSilenceDuration(parseInt(e.target.value) || 500)}
-              className="block w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              {t('scenarios.create.form.minSilenceDurationHelp')}
             </p>
           </div>
         </div>
