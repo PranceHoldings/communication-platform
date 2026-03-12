@@ -818,8 +818,8 @@ export class ApiLambdaStack extends cdk.Stack {
             return [
               // Copy shared modules (JWT auth)
               `mkdir -p ${outputDir}/shared`,
-              `cp -r /asset-input/shared/auth ${outputDir}/shared/`,
-              `cp -r /asset-input/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/`,
+              `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
             ];
           },
           beforeInstall(): string[] {
@@ -936,17 +936,24 @@ export class ApiLambdaStack extends cdk.Stack {
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
             return [
+              // Copy the compiled handler entry point (CRITICAL: Without this, Lambda will fail with ImportModuleError)
+              `cp /asset-input/infrastructure/lambda/websocket/default/index.js ${outputDir}/index.js`,
+              `cp /asset-input/infrastructure/lambda/websocket/default/index.d.ts ${outputDir}/index.d.ts 2>/dev/null || true`,
+              // Copy audio/video processor modules
+              `cp /asset-input/infrastructure/lambda/websocket/default/audio-processor.js ${outputDir}/audio-processor.js 2>/dev/null || true`,
+              `cp /asset-input/infrastructure/lambda/websocket/default/video-processor.js ${outputDir}/video-processor.js 2>/dev/null || true`,
+              `cp /asset-input/infrastructure/lambda/websocket/default/chunk-utils.js ${outputDir}/chunk-utils.js 2>/dev/null || true`,
               // Copy ALL shared modules (CRITICAL: Without these, Lambda will fail with ImportModuleError)
               `mkdir -p ${outputDir}/shared`,
-              `cp -r /asset-input/shared/ai ${outputDir}/shared/`,
-              `cp -r /asset-input/shared/audio ${outputDir}/shared/`,
-              `cp -r /asset-input/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
-              `cp -r /asset-input/shared/config ${outputDir}/shared/`,      // CRITICAL: defaults.ts, language-config.ts
-              `cp -r /asset-input/shared/utils ${outputDir}/shared/`,       // CRITICAL: error-logger.ts
-              `cp -r /asset-input/shared/types ${outputDir}/shared/`,       // CRITICAL: Type definitions
-              `cp -r /asset-input/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
-              `cp -r /asset-input/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
-              `echo "Shared modules copied successfully"`,
+              `cp -r /asset-input/infrastructure/lambda/shared/ai ${outputDir}/shared/`,
+              `cp -r /asset-input/infrastructure/lambda/shared/audio ${outputDir}/shared/`,
+              `cp -r /asset-input/infrastructure/lambda/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r /asset-input/infrastructure/lambda/shared/config ${outputDir}/shared/`,      // CRITICAL: defaults.ts, language-config.ts
+              `cp -r /asset-input/infrastructure/lambda/shared/utils ${outputDir}/shared/`,       // CRITICAL: error-logger.ts
+              `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/`,       // CRITICAL: Type definitions
+              `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r /asset-input/infrastructure/lambda/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
+              `echo "Handler and shared modules copied successfully"`,
             ];
           },
           beforeInstall(): string[] {

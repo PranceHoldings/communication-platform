@@ -1,16 +1,16 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-12 16:30 JST
+**最終更新:** 2026-03-12 14:10 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル） | **Phase 2進捗:** Task 2.1-2.2完了（100%）
 **Phase 1.5進捗:** Day 13完了（Silence Settings UI統合完了） | **進捗:** 100% ✅
 **Phase 2.5進捗:** ゲストユーザー機能 - Day 1-2完了（基礎実装） | **進捗:** 15%
 **アバター機能:** 仕様ドキュメント完成（リップシンク・表情・画像生成を追加） ✅
 **最新コミット:** da22241 - feat(silence): complete Silence Settings deployment and cleanup
-**最新デプロイ:** 2026-03-12 16:27 JST - ApiLambda stack + DB migration + Next.js clean build ✅
+**最新デプロイ:** 2026-03-12 14:03 JST - ApiLambda stack ✅（WebSocket ImportModuleError 修正完了）
 **次回タスク:**
-1. ✅ **クリーンデプロイ完了** - Lambda関数、DBマイグレーション、Next.jsサーバー全て正常稼働
-2. **シナリオ編集UIでsilenceThreshold調整テスト** - http://localhost:3000/dashboard/scenarios/[id]/edit
-3. **動作確認** - WebSocket認証メッセージにsilenceThreshold/minSilenceDurationが含まれるか検証
+1. ✅ **WebSocket ImportModuleError 修正完了** - Lambda関数が正常動作
+2. **エンドツーエンドテスト** - 実際のWebSocket接続でセッション開始・音声会話テスト
+3. **ドキュメント更新** - ROOT_CAUSE_ANALYSIS完成、START_HERE更新済み
 
 ---
 
@@ -226,7 +226,7 @@ Role: SUPER_ADMIN
   - aria-hidden - 装飾的SVGアイコンをスクリーンリーダーから隠す
   - キーボードショートカットヒント - aria-labelにショートカットキー表示
 
-**🚀 進行中: Day 12 - 音声バグ修正・統合テスト（2026-03-11）**
+**✅ 完了: Day 12 - 音声バグ修正・WebSocket修正（2026-03-11 → 2026-03-12）**
 
 **✅ 完了: 音声バグ修正（2026-03-11 01:15 JST）**
 - ✅ 環境ノイズによる無限ループ問題修正
@@ -244,18 +244,47 @@ Role: SUPER_ADMIN
   - デプロイ時間: 138.24秒
   - 最新コード反映（音声検出ロジック、TTS streaming修正）
 
-**🔴 未解決: 音声再生機能の動作確認（次回セッション必須）**
+**✅ 完了: WebSocket Lambda ImportModuleError 修正（2026-03-12 13:18-14:06 JST）**
+- 🔴 **問題発生:** WebSocket接続時に `Runtime.ImportModuleError: Cannot find module 'index'`
+- 🔍 **根本原因調査（2段階）:**
+  1. **第一段階（13:25）:** 共有モジュールのパス不整合を発見
+     - ❌ `/asset-input/shared/` → ✅ `/asset-input/infrastructure/lambda/shared/`
+     - 修正後も依然としてImportModuleError発生
+  2. **第二段階（13:55）:** 真の根本原因を発見
+     - Lambda zip内に `index.js`（エントリーポイント）が存在しない
+     - CDK NodejsFunction が `index.js` を自動的にbundled outputにコピー**しない**
+- ✅ **修正実装（14:00）:**
+  ```typescript
+  afterBundling(inputDir: string, outputDir: string): string[] {
+    return [
+      // CRITICAL: Copy the compiled handler entry point
+      `cp /asset-input/infrastructure/lambda/websocket/default/index.js ${outputDir}/index.js`,
+      // Copy audio/video processor modules
+      `cp /asset-input/infrastructure/lambda/websocket/default/audio-processor.js ${outputDir}/audio-processor.js 2>/dev/null || true`,
+      // Copy shared modules...
+    ];
+  }
+  ```
+- ✅ **デプロイ成功（14:03 JST）:**
+  - デプロイ時間: 74.57秒
+  - Lambda zip検証: `index.js` + `shared modules` すべて存在確認
+  - 動作テスト: Lambda関数が正常実行（エラーハンドリングが機能）
+- ✅ **ドキュメント作成:**
+  - `docs/09-progress/ROOT_CAUSE_ANALYSIS_2026-03-12_websocket_import_error.md`（完全版）
+  - `docs/DEPLOYMENT_ENFORCEMENT.md`（デプロイ前検証システム）
+  - CDK Wrapper Script実装（強制検証システム）
+
+**⏳ 残りタスク（Day 12完了まで）**
 - ⏳ フロントエンド動作確認（ハードリフレッシュ必須）
   - ブラウザキャッシュクリア: Ctrl+Shift+R (Win) / Cmd+Shift+R (Mac)
   - 新しい閾値（0.15）が反映されているか確認
-- ⏳ 音声再生テスト
+- ⏳ 音声再生テスト（最重要）
   - 文字起こしが表示される ✓（既に確認済み）
-  - **AIの音声が再生される**（未確認、最重要）
+  - **AIの音声が再生される**（未確認）
   - 音声がリアルタイムで再生される（未確認）
 - ⏳ CloudWatch Logs確認
   - `aws logs tail /aws/lambda/prance-websocket-default-dev --since 5m --filter-pattern "\"TTS complete\""`
   - 期待値: `[Streaming] TTS complete: 71392 bytes`（0バイトではない）
-  - 実際の音声データがS3に保存されているか確認
 
 **⏳ 残りタスク（Day 12完了まで）**
 - E2Eテスト実行
