@@ -5,7 +5,7 @@
 **Phase 1.5進捗:** Day 13完了（Silence Settings UI統合完了） | **進捗:** 100% ✅
 **Phase 2.5進捗:** ゲストユーザー機能 - Day 1-2完了（基礎実装） | **進捗:** 15%
 **アバター機能:** 仕様ドキュメント完成（リップシンク・表情・画像生成を追加） ✅
-**最新コミット:** TBD - Clean deployment completed (silence settings + i18n fix + .next cleanup)
+**最新コミット:** da22241 - feat(silence): complete Silence Settings deployment and cleanup
 **最新デプロイ:** 2026-03-12 16:27 JST - ApiLambda stack + DB migration + Next.js clean build ✅
 **次回タスク:**
 1. ✅ **クリーンデプロイ完了** - Lambda関数、DBマイグレーション、Next.jsサーバー全て正常稼働
