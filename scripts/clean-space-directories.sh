@@ -80,8 +80,8 @@ PROBLEM_DIRS=(
 
 for dir in "${PROBLEM_DIRS[@]}"; do
   if [ -d "$dir" ]; then
-    # Count space-containing directories in this path
-    count=$(find "$dir" -type d -name "* *" -not -path "*/node_modules/*" 2>/dev/null | wc -l)
+    # Count space-containing directories in this path (excluding .broken-* pattern)
+    count=$(find "$dir" -type d -name "* *" -not -path "*/node_modules/*" -not -path "*.broken-*" 2>/dev/null | wc -l)
     if [ "$count" -gt 0 ]; then
       echo -e "  ${RED}✗${NC} ${dir}: ${count} directories with spaces remaining"
       FAILED=$((FAILED + count))
@@ -96,7 +96,7 @@ echo -e "${YELLOW}[3/3]${NC} Cleaning up problematic build directories..."
 
 # If .next has space-containing directories that couldn't be removed, move it
 if [ -d "apps/web/.next" ]; then
-  space_count=$(find apps/web/.next -type d -name "* *" 2>/dev/null | wc -l)
+  space_count=$(find apps/web/.next -type d -name "* *" -not -path "*.broken-*" 2>/dev/null | wc -l)
   if [ "$space_count" -gt 0 ]; then
     echo -e "  ${YELLOW}⚠${NC}  Moving problematic .next directory..."
     timestamp=$(date +%s)
@@ -113,7 +113,7 @@ fi
 
 # If cdk.out has space-containing directories, move it
 if [ -d "infrastructure/cdk.out" ]; then
-  space_count=$(find infrastructure/cdk.out -type d -name "* *" 2>/dev/null | wc -l)
+  space_count=$(find infrastructure/cdk.out -type d -name "* *" -not -path "*.broken-*" 2>/dev/null | wc -l)
   if [ "$space_count" -gt 0 ]; then
     echo -e "  ${YELLOW}⚠${NC}  Moving problematic cdk.out directory..."
     timestamp=$(date +%s)
@@ -143,7 +143,7 @@ if [ "$FAILED" -gt 0 ]; then
   echo -e "${YELLOW}Manual intervention required${NC}"
   echo ""
   echo -e "Remaining space-containing directories:"
-  find apps/web/.next infrastructure/cdk.out -type d -name "* *" 2>/dev/null | head -10
+  find apps/web/.next infrastructure/cdk.out -type d -name "* *" -not -path "*.broken-*" 2>/dev/null | head -10
   exit 1
 elif [ "$FOUND" -eq 0 ]; then
   echo -e "${GREEN}✅ No space-containing directories found${NC}"

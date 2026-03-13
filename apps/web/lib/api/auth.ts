@@ -91,3 +91,10 @@ export const authApi = {
     return apiClient.get<User>('/users/me');
   },
 };
+
+/**
+ * 現在の認証トークンを取得
+ */
+export function getAuthToken(): string | null {
+  return apiClient.getToken();
+}

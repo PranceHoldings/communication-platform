@@ -11,7 +11,6 @@ export class DynamoDBStack extends cdk.Stack {
   public readonly websocketConnectionsTable: dynamodb.Table;
   public readonly benchmarkCacheTable: dynamodb.Table;
   public readonly apiRateLimitTable: dynamodb.Table;
-  public readonly recordingsTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props: DynamoDBStackProps) {
     super(scope, id, props);
@@ -90,28 +89,7 @@ export class DynamoDBStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY, // レート制限は一時的なデータ
     });
 
-    // 録画メタデータテーブル
-    this.recordingsTable = new dynamodb.Table(this, 'RecordingsTable', {
-      tableName: `prance-recordings-${props.environment}`,
-      partitionKey: {
-        name: 'recording_id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      pointInTimeRecovery: props.environment === 'production',
-      removalPolicy:
-        props.environment === 'production' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
-    });
-
-    // session_idでの検索用GSI
-    this.recordingsTable.addGlobalSecondaryIndex({
-      indexName: 'session-id-index',
-      partitionKey: {
-        name: 'session_id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      projectionType: dynamodb.ProjectionType.ALL,
-    });
+    // 録画メタデータテーブル - Removed: Now using PostgreSQL (Prisma Recording model)
 
     // Outputs
     new cdk.CfnOutput(this, 'SessionsStateTableName', {
@@ -136,12 +114,6 @@ export class DynamoDBStack extends cdk.Stack {
       value: this.apiRateLimitTable.tableName,
       description: 'API Rate Limit DynamoDB Table Name',
       exportName: `${props.environment}-ApiRateLimitTableName`,
-    });
-
-    new cdk.CfnOutput(this, 'RecordingsTableName', {
-      value: this.recordingsTable.tableName,
-      description: 'Recordings Metadata DynamoDB Table Name',
-      exportName: `${props.environment}-RecordingsTableName`,
     });
   }
 }

@@ -22,7 +22,6 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   databaseSecret: secretsmanager.Secret;
   websocketConnectionsTable: dynamodb.Table;
   recordingsBucket: s3.Bucket;
-  recordingsTable: dynamodb.Table;
   guestRateLimitTable: dynamodb.Table;
 }
 
@@ -1156,8 +1155,8 @@ export class ApiLambdaStack extends cdk.Stack {
         // AWS_REGION is automatically set by Lambda runtime - do not override
         WEBSOCKET_ENDPOINT: `https://${this.webSocketApi.ref}.execute-api.${this.region}.amazonaws.com/${props.environment}`,
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
-        RECORDINGS_TABLE_NAME: props.recordingsTable.tableName,
         S3_BUCKET: props.recordingsBucket.bucketName,
+        DATABASE_URL,
         // ffmpeg path - will use ffmpeg-static package (auto-detected at runtime)
         // FFMPEG_PATH is optional; if not set, will fallback to ffmpeg-static
         // AI/Audio Service Configuration
@@ -1219,6 +1218,9 @@ export class ApiLambdaStack extends cdk.Stack {
               `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/`,       // CRITICAL: Type definitions
               `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
               `cp -r /asset-input/infrastructure/lambda/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
+              // Copy Prisma generated client
+              `mkdir -p ${outputDir}/node_modules/.prisma`,
+              `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Warning: Prisma client not found, will be generated at runtime"`,
               `echo "Handler and shared modules copied successfully"`,
             ];
           },
@@ -1233,7 +1235,6 @@ export class ApiLambdaStack extends cdk.Stack {
     props.websocketConnectionsTable.grantReadWriteData(websocketConnectFunction);
     props.websocketConnectionsTable.grantReadWriteData(websocketDisconnectFunction);
     props.websocketConnectionsTable.grantReadWriteData(websocketDefaultFunction);
-    props.recordingsTable.grantReadWriteData(websocketDefaultFunction);
 
     // DynamoDB permissions for Guest User functions
     // Auth function needs read/write for rate limiting

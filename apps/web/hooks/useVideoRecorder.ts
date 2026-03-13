@@ -9,6 +9,12 @@ interface UseVideoRecorderOptions {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
 
   /**
+   * 音声ストリーム（マイク音声を含める場合）
+   * @optional
+   */
+  audioStream?: MediaStream | null;
+
+  /**
    * 動画チャンクのコールバック（WebSocket送信用）
    * @param chunk - 動画データのBlob
    * @param timestamp - タイムスタンプ（ミリ秒）
@@ -74,6 +80,7 @@ interface UseVideoRecorderReturn {
  */
 export function useVideoRecorder({
   canvasRef,
+  audioStream,
   onChunk,
   onComplete,
   onError,
@@ -105,11 +112,26 @@ export function useVideoRecorder({
         throw new Error(`MimeType ${mimeType} is not supported`);
       }
 
-      // CanvasからMediaStreamを取得
-      const stream = canvas.captureStream(30); // 30 FPS
+      // CanvasからMediaStreamを取得（映像トラック）
+      const videoStream = canvas.captureStream(30); // 30 FPS
+
+      // 音声トラックを追加（提供されている場合）
+      if (audioStream) {
+        const audioTracks = audioStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          // 音声トラックをクローンして追加（他のコンポーネントとの競合を避ける）
+          const audioTrack = audioTracks[0]!.clone();
+          videoStream.addTrack(audioTrack);
+          console.log('[useVideoRecorder] Audio track added to video stream');
+        } else {
+          console.warn('[useVideoRecorder] No audio tracks found in provided stream');
+        }
+      } else {
+        console.log('[useVideoRecorder] No audio stream provided, recording video only');
+      }
 
       // MediaRecorder作成
-      const mediaRecorder = new MediaRecorder(stream, {
+      const mediaRecorder = new MediaRecorder(videoStream, {
         mimeType,
         videoBitsPerSecond,
       });

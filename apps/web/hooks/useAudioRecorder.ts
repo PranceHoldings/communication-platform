@@ -37,6 +37,7 @@ interface UseAudioRecorderReturn {
   isPaused: boolean;
   error: string | null;
   audioLevel: number;
+  audioStream: MediaStream | null; // マイク音声ストリーム
   startRecording: () => Promise<void>;
   stopRecording: () => void;
   pauseRecording: () => void;
@@ -637,6 +638,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     isPaused,
     error,
     audioLevel,
+    audioStream: streamRef.current,
     startRecording,
     stopRecording,
     pauseRecording,

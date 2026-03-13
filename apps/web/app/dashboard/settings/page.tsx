@@ -22,9 +22,9 @@ export default function SettingsPage() {
   const [minSilenceDuration, setMinSilenceDuration] = useState(500);
 
   // Loading & error states
-  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+  const [_isLoadingSettings, setIsLoadingSettings] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [_settingsError, setSettingsError] = useState<string | null>(null);
 
   // Load settings from API
   useEffect(() => {

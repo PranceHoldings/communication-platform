@@ -314,11 +314,10 @@ export default function EditScenarioPage() {
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h3 className="text-lg font-medium text-gray-900">
-                {t('scenarios.create.form.showSilenceTimer', 'Show Silence Timer')}
+                {t('scenarios.create.form.showSilenceTimer')}
               </h3>
               <p className="text-sm text-gray-500 mt-1">
-                {t('scenarios.create.form.showSilenceTimerDescription',
-                   'Display silence countdown in the session player UI. Leave unchecked to use organization default.')}
+                {t('scenarios.create.form.showSilenceTimerDescription')}
               </p>
             </div>
             <div className="ml-4 flex flex-col items-end space-y-2">
@@ -352,13 +351,13 @@ export default function EditScenarioPage() {
               </button>
               <div className="text-right">
                 <div className="text-sm font-medium text-gray-700">
-                  {showSilenceTimer === true ? t('common.enabled', 'Enabled') :
-                   showSilenceTimer === false ? t('common.disabled', 'Disabled') :
-                   t('common.useDefault', 'Use Default')}
+                  {showSilenceTimer === true ? t('common.enabled') :
+                   showSilenceTimer === false ? t('common.disabled') :
+                   t('common.useDefault')}
                 </div>
                 {showSilenceTimer === undefined && orgSettings && (
                   <div className="text-xs text-gray-500">
-                    ({orgSettings.showSilenceTimer ? t('common.enabled', 'Enabled') : t('common.disabled', 'Disabled')})
+                    ({orgSettings.showSilenceTimer ? t('common.enabled') : t('common.disabled')})
                   </div>
                 )}
               </div>

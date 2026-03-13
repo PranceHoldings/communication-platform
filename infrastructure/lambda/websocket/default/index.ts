@@ -25,6 +25,7 @@ import {
   DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { PrismaClient } from '@prisma/client';
 import { AudioProcessor } from './audio-processor';
 import { VideoProcessor } from './video-processor';
 import { sortChunksByTimestampAndIndex, logSortedChunks, generateChunkKey } from './chunk-utils';
@@ -63,7 +64,6 @@ const DEFAULT_VIDEO_CONTENT_TYPE = MEDIA_DEFAULTS.VIDEO_CONTENT_TYPE;
 // Environment variables (読み取り優先順位: 環境変数 → デフォルト値)
 const ENDPOINT = process.env.WEBSOCKET_ENDPOINT || '';
 const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE_NAME || '';
-const RECORDINGS_TABLE = process.env.RECORDINGS_TABLE_NAME || '';
 const S3_BUCKET = process.env.S3_BUCKET || '';
 const AWS_REGION = process.env.AWS_REGION || DEFAULT_AWS_REGION;
 
@@ -100,6 +100,8 @@ const s3Client = new S3Client({});
 const lambdaClient = new LambdaClient({
   region: process.env.AWS_REGION || DEFAULT_AWS_REGION,
 });
+
+const prisma = new PrismaClient();
 
 // Audio Processor (lazy initialization to avoid errors when API keys are not set)
 let audioProcessor: AudioProcessor | null = null;
@@ -1045,34 +1047,28 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               progress: 1.0,
             });
 
-            // Save recording metadata to DynamoDB
+            // Save recording metadata to PostgreSQL
             try {
-              const recordingId = `rec-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-              await ddb.send(
-                new PutCommand({
-                  TableName: RECORDINGS_TABLE,
-                  Item: {
-                    recording_id: recordingId,
-                    sessionId: sessionId,
-                    type: 'COMBINED',
-                    s3_key: result.finalVideoKey,
-                    s3_url: `https://${S3_BUCKET}.s3.${process.env.AWS_REGION || DEFAULT_AWS_REGION}.amazonaws.com/${result.finalVideoKey}`,
-                    cdn_url: result.cloudFrontUrl,
-                    file_size_bytes: result.finalVideoSize,
-                    duration_sec: Math.floor(result.duration / 1000), // Convert ms to seconds
-                    format: VIDEO_FORMAT,
-                    resolution: VIDEO_RESOLUTION,
-                    video_chunks_count: connectionData.videoChunksCount,
-                    processing_status: 'COMPLETED',
-                    processed_at: new Date().toISOString(),
-                    created_at: new Date().toISOString(),
-                  },
-                })
-              );
-              console.log('Recording metadata saved to DynamoDB:', { recordingId, sessionId });
+              const recording = await prisma.recording.create({
+                data: {
+                  sessionId: sessionId,
+                  type: 'COMBINED',
+                  s3Key: result.finalVideoKey,
+                  s3Url: `https://${S3_BUCKET}.s3.${process.env.AWS_REGION || DEFAULT_AWS_REGION}.amazonaws.com/${result.finalVideoKey}`,
+                  cdnUrl: result.cloudFrontUrl,
+                  fileSizeBytes: BigInt(result.finalVideoSize),
+                  durationSec: Math.floor(result.duration / 1000), // Convert ms to seconds
+                  format: VIDEO_FORMAT,
+                  resolution: VIDEO_RESOLUTION,
+                  videoChunksCount: connectionData.videoChunksCount,
+                  processingStatus: 'COMPLETED',
+                  processedAt: new Date(),
+                },
+              });
+              console.log('Recording metadata saved to PostgreSQL:', { recordingId: recording.id, sessionId });
             } catch (dbError) {
-              console.error('Failed to save recording metadata to DynamoDB:', dbError);
-              // Continue even if DynamoDB save fails - video is already in S3
+              console.error('Failed to save recording metadata to PostgreSQL:', dbError);
+              // Continue even if DB save fails - video is already in S3
             }
 
             // Send video URL to client
@@ -1086,34 +1082,28 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           } catch (error) {
             console.error('Failed to process video:', error);
 
-            // Save error status to DynamoDB
+            // Save error status to PostgreSQL
             try {
               const sessionId = connectionData.sessionId || 'unknown';
-              const recordingId = `rec-${Date.now()}-${Math.random().toString(36).substring(7)}`;
               const { getRecordingKey } = await import('../../shared/config/s3-paths');
-              await ddb.send(
-                new PutCommand({
-                  TableName: RECORDINGS_TABLE,
-                  Item: {
-                    recording_id: recordingId,
-                    sessionId: sessionId,
-                    type: 'COMBINED',
-                    s3_key: getRecordingKey(sessionId, VIDEO_FORMAT),
-                    s3_url: '',
-                    file_size_bytes: 0,
-                    video_chunks_count: connectionData.videoChunksCount || 0,
-                    processing_status: 'ERROR',
-                    error_message: error instanceof Error ? error.message : 'Unknown error',
-                    created_at: new Date().toISOString(),
-                  },
-                })
-              );
-              console.log('Recording error metadata saved to DynamoDB:', {
-                recordingId,
+              const recording = await prisma.recording.create({
+                data: {
+                  sessionId: sessionId,
+                  type: 'COMBINED',
+                  s3Key: getRecordingKey(sessionId, VIDEO_FORMAT),
+                  s3Url: '',
+                  fileSizeBytes: BigInt(0),
+                  videoChunksCount: connectionData.videoChunksCount || 0,
+                  processingStatus: 'ERROR',
+                  errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                },
+              });
+              console.log('Recording error metadata saved to PostgreSQL:', {
+                recordingId: recording.id,
                 sessionId,
               });
             } catch (dbError) {
-              console.error('Failed to save recording error metadata to DynamoDB:', dbError);
+              console.error('Failed to save recording error metadata to PostgreSQL:', dbError);
             }
 
             await sendToConnection(connectionId, {

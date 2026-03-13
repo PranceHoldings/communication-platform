@@ -804,6 +804,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const {
     isRecording: isMicRecording,
     audioLevel,
+    audioStream,
     startRecording,
     stopRecording,
     pauseRecording,
@@ -855,7 +856,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   });
 
   // Silence Timer統合
-  const { elapsedTime: silenceElapsedTime, resetTimer: resetSilenceTimer } = useSilenceTimer({
+  const { elapsedTime: silenceElapsedTime, resetTimer: _resetSilenceTimer } = useSilenceTimer({
     enabled: status === 'ACTIVE' &&
              initialGreetingCompleted &&
              effectiveEnableSilencePrompt,
@@ -1273,6 +1274,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     error: videoRecordingError,
   } = useVideoRecorder({
     canvasRef: compositeCanvasRef,
+    audioStream: audioStream, // マイク音声を含める
     onChunk: handleVideoChunk,
     onComplete: handleVideoRecordingComplete,
     onError: handleVideoRecordingError,
@@ -1385,7 +1387,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2)}:${secs.toString().padStart(2)}`;
   };
 
   const getStatusColor = (s: SessionPlayerStatus): string => {
@@ -1452,7 +1454,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             {effectiveShowSilenceTimer && status === 'ACTIVE' && initialGreetingCompleted && (
               <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2 min-w-[120px]">
                 <div className="text-xs text-indigo-600 font-medium uppercase tracking-wide">
-                  {t('sessions.player.silenceTimer.label', 'Silence')}
+                  {t('sessions.player.silenceTimer.label')}
                 </div>
                 <div className="text-xl font-mono font-bold text-indigo-900 mt-0.5">
                   {silenceElapsedTime}s / {effectiveSilenceTimeout}s
@@ -1636,7 +1638,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 {recordingStatus === 'recording' && (
                   <span className="text-xs text-gray-500">
                     {t('sessions.player.recording.duration', {
-                      duration: `${Math.floor(recordingDuration / 60)}:${String(recordingDuration % 60).padStart(2, '0')}`,
+                      duration: `${Math.floor(recordingDuration / 60)}:${String(recordingDuration % 60).padStart(2)}`,
                     })}
                   </span>
                 )}
