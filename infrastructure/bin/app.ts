@@ -82,14 +82,13 @@ const databaseStack = new DatabaseStack(app, `${stackPrefix}-Database`, {
 });
 
 // ストレージスタック
-// TODO: Phase 2でカスタムドメイン機能を有効化（certificateStack.certificate, dnsStack.hostedZone）
 const storageStack = new StorageStack(app, `${stackPrefix}-Storage`, {
   env,
   config,
-  // certificate: certificateStack.certificate,
-  // hostedZone: dnsStack.hostedZone,
+  certificate: certificateStack.certificate,
+  hostedZone: dnsStack.hostedZone,
   description: 'Prance Platform - S3 Storage and CloudFront CDN',
-  // crossRegionReferences: true, // クロスリージョン参照を有効化
+  crossRegionReferences: true, // クロスリージョン参照を有効化
 });
 
 // DynamoDBスタック
@@ -115,8 +114,7 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
 
 // スタック依存関係の設定（デプロイ順序を保証）
 certificateStack.addDependency(dnsStack);
-// TODO: Phase 2でカスタムドメイン有効化時に復元
-// storageStack.addDependency(certificateStack);
+storageStack.addDependency(certificateStack);
 databaseStack.addDependency(networkStack);
 cognitoStack.addDependency(networkStack);
 apiLambdaStack.addDependency(networkStack);
