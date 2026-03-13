@@ -7,7 +7,7 @@
 
 ## 作成された Hosted Zone
 
-**ドメイン:** `platform.prance.co.jp`
+**ドメイン:** `platform.prance.jp`
 **Hosted Zone ID:** `Z072442027JY82JZ14ZI5`
 **リージョン:** グローバル（Route 53）
 
@@ -41,7 +41,7 @@ ns-1593.awsdns-07.co.uk
 
 1. お名前.com Navi ログイン: https://www.onamae.com/navi/
 2. DNS設定 → DNSレコード設定
-3. 対象ドメイン: `prance.co.jp`
+3. 対象ドメイン: `prance.jp`
 4. 上記4つのNSレコードを追加
 5. 保存・確定
 
@@ -51,7 +51,7 @@ ns-1593.awsdns-07.co.uk
 
 ```bash
 # NSレコードの確認
-dig NS platform.prance.co.jp +short
+dig NS platform.prance.jp +short
 
 # 期待される結果（4行）:
 # ns-786.awsdns-34.net.
@@ -88,7 +88,7 @@ dig NS platform.prance.co.jp +short
 
 ### CDK synthエラー
 
-**エラー:** `Found zones: [] for dns:platform.prance.co.jp`
+**エラー:** `Found zones: [] for dns:platform.prance.jp`
 
 **原因:** DNS伝播が完了していない、またはお名前.comでNSレコードが設定されていない
 

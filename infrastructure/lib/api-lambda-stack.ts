@@ -12,6 +12,7 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as path from 'path';
 import { Construct } from 'constructs';
+import { getConfig } from './config';
 
 export interface ApiLambdaStackProps extends cdk.StackProps {
   environment: string;
@@ -56,6 +57,9 @@ export class ApiLambdaStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
     super(scope, id, props);
+
+    // 環境設定を取得
+    const config = getConfig(props.environment);
 
     // ==================== API Gateway ====================
 
@@ -162,6 +166,7 @@ export class ApiLambdaStack extends cdk.Stack {
       NODE_ENV: props.environment === 'production' ? 'production' : 'development',
       DATABASE_URL,
       JWT_SECRET: process.env.JWT_SECRET || 'development-secret-change-in-production',
+      FRONTEND_URL: `https://${config.domain.fullDomain}`,
     };
 
     // Lambda共通設定

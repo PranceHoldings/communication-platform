@@ -61,9 +61,9 @@
 #### ✅ 正しいURL設計
 
 ```
-https://platform.prance.co.jp/dashboard
-https://platform.prance.co.jp/sessions
-https://platform.prance.co.jp/reports
+https://platform.prance.jp/dashboard
+https://platform.prance.jp/sessions
+https://platform.prance.jp/reports
 ```
 
 すべてのユーザーが同じURLにアクセスし、言語はCookieとブラウザ設定によって自動的に決定されます。
@@ -71,9 +71,9 @@ https://platform.prance.co.jp/reports
 #### ❌ 使用しないURL設計
 
 ```
-https://platform.prance.co.jp/en/dashboard   ← 使用しない
-https://platform.prance.co.jp/ja/dashboard   ← 使用しない
-https://en.platform.prance.co.jp/dashboard   ← 使用しない
+https://platform.prance.jp/en/dashboard   ← 使用しない
+https://platform.prance.jp/ja/dashboard   ← 使用しない
+https://en.platform.prance.jp/dashboard   ← 使用しない
 ```
 
 **理由:**

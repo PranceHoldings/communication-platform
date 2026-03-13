@@ -98,15 +98,15 @@ npm run deploy:dev
 
 ```
 お名前.com DNS
-└── prance.co.jp (ルートドメイン)
+└── prance.jp (ルートドメイン)
     ├── [既存のDNSレコード] ← 影響なし
     └── platform (NSレコード × 4) ← Route 53に委譲
 
 Route 53
-└── platform.prance.co.jp (Hosted Zone)
-    ├── dev.platform.prance.co.jp
-    ├── staging.platform.prance.co.jp
-    └── platform.prance.co.jp
+└── platform.prance.jp (Hosted Zone)
+    ├── dev.app.prance.jp
+    ├── staging.app.prance.jp
+    └── platform.prance.jp
 ```
 
 ---
@@ -118,7 +118,7 @@ Route 53
 **症状:**
 
 ```bash
-dig NS platform.prance.co.jp +short
+dig NS platform.prance.jp +short
 # 何も表示されない
 ```
 
@@ -137,7 +137,7 @@ dig NS platform.prance.co.jp +short
 **症状:**
 
 ```
-Found zones: [] for dns:platform.prance.co.jp
+Found zones: [] for dns:platform.prance.jp
 ```
 
 **解決策:**
@@ -145,7 +145,7 @@ Found zones: [] for dns:platform.prance.co.jp
 ```bash
 # Route 53 Hosted Zoneを作成
 aws route53 create-hosted-zone \
-  --name platform.prance.co.jp \
+  --name platform.prance.jp \
   --caller-reference "prance-platform-$(date +%s)"
 ```
 

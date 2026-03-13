@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import { Construct } from 'constructs';
+import { getConfig } from './config';
 
 export interface CognitoStackProps extends cdk.StackProps {
   environment: string;
@@ -12,6 +13,9 @@ export class CognitoStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props: CognitoStackProps) {
     super(scope, id, props);
+
+    // 環境設定を取得
+    const config = getConfig(props.environment);
 
     // User Pool作成
     this.userPool = new cognito.UserPool(this, 'PranceUserPool', {
@@ -63,6 +67,14 @@ export class CognitoStack extends cdk.Stack {
           authorizationCodeGrant: true,
         },
         scopes: [cognito.OAuthScope.EMAIL, cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE],
+        callbackUrls: [
+          `https://${config.domain.fullDomain}/auth/callback`,
+          'http://localhost:3000/auth/callback', // 開発用
+        ],
+        logoutUrls: [
+          `https://${config.domain.fullDomain}/auth/logout`,
+          'http://localhost:3000/auth/logout', // 開発用
+        ],
       },
       preventUserExistenceErrors: true,
       refreshTokenValidity: cdk.Duration.days(30),

@@ -15,37 +15,27 @@ export class DnsStack extends cdk.Stack {
 
     const { config } = props;
 
-    // Route 53 Hosted Zone の取得または作成
-    // サブドメイン委譲方式: platform.prance.co.jp のみをRoute 53で管理
-    // お名前.comでの変更は最小限（NSレコード4つのみ追加）
-
-    // platform.prance.co.jp のHosted Zoneを参照（既に存在する前提）
-    // 初回は手動で作成する必要があります
-    // コマンド: aws route53 create-hosted-zone --name platform.prance.co.jp --caller-reference "prance-platform-$(date +%s)"
+    // Route 53 Hosted Zone の取得
+    // prance.jp は Route 53 Registrar で管理されており、
+    // 既存の Hosted Zone を使用します。
+    // サブドメイン（dev.app.prance.jp等）のレコードは
+    // このHosted Zone内に直接作成されます。
     this.hostedZone = route53.HostedZone.fromLookup(this, 'HostedZone', {
-      domainName: config.domain.platform,
+      domainName: config.domain.root, // prance.jp
     });
 
     // 環境情報を出力
     new cdk.CfnOutput(this, 'HostedZoneId', {
       value: this.hostedZone.hostedZoneId,
-      description: `Route 53 Hosted Zone ID (${config.domain.platform})`,
+      description: `Route 53 Hosted Zone ID (${config.domain.root})`,
       exportName: `${id}-HostedZoneId`,
     });
 
     new cdk.CfnOutput(this, 'HostedZoneName', {
       value: this.hostedZone.zoneName,
-      description: 'Route 53 Hosted Zone Name (platform.prance.co.jp)',
+      description: `Route 53 Hosted Zone Name (${config.domain.root})`,
       exportName: `${id}-HostedZoneName`,
     });
-
-    // ネームサーバーの出力（既存のホストゾーンの場合は表示されない場合があります）
-    if (this.hostedZone.hostedZoneNameServers && this.hostedZone.hostedZoneNameServers.length > 0) {
-      new cdk.CfnOutput(this, 'HostedZoneNameServers', {
-        value: cdk.Fn.join(',', this.hostedZone.hostedZoneNameServers),
-        description: 'Route 53 Name Servers (お名前.comに設定)',
-      });
-    }
 
     new cdk.CfnOutput(this, 'ApplicationDomain', {
       value: config.domain.fullDomain,

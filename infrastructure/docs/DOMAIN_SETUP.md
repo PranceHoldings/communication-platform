@@ -1,18 +1,18 @@
 # ドメイン設定ガイド
 
-お名前.comで取得したドメイン `prance.co.jp` を使用して、Pranceプラットフォームにカスタムドメインを設定します。
+お名前.comで取得したドメイン `prance.jp` を使用して、Pranceプラットフォームにカスタムドメインを設定します。
 
 ## 📋 ドメイン構成
 
 | 環境             | ドメイン                        | 説明             |
 | ---------------- | ------------------------------- | ---------------- |
-| **開発**         | `dev.platform.prance.co.jp`     | 開発環境         |
-| **ステージング** | `staging.platform.prance.co.jp` | ステージング環境 |
-| **本番**         | `platform.prance.co.jp`         | 本番環境         |
+| **開発**         | `dev.app.prance.jp`     | 開発環境         |
+| **ステージング** | `staging.app.prance.jp` | ステージング環境 |
+| **本番**         | `platform.prance.jp`         | 本番環境         |
 
 **補足:**
 
-- ルートドメイン: `prance.co.jp`（お名前.comで管理）
+- ルートドメイン: `prance.jp`（お名前.comで管理）
 - すべての環境が同じRoute 53ホストゾーンを共有
 - 各環境ごとに個別のSSL証明書を発行
 
@@ -27,7 +27,7 @@ cd infrastructure
 
 # AWS CLIでホストゾーン作成
 aws route53 create-hosted-zone \
-  --name prance.co.jp \
+  --name prance.jp \
   --caller-reference "prance-$(date +%s)"
 ```
 
@@ -35,7 +35,7 @@ aws route53 create-hosted-zone \
 
 1. [Route 53 Console](https://console.aws.amazon.com/route53) を開く
 2. 「ホストゾーンの作成」をクリック
-3. ドメイン名: `prance.co.jp` を入力
+3. ドメイン名: `prance.jp` を入力
 4. タイプ: 「パブリックホストゾーン」を選択
 5. 作成ボタンをクリック
 
@@ -61,7 +61,7 @@ aws route53 get-hosted-zone --id /hostedzone/YOUR_HOSTED_ZONE_ID
 
 1. [お名前.com Navi](https://www.onamae.com/navi/login/) にログイン
 2. 「ドメイン設定」→「ネームサーバーの設定」をクリック
-3. `prance.co.jp` を選択
+3. `prance.jp` を選択
 4. 「他のネームサーバーを利用」を選択
 5. Route 53から取得した4つのネームサーバーを入力:
    ```
@@ -81,7 +81,7 @@ aws route53 get-hosted-zone --id /hostedzone/YOUR_HOSTED_ZONE_ID
 
 ```bash
 # DNSが浸透したか確認（数分〜48時間後）
-dig NS prance.co.jp +short
+dig NS prance.jp +short
 
 # 期待される出力: Route 53のネームサーバーが表示される
 # ns-123.awsdns-45.com.
@@ -94,7 +94,7 @@ dig NS prance.co.jp +short
 
 ## 🏗️ 環境別デプロイ
 
-### 開発環境 (dev.platform.prance.co.jp)
+### 開発環境 (dev.app.prance.jp)
 
 ```bash
 cd infrastructure
@@ -126,19 +126,19 @@ aws cloudformation describe-stacks \
 
 ```bash
 # DNS解決確認
-dig dev.platform.prance.co.jp +short
+dig dev.app.prance.jp +short
 
 # HTTPS接続確認
-curl -I https://dev.platform.prance.co.jp
+curl -I https://dev.app.prance.jp
 ```
 
-### ステージング環境 (staging.platform.prance.co.jp)
+### ステージング環境 (staging.app.prance.jp)
 
 ```bash
 npm run deploy:staging
 ```
 
-### 本番環境 (platform.prance.co.jp)
+### 本番環境 (platform.prance.jp)
 
 ```bash
 npm run deploy:production
@@ -162,7 +162,7 @@ npm run deploy:production
 
 ```bash
 # DNSの浸透を確認
-dig prance.co.jp NS +short
+dig prance.jp NS +short
 
 # Route 53のネームサーバーが表示されればOK
 # 表示されない場合は、お名前.comの設定を再確認
@@ -197,7 +197,7 @@ npm run cdk -- deploy Prance-dev-Certificate --context environment=dev
 ```bash
 # ホストゾーンを手動作成
 aws route53 create-hosted-zone \
-  --name prance.co.jp \
+  --name prance.jp \
   --caller-reference "prance-$(date +%s)"
 
 # 再デプロイ
@@ -213,7 +213,7 @@ npm run deploy:dev
 # お名前.com Navi → ドメイン設定 → ネームサーバーの設定
 
 # 2. 現在のネームサーバーを確認
-dig NS prance.co.jp +short
+dig NS prance.jp +short
 
 # 3. Route 53の設定を確認
 aws route53 list-resource-record-sets \
@@ -256,13 +256,13 @@ aws cloudfront get-distribution --id YOUR_DISTRIBUTION_ID \
 
 ```bash
 # 開発環境
-curl -I https://dev.platform.prance.co.jp
+curl -I https://dev.app.prance.jp
 
 # ステージング環境
-curl -I https://staging.platform.prance.co.jp
+curl -I https://staging.app.prance.jp
 
 # 本番環境
-curl -I https://platform.prance.co.jp
+curl -I https://platform.prance.jp
 ```
 
 **期待されるレスポンス:**
@@ -278,23 +278,23 @@ x-cache: Miss from cloudfront
 
 ```bash
 # SSL証明書の詳細を確認
-openssl s_client -connect dev.platform.prance.co.jp:443 -servername dev.platform.prance.co.jp < /dev/null | openssl x509 -text
+openssl s_client -connect dev.app.prance.jp:443 -servername dev.app.prance.jp < /dev/null | openssl x509 -text
 
 # 有効期限を確認
-echo | openssl s_client -connect dev.platform.prance.co.jp:443 2>/dev/null | openssl x509 -noout -dates
+echo | openssl s_client -connect dev.app.prance.jp:443 2>/dev/null | openssl x509 -noout -dates
 ```
 
 ### DNS レコードの確認
 
 ```bash
 # Aレコード（IPv4）の確認
-dig dev.platform.prance.co.jp A +short
+dig dev.app.prance.jp A +short
 
 # AAAAレコード（IPv6）の確認
-dig dev.platform.prance.co.jp AAAA +short
+dig dev.app.prance.jp AAAA +short
 
 # 詳細情報
-dig dev.platform.prance.co.jp ANY
+dig dev.app.prance.jp ANY
 ```
 
 ---
@@ -325,7 +325,7 @@ allowedOrigins: [
 ```typescript
 // 録画ファイルへの一時アクセス
 const signedUrl = cloudfront.getSignedUrl({
-  url: 'https://dev.platform.prance.co.jp/recordings/session_123.mp4',
+  url: 'https://dev.app.prance.jp/recordings/session_123.mp4',
   dateLessThan: new Date(Date.now() + 3600 * 1000), // 1時間有効
 });
 ```
@@ -397,7 +397,7 @@ npm run cdk -- destroy Prance-dev-* --context environment=dev
 - [ ] DNS変更の浸透を確認（24-48時間待機）
 - [ ] 開発環境をデプロイ
 - [ ] SSL証明書の検証完了を確認
-- [ ] https://dev.platform.prance.co.jp にアクセス確認
+- [ ] https://dev.app.prance.jp にアクセス確認
 
 ### 各環境デプロイ前
 

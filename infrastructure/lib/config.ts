@@ -3,8 +3,8 @@
 export interface EnvironmentConfig {
   environment: string;
   domain: {
-    root: string; // prance.co.jp (お名前.comで管理)
-    platform: string; // platform.prance.co.jp (Route 53で管理) ★NEW
+    root: string; // prance.jp (Route 53で管理)
+    platform: string; // app.prance.jp
     subdomain: string;
     fullDomain: string;
   };
@@ -25,11 +25,11 @@ export interface EnvironmentConfig {
   };
 }
 
-// ルートドメイン（お名前.comで管理）
-export const ROOT_DOMAIN = 'prance.co.jp';
+// ルートドメイン（Route 53で管理）
+export const ROOT_DOMAIN = 'prance.jp';
 
-// プラットフォームドメイン（Route 53で管理、サブドメイン委譲方式）
-export const PLATFORM_DOMAIN = 'platform.prance.co.jp';
+// プラットフォームドメイン（サブドメイン）
+export const PLATFORM_DOMAIN = 'app.prance.jp';
 
 export const getConfig = (environment: string): EnvironmentConfig => {
   const configs: Record<string, EnvironmentConfig> = {
@@ -38,8 +38,8 @@ export const getConfig = (environment: string): EnvironmentConfig => {
       domain: {
         root: ROOT_DOMAIN,
         platform: PLATFORM_DOMAIN,
-        subdomain: 'dev.platform',
-        fullDomain: `dev.platform.${ROOT_DOMAIN}`,
+        subdomain: 'dev.app',
+        fullDomain: `dev.app.${ROOT_DOMAIN}`,
       },
       aurora: {
         minCapacity: 0.5,
@@ -62,8 +62,8 @@ export const getConfig = (environment: string): EnvironmentConfig => {
       domain: {
         root: ROOT_DOMAIN,
         platform: PLATFORM_DOMAIN,
-        subdomain: 'staging.platform',
-        fullDomain: `staging.platform.${ROOT_DOMAIN}`,
+        subdomain: 'staging.app',
+        fullDomain: `staging.app.${ROOT_DOMAIN}`,
       },
       aurora: {
         minCapacity: 0.5,
@@ -86,8 +86,8 @@ export const getConfig = (environment: string): EnvironmentConfig => {
       domain: {
         root: ROOT_DOMAIN,
         platform: PLATFORM_DOMAIN,
-        subdomain: 'platform',
-        fullDomain: `platform.${ROOT_DOMAIN}`,
+        subdomain: 'app',
+        fullDomain: `app.${ROOT_DOMAIN}`,
       },
       aurora: {
         minCapacity: 0.5,

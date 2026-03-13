@@ -1,6 +1,6 @@
 # サブドメイン委譲 クイックスタート
 
-お名前.comのDNS変更を最小限（NSレコード4つのみ）に抑え、`platform.prance.co.jp`をRoute 53で管理する方法の実行手順です。
+お名前.comのDNS変更を最小限（NSレコード4つのみ）に抑え、`platform.prance.jp`をRoute 53で管理する方法の実行手順です。
 
 ---
 
@@ -9,9 +9,9 @@
 ### ステップ1: Route 53 Hosted Zone作成（2分）
 
 ```bash
-# platform.prance.co.jp 専用のHosted Zoneを作成
+# platform.prance.jp 専用のHosted Zoneを作成
 aws route53 create-hosted-zone \
-  --name platform.prance.co.jp \
+  --name platform.prance.jp \
   --caller-reference "prance-platform-$(date +%s)" \
   --hosted-zone-config Comment="Prance Platform subdomain delegation"
 ```
@@ -22,7 +22,7 @@ aws route53 create-hosted-zone \
 {
   "HostedZone": {
     "Id": "/hostedzone/Z1234567890ABC",
-    "Name": "platform.prance.co.jp.",
+    "Name": "platform.prance.jp.",
     ...
   },
   "DelegationSet": {
@@ -43,7 +43,7 @@ aws route53 create-hosted-zone \
 ```bash
 # Hosted Zone IDを取得
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name \
-  --dns-name platform.prance.co.jp \
+  --dns-name platform.prance.jp \
   --query 'HostedZones[0].Id' \
   --output text)
 
@@ -76,7 +76,7 @@ ns-5678.awsdns-12.co.uk
 
 1. トップページから「ドメイン設定」をクリック
 2. 「DNS設定/転送設定」を選択
-3. `prance.co.jp` の「内部設定」または「DNSレコード設定」をクリック
+3. `prance.jp` の「内部設定」または「DNSレコード設定」をクリック
 
 #### 3-3. NSレコードを追加
 
@@ -91,7 +91,7 @@ ns-5678.awsdns-12.co.uk
 
 **重要な注意点:**
 
-- ⚠️ ホスト名は `platform` のみ（`platform.prance.co.jp` ではない）
+- ⚠️ ホスト名は `platform` のみ（`platform.prance.jp` ではない）
 - ⚠️ VALUEの末尾に`.`（ドット）は不要（お名前.comが自動付与）
 - ⚠️ 4つのネームサーバーをすべて追加する必要があります
 
@@ -106,8 +106,8 @@ ns-5678.awsdns-12.co.uk
 #### 4-1. NSレコードの確認（5分後）
 
 ```bash
-# platform.prance.co.jp のネームサーバーを確認
-dig NS platform.prance.co.jp +short
+# platform.prance.jp のネームサーバーを確認
+dig NS platform.prance.jp +short
 ```
 
 **期待される出力:**
@@ -128,8 +128,8 @@ ns-5678.awsdns-12.co.uk.
 #### 4-2. 権威サーバーの確認
 
 ```bash
-# platform.prance.co.jp の権威サーバーに直接問い合わせ
-dig @ns-123.awsdns-45.com platform.prance.co.jp SOA
+# platform.prance.jp の権威サーバーに直接問い合わせ
+dig @ns-123.awsdns-45.com platform.prance.jp SOA
 
 # 応答があればOK（委譲成功）
 ```
@@ -138,9 +138,9 @@ dig @ns-123.awsdns-45.com platform.prance.co.jp SOA
 
 ```bash
 # 複数のDNSサーバーから確認
-dig @8.8.8.8 NS platform.prance.co.jp +short        # Google DNS
-dig @1.1.1.1 NS platform.prance.co.jp +short        # Cloudflare DNS
-dig @208.67.222.222 NS platform.prance.co.jp +short # OpenDNS
+dig @8.8.8.8 NS platform.prance.jp +short        # Google DNS
+dig @1.1.1.1 NS platform.prance.jp +short        # Cloudflare DNS
+dig @208.67.222.222 NS platform.prance.jp +short # OpenDNS
 
 # すべてでRoute 53のネームサーバーが返されればOK
 ```
@@ -195,15 +195,15 @@ aws cloudformation describe-stacks \
 
 | OutputKey        | OutputValue                       | Description                |
 | ---------------- | --------------------------------- | -------------------------- |
-| ApplicationURL   | https://dev.platform.prance.co.jp | Application URL            |
-| CustomDomainName | dev.platform.prance.co.jp         | Custom Domain Name         |
+| ApplicationURL   | https://dev.app.prance.jp | Application URL            |
+| CustomDomainName | dev.app.prance.jp         | Custom Domain Name         |
 | CDNDomainName    | d1234567890.cloudfront.net        | CloudFront CDN Domain Name |
 
 #### 6-2. DNSレコード確認
 
 ```bash
 # Aレコードが作成されているか確認
-dig dev.platform.prance.co.jp +short
+dig dev.app.prance.jp +short
 
 # CloudFrontのIPアドレスが返されればOK
 ```
@@ -212,7 +212,7 @@ dig dev.platform.prance.co.jp +short
 
 ```bash
 # HTTPSで接続可能か確認
-curl -I https://dev.platform.prance.co.jp
+curl -I https://dev.app.prance.jp
 
 # 期待されるレスポンス:
 # HTTP/2 200
@@ -223,10 +223,10 @@ curl -I https://dev.platform.prance.co.jp
 
 ```bash
 # SSL証明書の詳細を確認
-openssl s_client -connect dev.platform.prance.co.jp:443 -servername dev.platform.prance.co.jp < /dev/null 2>/dev/null | openssl x509 -noout -text | grep -A 2 "Subject:"
+openssl s_client -connect dev.app.prance.jp:443 -servername dev.app.prance.jp < /dev/null 2>/dev/null | openssl x509 -noout -text | grep -A 2 "Subject:"
 
 # 証明書のSANs（Subject Alternative Names）を確認
-openssl s_client -connect dev.platform.prance.co.jp:443 -servername dev.platform.prance.co.jp < /dev/null 2>/dev/null | openssl x509 -noout -text | grep -A 5 "Subject Alternative Name"
+openssl s_client -connect dev.app.prance.jp:443 -servername dev.app.prance.jp < /dev/null 2>/dev/null | openssl x509 -noout -text | grep -A 5 "Subject Alternative Name"
 ```
 
 ---
@@ -247,7 +247,7 @@ openssl s_client -connect dev.platform.prance.co.jp:443 -servername dev.platform
 
 ### Phase 3: DNS検証
 
-- [ ] `dig NS platform.prance.co.jp +short` でRoute 53のNSが表示される
+- [ ] `dig NS platform.prance.jp +short` でRoute 53のNSが表示される
 - [ ] 権威サーバーへの直接問い合わせが成功
 - [ ] 複数のパブリックDNSから同じNSが返される
 
@@ -262,7 +262,7 @@ openssl s_client -connect dev.platform.prance.co.jp:443 -servername dev.platform
 
 - [ ] 開発環境デプロイ成功
 - [ ] CloudFormationスタックが `CREATE_COMPLETE`
-- [ ] `dig dev.platform.prance.co.jp` でIPアドレス取得
+- [ ] `dig dev.app.prance.jp` でIPアドレス取得
 - [ ] HTTPS接続成功（`curl -I` でHTTP/2レスポンス）
 - [ ] SSL証明書が有効
 
@@ -275,14 +275,14 @@ openssl s_client -connect dev.platform.prance.co.jp:443 -servername dev.platform
 **症状:**
 
 ```bash
-dig NS platform.prance.co.jp +short
+dig NS platform.prance.jp +short
 # 何も表示されない
 ```
 
 **対策:**
 
 1. **お名前.comの設定確認**
-   - ホスト名が `platform` になっているか（`platform.prance.co.jp` ではない）
+   - ホスト名が `platform` になっているか（`platform.prance.jp` ではない）
    - NSレコードが4つすべて登録されているか
    - TTLが設定されているか（3600推奨）
 
@@ -303,7 +303,7 @@ dig NS platform.prance.co.jp +short
 
    ```bash
    # お名前.comの権威サーバーに直接問い合わせ
-   dig @dns1.onamae.com NS platform.prance.co.jp +short
+   dig @dns1.onamae.com NS platform.prance.jp +short
 
    # NSレコードが返されればお名前.com側の設定はOK
    ```
@@ -320,11 +320,11 @@ Error: Cannot retrieve value from context provider hosted-zone since account/reg
 
 ```bash
 # Hosted Zoneの存在確認
-aws route53 list-hosted-zones-by-name --dns-name platform.prance.co.jp
+aws route53 list-hosted-zones-by-name --dns-name platform.prance.jp
 
 # 存在しない場合はステップ1を実行
 aws route53 create-hosted-zone \
-  --name platform.prance.co.jp \
+  --name platform.prance.jp \
   --caller-reference "prance-platform-$(date +%s)"
 ```
 
@@ -341,7 +341,7 @@ Certificate status: PENDING_VALIDATION
 1. **DNS委譲の確認**
 
    ```bash
-   dig NS platform.prance.co.jp +short
+   dig NS platform.prance.jp +short
    # Route 53のNSが表示されるか確認
    ```
 
@@ -355,7 +355,7 @@ Certificate status: PENDING_VALIDATION
 **症状:**
 
 ```bash
-curl -I https://dev.platform.prance.co.jp
+curl -I https://dev.app.prance.jp
 HTTP/2 403
 ```
 
@@ -396,20 +396,20 @@ npm run deploy:production
 `apps/web/.env.local`:
 
 ```env
-NEXT_PUBLIC_APP_URL=https://dev.platform.prance.co.jp
-NEXT_PUBLIC_API_URL=https://api.dev.platform.prance.co.jp
-NEXT_PUBLIC_WS_URL=wss://ws.dev.platform.prance.co.jp
+NEXT_PUBLIC_APP_URL=https://dev.app.prance.jp
+NEXT_PUBLIC_API_URL=https://api.dev.app.prance.jp
+NEXT_PUBLIC_WS_URL=wss://ws.dev.app.prance.jp
 ```
 
 ### 3. API Gateway カスタムドメイン設定
 
-将来的に `api.dev.platform.prance.co.jp` を追加する場合:
+将来的に `api.dev.app.prance.jp` を追加する場合:
 
 ```typescript
 // certificate-stack.ts で既に設定済み
 subjectAlternativeNames: [
-  `api.${config.domain.fullDomain}`, // api.dev.platform.prance.co.jp
-  `ws.${config.domain.fullDomain}`, // ws.dev.platform.prance.co.jp
+  `api.${config.domain.fullDomain}`, // api.dev.app.prance.jp
+  `ws.${config.domain.fullDomain}`, // ws.dev.app.prance.jp
 ];
 ```
 
@@ -441,5 +441,5 @@ subjectAlternativeNames: [
 ---
 
 **作成日:** 2026-03-04
-**実装方式:** サブドメイン委譲（platform.prance.co.jp）
+**実装方式:** サブドメイン委譲（platform.prance.jp）
 **お名前.com変更:** NSレコード4つのみ

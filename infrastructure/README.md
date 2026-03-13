@@ -22,13 +22,13 @@ AWS Cloud Development Kit (CDK) を使用したPranceプラットフォームの
 
 ## 🌐 ドメイン設定
 
-本プラットフォームは、お名前.comで取得したルートドメイン `prance.co.jp` を使用します。
+本プラットフォームは、お名前.comで取得したルートドメイン `prance.jp` を使用します。
 
 | 環境             | ドメイン                        | 説明             |
 | ---------------- | ------------------------------- | ---------------- |
-| **開発**         | `dev.platform.prance.co.jp`     | 開発環境         |
-| **ステージング** | `staging.platform.prance.co.jp` | ステージング環境 |
-| **本番**         | `platform.prance.co.jp`         | 本番環境         |
+| **開発**         | `dev.app.prance.jp`     | 開発環境         |
+| **ステージング** | `staging.app.prance.jp` | ステージング環境 |
+| **本番**         | `platform.prance.jp`         | 本番環境         |
 
 **📖 詳細な設定手順:** [docs/DOMAIN_SETUP.md](docs/DOMAIN_SETUP.md)
 
@@ -37,7 +37,7 @@ AWS Cloud Development Kit (CDK) を使用したPranceプラットフォームの
 1. **Route 53 ホストゾーン作成:**
 
    ```bash
-   aws route53 create-hosted-zone --name prance.co.jp --caller-reference "prance-$(date +%s)"
+   aws route53 create-hosted-zone --name prance.jp --caller-reference "prance-$(date +%s)"
    ```
 
 2. **お名前.comでネームサーバー変更:**

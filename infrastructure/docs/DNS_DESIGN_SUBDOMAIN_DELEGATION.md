@@ -5,9 +5,9 @@
 ## 🎯 目標
 
 - ✅ お名前.comでの変更は **1つの[NSレコード](../../docs/GLOSSARY.md#ns-record-ネームサーバーレコード)追加のみ**
-- ✅ ルートドメイン `prance.co.jp` はお名前.comで管理継続
+- ✅ ルートドメイン `prance.jp` はお名前.comで管理継続
 - ✅ メールやその他のサービスは影響なし
-- ✅ `platform.prance.co.jp` 配下のみ[Route 53](../../docs/GLOSSARY.md#route-53)で管理
+- ✅ `platform.prance.jp` 配下のみ[Route 53](../../docs/GLOSSARY.md#route-53)で管理
 
 ---
 
@@ -17,10 +17,10 @@
 
 ```
 お名前.com での設定:
-  prance.co.jp → Route 53のネームサーバー4つに変更
+  prance.jp → Route 53のネームサーバー4つに変更
 
 影響範囲: 大
-  - prance.co.jp のすべてのDNSレコードをRoute 53に移行する必要あり
+  - prance.jp のすべてのDNSレコードをRoute 53に移行する必要あり
   - メール設定（MXレコード）も移行必要
   - 既存のすべてのサブドメインも移行必要
 ```
@@ -35,11 +35,11 @@
 
 ```
 お名前.com での設定:
-  platform.prance.co.jp → Route 53のネームサーバー4つ（NSレコード追加のみ）
+  platform.prance.jp → Route 53のネームサーバー4つ（NSレコード追加のみ）
 
 影響範囲: 最小
-  - platform.prance.co.jp 配下のみRoute 53で管理
-  - prance.co.jp のその他のレコードは変更不要
+  - platform.prance.jp 配下のみRoute 53で管理
+  - prance.jp のその他のレコードは変更不要
   - メール設定は影響なし
 ```
 
@@ -59,10 +59,10 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ お名前.com DNS                                               │
-│ ゾーン: prance.co.jp                                         │
+│ ゾーン: prance.jp                                         │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│ @ (prance.co.jp)                                             │
+│ @ (prance.jp)                                             │
 │   A       → 既存のIPアドレス                                 │
 │   MX      → メールサーバー設定                               │
 │   TXT     → SPF, DMARC等                                     │
@@ -85,10 +85,10 @@
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ Route 53                                                     │
-│ ゾーン: platform.prance.co.jp                                │
+│ ゾーン: platform.prance.jp                                │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│ @ (platform.prance.co.jp)              ★本番環境             │
+│ @ (platform.prance.jp)              ★本番環境             │
 │   A       → CloudFront (Alias)                              │
 │   AAAA    → CloudFront (Alias, IPv6)                        │
 │                                                              │
@@ -113,14 +113,14 @@
 
 ```
 管理場所: お名前.com
-  https://prance.co.jp              → 既存サイト（影響なし）
-  https://www.prance.co.jp          → 既存サイト（影響なし）
-  mail.prance.co.jp                 → メールサーバー（影響なし）
+  https://prance.jp              → 既存サイト（影響なし）
+  https://www.prance.jp          → 既存サイト（影響なし）
+  mail.prance.jp                 → メールサーバー（影響なし）
 
 管理場所: Route 53
-  https://platform.prance.co.jp     → 本番環境（新規）
-  https://dev.platform.prance.co.jp → 開発環境（新規）
-  https://staging.platform.prance.co.jp → ステージング環境（新規）
+  https://platform.prance.jp     → 本番環境（新規）
+  https://dev.app.prance.jp → 開発環境（新規）
+  https://staging.app.prance.jp → ステージング環境（新規）
 ```
 
 ---
@@ -130,22 +130,22 @@
 ### 1. サブドメイン委譲の仕組み
 
 ```
-ユーザー: https://dev.platform.prance.co.jp にアクセス
+ユーザー: https://dev.app.prance.jp にアクセス
    │
    ▼
 1. ルートDNSサーバーに問い合わせ
-   "prance.co.jp のネームサーバーは？"
+   "prance.jp のネームサーバーは？"
    → お名前.comのネームサーバーを返答
    │
    ▼
 2. お名前.comのDNSサーバーに問い合わせ
-   "dev.platform.prance.co.jp のIPアドレスは？"
-   → "platform.prance.co.jp はRoute 53に委譲されています"
+   "dev.app.prance.jp のIPアドレスは？"
+   → "platform.prance.jp はRoute 53に委譲されています"
    → Route 53のネームサーバー4つを返答
    │
    ▼
 3. Route 53のDNSサーバーに問い合わせ
-   "dev.platform.prance.co.jp のIPアドレスは？"
+   "dev.app.prance.jp のIPアドレスは？"
    → CloudFrontのIPアドレスを返答
    │
    ▼
@@ -173,7 +173,7 @@ ACM証明書リクエスト
    ↓
 DNS検証レコードをRoute 53に自動作成
    ↓
-   _acme-challenge.dev.platform.prance.co.jp → CNAME
+   _acme-challenge.dev.app.prance.jp → CNAME
    ↓
 ACMが検証完了（数分）
    ↓
@@ -194,7 +194,7 @@ Route 53で自動的に検証レコードが作成されます。
    - 既存のDNS設定は一切変更不要
 
 2. **影響範囲の限定**
-   - `platform.prance.co.jp` 配下のみ影響
+   - `platform.prance.jp` 配下のみ影響
    - メール設定（MXレコード）は影響なし
    - 既存のサブドメインは影響なし
 
@@ -229,7 +229,7 @@ Route 53で自動的に検証レコードが作成されます。
 
 ### リスク1: お名前.comでのNSレコード設定ミス
 
-**影響:** `platform.prance.co.jp` にアクセスできなくなる
+**影響:** `platform.prance.jp` にアクセスできなくなる
 
 **対策:**
 
@@ -277,12 +277,12 @@ Route 53で自動的に検証レコードが作成されます。
 ```bash
 # 1. ホストゾーン作成
 aws route53 create-hosted-zone \
-  --name platform.prance.co.jp \
+  --name platform.prance.jp \
   --caller-reference "platform-$(date +%s)"
 
 # 2. ネームサーバー確認
 aws route53 list-hosted-zones-by-name \
-  --dns-name platform.prance.co.jp
+  --dns-name platform.prance.jp
 
 # 期待される出力:
 # ns-123.awsdns-45.com
@@ -303,7 +303,7 @@ aws route53 list-hosted-zones-by-name \
   ↓
 ドメイン設定 → DNS設定
   ↓
-prance.co.jp を選択
+prance.jp を選択
   ↓
 DNSレコード設定を開く
   ↓
@@ -322,7 +322,7 @@ NSレコードを追加:
 
 ```bash
 # NSレコードが設定されたか確認（5分後）
-dig NS platform.prance.co.jp +short
+dig NS platform.prance.jp +short
 
 # 期待される出力: Route 53のネームサーバー4つ
 ```
@@ -337,7 +337,7 @@ aws route53 change-resource-record-sets \
     "Changes": [{
       "Action": "CREATE",
       "ResourceRecordSet": {
-        "Name": "test.platform.prance.co.jp",
+        "Name": "test.platform.prance.jp",
         "Type": "A",
         "TTL": 300,
         "ResourceRecords": [{"Value": "192.0.2.1"}]
@@ -350,7 +350,7 @@ aws route53 change-resource-record-sets \
 
 ```bash
 # テストレコードが解決できるか確認
-dig test.platform.prance.co.jp +short
+dig test.platform.prance.jp +short
 
 # 期待される出力: 192.0.2.1
 ```
@@ -360,9 +360,9 @@ dig test.platform.prance.co.jp +short
 ```bash
 # ACM証明書リクエスト（DNS検証）
 aws acm request-certificate \
-  --domain-name platform.prance.co.jp \
+  --domain-name platform.prance.jp \
   --subject-alternative-names \
-    "*.platform.prance.co.jp" \
+    "*.platform.prance.jp" \
   --validation-method DNS \
   --region us-east-1
 ```
@@ -390,7 +390,7 @@ npm run deploy:dev
 
 ```bash
 # HTTPS接続確認
-curl -I https://dev.platform.prance.co.jp
+curl -I https://dev.app.prance.jp
 
 # 期待される出力: HTTP/2 200
 ```
@@ -403,7 +403,7 @@ curl -I https://dev.platform.prance.co.jp
 
 #### Route 53設定
 
-- [ ] ホストゾーン `platform.prance.co.jp` 作成完了
+- [ ] ホストゾーン `platform.prance.jp` 作成完了
 - [ ] ネームサーバー4つ取得完了
 - [ ] ネームサーバーをメモ
 
@@ -415,7 +415,7 @@ curl -I https://dev.platform.prance.co.jp
 
 #### DNS伝播確認
 
-- [ ] `dig NS platform.prance.co.jp +short` でRoute 53のNSが返答
+- [ ] `dig NS platform.prance.jp +short` でRoute 53のNSが返答
 - [ ] テストレコード解決確認
 - [ ] グローバルDNSチェック: https://www.whatsmydns.net/
 
@@ -433,7 +433,7 @@ curl -I https://dev.platform.prance.co.jp
 
 #### エンドツーエンドテスト
 
-- [ ] `https://dev.platform.prance.co.jp` アクセス成功
+- [ ] `https://dev.app.prance.jp` アクセス成功
 - [ ] SSL証明書有効
 - [ ] CloudFront経由での配信確認
 
@@ -455,7 +455,7 @@ platform のNSレコードを削除
 保存
 ```
 
-**結果:** `platform.prance.co.jp` は即座に解決不可になりますが、
+**結果:** `platform.prance.jp` は即座に解決不可になりますが、
 他のサブドメインやメールは影響なし。
 
 ### ステップ2: Route 53リソース削除（オプション）
@@ -478,7 +478,7 @@ aws route53 delete-hosted-zone --id YOUR_HOSTED_ZONE_ID
 
 | 項目                | 月額コスト  | 備考                           |
 | ------------------- | ----------- | ------------------------------ |
-| ホストゾーン（1つ） | $0.50       | `platform.prance.co.jp`        |
+| ホストゾーン（1つ） | $0.50       | `platform.prance.jp`        |
 | クエリ（100万/月）  | $0.40       | 最初の10億クエリ               |
 | エイリアスレコード  | $0          | CloudFrontへのエイリアスは無料 |
 | **合計**            | **約$1/月** | 低トラフィック想定             |
@@ -493,13 +493,13 @@ aws route53 delete-hosted-zone --id YOUR_HOSTED_ZONE_ID
 
 ```
 Phase 1: 開発環境のみ（1週間運用）
-  dev.platform.prance.co.jp
+  dev.app.prance.jp
 
 Phase 2: ステージング環境追加（1週間運用）
-  staging.platform.prance.co.jp
+  staging.app.prance.jp
 
 Phase 3: 本番環境移行
-  platform.prance.co.jp
+  platform.prance.jp
 ```
 
 ### 2. 監視設定
@@ -510,7 +510,7 @@ aws route53 create-health-check \
   --health-check-config \
     Protocol=HTTPS,\
     ResourcePath=/,\
-    FullyQualifiedDomainName=dev.platform.prance.co.jp,\
+    FullyQualifiedDomainName=dev.app.prance.jp,\
     Type=HTTPS
 
 # CloudWatch アラーム設定

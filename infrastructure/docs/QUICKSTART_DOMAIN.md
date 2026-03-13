@@ -1,12 +1,12 @@
 # ドメイン設定クイックスタート
 
-お名前.comで取得した `prance.co.jp` を使用して、最速でカスタムドメインを設定する手順です。
+お名前.comで取得した `prance.jp` を使用して、最速でカスタムドメインを設定する手順です。
 
 ## 🎯 目標
 
-- 開発環境: `https://dev.platform.prance.co.jp`
-- ステージング環境: `https://staging.platform.prance.co.jp`
-- 本番環境: `https://platform.prance.co.jp`
+- 開発環境: `https://dev.app.prance.jp`
+- ステージング環境: `https://staging.app.prance.jp`
+- 本番環境: `https://platform.prance.jp`
 
 にアクセス可能にする。
 
@@ -19,12 +19,12 @@
 ```bash
 # ホストゾーン作成
 aws route53 create-hosted-zone \
-  --name prance.co.jp \
+  --name prance.jp \
   --caller-reference "prance-$(date +%s)"
 
 # ネームサーバーを確認（メモする）
 aws route53 list-hosted-zones-by-name \
-  --dns-name prance.co.jp \
+  --dns-name prance.jp \
   --query 'HostedZones[0].Id' \
   --output text
 
@@ -52,7 +52,7 @@ aws route53 get-hosted-zone \
 
 1. [お名前.com Navi](https://www.onamae.com/navi/login/) にログイン
 2. 「ドメイン設定」→「ネームサーバーの設定」
-3. `prance.co.jp` を選択
+3. `prance.jp` を選択
 4. 「他のネームサーバーを利用」を選択
 5. 上記の4つのネームサーバーを入力
 6. 「設定する」をクリック
@@ -61,7 +61,7 @@ aws route53 get-hosted-zone \
 
 ```bash
 # 5分ごとに確認
-watch -n 300 'dig NS prance.co.jp +short'
+watch -n 300 'dig NS prance.jp +short'
 
 # Route 53のネームサーバーが表示されたらOK
 ```
@@ -81,13 +81,13 @@ npm run deploy:dev
 
 ```bash
 # DNSレコード確認
-dig dev.platform.prance.co.jp +short
+dig dev.app.prance.jp +short
 
 # HTTPS接続確認
-curl -I https://dev.platform.prance.co.jp
+curl -I https://dev.app.prance.jp
 
 # ブラウザでアクセス
-open https://dev.platform.prance.co.jp
+open https://dev.app.prance.jp
 ```
 
 ---
@@ -103,7 +103,7 @@ open https://dev.platform.prance.co.jp
 ```bash
 # ホストゾーン作成
 aws route53 create-hosted-zone \
-  --name prance.co.jp \
+  --name prance.jp \
   --caller-reference "prance-$(date +%s)"
 ```
 
@@ -115,7 +115,7 @@ aws route53 create-hosted-zone \
 
 ```bash
 # DNSの浸透を確認
-dig prance.co.jp NS +short
+dig prance.jp NS +short
 
 # Route 53のネームサーバーが表示されない場合
 # → お名前.comの設定を再確認
@@ -161,7 +161,7 @@ aws cloudformation describe-stack-events \
 npm run deploy:staging
 ```
 
-**URL:** `https://staging.platform.prance.co.jp`
+**URL:** `https://staging.app.prance.jp`
 
 ### 本番環境
 
@@ -169,7 +169,7 @@ npm run deploy:staging
 npm run deploy:production
 ```
 
-**URL:** `https://platform.prance.co.jp`
+**URL:** `https://platform.prance.jp`
 
 ---
 
@@ -186,14 +186,14 @@ npm run deploy:production
 - [ ] ホストゾーン作成完了
 - [ ] ネームサーバー4つ取得済み
 - [ ] お名前.comでネームサーバー変更完了
-- [ ] DNS変更の浸透確認（`dig NS prance.co.jp +short`）
+- [ ] DNS変更の浸透確認（`dig NS prance.jp +short`）
 
 ### デプロイ
 
 - [ ] 開発環境デプロイ完了
 - [ ] SSL証明書が ISSUED ステータス
 - [ ] CloudFrontが CREATE_COMPLETE
-- [ ] `https://dev.platform.prance.co.jp` にアクセス可能
+- [ ] `https://dev.app.prance.jp` にアクセス可能
 
 ---
 
