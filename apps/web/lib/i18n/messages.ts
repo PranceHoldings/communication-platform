@@ -23,6 +23,7 @@ import avatarsEn from '@/messages/en/avatars.json';
 import settingsEn from '@/messages/en/settings.json';
 import reportsEn from '@/messages/en/reports.json';
 import errorsEn from '@/messages/en/errors.json';
+import guestSessionsEn from '@/messages/en/guest-sessions.json';
 
 // Import Japanese
 import commonJa from '@/messages/ja/common.json';
@@ -35,6 +36,7 @@ import avatarsJa from '@/messages/ja/avatars.json';
 import settingsJa from '@/messages/ja/settings.json';
 import reportsJa from '@/messages/ja/reports.json';
 import errorsJa from '@/messages/ja/errors.json';
+import guestSessionsJa from '@/messages/ja/guest-sessions.json';
 
 // Import Chinese Simplified
 import commonZhCN from '@/messages/zh-CN/common.json';
@@ -72,6 +74,7 @@ const messages: Record<string, Record<string, any>> = {
     avatars: avatarsEn,
     settings: settingsEn,
     reports: reportsEn,
+    ...guestSessionsEn,
   },
   ja: {
     ...commonJa,
@@ -84,6 +87,7 @@ const messages: Record<string, Record<string, any>> = {
     avatars: avatarsJa,
     settings: settingsJa,
     reports: reportsJa,
+    ...guestSessionsJa,
   },
   'zh-CN': {
     ...commonZhCN,

@@ -1,0 +1,182 @@
+{
+  "guestSessions": {
+    "title": "ゲストセッション",
+    "description": "外部候補者向けの面接セッション管理",
+    "list": {
+      "title": "ゲストセッション",
+      "description": "ゲスト面接セッションの閲覧・管理",
+      "empty": "ゲストセッションがありません",
+      "createButton": "ゲストセッション作成",
+      "filter": {
+        "status": "ステータス",
+        "scenario": "シナリオ",
+        "email": "ゲストメール",
+        "sortBy": "並び替え",
+        "all": "すべて"
+      },
+      "columns": {
+        "guestName": "ゲスト名",
+        "guestEmail": "メール",
+        "scenario": "シナリオ",
+        "status": "ステータス",
+        "validUntil": "有効期限",
+        "accessCount": "アクセス回数",
+        "createdAt": "作成日時",
+        "actions": "操作"
+      }
+    },
+    "create": {
+      "title": "ゲストセッション作成",
+      "step1": "シナリオ選択",
+      "step2": "ゲスト情報",
+      "step3": "設定",
+      "scenario": {
+        "label": "シナリオ",
+        "placeholder": "シナリオを選択",
+        "required": "シナリオは必須です"
+      },
+      "avatar": {
+        "label": "アバター（任意）",
+        "placeholder": "アバターを選択"
+      },
+      "guestName": {
+        "label": "ゲスト名（任意）",
+        "placeholder": "ゲスト名を入力"
+      },
+      "guestEmail": {
+        "label": "ゲストメール（任意）",
+        "placeholder": "招待メール送信用のメールアドレスを入力"
+      },
+      "validUntil": {
+        "label": "有効期限",
+        "placeholder": "有効期限を選択",
+        "required": "有効期限は必須です",
+        "helper": "この日時までゲストがアクセス可能です"
+      },
+      "dataRetention": {
+        "label": "データ保持期間（日数・任意）",
+        "placeholder": "日数を入力",
+        "helper": "有効期限からこの日数経過後、データが自動削除されます"
+      },
+      "customPin": {
+        "label": "カスタムPIN（任意）",
+        "placeholder": "4〜8桁の数字を入力",
+        "helper": "空欄の場合は自動生成されます"
+      },
+      "submit": "セッション作成",
+      "submitting": "作成中...",
+      "success": "ゲストセッションを作成しました",
+      "error": "ゲストセッション作成に失敗しました"
+    },
+    "batchCreate": {
+      "title": "一括作成",
+      "description": "複数のゲストセッションを一括作成",
+      "uploadCsv": "CSVアップロード",
+      "csvTemplate": "CSVテンプレートダウンロード",
+      "results": {
+        "total": "合計",
+        "successful": "成功",
+        "failed": "失敗"
+      }
+    },
+    "detail": {
+      "title": "ゲストセッション詳細",
+      "info": "情報",
+      "logs": "アクセスログ",
+      "inviteInfo": "招待情報",
+      "token": "トークン",
+      "pinCode": "PINコード",
+      "inviteUrl": "招待URL",
+      "copyUrl": "URLコピー",
+      "copyToken": "トークンコピー",
+      "copyPin": "PINコピー",
+      "copied": "コピーしました！",
+      "sendInvite": "招待メール送信",
+      "revokeSession": "セッション無効化",
+      "completeSession": "完了としてマーク",
+      "fields": {
+        "id": "セッションID",
+        "status": "ステータス",
+        "guestName": "ゲスト名",
+        "guestEmail": "ゲストメール",
+        "scenario": "シナリオ",
+        "avatar": "アバター",
+        "validFrom": "有効開始",
+        "validUntil": "有効期限",
+        "accessCount": "アクセス回数",
+        "failedAttempts": "失敗回数",
+        "firstAccessed": "初回アクセス",
+        "completed": "完了日時",
+        "creator": "作成者",
+        "createdAt": "作成日時",
+        "updatedAt": "更新日時",
+        "dataRetention": "データ保持期間（日）",
+        "autoDelete": "自動削除日時"
+      },
+      "actions": {
+        "edit": "編集",
+        "revoke": "無効化",
+        "complete": "完了",
+        "delete": "削除",
+        "viewLogs": "ログ表示"
+      },
+      "confirmRevoke": "このセッションを無効化しますか？ゲストはアクセスできなくなります。",
+      "confirmDelete": "このセッションを削除しますか？この操作は取り消せません。"
+    },
+    "status": {
+      "PENDING": "待機中",
+      "ACTIVE": "アクティブ",
+      "COMPLETED": "完了",
+      "EXPIRED": "期限切れ",
+      "REVOKED": "無効"
+    },
+    "landing": {
+      "title": "ゲスト面接セッション",
+      "subtitle": "PINコードを入力して開始",
+      "organizer": "主催者",
+      "scenario": "面接",
+      "pinLabel": "PINコード",
+      "pinPlaceholder": "PINを入力",
+      "submitButton": "面接開始",
+      "validUntil": "有効期限: {date}",
+      "recordingNotice": "このセッションは録画されます",
+      "errors": {
+        "not_found": "無効または期限切れの招待リンクです",
+        "revoked": "このセッションは無効化されました",
+        "expired": "このセッションは期限切れです",
+        "completed": "このセッションは既に完了しています",
+        "invalid_pin": "PINが正しくありません。残り{remaining}回",
+        "locked": "失敗回数が多すぎます。しばらくしてから再度お試しください",
+        "network_error": "ネットワークエラー。接続を確認してください"
+      }
+    },
+    "session": {
+      "title": "面接中",
+      "instructions": "はっきりと話し、正直に質問に答えてください",
+      "completing": "セッション完了中...",
+      "completed": "セッションが完了しました"
+    },
+    "completed": {
+      "title": "ありがとうございました！",
+      "message": "面接セッションが完了しました",
+      "note": "回答が記録され、担当者がレビューします",
+      "closeWindow": "このウィンドウを閉じてください"
+    },
+    "errors": {
+      "loadFailed": "ゲストセッションの読み込みに失敗しました",
+      "createFailed": "ゲストセッションの作成に失敗しました",
+      "updateFailed": "ゲストセッションの更新に失敗しました",
+      "deleteFailed": "ゲストセッションの削除に失敗しました",
+      "revokeFailed": "ゲストセッションの無効化に失敗しました",
+      "completeFailed": "ゲストセッションの完了に失敗しました",
+      "verifyFailed": "トークン検証に失敗しました",
+      "authFailed": "認証に失敗しました",
+      "invalidToken": "無効または期限切れのトークンです",
+      "invalidPin": "無効なPINコードです",
+      "sessionExpired": "このセッションは期限切れです",
+      "sessionRevoked": "このセッションは無効化されました",
+      "sessionCompleted": "このセッションは既に完了しています",
+      "tooManyAttempts": "失敗回数が多すぎます。しばらくしてから再度お試しください"
+    }
+  }
+}
