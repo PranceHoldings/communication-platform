@@ -39,6 +39,7 @@
     "@aws-sdk/lib-dynamodb": "^3.0.0",
     "@aws-sdk/s3-request-presigner": "^3.1005.0",
     "@prisma/client": "^5.9.0",
+    "@react-pdf/renderer": "^4.2.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/pg": "^8.18.0",
     "aws-cdk-lib": "^2.170.0",

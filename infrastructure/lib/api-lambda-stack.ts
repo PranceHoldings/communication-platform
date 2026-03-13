@@ -819,16 +819,17 @@ export class ApiLambdaStack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       securityGroups: [props.lambdaSecurityGroup],
       bundling: {
-        ...prismaBundlingConfig,
-        externalModules: [
-          ...prismaBundlingConfig.externalModules || [],
-          'canvas', // Native module, will be added via Lambda Layer
-        ],
+        minify: props.environment === 'production',
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
         nodeModules: [
+          '@prisma/client',
+          'react',
           '@react-pdf/renderer',
-          'chart.js',
           '@aws-sdk/client-s3',
           '@aws-sdk/s3-request-presigner',
+          '@aws-sdk/client-bedrock-runtime',
         ],
         commandHooks: {
           beforeBundling(inputDir: string, outputDir: string): string[] {
@@ -838,10 +839,23 @@ export class ApiLambdaStack extends cdk.Stack {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
-            // Copy report templates and styles
+            // Copy report templates and styles, and Prisma client
             return [
-              `cp -r ${inputDir}/lambda/report ${outputDir}/lambda/`,
-              `cp -r ${inputDir}/lambda/shared ${outputDir}/lambda/`,
+              // Copy Prisma generated client
+              `mkdir -p ${outputDir}/node_modules/.prisma`,
+              `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+              // Copy Prisma schema
+              `mkdir -p ${outputDir}/prisma`,
+              `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+              // Copy report module
+              `mkdir -p ${outputDir}/lambda`,
+              `cp -r /asset-input/infrastructure/lambda/report ${outputDir}/lambda/`,
+              // Copy shared modules
+              `cp -r /asset-input/infrastructure/lambda/shared/config ${outputDir}/shared/`,
+              `cp -r /asset-input/infrastructure/lambda/shared/utils ${outputDir}/shared/`,
+              `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/`,
+              `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/`,
+              `cp -r /asset-input/infrastructure/lambda/shared/database ${outputDir}/shared/`,
             ];
           },
         },
