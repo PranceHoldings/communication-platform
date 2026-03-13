@@ -1,12 +1,32 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useI18n } from '@/lib/i18n/provider';
+import { listSessions, type Session } from '@/lib/api/sessions';
 import Link from 'next/link';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { t } = useI18n();
+  const [recentSessions, setRecentSessions] = useState<Session[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+
+  // Load recent sessions
+  useEffect(() => {
+    const loadRecentSessions = async () => {
+      try {
+        const response = await listSessions({ limit: 5, offset: 0 });
+        setRecentSessions(response.sessions);
+      } catch (error) {
+        console.error('Failed to load recent sessions:', error);
+      } finally {
+        setIsLoadingSessions(false);
+      }
+    };
+
+    loadRecentSessions();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -122,7 +142,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent Sessions Placeholder */}
+      {/* Recent Sessions */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
@@ -135,9 +155,113 @@ export default function DashboardPage() {
             {t('dashboard.recentSessions.viewAll')} →
           </Link>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <p className="text-gray-500">{t('dashboard.recentSessions.noSessions')}</p>
-        </div>
+
+        {isLoadingSessions ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <p className="mt-4 text-gray-500">{t('common.loading')}</p>
+          </div>
+        ) : recentSessions.length === 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <p className="text-gray-500">{t('dashboard.recentSessions.noSessions')}</p>
+            <Link
+              href="/dashboard/sessions/new"
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              {t('dashboard.quickActions.startSession')}
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('sessions.table.scenario')}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('sessions.table.avatar')}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('sessions.table.status')}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('sessions.table.startedAt')}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('sessions.table.duration')}
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('sessions.table.actions')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {recentSessions.map(session => (
+                    <tr key={session.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {session.scenario?.title || t('sessions.table.unknownScenario')}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {session.scenario?.category}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {session.avatar?.imageUrl && (
+                            <img
+                              src={session.avatar.imageUrl}
+                              alt={session.avatar.name}
+                              className="h-8 w-8 rounded-full mr-2"
+                            />
+                          )}
+                          <div className="text-sm text-gray-900">
+                            {session.avatar?.name || t('sessions.table.unknownAvatar')}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            session.status === 'COMPLETED'
+                              ? 'bg-green-100 text-green-800'
+                              : session.status === 'ACTIVE'
+                              ? 'bg-blue-100 text-blue-800'
+                              : session.status === 'PROCESSING'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {t(`sessions.status.${session.status}`)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(session.startedAt).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {session.duration
+                          ? `${Math.floor(session.duration / 60)}:${(session.duration % 60)
+                              .toString()
+                              .padStart(2, '0')}`
+                          : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Link
+                          href={`/dashboard/sessions/${session.id}`}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          {t('sessions.table.view')}
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

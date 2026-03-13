@@ -17,9 +17,12 @@
         "avatar": "アバター",
         "status": "ステータス",
         "date": "日時",
+        "startedAt": "開始日時",
         "duration": "所要時間",
         "actions": "操作",
-        "view": "表示"
+        "view": "表示",
+        "unknownScenario": "不明なシナリオ",
+        "unknownAvatar": "不明なアバター"
     },
     "status": {
         "ACTIVE": "アクティブ",

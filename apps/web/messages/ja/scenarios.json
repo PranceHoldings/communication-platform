@@ -105,5 +105,35 @@
     "loadFailed": "シナリオの読み込みに失敗しました",
     "loadListFailed": "シナリオ一覧の読み込みに失敗しました",
     "genericError": "エラーが発生しました"
+  },
+  "questions": {
+    "title": "質問リスト",
+    "description": "AIアバターが聞く質問を設定します。ドラッグ&ドロップで順序を変更できます。",
+    "addQuestion": "質問を追加",
+    "empty": "質問がありません",
+    "emptyDescription": "最初の質問を追加して、会話の流れを設計しましょう",
+    "dragToReorder": "ドラッグして順序を変更",
+    "dragInfo": "質問をドラッグ&ドロップで並び替えることができます",
+    "required": "必須",
+    "hints": "ヒント",
+    "confirmDelete": "この質問を削除してもよろしいですか？",
+    "types": {
+      "open": "オープン質問",
+      "follow_up": "フォローアップ質問",
+      "clarification": "明確化質問"
+    },
+    "form": {
+      "text": "質問文",
+      "textPlaceholder": "例: あなたの強みは何ですか？",
+      "type": "質問タイプ",
+      "expectedDuration": "想定回答時間（秒）",
+      "required": "必須質問にする",
+      "hints": "ヒント",
+      "hintsPlaceholder": "具体例を挙げてください\n過去の経験を踏まえて回答してください",
+      "hintsHelp": "各行が1つのヒントになります（オプション）",
+      "evaluationCriteria": "評価基準",
+      "evaluationCriteriaPlaceholder": "具体性\n論理性\n熱意",
+      "evaluationCriteriaHelp": "AIがこの基準で回答を評価します（オプション）"
+    }
   }
 }

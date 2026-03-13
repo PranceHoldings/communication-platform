@@ -10,6 +10,7 @@ import { locales, defaultLocale } from '@/lib/i18n/config';
 import type { Visibility } from '@prance/shared';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { QuestionEditor, type Question } from '@/components/scenario-editor/QuestionEditor';
 
 export default function EditScenarioPage() {
   const router = useRouter();
@@ -35,6 +36,9 @@ export default function EditScenarioPage() {
   // Silence timer display setting
   const [showSilenceTimer, setShowSilenceTimer] = useState<boolean | undefined>(undefined);
 
+  // Questions list
+  const [questions, setQuestions] = useState<Question[]>([]);
+
   // Organization settings for showing defaults
   const [orgSettings, setOrgSettings] = useState<OrganizationSettings | null>(null);
 
@@ -48,14 +52,19 @@ export default function EditScenarioPage() {
         setLanguage(scenario.language);
         setVisibility(scenario.visibility);
 
-        // Extract systemPrompt from configJson
+        // Extract systemPrompt and questions from configJson
         const config = scenario.configJson as any;
         if (config.systemPrompt) {
           setSystemPrompt(config.systemPrompt);
         }
 
-        // Remove systemPrompt from config display
-        const { systemPrompt: _, ...restConfig } = config;
+        // Load questions from config
+        if (config.questions && Array.isArray(config.questions)) {
+          setQuestions(config.questions);
+        }
+
+        // Remove systemPrompt and questions from config display
+        const { systemPrompt: _, questions: __, ...restConfig } = config;
         setConfigJson(JSON.stringify(restConfig, null, 2));
 
         // Load initial greeting
@@ -114,6 +123,11 @@ export default function EditScenarioPage() {
     // Add systemPrompt to config
     if (systemPrompt.trim()) {
       parsedConfig.systemPrompt = systemPrompt.trim();
+    }
+
+    // Add questions to config
+    if (questions.length > 0) {
+      parsedConfig.questions = questions;
     }
 
     setIsSubmitting(true);
@@ -352,8 +366,17 @@ export default function EditScenarioPage() {
           </div>
         </div>
 
+        {/* Questions Editor */}
+        <div className="border-t pt-6">
+          <QuestionEditor
+            questions={questions}
+            onChange={setQuestions}
+            disabled={isSubmitting}
+          />
+        </div>
+
         {/* Configuration JSON */}
-        <div>
+        <div className="border-t pt-6">
           <label htmlFor="configJson" className="block text-sm font-medium text-gray-700 mb-2">
             {t('scenarios.create.form.config')}
           </label>

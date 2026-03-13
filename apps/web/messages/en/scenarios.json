@@ -105,5 +105,35 @@
     "loadFailed": "Failed to load scenario",
     "loadListFailed": "Failed to load scenarios",
     "genericError": "An error occurred"
+  },
+  "questions": {
+    "title": "Questions List",
+    "description": "Configure questions for the AI avatar to ask. Drag and drop to reorder.",
+    "addQuestion": "Add Question",
+    "empty": "No questions yet",
+    "emptyDescription": "Add your first question to design the conversation flow",
+    "dragToReorder": "Drag to reorder",
+    "dragInfo": "Drag and drop questions to reorder them",
+    "required": "Required",
+    "hints": "Hints",
+    "confirmDelete": "Are you sure you want to delete this question?",
+    "types": {
+      "open": "Open Question",
+      "follow_up": "Follow-up Question",
+      "clarification": "Clarification Question"
+    },
+    "form": {
+      "text": "Question Text",
+      "textPlaceholder": "e.g., What are your strengths?",
+      "type": "Question Type",
+      "expectedDuration": "Expected Duration (seconds)",
+      "required": "Mark as required",
+      "hints": "Hints",
+      "hintsPlaceholder": "Please provide specific examples\nBase your answer on past experiences",
+      "hintsHelp": "Each line becomes one hint (optional)",
+      "evaluationCriteria": "Evaluation Criteria",
+      "evaluationCriteriaPlaceholder": "Specificity\nLogical reasoning\nEnthusiasm",
+      "evaluationCriteriaHelp": "AI will evaluate answers based on these criteria (optional)"
+    }
   }
 }

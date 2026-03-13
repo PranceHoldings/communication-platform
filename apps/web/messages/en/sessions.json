@@ -17,9 +17,12 @@
         "avatar": "Avatar",
         "status": "Status",
         "date": "Date",
+        "startedAt": "Started At",
         "duration": "Duration",
         "actions": "Actions",
-        "view": "View"
+        "view": "View",
+        "unknownScenario": "Unknown Scenario",
+        "unknownAvatar": "Unknown Avatar"
     },
     "status": {
         "ACTIVE": "Active",

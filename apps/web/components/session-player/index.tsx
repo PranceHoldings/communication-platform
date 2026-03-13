@@ -27,6 +27,7 @@ import { VideoComposer } from './video-composer';
 import { WaveformDisplay } from '@/components/audio-visualizer/WaveformDisplay';
 import { ProcessingIndicator, ProcessingStage } from './ProcessingIndicator';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
+import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { toast } from 'sonner';
 
 type SessionPlayerStatus = 'IDLE' | 'READY' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
@@ -89,7 +90,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const isAuthenticatedRef = useRef<boolean>(false);
   const sendMessageRef = useRef<((message: Record<string, unknown>) => void) | null>(null);
   const sendSpeechEndRef = useRef<(() => void) | null>(null);
-  const sendAudioDataRef = useRef<((blob: Blob) => Promise<void>) | null>(null);
+  // REMOVED: sendAudioDataRef - Dual audio flow unification (2026-03-12)
   const sendVideoChunkRef = useRef<((chunk: Blob, timestamp: number) => Promise<void>) | null>(
     null
   );
@@ -572,7 +573,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     sendMessage,
     sendUserSpeech,
     sendSpeechEnd,
-    sendAudioData,
+    // sendAudioData, // REMOVED: Dual audio flow unification (2026-03-12)
     sendVideoChunk,
     endSession,
   } = useWebSocket({
@@ -628,9 +629,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     sendSpeechEndRef.current = sendSpeechEnd;
   }, [sendSpeechEnd]);
 
-  useEffect(() => {
-    sendAudioDataRef.current = sendAudioData;
-  }, [sendAudioData]);
+  // REMOVED: sendAudioDataRef useEffect - Dual audio flow unification (2026-03-12)
 
   useEffect(() => {
     sendVideoChunkRef.current = sendVideoChunk;
@@ -789,33 +788,17 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleRecordingComplete = useCallback(
     async (audioBlob: Blob) => {
-      // 認証完了後のみ音声データを送信
-      if (isConnectedRef.current && isAuthenticatedRef.current && sendAudioDataRef.current) {
-        try {
-          console.log('[SessionPlayer] Recording complete:', {
-            size: audioBlob.size,
-            type: audioBlob.type,
-          });
+      // Recording complete - リアルタイム方式では使用しない
+      // (音声処理はリアルタイムチャンク + speech_end で完結)
+      console.log('[SessionPlayer] Recording complete (audio processed via real-time chunks):', {
+        size: audioBlob.size,
+        type: audioBlob.type,
+      });
 
-          console.log('[SessionPlayer] Sending complete audio via WebSocket');
-
-          // Send complete audio blob for STT processing
-          await sendAudioDataRef.current(audioBlob);
-
-          // Set flag to wait for transcript_final before ending session
-          setPendingSessionEnd(true);
-
-          toast.info(t('sessions.player.messages.processingAudio'));
-        } catch (error) {
-          console.error('[SessionPlayer] Failed to process recording:', error);
-          toast.error(t('sessions.player.messages.audioSendError'));
-          setPendingSessionEnd(false);
-        }
-      } else if (!isAuthenticatedRef.current) {
-        console.warn('[SessionPlayer] Skipping audio data - not authenticated yet');
-      }
+      // Note: 完全音声データ方式（audio_data_part）は削除済み
+      // リアルタイムチャンク方式（audio_chunk_realtime + speech_end）のみ使用
     },
-    [t]
+    []
   );
 
   const {
@@ -1173,6 +1156,43 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [status, handleStart, handleStop, handlePause, pauseRecording, resumeRecording, t]);
+
+  // ブラウザ/タブクローズ時のセッション終了処理
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // Only cleanup if session is active or paused
+      if (status === 'ACTIVE' || status === 'PAUSED' || status === 'READY') {
+        console.log('[SessionPlayer] Browser closing - triggering session cleanup');
+
+        // Trigger session stop immediately
+        handleStop();
+
+        // Show browser confirmation dialog to give time for cleanup
+        event.preventDefault();
+        event.returnValue = '';
+        return '';
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      // Backup cleanup when page becomes hidden (tab switch, minimize, etc.)
+      if (document.visibilityState === 'hidden') {
+        if (status === 'ACTIVE' || status === 'PAUSED') {
+          console.log('[SessionPlayer] Page hidden - session still active');
+          // Note: We don't auto-stop on visibility change, only on actual unload
+          // This prevents stopping when user just switches tabs temporarily
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [status, handleStop]);
 
   // 録画機能 - ビデオチャンクハンドラー
   const handleVideoChunk = useCallback(
@@ -1672,7 +1692,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                     </span>
                     <span className="text-xs text-gray-500">{formatTime(item.timestamp)}</span>
                   </div>
-                  <p className="text-sm text-gray-900">{item.text}</p>
+                  <MarkdownRenderer content={item.text} />
                 </div>
               ))
             )}

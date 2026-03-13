@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
+import { MarkdownRenderer } from '@/components/markdown-renderer';
 
 // Default media format constants for display
 const DEFAULT_VIDEO_FORMAT = 'webm';
@@ -290,7 +291,7 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-800">{transcript.text}</p>
+                    <MarkdownRenderer content={transcript.text} />
                   </div>
                 </div>
               </button>

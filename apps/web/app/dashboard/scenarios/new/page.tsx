@@ -9,6 +9,7 @@ import type { OrganizationSettings } from '@prance/shared';
 import { locales, defaultLocale } from '@/lib/i18n/config';
 import type { Visibility } from '@prance/shared';
 import Link from 'next/link';
+import { QuestionEditor, type Question } from '@/components/scenario-editor/QuestionEditor';
 
 export default function NewScenarioPage() {
   const router = useRouter();
@@ -32,6 +33,9 @@ export default function NewScenarioPage() {
 
   // Silence timer display setting
   const [showSilenceTimer, setShowSilenceTimer] = useState<boolean | undefined>(undefined);
+
+  // Questions list
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   // Organization settings for showing defaults
   const [orgSettings, setOrgSettings] = useState<OrganizationSettings | null>(null);
@@ -76,6 +80,11 @@ export default function NewScenarioPage() {
     // Add systemPrompt to config
     if (systemPrompt.trim()) {
       parsedConfig.systemPrompt = systemPrompt.trim();
+    }
+
+    // Add questions to config
+    if (questions.length > 0) {
+      parsedConfig.questions = questions;
     }
 
     setIsSubmitting(true);
@@ -304,8 +313,17 @@ export default function NewScenarioPage() {
           </div>
         </div>
 
+        {/* Questions Editor */}
+        <div className="border-t pt-6">
+          <QuestionEditor
+            questions={questions}
+            onChange={setQuestions}
+            disabled={isSubmitting}
+          />
+        </div>
+
         {/* Configuration JSON */}
-        <div>
+        <div className="border-t pt-6">
           <label htmlFor="configJson" className="block text-sm font-medium text-gray-700 mb-2">
             {t('scenarios.create.form.config')}
           </label>
