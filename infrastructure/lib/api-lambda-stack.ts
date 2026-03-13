@@ -23,6 +23,7 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   websocketConnectionsTable: dynamodb.Table;
   recordingsBucket: s3.Bucket;
   recordingsTable: dynamodb.Table;
+  guestRateLimitTable: dynamodb.Table;
 }
 
 export class ApiLambdaStack extends cdk.Stack {
@@ -53,6 +54,18 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly getAnalysisFunction: nodejs.NodejsFunction;
   public readonly triggerAnalysisFunction: nodejs.NodejsFunction;
   public readonly getScoreFunction: nodejs.NodejsFunction;
+  // Guest User Functions
+  public readonly createGuestSessionFunction: nodejs.NodejsFunction;
+  public readonly listGuestSessionsFunction: nodejs.NodejsFunction;
+  public readonly getGuestSessionFunction: nodejs.NodejsFunction;
+  public readonly updateGuestSessionFunction: nodejs.NodejsFunction;
+  public readonly deleteGuestSessionFunction: nodejs.NodejsFunction;
+  public readonly batchCreateGuestSessionsFunction: nodejs.NodejsFunction;
+  public readonly getGuestSessionLogsFunction: nodejs.NodejsFunction;
+  public readonly completeGuestSessionFunction: nodejs.NodejsFunction;
+  public readonly verifyGuestTokenFunction: nodejs.NodejsFunction;
+  public readonly authGuestFunction: nodejs.NodejsFunction;
+  public readonly getGuestSessionDataFunction: nodejs.NodejsFunction;
   public readonly authorizer: apigateway.TokenAuthorizer;
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
@@ -167,6 +180,7 @@ export class ApiLambdaStack extends cdk.Stack {
       DATABASE_URL,
       JWT_SECRET: process.env.JWT_SECRET || 'development-secret-change-in-production',
       FRONTEND_URL: `https://${config.domain.fullDomain}`,
+      GUEST_RATE_LIMIT_TABLE_NAME: props.guestRateLimitTable.tableName,
     };
 
     // Lambda共通設定
@@ -786,6 +800,177 @@ export class ApiLambdaStack extends cdk.Stack {
       bundling: prismaBundlingConfig,
     });
 
+    // ==================== Guest User Lambda Functions ====================
+
+    // Create Guest Session
+    this.createGuestSessionFunction = new nodejs.NodejsFunction(this, 'CreateGuestSessionFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-guest-sessions-create-${props.environment}`,
+      description: 'Create a new guest session',
+      entry: path.join(__dirname, '../lambda/guest-sessions/create/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // List Guest Sessions
+    this.listGuestSessionsFunction = new nodejs.NodejsFunction(this, 'ListGuestSessionsFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-guest-sessions-list-${props.environment}`,
+      description: 'List guest sessions with filters',
+      entry: path.join(__dirname, '../lambda/guest-sessions/list/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // Get Guest Session
+    this.getGuestSessionFunction = new nodejs.NodejsFunction(this, 'GetGuestSessionFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-guest-sessions-get-${props.environment}`,
+      description: 'Get guest session details',
+      entry: path.join(__dirname, '../lambda/guest-sessions/get/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // Update Guest Session
+    this.updateGuestSessionFunction = new nodejs.NodejsFunction(this, 'UpdateGuestSessionFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-guest-sessions-update-${props.environment}`,
+      description: 'Update guest session',
+      entry: path.join(__dirname, '../lambda/guest-sessions/update/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // Delete Guest Session
+    this.deleteGuestSessionFunction = new nodejs.NodejsFunction(this, 'DeleteGuestSessionFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-guest-sessions-delete-${props.environment}`,
+      description: 'Delete (revoke) guest session',
+      entry: path.join(__dirname, '../lambda/guest-sessions/delete/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // Batch Create Guest Sessions
+    this.batchCreateGuestSessionsFunction = new nodejs.NodejsFunction(
+      this,
+      'BatchCreateGuestSessionsFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-guest-sessions-batch-${props.environment}`,
+        description: 'Batch create guest sessions (max 100)',
+        entry: path.join(__dirname, '../lambda/guest-sessions/batch/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(60), // Longer timeout for batch
+        memorySize: 1024, // More memory for batch
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: prismaBundlingConfig,
+      }
+    );
+
+    // Get Guest Session Logs
+    this.getGuestSessionLogsFunction = new nodejs.NodejsFunction(this, 'GetGuestSessionLogsFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-guest-sessions-logs-${props.environment}`,
+      description: 'Get guest session audit logs',
+      entry: path.join(__dirname, '../lambda/guest-sessions/logs/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // Complete Guest Session
+    this.completeGuestSessionFunction = new nodejs.NodejsFunction(this, 'CompleteGuestSessionFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-guest-sessions-complete-${props.environment}`,
+      description: 'Mark guest session as completed',
+      entry: path.join(__dirname, '../lambda/guest-sessions/complete/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // Verify Guest Token
+    this.verifyGuestTokenFunction = new nodejs.NodejsFunction(this, 'VerifyGuestTokenFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-guest-verify-${props.environment}`,
+      description: 'Verify guest token before PIN entry',
+      entry: path.join(__dirname, '../lambda/guest/verify/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // Authenticate Guest
+    this.authGuestFunction = new nodejs.NodejsFunction(this, 'AuthGuestFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-guest-auth-${props.environment}`,
+      description: 'Authenticate guest with PIN and issue JWT',
+      entry: path.join(__dirname, '../lambda/guest/auth/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
+    // Get Guest Session Data
+    this.getGuestSessionDataFunction = new nodejs.NodejsFunction(this, 'GetGuestSessionDataFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-guest-session-data-${props.environment}`,
+      description: 'Get session data for authenticated guest',
+      entry: path.join(__dirname, '../lambda/guest/session-data/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
     // ==================== WebSocket Lambda Functions ====================
 
     // WebSocket $connect Handler
@@ -974,6 +1159,12 @@ export class ApiLambdaStack extends cdk.Stack {
     props.websocketConnectionsTable.grantReadWriteData(websocketDefaultFunction);
     props.recordingsTable.grantReadWriteData(websocketDefaultFunction);
 
+    // DynamoDB permissions for Guest User functions
+    // Auth function needs read/write for rate limiting
+    props.guestRateLimitTable.grantReadWriteData(this.authGuestFunction);
+    // Verify function may need read access for rate limit checks
+    props.guestRateLimitTable.grantReadData(this.verifyGuestTokenFunction);
+
     // S3 permissions for default handler (audio/video storage)
     props.recordingsBucket.grantReadWrite(websocketDefaultFunction);
 
@@ -1137,6 +1328,92 @@ export class ApiLambdaStack extends cdk.Stack {
       proxy: true,
       allowTestInvoke: props.environment !== 'production',
     });
+
+    // Guest User Integrations
+    const createGuestSessionIntegration = new apigateway.LambdaIntegration(
+      this.createGuestSessionFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const listGuestSessionsIntegration = new apigateway.LambdaIntegration(
+      this.listGuestSessionsFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const getGuestSessionIntegration = new apigateway.LambdaIntegration(
+      this.getGuestSessionFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const updateGuestSessionIntegration = new apigateway.LambdaIntegration(
+      this.updateGuestSessionFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const deleteGuestSessionIntegration = new apigateway.LambdaIntegration(
+      this.deleteGuestSessionFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const batchCreateGuestSessionsIntegration = new apigateway.LambdaIntegration(
+      this.batchCreateGuestSessionsFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const getGuestSessionLogsIntegration = new apigateway.LambdaIntegration(
+      this.getGuestSessionLogsFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const completeGuestSessionIntegration = new apigateway.LambdaIntegration(
+      this.completeGuestSessionFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const verifyGuestTokenIntegration = new apigateway.LambdaIntegration(
+      this.verifyGuestTokenFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const authGuestIntegration = new apigateway.LambdaIntegration(this.authGuestFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const getGuestSessionDataIntegration = new apigateway.LambdaIntegration(
+      this.getGuestSessionDataFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
 
     // APIリソースの作成
     const apiV1 = this.restApi.root.resourceForPath('api/v1');
@@ -1317,6 +1594,96 @@ export class ApiLambdaStack extends cdk.Stack {
     // POST /api/v1/avatars/{id}/clone (Clone avatar)
     const avatarCloneResource = avatarIdResource.addResource('clone');
     avatarCloneResource.addMethod('POST', cloneAvatarIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // ==================== Guest User Endpoints ====================
+
+    // Guest Sessions endpoints (Internal users only)
+    const guestSessionsResource = apiV1.addResource('guest-sessions');
+
+    // POST /api/v1/guest-sessions (Create guest session - CLIENT_ADMIN, CLIENT_USER)
+    guestSessionsResource.addMethod('POST', createGuestSessionIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // GET /api/v1/guest-sessions (List guest sessions - CLIENT_ADMIN, CLIENT_USER)
+    guestSessionsResource.addMethod('GET', listGuestSessionsIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/guest-sessions/batch (Batch create - CLIENT_ADMIN, CLIENT_USER)
+    const guestSessionsBatchResource = guestSessionsResource.addResource('batch');
+    guestSessionsBatchResource.addMethod('POST', batchCreateGuestSessionsIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Guest Session by ID
+    const guestSessionIdResource = guestSessionsResource.addResource('{id}');
+
+    // GET /api/v1/guest-sessions/{id} (Get guest session - CLIENT_ADMIN, CLIENT_USER)
+    guestSessionIdResource.addMethod('GET', getGuestSessionIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // PATCH /api/v1/guest-sessions/{id} (Update guest session - CLIENT_ADMIN only)
+    guestSessionIdResource.addMethod('PATCH', updateGuestSessionIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // DELETE /api/v1/guest-sessions/{id} (Delete guest session - CLIENT_ADMIN only)
+    guestSessionIdResource.addMethod('DELETE', deleteGuestSessionIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/guest-sessions/{id}/complete (Mark as completed - Guest or Internal)
+    const guestSessionCompleteResource = guestSessionIdResource.addResource('complete');
+    guestSessionCompleteResource.addMethod('POST', completeGuestSessionIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // GET /api/v1/guest-sessions/{id}/logs (Get audit logs - CLIENT_ADMIN only)
+    const guestSessionLogsResource = guestSessionIdResource.addResource('logs');
+    guestSessionLogsResource.addMethod('GET', getGuestSessionLogsIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Guest Access endpoints (No authentication required or guest-only)
+    const guestResource = apiV1.addResource('guest');
+
+    // GET /api/v1/guest/verify/{token} (Verify guest token - No auth required)
+    const guestVerifyResource = guestResource.addResource('verify').addResource('{token}');
+    guestVerifyResource.addMethod('GET', verifyGuestTokenIntegration, {
+      apiKeyRequired: false,
+    });
+
+    // POST /api/v1/guest/auth (Authenticate guest with PIN - No auth required)
+    const guestAuthResource = guestResource.addResource('auth');
+    guestAuthResource.addMethod('POST', authGuestIntegration, {
+      apiKeyRequired: false,
+    });
+
+    // GET /api/v1/guest/session-data (Get session data - Guest only)
+    const guestSessionDataResource = guestResource.addResource('session-data');
+    guestSessionDataResource.addMethod('GET', getGuestSessionDataIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,

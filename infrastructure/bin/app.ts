@@ -8,6 +8,7 @@ import { CognitoStack } from '../lib/cognito-stack';
 import { DatabaseStack } from '../lib/database-stack';
 import { StorageStack } from '../lib/storage-stack';
 import { DynamoDBStack } from '../lib/dynamodb-stack';
+import { GuestRateLimitStack } from '../lib/guest-rate-limit-stack';
 import { ApiLambdaStack } from '../lib/api-lambda-stack';
 import { DnsStack } from '../lib/dns-stack';
 import { CertificateStack } from '../lib/certificate-stack';
@@ -98,6 +99,13 @@ const dynamoDBStack = new DynamoDBStack(app, `${stackPrefix}-DynamoDB`, {
   description: 'Prance Platform - DynamoDB Tables',
 });
 
+// Guest Rate Limit スタック
+const guestRateLimitStack = new GuestRateLimitStack(app, `${stackPrefix}-GuestRateLimit`, {
+  env,
+  environment,
+  description: 'Prance Platform - Guest Session Rate Limiting',
+});
+
 // API + Lambda + Authorizerスタック（完全統合）
 const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   env,
@@ -109,6 +117,7 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   websocketConnectionsTable: dynamoDBStack.websocketConnectionsTable,
   recordingsBucket: storageStack.recordingsBucket,
   recordingsTable: dynamoDBStack.recordingsTable,
+  guestRateLimitTable: guestRateLimitStack.table,
   description: 'Prance Platform - API Gateway, Lambda Functions, and Authorizer',
 });
 
