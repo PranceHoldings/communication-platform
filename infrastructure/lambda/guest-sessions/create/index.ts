@@ -7,13 +7,14 @@
  * Returns invite URL and PIN for sending to the guest.
  *
  * @module guest-sessions/create
+ * @version 1.0.1
  */
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
 import { generateToken, generatePin, validateCustomPin } from '../../shared/utils/tokenGenerator';
 import { hashPin } from '../../shared/utils/pinHash';
-import { verifyToken } from '../../shared/auth/jwt';
+import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
 
 const prisma = new PrismaClient();
 
@@ -62,20 +63,25 @@ export const handler = async (
       };
     }
 
-    const userData = verifyToken(authHeader);
+    const authToken = extractTokenFromHeader(authHeader);
+    const userData = verifyToken(authToken);
     console.log('[CreateGuestSession] Authenticated user:', {
-      userId: userData.sub,
+      userId: userData.userId,
       orgId: userData.orgId,
       role: userData.role,
     });
 
-    // Role check: Only CLIENT_ADMIN and CLIENT_USER can create guest sessions
-    if (userData.role !== 'CLIENT_ADMIN' && userData.role !== 'CLIENT_USER') {
+    // Role check: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can create guest sessions
+    if (
+      userData.role !== 'CLIENT_ADMIN' &&
+      userData.role !== 'CLIENT_USER' &&
+      userData.role !== 'SUPER_ADMIN'
+    ) {
       return {
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Forbidden: Only CLIENT_ADMIN and CLIENT_USER can create guest sessions',
+          error: 'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can create guest sessions',
         }),
       };
     }
@@ -138,12 +144,12 @@ export const handler = async (
 
     // Validate custom PIN if provided
     if (pinCode) {
-      const pinValidation = validateCustomPin(pinCode);
-      if (!pinValidation.isValid) {
+      const isValidPin = validateCustomPin(pinCode);
+      if (!isValidPin) {
         return {
           statusCode: 400,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: `Invalid PIN: ${pinValidation.error}` }),
+          body: JSON.stringify({ error: 'Invalid PIN: Must be 4-8 digits' }),
         };
       }
     }
@@ -216,7 +222,7 @@ export const handler = async (
     const guestSession = await prisma.guestSession.create({
       data: {
         orgId: userData.orgId,
-        creatorUserId: userData.sub,
+        creatorUserId: userData.userId,
         scenarioId,
         avatarId: avatarId || null,
         token,
@@ -254,7 +260,7 @@ export const handler = async (
         ipAddress: event.requestContext?.identity?.sourceIp || null,
         userAgent: event.headers['User-Agent'] || event.headers['user-agent'] || null,
         details: {
-          createdBy: userData.sub,
+          createdBy: userData.userId,
           scenario: guestSession.scenario?.title,
           avatar: guestSession.avatar?.name,
         },

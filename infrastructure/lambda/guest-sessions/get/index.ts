@@ -11,7 +11,7 @@
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
-import { verifyToken } from '../../shared/auth/jwt';
+import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
 
 const prisma = new PrismaClient();
 
@@ -37,7 +37,6 @@ interface GuestSessionDetail {
     id: string;
     title: string;
     category: string;
-    description: string | null;
   };
   avatar: {
     id: string;
@@ -90,20 +89,25 @@ export const handler = async (
       };
     }
 
-    const userData = verifyToken(authHeader);
+    const token = extractTokenFromHeader(authHeader);
+    const userData = verifyToken(token);
     console.log('[GetGuestSession] Authenticated user:', {
-      userId: userData.sub,
+      userId: userData.userId,
       orgId: userData.orgId,
       role: userData.role,
     });
 
-    // Role check: Only CLIENT_ADMIN and CLIENT_USER can view guest sessions
-    if (userData.role !== 'CLIENT_ADMIN' && userData.role !== 'CLIENT_USER') {
+    // Role check: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can view guest sessions
+    if (
+      userData.role !== 'CLIENT_ADMIN' &&
+      userData.role !== 'CLIENT_USER' &&
+      userData.role !== 'SUPER_ADMIN'
+    ) {
       return {
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Forbidden: Only CLIENT_ADMIN and CLIENT_USER can view guest sessions',
+          error: 'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can view guest sessions',
         }),
       };
     }
@@ -130,7 +134,6 @@ export const handler = async (
             id: true,
             title: true,
             category: true,
-            description: true,
           },
         },
         avatar: {
@@ -232,7 +235,6 @@ export const handler = async (
         id: guestSession.scenario.id,
         title: guestSession.scenario.title,
         category: guestSession.scenario.category,
-        description: guestSession.scenario.description,
       },
       avatar: guestSession.avatar
         ? {

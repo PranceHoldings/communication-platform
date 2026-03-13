@@ -9,6 +9,7 @@ import { ElevenLabsTextToSpeech } from '../../shared/audio/tts-elevenlabs';
 import { BedrockAI } from '../../shared/ai/bedrock';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { logError, logWarning } from '../../shared/utils/error-logger';
+import { markdownToPlainText } from '../../shared/utils/markdown';
 import * as crypto from 'crypto';
 
 export interface AudioProcessorConfig {
@@ -510,12 +511,16 @@ export class AudioProcessor {
     console.log('[AudioProcessor] Processing text message:', text);
 
     try {
-      // Generate AI response
+      // Generate AI response (may contain Markdown)
       const aiResponse = await this.generateAIResponse(text, scenarioPrompt, conversationHistory);
+
+      // Convert Markdown to plain text for TTS
+      // UI will display the original Markdown, but TTS needs plain text
+      const ttsText = markdownToPlainText(aiResponse);
 
       // Synthesize to speech
       const ttsResult = await this.tts.generateSpeech({
-        text: aiResponse,
+        text: ttsText,
         stability: 0.5,
         similarityBoost: 0.75,
       });
@@ -622,6 +627,9 @@ export class AudioProcessor {
       // Step 4: Synthesize AI response to speech using ElevenLabs WebSocket Streaming
       console.log('[AudioProcessor] Starting TTS WebSocket streaming...');
 
+      // Convert Markdown to plain text for TTS
+      const ttsText = markdownToPlainText(aiResponse);
+
       let ttsChunkCount = 0;
       const ttsAudioChunks: Buffer[] = [];
 
@@ -629,7 +637,7 @@ export class AudioProcessor {
         // CRITICAL: generateSpeechWebSocketStream returns Promise<AsyncGenerator>
         // Must await the Promise first to get the generator
         const ttsStream = await this.tts.generateSpeechWebSocketStream({
-          text: aiResponse,
+          text: ttsText,
           stability: 0.5,
           similarityBoost: 0.75,
         });
@@ -699,9 +707,12 @@ export class AudioProcessor {
       textPreview: text.substring(0, 50),
     });
 
+    // Convert Markdown to plain text for TTS
+    const ttsText = markdownToPlainText(text);
+
     try {
       const ttsResult = await this.tts.generateSpeech({
-        text,
+        text: ttsText,
         stability: 0.5,
         similarityBoost: 0.75,
       });

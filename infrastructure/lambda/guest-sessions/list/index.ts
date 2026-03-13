@@ -11,7 +11,7 @@
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PrismaClient, GuestSessionStatus } from '@prisma/client';
-import { verifyToken } from '../../shared/auth/jwt';
+import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
 
 const prisma = new PrismaClient();
 
@@ -83,20 +83,25 @@ export const handler = async (
       };
     }
 
-    const userData = verifyToken(authHeader);
+    const token = extractTokenFromHeader(authHeader);
+    const userData = verifyToken(token);
     console.log('[ListGuestSessions] Authenticated user:', {
-      userId: userData.sub,
+      userId: userData.userId,
       orgId: userData.orgId,
       role: userData.role,
     });
 
-    // Role check: Only CLIENT_ADMIN and CLIENT_USER can list guest sessions
-    if (userData.role !== 'CLIENT_ADMIN' && userData.role !== 'CLIENT_USER') {
+    // Role check: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can list guest sessions
+    if (
+      userData.role !== 'CLIENT_ADMIN' &&
+      userData.role !== 'CLIENT_USER' &&
+      userData.role !== 'SUPER_ADMIN'
+    ) {
       return {
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Forbidden: Only CLIENT_ADMIN and CLIENT_USER can list guest sessions',
+          error: 'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can list guest sessions',
         }),
       };
     }

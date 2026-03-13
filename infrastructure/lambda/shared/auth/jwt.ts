@@ -85,12 +85,25 @@ export const getUserFromEvent = (event: {
     if (event.requestContext?.authorizer) {
       const auth = event.requestContext.authorizer;
       if (auth.userId && auth.email && auth.role && auth.orgId) {
-        return {
+        const payload: JWTPayload = {
           userId: auth.userId,
           email: auth.email,
-          role: auth.role as 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER',
+          role: auth.role as 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST',
           orgId: auth.orgId, // Prisma: User.orgId
         };
+
+        // Add guest-specific fields if present
+        if (auth.type) {
+          payload.type = auth.type;
+        }
+        if (auth.guestSessionId) {
+          payload.guestSessionId = auth.guestSessionId;
+        }
+        if (auth.sessionId) {
+          payload.sessionId = auth.sessionId;
+        }
+
+        return payload;
       }
     }
 

@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: [
     ['list'],
-    ['html', { outputFolder: 'test-results/html' }],
+    ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'test-results/results.json' }],
   ],
   use: {
@@ -29,5 +29,6 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: true,
     timeout: 120000,
+    cwd: './apps/web',
   },
 });

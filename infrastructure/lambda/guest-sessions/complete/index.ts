@@ -11,7 +11,7 @@
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
-import { verifyToken } from '../../shared/auth/jwt';
+import { getUserFromEvent } from '../../shared/auth/jwt';
 
 const prisma = new PrismaClient();
 
@@ -33,19 +33,18 @@ export const handler = async (
   console.log('[CompleteGuestSession] Event:', JSON.stringify(event, null, 2));
 
   try {
-    // 1. Authentication check
-    const authHeader = event.headers.Authorization || event.headers.authorization;
-    if (!authHeader) {
+    // 1. Authentication check - use Lambda Authorizer context
+    const userData = getUserFromEvent(event);
+    if (!userData) {
       return {
         statusCode: 401,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing authorization header' }),
+        body: JSON.stringify({ error: 'Unauthorized' }),
       };
     }
 
-    const userData = verifyToken(authHeader);
     console.log('[CompleteGuestSession] Authenticated user:', {
-      userId: userData.sub,
+      userId: userData.userId,
       orgId: userData.orgId,
       role: userData.role,
     });
@@ -88,7 +87,7 @@ export const handler = async (
     // - Guest can complete their own session (userData.guestSessionId === guestSessionId)
     // - Internal users can complete sessions in their organization
     const isGuest = userData.role === 'GUEST';
-    const isInternalUser = userData.role === 'CLIENT_ADMIN' || userData.role === 'CLIENT_USER';
+    const isInternalUser = userData.role === 'CLIENT_ADMIN' || userData.role === 'CLIENT_USER' || userData.role === 'SUPER_ADMIN';
 
     if (isGuest) {
       // Guest must be completing their own session
@@ -181,7 +180,7 @@ export const handler = async (
         ipAddress: event.requestContext?.identity?.sourceIp || null,
         userAgent: event.headers['User-Agent'] || event.headers['user-agent'] || null,
         details: {
-          completedBy: isGuest ? 'GUEST' : userData.sub,
+          completedBy: isGuest ? 'GUEST' : userData.userId,
           role: userData.role,
         },
       },

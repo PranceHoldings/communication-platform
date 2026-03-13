@@ -132,7 +132,7 @@ fix_space_in_directory_names() {
   return 0
 }
 
-# 単一ディレクトリの削除（リトライロジック付き）
+# 単一ディレクトリの削除（統一スクリプト使用）
 remove_directory_robust() {
   local target="$1"
   local description="$2"
@@ -147,6 +147,15 @@ remove_directory_robust() {
   # スペース付きディレクトリ名を修正
   fix_space_in_directory_names "$target"
 
+  # 統一スクリプトが存在する場合は使用
+  if [ -f "scripts/clean-directory-safe.sh" ]; then
+    if bash scripts/clean-directory-safe.sh "$target" --force > /dev/null 2>&1; then
+      log_success "  ✓ 統一スクリプトで削除成功"
+      return 0
+    fi
+  fi
+
+  # フォールバック: 従来の方法
   # Strategy 1: 通常削除
   if rm -rf "$target" 2>/dev/null; then
     log_success "  ✓ 通常削除成功"
@@ -168,10 +177,17 @@ remove_directory_robust() {
   log_retry "Strategy 3: リネームして退避"
   local backup_name="${target}.broken-${TIMESTAMP}"
 
-  # まずsudoでリネーム試行
-  if sudo mv "$target" "$backup_name" 2>/dev/null; then
+  # 通常mvを試行
+  if mv "$target" "$backup_name" 2>/dev/null; then
     log_success "  ✓ リネーム成功: $backup_name"
-    log_info "  破損ファイルを退避しました（後で手動削除可能）"
+    mkdir -p "$target" 2>/dev/null
+    return 0
+  fi
+
+  # sudoでmvを試行
+  if sudo mv "$target" "$backup_name" 2>/dev/null; then
+    log_success "  ✓ リネーム成功（sudo）: $backup_name"
+    mkdir -p "$target" 2>/dev/null
     return 0
   fi
 
@@ -201,6 +217,7 @@ remove_directory_robust() {
     # 最終手段: リネーム
     if sudo mv "$target" "$backup_name" 2>/dev/null; then
       log_warning "  ⚠ 一部ファイル削除後、ディレクトリをリネーム: $backup_name"
+      mkdir -p "$target" 2>/dev/null
       return 0
     fi
   fi

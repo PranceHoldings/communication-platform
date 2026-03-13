@@ -60,7 +60,7 @@ interface UseWebSocketReturn {
   disconnect: () => void;
   sendMessage: (message: Record<string, unknown>) => void;
   sendAudioChunk: (data: ArrayBuffer, timestamp: number) => void;
-  sendAudioData: (audioBlob: Blob) => Promise<void>;
+  // sendAudioData: (audioBlob: Blob) => Promise<void>; // REMOVED: Dual audio flow unification (2026-03-12)
   sendVideoChunk: (data: Blob, timestamp: number) => Promise<void>;
   sendUserSpeech: (text: string, confidence: number) => void;
   sendSpeechEnd: () => void;
@@ -408,75 +408,10 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     [sendMessage]
   );
 
-  const sendAudioData = useCallback(
-    async (audioBlob: Blob): Promise<void> => {
-      try {
-        // Convert Blob to ArrayBuffer
-        const arrayBuffer = await audioBlob.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-
-        // AWS API Gateway WebSocket limit: 32KB per message
-        // Split audio data into smaller chunks (30KB) to stay within limit
-        const MAX_CHUNK_SIZE = 30 * 1024; // 30KB
-
-        const timestamp = Date.now();
-        // Use UUID v4 for collision-resistant chunk IDs
-        const chunkId = `audio-${timestamp}-${crypto.randomUUID()}`;
-        const totalParts = Math.ceil(bytes.byteLength / MAX_CHUNK_SIZE);
-
-        console.log('[WebSocket] Splitting audio data into chunks:', {
-          originalSize: bytes.byteLength,
-          totalParts,
-          chunkId,
-        });
-
-        // Send each part
-        for (let partIndex = 0; partIndex < totalParts; partIndex++) {
-          const start = partIndex * MAX_CHUNK_SIZE;
-          const end = Math.min(start + MAX_CHUNK_SIZE, bytes.byteLength);
-          const partBytes = bytes.slice(start, end);
-
-          // Convert to Base64
-          let binary = '';
-          for (let i = 0; i < partBytes.byteLength; i++) {
-            binary += String.fromCharCode(partBytes[i]!);
-          }
-          const base64Part = btoa(binary);
-
-          console.log(`[WebSocket] Sending audio part ${partIndex + 1}/${totalParts}:`, {
-            chunkId,
-            partSize: partBytes.byteLength,
-            base64Length: base64Part.length,
-          });
-
-          sendMessage({
-            type: 'audio_data_part',
-            chunkId,
-            partIndex,
-            totalParts,
-            data: base64Part,
-            contentType: audioBlob.type,
-            timestamp,
-          });
-
-          // Small delay between parts to avoid overwhelming WebSocket
-          if (partIndex < totalParts - 1) {
-            await new Promise(resolve => setTimeout(resolve, 10));
-          }
-        }
-
-        console.log('[WebSocket] Audio transmission complete:', {
-          chunkId,
-          totalParts,
-          timestamp,
-        });
-      } catch (error) {
-        console.error('[WebSocket] Failed to send audio data:', error);
-        throw error;
-      }
-    },
-    [sendMessage]
-  );
+  // REMOVED: sendAudioData - Dual audio flow unification (2026-03-12)
+  // リアルタイムチャンク方式 (sendAudioChunk + sendSpeechEnd) に統一
+  // 完全音声データ方式 (sendAudioData) は廃止
+  // const sendAudioData = useCallback(...);
 
   const sendVideoChunk = useCallback(
     async (chunk: Blob, timestamp: number): Promise<void> => {
@@ -608,7 +543,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     disconnect,
     sendMessage,
     sendAudioChunk,
-    sendAudioData,
+    // sendAudioData, // REMOVED: Dual audio flow unification (2026-03-12)
     sendVideoChunk,
     sendUserSpeech,
     sendSpeechEnd,

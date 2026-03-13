@@ -49,12 +49,20 @@ tsconfig.tsbuildinfo
 # OS
 Thumbs.db
 
+# macOS Finder auto-generated files with spaces (CRITICAL: These break TypeScript compilation)
+**/* 2.*
+**/*.d 2.ts
+**/*  2.js
+**/* copy.*
+
 # Turborepo
 .turbo/
 
 # AWS CDK
 cdk.out/
 cdk.out.*/
+cdk.out.broken-*
+cdk.out.old-*
 *.js
 *.d.ts
 !jest.config.js
@@ -67,12 +75,15 @@ prisma/migrations/
 *.tmp
 .cache/
 *.backup-*
-apps/web/.next.broken-*
-node_modules.broken-*
+*.broken-*
+*.old-*
 *.backup
+*.backup2
+apps/web/.next.broken-*
 node_modules.broken-*
 console.log
 consolelog.log
+backups/
 
 # next-intl migration - DEPRECATED, DO NOT USE
 # This directory was removed during migration to custom i18n system

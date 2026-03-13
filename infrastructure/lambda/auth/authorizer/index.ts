@@ -76,6 +76,8 @@ export const handler = async (
       userId: decoded.userId,
       role: decoded.role,
       orgId: decoded.orgId,
+      type: decoded.type,
+      guestSessionId: decoded.guestSessionId,
     });
 
     // メソッドARNから全てのリソースへのアクセスを許可するワイルドカードARNを生成
@@ -89,12 +91,24 @@ export const handler = async (
 
     // Generate Allow policy with authentication context
     // IMPORTANT: Context field names should match Prisma schema (orgId, not organizationId)
-    return generatePolicy(decoded.userId, 'Allow', wildcard, {
+    // Support both regular users and guest users
+    const context: Record<string, string | number | boolean> = {
       userId: decoded.userId,
       email: decoded.email,
       role: decoded.role,
       orgId: decoded.orgId, // Prisma: User.orgId
-    });
+    };
+
+    // Add guest-specific fields if present
+    if (decoded.type === 'guest' && decoded.guestSessionId) {
+      context.type = 'guest';
+      context.guestSessionId = decoded.guestSessionId;
+      if (decoded.sessionId) {
+        context.sessionId = decoded.sessionId;
+      }
+    }
+
+    return generatePolicy(decoded.userId, 'Allow', wildcard, context);
   } catch (error) {
     console.error('Authorization failed:', error);
 

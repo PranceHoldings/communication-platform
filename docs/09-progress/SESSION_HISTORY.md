@@ -1,7 +1,214 @@
 # Prance Alpha開発 - セッション進捗まとめ
 
-**最終更新:** 2026-03-05 4:30 PM
-**セッション:** Phase 1 MVP開発 - CRUD基盤・テストデータ完成
+**最終更新:** 2026-03-13 01:00 JST
+**セッション:** Phase 2.5 Week 1 完了 - Prismaスキーママイグレーション実装完了
+
+---
+
+## 🎉 Phase 2.5 Day 5-7: Prismaスキーママイグレーション完了（2026-03-13）
+
+### 実施内容
+
+**1. Prismaスキーマ拡張**
+
+**UserRole enum拡張:**
+- GUEST role追加
+
+**GuestSessionStatus enum追加:**
+- PENDING, ACTIVE, COMPLETED, EXPIRED, REVOKED
+
+**GuestSession モデル追加（21フィールド）:**
+- **認証情報:** token (unique), pinHash
+- **ゲスト情報:** guestName, guestEmail, guestMetadata
+- **ステータス:** status (enum)
+- **有効期限:** validFrom, validUntil
+- **アクセス管理:** accessCount, failedAttempts, lockedUntil, firstAccessedAt, completedAt
+- **データ保持:** dataRetentionDays, autoDeleteAt
+- **タイムスタンプ:** createdAt, updatedAt
+- **外部キー:** orgId, creatorUserId, sessionId, scenarioId, avatarId
+
+**GuestSessionLog モデル追加（7フィールド）:**
+- **イベント情報:** eventType, ipAddress, userAgent, details
+- **外部キー:** guestSessionId
+
+**Session モデル拡張:**
+- isGuestSession: Boolean (default: false)
+- guestSessionId: String? (unique)
+
+**2. リレーション追加（6モデル）**
+- Organization → guestSessions (1対多)
+- User → createdGuestSessions (1対多)
+- Scenario → guestSessions (1対多)
+- Avatar → guestSessions (1対多)
+- Session ↔ GuestSession (1対1、双方向)
+- GuestSession → GuestSessionLog (1対多)
+
+**3. データベースインデックス（14個）**
+- guest_sessions: orgId, creatorUserId, token, status, validUntil, autoDeleteAt
+- sessions: isGuestSession, guestSessionId
+- guest_session_logs: guestSessionId, eventType, createdAt
+
+**4. マイグレーション生成**
+- `20260312233055_add_guest_sessions/migration.sql`
+- AlterEnum (UserRole + GUEST)
+- CreateEnum (GuestSessionStatus)
+- AlterTable (sessions + 2フィールド)
+- CreateTable (guest_sessions, guest_session_logs)
+- CreateIndex (14インデックス)
+- AddForeignKey (6外部キー制約)
+
+**5. Prisma Client生成**
+- ✅ 型定義生成完了
+- ✅ 新しいモデル・enumが利用可能
+
+### 成果物
+
+- `packages/database/prisma/schema.prisma` - スキーマ更新（+93行）
+- `packages/database/prisma/migrations/20260312233055_add_guest_sessions/migration.sql` - マイグレーションSQL（120行）
+- Prisma Client v5.22.0 - 新しい型定義
+
+### テーブル構造
+
+**guest_sessions (21カラム):**
+```sql
+id, org_id, creator_user_id, session_id, scenario_id, avatar_id,
+token, pin_hash,
+guest_name, guest_email, guest_metadata,
+status,
+valid_from, valid_until,
+access_count, failed_attempts, locked_until, first_accessed_at, completed_at,
+data_retention_days, auto_delete_at,
+created_at, updated_at
+```
+
+**guest_session_logs (7カラム):**
+```sql
+id, guest_session_id, event_type, ip_address, user_agent, details, created_at
+```
+
+### 次のステップ
+
+**⏳ Phase 2 Week 2: API実装（推定1週間）**
+- ゲストセッション作成API（POST /api/guest-sessions）
+- ゲスト認証API（GET /api/guest/verify/:token, POST /api/guest/auth）
+- ゲストセッション管理API（13 Lambda関数）
+- WebSocket認証拡張（ゲストトークンサポート）
+
+---
+
+## 🎉 Phase 2.5 Day 3-4: レート制限ユーティリティ実装完了（2026-03-12）
+
+### 実施内容
+
+**1. rateLimiter.ts実装**
+- DynamoDB-based rate limiting（ブルートフォース攻撃対策）
+- 5つの主要関数実装:
+  - `checkRateLimit()` - IPアドレス・トークン単位のレート制限チェック
+  - `recordAttempt()` - 失敗試行記録
+  - `resetAttempts()` - 試行回数リセット（認証成功時）
+  - `getRateLimitStats()` - レート制限統計取得
+  - `getExponentialBackoff()` - 指数バックオフ計算（2^attempts秒、60秒上限）
+
+**2. GuestRateLimitStack実装（CDK）**
+- DynamoDBテーブル作成
+  - テーブル名: `prance-guest-rate-limits-{env}`
+  - パーティションキー: `ipAddress` (String)
+  - ソートキー: `timestamp` (Number)
+  - TTL: 600秒（10分）自動クリーンアップ
+  - オンデマンド課金（BillingMode: PAY_PER_REQUEST）
+  - Point-in-Time Recovery（本番環境のみ）
+
+**3. 単体テスト作成（21件）**
+- aws-sdk-client-mockを使用したモック
+- 環境変数の動的取得（テスト対応）
+- 全テストケース:
+  - checkRateLimit: 6テスト
+  - recordAttempt: 4テスト
+  - resetAttempts: 4テスト
+  - getRateLimitStats: 3テスト
+  - getExponentialBackoff: 4テスト
+
+**4. テスト結果: 21/21合格（100%）** ✅
+- 全テストケース合格
+- レート制限ロジック検証完了
+- エラーハンドリング検証完了
+- バッチ削除（25件/バッチ）検証完了
+
+### 実装詳細
+
+**セキュリティ機能:**
+- 最大試行回数: 5回（設定可能）
+- ロックアウト期間: 10分（設定可能）
+- Fail-open設計: DynamoDBエラー時はリクエスト許可（DoS防止）
+- 指数バックオフ: 2^attempts秒（最大60秒）
+
+**パフォーマンス:**
+- DynamoDBオンデマンド課金（スケーラブル）
+- TTL自動クリーンアップ（手動削除不要）
+- バッチ削除最適化（25件/バッチ）
+
+### 成果物
+
+- `infrastructure/lambda/shared/utils/rateLimiter.ts` - レート制限実装（361行）
+- `infrastructure/lib/guest-rate-limit-stack.ts` - CDK Stack（70行）
+- `infrastructure/lambda/shared/utils/__tests__/rateLimiter.test.ts` - 単体テスト（294行、21テスト）
+
+### 次のステップ
+
+**⏳ Phase 1 Week 1 Day 5-7: Prismaスキーママイグレーション（推定3日）**
+- GuestSession, GuestSessionLog テーブル追加
+- Session モデルに isGuestSession, guestSessionId 追加
+- マイグレーション生成・実行・検証
+
+---
+
+## 🎉 Day 13: E2Eテスト実装・実行完了（2026-03-12）
+
+### 実施内容
+
+**1. E2Eテストスイート作成**
+- Playwright E2Eテスト10件作成（`tests/e2e/websocket-voice-conversation.spec.ts`）
+- テスト実行スクリプト作成（`scripts/run-e2e-tests.sh`）
+- Playwright依存関係インストール
+
+**2. テスト実行結果: 10/10合格（100%）** ✅
+
+| テスト | 結果 | 検証内容 |
+|--------|------|----------|
+| 1. WebSocket Connection | ✅ | WebSocket接続確認 |
+| 2. Session Start Flow | ✅ | セッション開始フロー |
+| 3. Keyboard Shortcuts | ✅ | ヘルプモーダル (?キー) |
+| 4. Audio Waveform Display | ✅ | 波形表示確認 |
+| 5. Processing Indicators | ✅ | AI: 12個、Processing: 11個検出 |
+| 6. Accessibility - ARIA Labels | ✅ | ARIA属性実装（aria-label: 2, aria-live: 1） |
+| 7. Error Messages - Multilingual | ✅ | エラーハンドリング |
+| 8. Session State Management | ✅ | 全状態検出（idle/active/processing/completed） |
+| 9. Browser Compatibility | ✅ | 全API対応（MediaRecorder/WebSocket/AudioContext/getUserMedia） |
+| 10. Performance Metrics | ✅ | ページロード1.76秒、DOM Interactive 111ms |
+
+**3. パフォーマンス指標**
+- ページロード時間: 1.76秒
+- DOM Interactive: 111.2ms
+- Load Complete: 479.5ms
+- テスト実行時間: 1分18秒
+
+**4. コードリファクタリング完了確認**
+- Phase A-D完了の動作確認
+- 500行のコード削減が正常動作することを検証
+- 全機能が正常に動作することを確認
+
+### 成果物
+
+- `tests/e2e/websocket-voice-conversation.spec.ts` - WebSocket音声会話E2Eテスト
+- `scripts/run-e2e-tests.sh` - テスト実行スクリプト
+- `playwright.config.ts` - Playwright設定（修正版）
+- HTMLテストレポート（`playwright-report/`）
+
+### 次のステップ
+
+1. **Option A:** 手動音声会話テスト - 実際のマイクを使用した動作確認
+2. **Option B:** Phase 2.5継続 - ゲストユーザー機能（Day 3-4: レート制限実装）
+3. **Option C:** Phase 2.3開始 - レポート生成機能
 
 ---
 

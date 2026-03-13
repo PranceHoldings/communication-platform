@@ -11,7 +11,7 @@
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PrismaClient, GuestSessionStatus } from '@prisma/client';
-import { verifyToken } from '../../shared/auth/jwt';
+import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
 
 const prisma = new PrismaClient();
 
@@ -54,20 +54,21 @@ export const handler = async (
       };
     }
 
-    const userData = verifyToken(authHeader);
+    const token = extractTokenFromHeader(authHeader);
+    const userData = verifyToken(token);
     console.log('[UpdateGuestSession] Authenticated user:', {
-      userId: userData.sub,
+      userId: userData.userId,
       orgId: userData.orgId,
       role: userData.role,
     });
 
-    // Role check: Only CLIENT_ADMIN can update guest sessions
-    if (userData.role !== 'CLIENT_ADMIN') {
+    // Role check: Only CLIENT_ADMIN and SUPER_ADMIN can update guest sessions
+    if (userData.role !== 'CLIENT_ADMIN' && userData.role !== 'SUPER_ADMIN') {
       return {
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Forbidden: Only CLIENT_ADMIN can update guest sessions',
+          error: 'Forbidden: Only CLIENT_ADMIN and SUPER_ADMIN can update guest sessions',
         }),
       };
     }
@@ -234,7 +235,7 @@ export const handler = async (
         ipAddress: event.requestContext?.identity?.sourceIp || null,
         userAgent: event.headers['User-Agent'] || event.headers['user-agent'] || null,
         details: {
-          updatedBy: userData.sub,
+          updatedBy: userData.userId,
           updatedFields: Object.keys(updateData),
           oldStatus: existingSession.status,
           newStatus: updatedSession.status,

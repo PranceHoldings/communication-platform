@@ -488,6 +488,7 @@ export class ApiLambdaStack extends cdk.Stack {
             // Copy shared modules (CRITICAL: Required by some Lambda functions)
             `mkdir -p ${outputDir}/shared`,
             `cp -r /asset-input/infrastructure/lambda/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
+            `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
             `cp -r /asset-input/infrastructure/lambda/shared/config ${outputDir}/shared/ 2>/dev/null || true`,
             `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
             `cp -r /asset-input/infrastructure/lambda/shared/utils ${outputDir}/shared/ 2>/dev/null || true`,

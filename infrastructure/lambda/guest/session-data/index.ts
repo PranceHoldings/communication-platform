@@ -11,7 +11,7 @@
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
-import { verifyToken } from '../../shared/auth/jwt';
+import { getUserFromEvent } from '../../shared/auth/jwt';
 
 const prisma = new PrismaClient();
 
@@ -65,19 +65,10 @@ export const handler = async (
   console.log('[GetGuestSessionData] Event:', JSON.stringify(event, null, 2));
 
   try {
-    // 1. Authentication check
-    const authHeader = event.headers.Authorization || event.headers.authorization;
-    if (!authHeader) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing authorization header' }),
-      };
-    }
-
-    const userData = verifyToken(authHeader);
+    // 1. Extract user data from Lambda Authorizer context
+    const userData = getUserFromEvent(event);
     console.log('[GetGuestSessionData] Authenticated user:', {
-      userId: userData.sub,
+      userId: userData.userId,
       role: userData.role,
       guestSessionId: userData.guestSessionId,
     });
