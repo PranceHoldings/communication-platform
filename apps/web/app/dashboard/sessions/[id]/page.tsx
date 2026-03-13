@@ -17,6 +17,7 @@ import { getAnalysis, triggerAnalysis, type AnalysisResult } from '@/lib/api/ana
 import { ScoreDashboard } from '@/components/analysis/score-dashboard';
 import { PerformanceRadar } from '@/components/analysis/performance-radar';
 import { DetailStats } from '@/components/analysis/detail-stats';
+import { ReportGenerator } from '@/components/reports/report-generator';
 import Link from 'next/link';
 
 export default function SessionDetailPage() {
@@ -258,6 +259,13 @@ export default function SessionDetailPage() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* レポート生成セクション */}
+      {session.status === 'COMPLETED' && analysis && analysis.sessionScore && (
+        <div className="mt-6">
+          <ReportGenerator sessionId={sessionId} sessionStatus={session.status} />
         </div>
       )}
     </div>

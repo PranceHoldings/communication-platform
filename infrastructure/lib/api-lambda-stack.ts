@@ -54,6 +54,7 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly getAnalysisFunction: nodejs.NodejsFunction;
   public readonly triggerAnalysisFunction: nodejs.NodejsFunction;
   public readonly getScoreFunction: nodejs.NodejsFunction;
+  public readonly generateReportFunction: nodejs.NodejsFunction;
   // Guest User Functions
   public readonly createGuestSessionFunction: nodejs.NodejsFunction;
   public readonly listGuestSessionsFunction: nodejs.NodejsFunction;
@@ -181,6 +182,8 @@ export class ApiLambdaStack extends cdk.Stack {
       JWT_SECRET: process.env.JWT_SECRET || 'development-secret-change-in-production',
       FRONTEND_URL: `https://${config.domain.fullDomain}`,
       GUEST_RATE_LIMIT_TABLE_NAME: props.guestRateLimitTable.tableName,
+      BEDROCK_REGION: this.region,
+      STORAGE_BUCKET_NAME: props.recordingsBucket.bucketName,
     };
 
     // Lambda共通設定
@@ -801,6 +804,64 @@ export class ApiLambdaStack extends cdk.Stack {
       bundling: prismaBundlingConfig,
     });
 
+    // ==================== Report Generation Lambda Function ====================
+
+    // Generate PDF Report
+    this.generateReportFunction = new nodejs.NodejsFunction(this, 'GenerateReportFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-report-generate-${props.environment}`,
+      description: 'Generate PDF report for completed session',
+      entry: path.join(__dirname, '../lambda/report-generate/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(60), // Longer timeout for PDF generation
+      memorySize: 1024, // More memory for chart/PDF generation
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: {
+        ...prismaBundlingConfig,
+        externalModules: [
+          ...prismaBundlingConfig.externalModules || [],
+          'canvas', // Native module, will be added via Lambda Layer
+        ],
+        nodeModules: [
+          '@react-pdf/renderer',
+          'chart.js',
+          '@aws-sdk/client-s3',
+          '@aws-sdk/s3-request-presigner',
+        ],
+        commandHooks: {
+          beforeBundling(inputDir: string, outputDir: string): string[] {
+            return [];
+          },
+          beforeInstall(inputDir: string, outputDir: string): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            // Copy report templates and styles
+            return [
+              `cp -r ${inputDir}/lambda/report ${outputDir}/lambda/`,
+              `cp -r ${inputDir}/lambda/shared ${outputDir}/lambda/`,
+            ];
+          },
+        },
+      },
+    });
+
+    // Grant S3 permissions for PDF upload
+    props.recordingsBucket.grantReadWrite(this.generateReportFunction);
+
+    // Grant Bedrock permissions for AI suggestions
+    this.generateReportFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['bedrock:InvokeModel'],
+        resources: [
+          `arn:aws:bedrock:${this.region}::foundation-model/us.anthropic.claude-sonnet-4-20250514-v1:0`,
+        ],
+      })
+    );
+
     // ==================== Guest User Lambda Functions ====================
 
     // Create Guest Session
@@ -1371,6 +1432,15 @@ export class ApiLambdaStack extends cdk.Stack {
       }
     );
 
+    // レポート生成API統合
+    const generateReportIntegration = new apigateway.LambdaIntegration(
+      this.generateReportFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
     const batchCreateGuestSessionsIntegration = new apigateway.LambdaIntegration(
       this.batchCreateGuestSessionsFunction,
       {
@@ -1509,6 +1579,14 @@ export class ApiLambdaStack extends cdk.Stack {
     // GET /api/v1/sessions/{id}/score (Get session score)
     const scoreResource = sessionIdResource.addResource('score');
     scoreResource.addMethod('GET', getScoreIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/sessions/{id}/report (Generate PDF report)
+    const reportResource = sessionIdResource.addResource('report');
+    reportResource.addMethod('POST', generateReportIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
@@ -1899,6 +1977,7 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseSecret.grantRead(this.updateAvatarFunction);
     props.databaseSecret.grantRead(this.deleteAvatarFunction);
     props.databaseSecret.grantRead(this.cloneAvatarFunction);
+    props.databaseSecret.grantRead(this.generateReportFunction);
 
     // RDSクラスターへの接続を許可
     props.databaseCluster.connections.allowDefaultPortFrom(this.registerFunction);
@@ -1917,6 +1996,7 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseCluster.connections.allowDefaultPortFrom(this.updateAvatarFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.deleteAvatarFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.cloneAvatarFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.generateReportFunction);
 
     new cdk.CfnOutput(this, 'MigrationFunctionName', {
       value: this.migrationFunction.functionName,
@@ -2010,11 +2090,23 @@ export class ApiLambdaStack extends cdk.Stack {
       description: 'Avatars API Endpoints',
     });
 
+    new cdk.CfnOutput(this, 'GenerateReportFunctionArn', {
+      value: this.generateReportFunction.functionArn,
+      description: 'Generate Report Lambda Function ARN',
+      exportName: `${props.environment}-GenerateReportFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'GenerateReportFunctionName', {
+      value: this.generateReportFunction.functionName,
+      description: 'Generate Report Lambda Function Name',
+    });
+
     new cdk.CfnOutput(this, 'SessionsEndpoints', {
       value: JSON.stringify({
         list: `${this.restApi.url}api/v1/sessions`,
         create: `${this.restApi.url}api/v1/sessions`,
         get: `${this.restApi.url}api/v1/sessions/{id}`,
+        report: `${this.restApi.url}api/v1/sessions/{id}/report`,
       }),
       description: 'Sessions API Endpoints',
     });
