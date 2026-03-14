@@ -38,12 +38,12 @@ EMPTY_VARS=()
 # =============================================================================
 
 # AWS Configuration
+# Note: AWS_REGION is automatically set by Lambda runtime, not in environment variables
 CRITICAL_VARS=(
-  "AWS_REGION"
-  "BUCKET_NAME"
+  "S3_BUCKET"
   "CLOUDFRONT_DOMAIN"
-  "DDB_CONNECTIONS_TABLE"
-  "DDB_SESSION_STATE_TABLE"
+  "CONNECTIONS_TABLE_NAME"
+  "WEBSOCKET_ENDPOINT"
 )
 
 # API Keys
