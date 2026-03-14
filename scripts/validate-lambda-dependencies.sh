@@ -66,6 +66,19 @@ check_lambda_deps() {
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     if [ -d "$lambda_dir/node_modules/$dep" ]; then
       echo -e "  ${GREEN}✓${NC} $dep"
+
+      # If @prisma/client, also check for generated client
+      if [ "$dep" = "@prisma/client" ]; then
+        TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+        if [ -d "$lambda_dir/node_modules/.prisma/client" ]; then
+          echo -e "  ${GREEN}✓${NC} .prisma/client (generated)"
+        else
+          echo -e "  ${RED}✗${NC} .prisma/client ${RED}(NOT GENERATED)${NC}"
+          echo -e "  ${YELLOW}→ Run: cd $lambda_dir && npx prisma generate${NC}"
+          missing_count=$((missing_count + 1))
+          FAILED=1
+        fi
+      fi
     else
       echo -e "  ${RED}✗${NC} $dep ${RED}(MISSING)${NC}"
       missing_count=$((missing_count + 1))
@@ -92,6 +105,7 @@ echo ""
 check_lambda_deps \
   "infrastructure/lambda/websocket/default" \
   "WebSocket Default Handler" \
+  "@prisma/client" \
   "microsoft-cognitiveservices-speech-sdk" \
   "@aws-sdk/client-bedrock-runtime" \
   "@aws-sdk/client-s3" \
