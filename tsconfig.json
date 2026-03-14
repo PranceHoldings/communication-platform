@@ -43,5 +43,16 @@
       "@prance/database/*": ["./packages/database/src/*"]
     }
   },
-  "exclude": ["node_modules", "dist", ".next", "cdk.out", "**/*.spec.ts", "**/*.test.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next",
+    "**/cdk.out",
+    "**/cdk*.out*",
+    "**/*node_modules*",
+    "**/*@aws-sdk*",
+    "**/__tests__/**",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
 }

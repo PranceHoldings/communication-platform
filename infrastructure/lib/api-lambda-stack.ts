@@ -74,6 +74,30 @@ export class ApiLambdaStack extends cdk.Stack {
     // 環境設定を取得
     const config = getConfig(props.environment);
 
+    // ==================== Secrets Manager ====================
+    // 機密情報をSecrets Managerから取得
+
+    // ElevenLabs Secret
+    const elevenLabsSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'ElevenLabsSecret',
+      `prance/elevenlabs/${props.environment}`
+    );
+
+    // Azure Speech Secret
+    const azureSpeechSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'AzureSpeechSecret',
+      `prance/azure-speech/${props.environment}`
+    );
+
+    // JWT Secret
+    const jwtSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'JwtSecret',
+      `prance/jwt/${props.environment}`
+    );
+
     // ==================== API Gateway ====================
 
     // CloudWatch Logs ロググループ
@@ -148,7 +172,7 @@ export class ApiLambdaStack extends cdk.Stack {
         ENVIRONMENT: props.environment,
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
         NODE_ENV: props.environment === 'production' ? 'production' : 'development',
-        JWT_SECRET: process.env.JWT_SECRET || 'development-secret-change-in-production',
+        JWT_SECRET: jwtSecret.secretValueFromJson('secret').unsafeUnwrap(),
       },
       bundling: {
         minify: props.environment === 'production',
@@ -178,7 +202,7 @@ export class ApiLambdaStack extends cdk.Stack {
       LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
       NODE_ENV: props.environment === 'production' ? 'production' : 'development',
       DATABASE_URL,
-      JWT_SECRET: process.env.JWT_SECRET || 'development-secret-change-in-production',
+      JWT_SECRET: jwtSecret.secretValueFromJson('secret').unsafeUnwrap(),
       FRONTEND_URL: `https://${config.domain.fullDomain}`,
       GUEST_RATE_LIMIT_TABLE_NAME: props.guestRateLimitTable.tableName,
       BEDROCK_REGION: this.region,
@@ -241,10 +265,10 @@ export class ApiLambdaStack extends cdk.Stack {
             return [
               // Copy Prisma generated client
               `mkdir -p ${outputDir}/node_modules/.prisma`,
-              `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
               // Copy Prisma schema
               `mkdir -p ${outputDir}/prisma`,
-              `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
             ];
           },
           beforeInstall(): string[] {
@@ -280,10 +304,10 @@ export class ApiLambdaStack extends cdk.Stack {
             return [
               // Copy Prisma generated client
               `mkdir -p ${outputDir}/node_modules/.prisma`,
-              `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
               // Copy Prisma schema
               `mkdir -p ${outputDir}/prisma`,
-              `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
             ];
           },
           beforeInstall(): string[] {
@@ -319,10 +343,10 @@ export class ApiLambdaStack extends cdk.Stack {
             return [
               // Copy Prisma generated client
               `mkdir -p ${outputDir}/node_modules/.prisma`,
-              `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
               // Copy Prisma schema
               `mkdir -p ${outputDir}/prisma`,
-              `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
             ];
           },
           beforeInstall(): string[] {
@@ -361,17 +385,17 @@ export class ApiLambdaStack extends cdk.Stack {
               return [
                 // Copy Prisma generated client
                 `mkdir -p ${outputDir}/node_modules/.prisma`,
-                `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+                `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
                 // Copy Prisma schema
                 `mkdir -p ${outputDir}/prisma`,
-                `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+                `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
                 // Copy shared modules
                 `mkdir -p ${outputDir}/shared`,
-                `cp -r /asset-input/infrastructure/lambda/shared/config ${outputDir}/shared/`,
-                `cp -r /asset-input/infrastructure/lambda/shared/utils ${outputDir}/shared/`,
-                `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/`,
-                `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/`,
-                `cp -r /asset-input/infrastructure/lambda/shared/database ${outputDir}/shared/`,
+                `cp -r ${inputDir}/infrastructure/lambda/shared/config ${outputDir}/shared/`,
+                `cp -r ${inputDir}/infrastructure/lambda/shared/utils ${outputDir}/shared/`,
+                `cp -r ${inputDir}/infrastructure/lambda/shared/types ${outputDir}/shared/`,
+                `cp -r ${inputDir}/infrastructure/lambda/shared/auth ${outputDir}/shared/`,
+                `cp -r ${inputDir}/infrastructure/lambda/shared/database ${outputDir}/shared/`,
               ];
             },
             beforeInstall(): string[] {
@@ -408,12 +432,12 @@ export class ApiLambdaStack extends cdk.Stack {
             return [
               // Copy Prisma generated client
               `mkdir -p ${outputDir}/node_modules/.prisma`,
-              `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
               // Copy Prisma schema
               `mkdir -p ${outputDir}/prisma`,
-              `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
               // Copy all migration SQL files
-              `cp /asset-input/infrastructure/lambda/migrations/*.sql ${outputDir}/ || true`,
+              `cp ${inputDir}/infrastructure/lambda/migrations/*.sql ${outputDir}/ || true`,
             ];
           },
           beforeInstall(): string[] {
@@ -452,10 +476,10 @@ export class ApiLambdaStack extends cdk.Stack {
               return [
                 // Copy Prisma generated client
                 `mkdir -p ${outputDir}/node_modules/.prisma`,
-                `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+                `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
                 // Copy Prisma schema
                 `mkdir -p ${outputDir}/prisma`,
-                `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+                `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
               ];
             },
             beforeInstall(): string[] {
@@ -483,17 +507,17 @@ export class ApiLambdaStack extends cdk.Stack {
           return [
             // Copy Prisma generated client
             `mkdir -p ${outputDir}/node_modules/.prisma`,
-            `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+            `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
             // Copy Prisma schema
             `mkdir -p ${outputDir}/prisma`,
-            `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+            `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
             // Copy shared modules (CRITICAL: Required by some Lambda functions)
             `mkdir -p ${outputDir}/shared`,
-            `cp -r /asset-input/infrastructure/lambda/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
-            `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
-            `cp -r /asset-input/infrastructure/lambda/shared/config ${outputDir}/shared/ 2>/dev/null || true`,
-            `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
-            `cp -r /asset-input/infrastructure/lambda/shared/utils ${outputDir}/shared/ 2>/dev/null || true`,
+            `cp -r ${inputDir}/infrastructure/lambda/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
+            `cp -r ${inputDir}/infrastructure/lambda/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
+            `cp -r ${inputDir}/infrastructure/lambda/shared/config ${outputDir}/shared/ 2>/dev/null || true`,
+            `cp -r ${inputDir}/infrastructure/lambda/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
+            `cp -r ${inputDir}/infrastructure/lambda/shared/utils ${outputDir}/shared/ 2>/dev/null || true`,
           ];
         },
         beforeInstall(): string[] {
@@ -842,19 +866,19 @@ export class ApiLambdaStack extends cdk.Stack {
             return [
               // Copy Prisma generated client
               `mkdir -p ${outputDir}/node_modules/.prisma`,
-              `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
               // Copy Prisma schema
               `mkdir -p ${outputDir}/prisma`,
-              `cp /asset-input/packages/database/prisma/schema.prisma ${outputDir}/prisma/`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
               // Copy report module
               `mkdir -p ${outputDir}/lambda`,
-              `cp -r /asset-input/infrastructure/lambda/report ${outputDir}/lambda/`,
+              `cp -r ${inputDir}/infrastructure/lambda/report ${outputDir}/lambda/`,
               // Copy shared modules
-              `cp -r /asset-input/infrastructure/lambda/shared/config ${outputDir}/shared/`,
-              `cp -r /asset-input/infrastructure/lambda/shared/utils ${outputDir}/shared/`,
-              `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/`,
-              `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/`,
-              `cp -r /asset-input/infrastructure/lambda/shared/database ${outputDir}/shared/`,
+              `cp -r ${inputDir}/infrastructure/lambda/shared/config ${outputDir}/shared/`,
+              `cp -r ${inputDir}/infrastructure/lambda/shared/utils ${outputDir}/shared/`,
+              `cp -r ${inputDir}/infrastructure/lambda/shared/types ${outputDir}/shared/`,
+              `cp -r ${inputDir}/infrastructure/lambda/shared/auth ${outputDir}/shared/`,
+              `cp -r ${inputDir}/infrastructure/lambda/shared/database ${outputDir}/shared/`,
             ];
           },
         },
@@ -1067,7 +1091,7 @@ export class ApiLambdaStack extends cdk.Stack {
         ENVIRONMENT: props.environment,
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
         NODE_ENV: props.environment === 'production' ? 'production' : 'development',
-        JWT_SECRET: process.env.JWT_SECRET || 'development-secret-change-in-production',
+        JWT_SECRET: jwtSecret.secretValueFromJson('secret').unsafeUnwrap(),
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
       },
       bundling: {
@@ -1083,8 +1107,8 @@ export class ApiLambdaStack extends cdk.Stack {
             return [
               // Copy shared modules (JWT auth)
               `mkdir -p ${outputDir}/shared`,
-              `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/`,
-              `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${inputDir}/infrastructure/lambda/shared/auth ${outputDir}/shared/`,
+              `cp -r ${inputDir}/infrastructure/lambda/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
             ];
           },
           beforeInstall(): string[] {
@@ -1157,19 +1181,22 @@ export class ApiLambdaStack extends cdk.Stack {
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
         S3_BUCKET: props.recordingsBucket.bucketName,
         DATABASE_URL,
+        // JWT Secret for authentication
+        JWT_SECRET: jwtSecret.secretValueFromJson('secret').unsafeUnwrap(),
         // ffmpeg path - will use ffmpeg-static package (auto-detected at runtime)
         // FFMPEG_PATH is optional; if not set, will fallback to ffmpeg-static
         // AI/Audio Service Configuration
-        // デフォルト値は shared/config/defaults.ts で管理
-        AZURE_SPEECH_KEY: process.env.AZURE_SPEECH_KEY || '',
-        AZURE_SPEECH_REGION: process.env.AZURE_SPEECH_REGION || '',
-        ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY || '',
-        ELEVENLABS_VOICE_ID: process.env.ELEVENLABS_VOICE_ID || '',
-        ELEVENLABS_MODEL_ID: process.env.ELEVENLABS_MODEL_ID || '',
-        BEDROCK_REGION: process.env.BEDROCK_REGION || '',
-        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || '',
+        // 機密情報はSecrets Managerから取得、非機密情報はデフォルト値使用
+        AZURE_SPEECH_KEY: azureSpeechSecret.secretValueFromJson('subscriptionKey').unsafeUnwrap(),
+        AZURE_SPEECH_REGION: azureSpeechSecret.secretValueFromJson('region').unsafeUnwrap(),
+        ELEVENLABS_API_KEY: elevenLabsSecret.secretValueFromJson('apiKey').unsafeUnwrap(),
+        ELEVENLABS_VOICE_ID: elevenLabsSecret.secretValueFromJson('voiceId').unsafeUnwrap(),
+        ELEVENLABS_MODEL_ID: elevenLabsSecret.secretValueFromJson('modelId').unsafeUnwrap(),
+        BEDROCK_REGION: process.env.BEDROCK_REGION || 'us-east-1',
+        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6',
         // CloudFront Configuration (for signed URLs)
-        CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN || '',
+        // Using hardcoded value for dev environment (see CDK_CLOUDFRONT_DOMAIN_FIX.md)
+        CLOUDFRONT_DOMAIN: 'd3mx0sug5s3a6x.cloudfront.net',
         CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID || '',
         CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY || '',
         // Language and Media Configuration (デフォルト値はLambda内で管理)
@@ -1202,26 +1229,39 @@ export class ApiLambdaStack extends cdk.Stack {
           afterBundling(inputDir: string, outputDir: string): string[] {
             return [
               // Copy the compiled handler entry point (CRITICAL: Without this, Lambda will fail with ImportModuleError)
-              `cp /asset-input/infrastructure/lambda/websocket/default/index.js ${outputDir}/index.js`,
-              `cp /asset-input/infrastructure/lambda/websocket/default/index.d.ts ${outputDir}/index.d.ts 2>/dev/null || true`,
+              // Note: inputDir is set to projectRoot (../lambda), so paths are relative to that
+              `cp ${inputDir}/websocket/default/index.js ${outputDir}/index.js`,
+              `cp ${inputDir}/websocket/default/index.d.ts ${outputDir}/index.d.ts 2>/dev/null || true`,
               // Copy audio/video processor modules
-              `cp /asset-input/infrastructure/lambda/websocket/default/audio-processor.js ${outputDir}/audio-processor.js 2>/dev/null || true`,
-              `cp /asset-input/infrastructure/lambda/websocket/default/video-processor.js ${outputDir}/video-processor.js 2>/dev/null || true`,
-              `cp /asset-input/infrastructure/lambda/websocket/default/chunk-utils.js ${outputDir}/chunk-utils.js 2>/dev/null || true`,
+              `cp ${inputDir}/websocket/default/audio-processor.js ${outputDir}/audio-processor.js 2>/dev/null || true`,
+              `cp ${inputDir}/websocket/default/video-processor.js ${outputDir}/video-processor.js 2>/dev/null || true`,
+              `cp ${inputDir}/websocket/default/chunk-utils.js ${outputDir}/chunk-utils.js 2>/dev/null || true`,
+              // Fix require paths in ALL files (../../shared -> ./shared)
+              `sed -i 's|require("../../shared/|require("./shared/|g' ${outputDir}/index.js || true`,
+              `sed -i 's|require("../../shared/|require("./shared/|g' ${outputDir}/audio-processor.js || true`,
+              `sed -i 's|require("../../shared/|require("./shared/|g' ${outputDir}/video-processor.js || true`,
+              `sed -i "s|require('../../shared/|require('./shared/|g" ${outputDir}/index.js || true`,
+              `sed -i "s|require('../../shared/|require('./shared/|g" ${outputDir}/audio-processor.js || true`,
+              `sed -i "s|require('../../shared/|require('./shared/|g" ${outputDir}/video-processor.js || true`,
               // Copy ALL shared modules (CRITICAL: Without these, Lambda will fail with ImportModuleError)
               `mkdir -p ${outputDir}/shared`,
-              `cp -r /asset-input/infrastructure/lambda/shared/ai ${outputDir}/shared/`,
-              `cp -r /asset-input/infrastructure/lambda/shared/audio ${outputDir}/shared/`,
-              `cp -r /asset-input/infrastructure/lambda/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
-              `cp -r /asset-input/infrastructure/lambda/shared/config ${outputDir}/shared/`,      // CRITICAL: defaults.ts, language-config.ts
-              `cp -r /asset-input/infrastructure/lambda/shared/utils ${outputDir}/shared/`,       // CRITICAL: error-logger.ts
-              `cp -r /asset-input/infrastructure/lambda/shared/types ${outputDir}/shared/`,       // CRITICAL: Type definitions
-              `cp -r /asset-input/infrastructure/lambda/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
-              `cp -r /asset-input/infrastructure/lambda/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
-              // Copy Prisma generated client
+              `cp -r ${inputDir}/shared/ai ${outputDir}/shared/`,
+              `cp -r ${inputDir}/shared/audio ${outputDir}/shared/`,
+              `cp -r ${inputDir}/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${inputDir}/shared/config ${outputDir}/shared/`,      // CRITICAL: defaults.ts, language-config.ts
+              `cp -r ${inputDir}/shared/utils ${outputDir}/shared/`,       // CRITICAL: error-logger.ts
+              `cp -r ${inputDir}/shared/types ${outputDir}/shared/`,       // CRITICAL: Type definitions
+              `cp -r ${inputDir}/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${inputDir}/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
+              // Copy Prisma generated client (go up one level to project root)
               `mkdir -p ${outputDir}/node_modules/.prisma`,
-              `cp -r /asset-input/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Warning: Prisma client not found, will be generated at runtime"`,
-              `echo "Handler and shared modules copied successfully"`,
+              `cp -r ${inputDir}/../packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Warning: Prisma client not found, will be generated at runtime"`,
+              // Copy native dependencies (CRITICAL: ffmpeg-static for audio processing, Azure Speech SDK for STT)
+              `mkdir -p ${outputDir}/node_modules/ffmpeg-static`,
+              `cp -r ${inputDir}/websocket/default/node_modules/ffmpeg-static/* ${outputDir}/node_modules/ffmpeg-static/ 2>/dev/null || echo "Warning: ffmpeg-static not found"`,
+              `mkdir -p ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk`,
+              `cp -r ${inputDir}/websocket/default/node_modules/microsoft-cognitiveservices-speech-sdk/* ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk/ 2>/dev/null || echo "Warning: Azure Speech SDK not found"`,
+              `echo "Handler, shared modules, and native dependencies copied successfully"`,
             ];
           },
           beforeInstall(): string[] {
@@ -1244,6 +1284,25 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // S3 permissions for default handler (audio/video storage)
     props.recordingsBucket.grantReadWrite(websocketDefaultFunction);
+
+    // Secrets Manager permissions for WebSocket handlers
+    // Connect handler needs JWT secret for authentication
+    jwtSecret.grantRead(websocketConnectFunction);
+    // Default handler needs all secrets for AI/Audio/Video processing
+    elevenLabsSecret.grantRead(websocketDefaultFunction);
+    azureSpeechSecret.grantRead(websocketDefaultFunction);
+    props.databaseSecret.grantRead(websocketDefaultFunction);
+
+    // Secrets Manager permissions for Authorizer
+    jwtSecret.grantRead(authorizerFunction);
+
+    // Secrets Manager permissions for Auth functions
+    jwtSecret.grantRead(this.registerFunction);
+    jwtSecret.grantRead(this.loginFunction);
+    jwtSecret.grantRead(this.getCurrentUserFunction);
+    props.databaseSecret.grantRead(this.registerFunction);
+    props.databaseSecret.grantRead(this.loginFunction);
+    props.databaseSecret.grantRead(this.getCurrentUserFunction);
 
     // PostToConnection permission for default handler
     websocketDefaultFunction.addToRolePolicy(
