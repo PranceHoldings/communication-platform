@@ -722,27 +722,39 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
       case 'video_chunk_part':
         // Handle split video chunk parts (to overcome 32KB WebSocket limit)
+        // Phase 1.6: Added sequence number tracking and hash validation
         const chunkId = message.chunkId as string;
+        const sequenceNumber = message.sequenceNumber as number;
         const partIndex = message.partIndex as number;
         const totalParts = message.totalParts as number;
         const partData = message.data as string;
+        const chunkHash = message.hash as string;
         const partTimestamp = message.timestamp as number;
         const partSessionId = connectionData?.sessionId || 'unknown';
 
         console.log('Received video chunk part:', {
           chunkId,
+          sequenceNumber,
           partIndex,
           totalParts,
           dataSize: partData ? partData.length : 0,
+          hash: chunkHash ? chunkHash.substring(0, 16) + '...' : 'missing',
           timestamp: partTimestamp,
           sessionId: partSessionId,
         });
 
         try {
-          // Save this part directly to S3 (avoid DynamoDB 400KB limit)
+          // Phase 1.6: Validate hash for integrity
           const { getTempChunkPartKey } = await import('../../shared/config/s3-paths');
           const partKey = getTempChunkPartKey(partSessionId, chunkId, partIndex);
           const partBuffer = Buffer.from(partData, 'base64');
+
+          // Only validate hash on first part (hash is for complete chunk, not individual parts)
+          if (partIndex === 0 && chunkHash) {
+            const crypto = require('crypto');
+            // We'll validate the complete chunk hash after reassembly
+            console.log(`Will validate hash after reassembly: ${chunkHash.substring(0, 16)}...`);
+          }
 
           await s3Client.send(
             new PutObjectCommand({
@@ -752,8 +764,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               ContentType: 'application/octet-stream',
               Metadata: {
                 chunkId,
+                sequenceNumber: sequenceNumber.toString(),
                 partIndex: partIndex.toString(),
                 totalParts: totalParts.toString(),
+                hash: chunkHash || '',
                 timestamp: partTimestamp.toString(),
               },
             })
@@ -843,6 +857,30 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                 combinedSize: videoBuffer.length,
               });
 
+              // Phase 1.6: Validate hash after reassembly
+              if (chunkHash) {
+                const crypto = require('crypto');
+                const calculatedHash = crypto.createHash('sha256').update(videoBuffer).digest('hex');
+
+                if (calculatedHash !== chunkHash) {
+                  console.error(`[video_chunk_part] Hash mismatch for chunk ${chunkId}`);
+                  console.error(`  Expected: ${chunkHash}`);
+                  console.error(`  Calculated: ${calculatedHash}`);
+
+                  // Send error response
+                  await sendToConnection(connectionId, {
+                    type: 'video_chunk_error',
+                    chunkId,
+                    error: 'HASH_MISMATCH',
+                    message: 'Video chunk data corrupted during transmission',
+                  });
+
+                  throw new Error('Hash mismatch');
+                }
+
+                console.log(`Hash validated successfully: ${calculatedHash.substring(0, 16)}...`);
+              }
+
               // Save final video chunk to S3
               videoChunkCount = (connectionData?.videoChunksCount || 0) + 1;
               const videoProc = getVideoProcessor();
@@ -851,13 +889,15 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                 partSessionId,
                 videoBuffer,
                 partTimestamp,
-                videoChunkCount
+                videoChunkCount,
+                sequenceNumber
               );
 
               console.log('Saved reassembled video chunk to S3:', {
                 sessionId: partSessionId,
                 chunkCount: videoChunkCount,
                 chunkId,
+                sequenceNumber,
               });
 
               // Clean up temporary parts from S3
@@ -913,10 +953,11 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                 videoChunksCount: videoChunkCount,
               });
 
-              // Send acknowledgment
+              // Send acknowledgment (Phase 1.6: Added sequence number)
               await sendToConnection(connectionId, {
                 type: 'video_chunk_ack',
                 chunkId,
+                sequenceNumber,
                 chunksReceived: videoChunkCount,
                 timestamp: partTimestamp,
               });

@@ -1,4 +1,9 @@
 {
+  "Prance-dev-DNS": {
+    "HostedZoneName": "prance.jp",
+    "HostedZoneId": "Z061444035YYGCPJ5IJT0",
+    "ApplicationDomain": "dev.app.prance.jp"
+  },
   "Prance-dev-Network": {
     "ExportsOutputRefPranceVpc36F975A91BB27C87": "vpc-03b010274210041f2",
     "ExportsOutputRefPranceVpcPrivateSubnet2SubnetC6814683A020AEB3": "subnet-0fc7f2087efc62e58",
@@ -9,14 +14,6 @@
     "ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB": "sg-097c26918446f958a",
     "LambdaSecurityGroupId": "sg-097c26918446f958a",
     "AuroraSecurityGroupId": "sg-0fd983e1ed0ac0064"
-  },
-  "Prance-dev-Storage": {
-    "ExportsOutputRefRecordingsBucketAA52F4997539F77B": "prance-recordings-dev-010438500933",
-    "RecordingsBucketName": "prance-recordings-dev-010438500933",
-    "AvatarsBucketName": "prance-avatars-dev-010438500933",
-    "ExportsOutputFnGetAttRecordingsBucketAA52F499ArnCFFA8A17": "arn:aws:s3:::prance-recordings-dev-010438500933",
-    "CDNDomainName": "d3mx0sug5s3a6x.cloudfront.net",
-    "CDNDistributionId": "E1HIO2L0WNT8LT"
   },
   "Prance-dev-DynamoDB": {
     "RecordingsTableName": "prance-recordings-dev",
@@ -29,6 +26,17 @@
     "ExportsOutputRefWebSocketConnectionsTable7F0028CC88CF439E": "prance-websocket-connections-dev",
     "ExportsOutputFnGetAttWebSocketConnectionsTable7F0028CCArn489CA596": "arn:aws:dynamodb:us-east-1:010438500933:table/prance-websocket-connections-dev"
   },
+  "Prance-dev-GuestRateLimit": {
+    "GuestRateLimitTableName": "prance-guest-rate-limits-dev",
+    "GuestRateLimitTableArn": "arn:aws:dynamodb:us-east-1:010438500933:table/prance-guest-rate-limits-dev",
+    "ExportsOutputRefGuestRateLimitTable1C8638716C80EEE4": "prance-guest-rate-limits-dev",
+    "ExportsOutputFnGetAttGuestRateLimitTable1C863871Arn54A5CC1C": "arn:aws:dynamodb:us-east-1:010438500933:table/prance-guest-rate-limits-dev"
+  },
+  "Prance-dev-Certificate": {
+    "ExportsOutputRefCertificate4E7ABB08F7C8AF50": "arn:aws:acm:us-east-1:010438500933:certificate/9af71f60-89fb-4e79-be1a-415a858e3859",
+    "CertificateArn": "arn:aws:acm:us-east-1:010438500933:certificate/9af71f60-89fb-4e79-be1a-415a858e3859",
+    "CertificateDomain": "dev.app.prance.jp"
+  },
   "Prance-dev-Database": {
     "SecretArn": "arn:aws:secretsmanager:us-east-1:010438500933:secret:prance/aurora/dev-rFYGXy",
     "ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07": "5432",
@@ -36,6 +44,16 @@
     "ClusterReadEndpoint": "prance-dev-database-auroracluster23d869c0-q5mfamjdr2yp.cluster-ro-cc92ikiosj07.us-east-1.rds.amazonaws.com",
     "ExportsOutputRefAuroraSecret41E6E877B1EAA24F": "arn:aws:secretsmanager:us-east-1:010438500933:secret:prance/aurora/dev-rFYGXy",
     "ClusterEndpoint": "prance-dev-database-auroracluster23d869c0-q5mfamjdr2yp.cluster-cc92ikiosj07.us-east-1.rds.amazonaws.com"
+  },
+  "Prance-dev-Storage": {
+    "ApplicationURL": "https://dev.app.prance.jp",
+    "ExportsOutputRefRecordingsBucketAA52F4997539F77B": "prance-recordings-dev-010438500933",
+    "CustomDomainName": "dev.app.prance.jp",
+    "RecordingsBucketName": "prance-recordings-dev-010438500933",
+    "AvatarsBucketName": "prance-avatars-dev-010438500933",
+    "ExportsOutputFnGetAttRecordingsBucketAA52F499ArnCFFA8A17": "arn:aws:s3:::prance-recordings-dev-010438500933",
+    "CDNDomainName": "d3mx0sug5s3a6x.cloudfront.net",
+    "CDNDistributionId": "E1HIO2L0WNT8LT"
   },
   "Prance-dev-ApiLambda": {
     "CreateSessionFunctionArn": "arn:aws:lambda:us-east-1:010438500933:function:prance-sessions-create-dev",

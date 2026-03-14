@@ -290,9 +290,11 @@ export interface AudioChunkMessage extends WebSocketMessageBase {
 export interface VideoChunkPartMessage extends WebSocketMessageBase {
   type: 'video_chunk_part';
   chunkId: string;
+  sequenceNumber: number; // Global sequence number for gap detection
   partIndex: number;
   totalParts: number;
   data: string; // Base64 encoded
+  hash: string; // SHA-256 hash (hex) for integrity validation
   timestamp: number;
 }
 
@@ -311,9 +313,28 @@ export interface AudioPartAckMessage extends WebSocketMessageBase {
  */
 export interface VideoChunkAckMessage extends WebSocketMessageBase {
   type: 'video_chunk_ack';
-  chunkId?: string;
+  chunkId: string;
+  sequenceNumber: number; // Acknowledged sequence number
   chunksReceived: number;
   timestamp: number;
+}
+
+/**
+ * ビデオチャンク欠損通知メッセージ（サーバー → クライアント）
+ */
+export interface VideoChunkMissingMessage extends WebSocketMessageBase {
+  type: 'video_chunk_missing';
+  missingSequences: number[];
+}
+
+/**
+ * ビデオチャンクエラーメッセージ（サーバー → クライアント）
+ */
+export interface VideoChunkErrorMessage extends WebSocketMessageBase {
+  type: 'video_chunk_error';
+  chunkId: string;
+  error: 'HASH_MISMATCH' | 'SEQUENCE_ERROR' | 'STORAGE_ERROR';
+  message: string;
 }
 
 /**
@@ -477,6 +498,8 @@ export type ServerToClientMessage =
   | AuthenticatedMessage
   | AudioPartAckMessage
   | VideoChunkAckMessage
+  | VideoChunkMissingMessage
+  | VideoChunkErrorMessage
   | TranscriptMessage
   | AvatarResponseMessage
   | AudioResponseMessage

@@ -1,0 +1,494 @@
+// Prance Communication Platform - Database Schema (Alpha版)
+// Generator: Prisma Client
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 組織・ユーザー管理
+// ============================================================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  settings  Json?    @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users         User[]
+  avatars       Avatar[]
+  scenarios     Scenario[]
+  sessions      Session[]
+  guestSessions GuestSession[]
+
+  @@map("organizations")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  orgId           String    @map("org_id")
+  email           String    @unique
+  name            String
+  role            UserRole  @default(CLIENT_USER)
+  passwordHash    String?   @map("password_hash")
+  cognitoSub      String?   @unique @map("cognito_sub")
+  profileJson     Json?     @map("profile_json")
+  preferencesJson Json?     @map("preferences_json")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  lastLoginAt     DateTime? @map("last_login_at")
+
+  organization         Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sessions             Session[]
+  avatars              Avatar[]
+  createdGuestSessions GuestSession[]
+
+  @@index([orgId])
+  @@index([email])
+  @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  CLIENT_ADMIN
+  CLIENT_USER
+  GUEST
+}
+
+// ============================================================
+// アバター・音声
+// ============================================================
+
+model Avatar {
+  id           String       @id @default(uuid())
+  userId       String?      @map("user_id")
+  orgId        String       @map("org_id")
+  name         String
+  type         AvatarType
+  style        AvatarStyle
+  source       AvatarSource
+  modelUrl     String       @map("model_url")
+  thumbnailUrl String?      @map("thumbnail_url")
+  configJson   Json?        @map("config_json")
+  tags         String[]     @default([])
+  visibility   Visibility   @default(PRIVATE)
+  allowCloning Boolean      @default(false) @map("allow_cloning")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization  Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sessions      Session[]
+  guestSessions GuestSession[]
+
+  @@index([orgId])
+  @@index([userId])
+  @@index([visibility])
+  @@map("avatars")
+}
+
+enum AvatarType {
+  TWO_D
+  THREE_D
+}
+
+enum AvatarStyle {
+  ANIME
+  REALISTIC
+}
+
+enum AvatarSource {
+  PRESET
+  GENERATED
+  ORG_CUSTOM
+}
+
+enum Visibility {
+  PRIVATE
+  ORGANIZATION
+  PUBLIC
+}
+
+// ============================================================
+// シナリオ
+// ============================================================
+
+model Scenario {
+  id         String     @id @default(uuid())
+  userId     String?    @map("user_id")
+  orgId      String     @map("org_id")
+  title      String
+  category   String
+  language   String     @default("ja")
+  visibility Visibility @default(PRIVATE)
+  configJson Json       @map("config_json")
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  // 無音時間管理（Silence Management）
+  initialGreeting     String?  @map("initial_greeting") @db.Text // AI初回挨拶テキスト
+  silenceTimeout      Int?     @map("silence_timeout") // 無音タイマー（秒、null = use org default）
+  enableSilencePrompt Boolean? @map("enable_silence_prompt") // 無音促し有効/無効（null = use org default）
+  showSilenceTimer    Boolean? @map("show_silence_timer") // UIにタイマー表示（null = use org default）
+  silenceThreshold    Float?   @map("silence_threshold") // 音量閾値（0.01-0.2、null = use org default）
+  minSilenceDuration  Int?     @map("min_silence_duration") // 最小無音継続時間（ms、null = use org default）
+
+  organization  Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sessions      Session[]
+  guestSessions GuestSession[]
+
+  @@index([orgId])
+  @@index([category])
+  @@map("scenarios")
+}
+
+// ============================================================
+// セッション・録画
+// ============================================================
+
+model Session {
+  id           String        @id @default(uuid())
+  userId       String        @map("user_id")
+  orgId        String        @map("org_id")
+  scenarioId   String?       @map("scenario_id")
+  avatarId     String?       @map("avatar_id")
+  status       SessionStatus @default(ACTIVE)
+  startedAt    DateTime      @default(now()) @map("started_at")
+  endedAt      DateTime?     @map("ended_at")
+  durationSec  Int?          @map("duration_sec")
+  metadataJson Json?         @map("metadata_json")
+
+  // Guest session support
+  isGuestSession Boolean @default(false) @map("is_guest_session")
+  guestSessionId String? @unique @map("guest_session_id")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  scenario     Scenario?     @relation(fields: [scenarioId], references: [id], onDelete: SetNull)
+  avatar       Avatar?       @relation(fields: [avatarId], references: [id], onDelete: SetNull)
+  guestSession GuestSession?
+
+  recordings      Recording[]
+  transcripts     Transcript[]
+  emotionAnalyses EmotionAnalysis[]
+  audioAnalyses   AudioAnalysis[]
+  score           SessionScore?
+
+  @@index([userId])
+  @@index([orgId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([isGuestSession])
+  @@index([guestSessionId])
+  @@map("sessions")
+}
+
+enum SessionStatus {
+  ACTIVE
+  PROCESSING
+  COMPLETED
+  ERROR
+}
+
+model Recording {
+  id               String           @id @default(uuid())
+  sessionId        String           @map("session_id")
+  type             RecordingType
+  s3Key            String           @map("s3_key")
+  s3Url            String           @map("s3_url")
+  cdnUrl           String?          @map("cdn_url")
+  thumbnailUrl     String?          @map("thumbnail_url")
+  fileSizeBytes    BigInt           @map("file_size_bytes")
+  durationSec      Int?             @map("duration_sec")
+  format           String?          @default("webm")
+  resolution       String?          @default("1280x720")
+  videoChunksCount Int?             @map("video_chunks_count")
+  processingStatus ProcessingStatus @default(PENDING) @map("processing_status")
+  processedAt      DateTime?        @map("processed_at")
+  errorMessage     String?          @map("error_message")
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  session         Session           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  emotionAnalyses EmotionAnalysis[]
+
+  @@index([sessionId])
+  @@index([processingStatus])
+  @@map("recordings")
+}
+
+enum RecordingType {
+  USER
+  AVATAR
+  COMBINED
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  ERROR
+}
+
+model Transcript {
+  id             String     @id @default(uuid())
+  sessionId      String     @map("session_id")
+  speaker        Speaker
+  text           String
+  timestampStart Float      @map("timestamp_start")
+  timestampEnd   Float      @map("timestamp_end")
+  confidence     Float?
+  highlight      Highlight?
+
+  session       Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  audioAnalyses AudioAnalysis[]
+
+  @@index([sessionId])
+  @@index([timestampStart])
+  @@map("transcripts")
+}
+
+enum Speaker {
+  AI
+  USER
+}
+
+enum Highlight {
+  POSITIVE
+  NEGATIVE
+  IMPORTANT
+}
+
+// ============================================================
+// 感情・表情解析
+// ============================================================
+
+model EmotionAnalysis {
+  id          String  @id @default(uuid())
+  sessionId   String  @map("session_id")
+  recordingId String? @map("recording_id")
+  timestamp   Float // セッション開始からの秒数
+  frameUrl    String? @map("frame_url") // 解析に使用したフレームのS3 URL
+
+  // AWS Rekognition - Emotions
+  emotions        Json // [{ Type: 'HAPPY', Confidence: 95.5 }, ...]
+  dominantEmotion String? @map("dominant_emotion") // 最も強い感情
+
+  // AWS Rekognition - Face Details
+  ageRange         Json?   @map("age_range") // { Low: 25, High: 32 }
+  gender           String? // 'Male' | 'Female'
+  genderConfidence Float?  @map("gender_confidence")
+
+  // AWS Rekognition - Face Quality
+  eyesOpen            Boolean? @map("eyes_open")
+  eyesOpenConfidence  Float?   @map("eyes_open_confidence")
+  mouthOpen           Boolean? @map("mouth_open")
+  mouthOpenConfidence Float?   @map("mouth_open_confidence")
+
+  // AWS Rekognition - Pose (Head orientation)
+  pose Json? // { Pitch, Roll, Yaw }
+
+  // AWS Rekognition - Overall quality
+  confidence Float // 全体の信頼度
+  brightness Float? // 明るさ
+  sharpness  Float? // シャープネス
+
+  // Processing metadata
+  processingTimeMs Int?     @map("processing_time_ms")
+  errorMessage     String?  @map("error_message")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  session   Session    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  recording Recording? @relation(fields: [recordingId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([recordingId])
+  @@index([timestamp])
+  @@map("emotion_analyses")
+}
+
+// ============================================================
+// 音声特徴解析
+// ============================================================
+
+model AudioAnalysis {
+  id           String  @id @default(uuid())
+  sessionId    String  @map("session_id")
+  transcriptId String? @map("transcript_id")
+  timestamp    Float // セッション開始からの秒数
+
+  // 音声特徴量
+  pitch          Float? // 平均ピッチ (Hz)
+  pitchVariance  Float? @map("pitch_variance") // ピッチの分散
+  volume         Float? // 平均音量 (dB)
+  volumeVariance Float? @map("volume_variance") // 音量の分散
+  speakingRate   Float? @map("speaking_rate") // 話速 (words per minute)
+  pauseCount     Int?   @map("pause_count") // ポーズ回数
+  pauseDuration  Float? @map("pause_duration") // 平均ポーズ時間 (秒)
+
+  // 音声品質
+  clarity    Float? // 音声の明瞭度 (0-1)
+  confidence Float? // STT信頼度スコア
+  snr        Float? // Signal-to-Noise Ratio (dB)
+
+  // フィラー語
+  fillerWords Json? @map("filler_words") // ["ええと", "あの", "um", "uh"]
+  fillerCount Int?  @map("filler_count")
+
+  // メタデータ
+  audioUrl         String?  @map("audio_url") // 元音声のS3 URL
+  duration         Float? // 音声の長さ (秒)
+  processingTimeMs Int?     @map("processing_time_ms")
+  errorMessage     String?  @map("error_message")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  session    Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  transcript Transcript? @relation(fields: [transcriptId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([transcriptId])
+  @@index([timestamp])
+  @@map("audio_analyses")
+}
+
+// ============================================================
+// セッションスコア
+// ============================================================
+
+model SessionScore {
+  id        String @id @default(uuid())
+  sessionId String @unique @map("session_id")
+
+  // 総合スコア
+  overallScore Float @map("overall_score") // 0-100
+
+  // カテゴリ別スコア
+  emotionScore  Float? @map("emotion_score") // 0-100
+  audioScore    Float? @map("audio_score") // 0-100
+  contentScore  Float? @map("content_score") // 0-100
+  deliveryScore Float? @map("delivery_score") // 0-100
+
+  // 詳細スコア（感情関連）
+  emotionStability  Float? @map("emotion_stability") // 感情の安定性
+  emotionPositivity Float? @map("emotion_positivity") // ポジティブさ
+  confidence        Float? // 自信
+  engagement        Float? // エンゲージメント
+
+  // 詳細スコア（音声関連）
+  clarity Float? // 明瞭さ
+  fluency Float? // 流暢さ
+  pacing  Float? // ペース配分
+  volume  Float? // 音量適正
+
+  // 詳細スコア（コンテンツ関連）
+  relevance    Float? // 関連性
+  structure    Float? // 構造
+  completeness Float? // 完全性
+
+  // 改善ポイント
+  strengths    Json? // ["良好な感情コントロール", "適切な話速"]
+  improvements Json? // ["フィラー語を減らす", "音量を上げる"]
+
+  // スコアリング設定
+  criteria Json? // 使用した評価基準
+  weights  Json? // 各カテゴリの重み
+
+  // メタデータ
+  calculatedAt DateTime @default(now()) @map("calculated_at")
+  version      String   @default("1.0") // スコアリングアルゴリズムのバージョン
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([overallScore])
+  @@map("session_scores")
+}
+
+// ============================================================
+// ゲストセッション管理
+// ============================================================
+
+model GuestSession {
+  id            String  @id @default(uuid())
+  orgId         String  @map("org_id")
+  creatorUserId String  @map("creator_user_id")
+  sessionId     String? @unique @map("session_id")
+  scenarioId    String  @map("scenario_id")
+  avatarId      String? @map("avatar_id")
+
+  // 認証情報
+  token   String @unique
+  pinHash String @map("pin_hash")
+
+  // ゲスト情報
+  guestName     String? @map("guest_name")
+  guestEmail    String? @map("guest_email")
+  guestMetadata Json?   @default("{}") @map("guest_metadata")
+
+  // ステータス
+  status GuestSessionStatus @default(PENDING)
+
+  // 有効期限
+  validFrom  DateTime @default(now()) @map("valid_from")
+  validUntil DateTime @map("valid_until")
+
+  // アクセス管理
+  accessCount     Int       @default(0) @map("access_count")
+  failedAttempts  Int       @default(0) @map("failed_attempts")
+  lockedUntil     DateTime? @map("locked_until")
+  firstAccessedAt DateTime? @map("first_accessed_at")
+  completedAt     DateTime? @map("completed_at")
+
+  // データ保持
+  dataRetentionDays Int?      @map("data_retention_days")
+  autoDeleteAt      DateTime? @map("auto_delete_at")
+
+  // タイムスタンプ
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // リレーション
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  creatorUser  User         @relation(fields: [creatorUserId], references: [id], onDelete: Cascade)
+  scenario     Scenario     @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  avatar       Avatar?      @relation(fields: [avatarId], references: [id], onDelete: SetNull)
+  session      Session?     @relation(fields: [sessionId], references: [id])
+
+  logs GuestSessionLog[]
+
+  @@index([orgId])
+  @@index([creatorUserId])
+  @@index([token])
+  @@index([status])
+  @@index([validUntil])
+  @@index([autoDeleteAt])
+  @@map("guest_sessions")
+}
+
+enum GuestSessionStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  REVOKED
+}
+
+model GuestSessionLog {
+  id             String   @id @default(uuid())
+  guestSessionId String   @map("guest_session_id")
+  eventType      String   @map("event_type")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  details        Json?    @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  guestSession GuestSession @relation(fields: [guestSessionId], references: [id], onDelete: Cascade)
+
+  @@index([guestSessionId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("guest_session_logs")
+}

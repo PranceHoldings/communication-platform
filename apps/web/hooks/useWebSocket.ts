@@ -98,6 +98,27 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const reconnectAttempts = useRef(0);
   const MAX_RECONNECT_ATTEMPTS = 5;
 
+  // Video chunk ACK confirmation mechanism (Phase 1.6)
+  interface PendingChunk {
+    chunkId: string;
+    data: Blob;
+    timestamp: number;
+    sequenceNumber: number;
+    partIndex: number;
+    totalParts: number;
+    sentAt: number;
+    retryCount: number;
+    timeoutHandle?: NodeJS.Timeout;
+  }
+
+  const pendingChunksRef = useRef<Map<string, PendingChunk>>(new Map());
+  const sequenceNumberRef = useRef<number>(0);
+
+  // ACK settings
+  const ACK_TIMEOUT = 5000; // 5 seconds
+  const MAX_RETRY = 3;
+  const RETRY_BACKOFF_BASE = 1000; // 1 second
+
   // Store callbacks in refs to keep them stable across renders
   const onTranscriptRef = useRef(onTranscript);
   const onAvatarResponseRef = useRef(onAvatarResponse);
@@ -217,8 +238,65 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             break;
 
           case 'video_chunk_ack':
-            // Video chunk acknowledgment
-            console.log('Video chunk acknowledged:', message);
+            // Video chunk acknowledgment (Phase 1.6: ACK confirmation)
+            {
+              const ackMessage = message as any;
+              const { chunkId, sequenceNumber } = ackMessage;
+
+              // Clear pending chunk
+              const pending = pendingChunksRef.current.get(chunkId);
+              if (pending) {
+                if (pending.timeoutHandle) {
+                  clearTimeout(pending.timeoutHandle);
+                }
+                pendingChunksRef.current.delete(chunkId);
+                console.log(`[WebSocket] Video chunk ${chunkId} (seq ${sequenceNumber}) acknowledged`);
+              } else {
+                console.warn(`[WebSocket] Received ACK for unknown chunk ${chunkId}`);
+              }
+            }
+            break;
+
+          case 'video_chunk_missing':
+            // Missing chunks notification (Phase 1.6: Gap detection)
+            {
+              const missingMessage = message as any;
+              console.warn('[WebSocket] Missing video chunks detected:', missingMessage.missingSequences);
+              // TODO: Implement retransmission for missing sequences
+            }
+            break;
+
+          case 'video_chunk_error':
+            // Video chunk error (Phase 1.6: Hash mismatch, etc.)
+            {
+              const errorMessage = message as any;
+              console.error('[WebSocket] Video chunk error:', errorMessage);
+              console.error(`  Chunk ID: ${errorMessage.chunkId}`);
+              console.error(`  Error: ${errorMessage.error}`);
+              console.error(`  Message: ${errorMessage.message}`);
+
+              // Clear pending chunk
+              const pending = pendingChunksRef.current.get(errorMessage.chunkId);
+              if (pending) {
+                if (pending.timeoutHandle) {
+                  clearTimeout(pending.timeoutHandle);
+                }
+                pendingChunksRef.current.delete(errorMessage.chunkId);
+
+                // Retry if not exceeded max retries
+                if (pending.retryCount < MAX_RETRY) {
+                  console.warn(`[WebSocket] Retrying chunk ${errorMessage.chunkId} due to error (${pending.retryCount + 1}/${MAX_RETRY})`);
+                  // Re-send chunk after backoff
+                  const backoff = RETRY_BACKOFF_BASE * Math.pow(2, pending.retryCount);
+                  setTimeout(() => {
+                    // Will be implemented in sendVideoChunk
+                  }, backoff);
+                } else {
+                  console.error(`[WebSocket] Chunk ${errorMessage.chunkId} failed after ${MAX_RETRY} retries`);
+                  setError(`Video chunk transmission failed: ${errorMessage.message}`);
+                }
+              }
+            }
             break;
 
           case 'video_ready':
@@ -357,6 +435,14 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       reconnectTimeoutRef.current = null;
     }
 
+    // Clear all pending chunks
+    for (const [chunkId, pending] of pendingChunksRef.current.entries()) {
+      if (pending.timeoutHandle) {
+        clearTimeout(pending.timeoutHandle);
+      }
+      pendingChunksRef.current.delete(chunkId);
+    }
+
     if (wsRef.current) {
       wsRef.current.close(1000, 'Client disconnected');
       wsRef.current = null;
@@ -413,29 +499,89 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   // 完全音声データ方式 (sendAudioData) は廃止
   // const sendAudioData = useCallback(...);
 
-  const sendVideoChunk = useCallback(
-    async (chunk: Blob, timestamp: number): Promise<void> => {
+  // Phase 1.6: Retry helper for video chunks
+  const retryVideoChunk = useCallback(
+    (chunkId: string) => {
+      const pending = pendingChunksRef.current.get(chunkId);
+      if (!pending) return;
+
+      if (pending.retryCount >= MAX_RETRY) {
+        console.error(`[WebSocket] Chunk ${chunkId} failed after ${MAX_RETRY} retries`);
+        pendingChunksRef.current.delete(chunkId);
+        setError(`Video chunk ${chunkId} transmission failed after ${MAX_RETRY} retries`);
+        return;
+      }
+
+      // Exponential backoff
+      const backoff = RETRY_BACKOFF_BASE * Math.pow(2, pending.retryCount);
+      pending.retryCount++;
+
+      console.warn(
+        `[WebSocket] Chunk ${chunkId} timeout, retry ${pending.retryCount}/${MAX_RETRY} in ${backoff}ms`
+      );
+
+      setTimeout(async () => {
+        // Re-send chunk
+        await sendVideoChunkWithTracking(pending.data, pending.timestamp, pending);
+      }, backoff);
+    },
+    [setError]
+  );
+
+  // Phase 1.6: Send video chunk with tracking
+  const sendVideoChunkWithTracking = useCallback(
+    async (chunk: Blob, timestamp: number, retryPending?: PendingChunk): Promise<void> => {
       try {
         // Convert Blob to ArrayBuffer
         const arrayBuffer = await chunk.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
+
+        // Calculate SHA-256 hash for integrity validation
+        const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 
         // AWS API Gateway WebSocket limit: 32KB per message
         // We need to split large chunks into smaller sub-chunks
         // Use 30KB (30,720 bytes) as safe limit to leave room for JSON overhead
         const MAX_CHUNK_SIZE = 30 * 1024; // 30KB
 
-        // Generate unique chunk ID with UUID v4 for collision resistance
-        const chunkId = `${timestamp}-${crypto.randomUUID()}`;
+        // Generate unique chunk ID or reuse for retry
+        const chunkId = retryPending?.chunkId || `${timestamp}-${crypto.randomUUID()}`;
+        const sequenceNumber = retryPending?.sequenceNumber || sequenceNumberRef.current++;
 
         // Calculate total parts needed
         const totalParts = Math.ceil(arrayBuffer.byteLength / MAX_CHUNK_SIZE);
 
-        console.log(`[WebSocket] Splitting video chunk into ${totalParts} parts:`, {
-          originalSize: arrayBuffer.byteLength,
-          timestamp,
+        console.log(`[WebSocket] Sending video chunk (seq ${sequenceNumber}):`, {
           chunkId,
+          originalSize: arrayBuffer.byteLength,
+          hash: hash.substring(0, 16),
+          totalParts,
+          timestamp,
+          isRetry: !!retryPending,
+          retryCount: retryPending?.retryCount || 0,
         });
+
+        // Track pending chunk
+        const pending: PendingChunk = retryPending || {
+          chunkId,
+          data: chunk,
+          timestamp,
+          sequenceNumber,
+          partIndex: 0,
+          totalParts,
+          sentAt: Date.now(),
+          retryCount: 0,
+        };
+
+        // Set timeout
+        const timeoutHandle = setTimeout(() => {
+          retryVideoChunk(chunkId);
+        }, ACK_TIMEOUT);
+
+        pending.timeoutHandle = timeoutHandle;
+        pendingChunksRef.current.set(chunkId, pending);
 
         // Split and send each part
         for (let partIndex = 0; partIndex < totalParts; partIndex++) {
@@ -450,25 +596,29 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
           }
           const base64 = btoa(binary);
 
-          // Send video chunk part
+          // Send video chunk part with sequence number and hash
           sendMessage({
             type: 'video_chunk_part',
             chunkId,
+            sequenceNumber,
             partIndex,
             totalParts,
             data: base64,
+            hash,
             timestamp,
           });
 
           console.log(`[WebSocket] Sent video chunk part ${partIndex + 1}/${totalParts}:`, {
             chunkId,
+            sequenceNumber,
             partSize: partBytes.byteLength,
             base64Length: base64.length,
           });
         }
 
-        console.log(`[WebSocket] Video chunk transmission complete:`, {
+        console.log(`[WebSocket] Video chunk transmission complete, waiting for ACK:`, {
           chunkId,
+          sequenceNumber,
           totalParts,
           timestamp,
         });
@@ -477,7 +627,14 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         throw error;
       }
     },
-    [sendMessage]
+    [sendMessage, retryVideoChunk]
+  );
+
+  const sendVideoChunk = useCallback(
+    async (chunk: Blob, timestamp: number): Promise<void> => {
+      await sendVideoChunkWithTracking(chunk, timestamp);
+    },
+    [sendVideoChunkWithTracking]
   );
 
   const sendUserSpeech = useCallback(

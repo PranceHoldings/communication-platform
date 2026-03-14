@@ -11,6 +11,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { MEDIA_DEFAULTS } from '../../shared/config/defaults';
+import { getFFmpegPath } from '../../shared/utils/ffmpeg-helper';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -56,12 +57,14 @@ export class VideoProcessor {
 
   /**
    * Save video chunk to S3
+   * Phase 1.6: Added sequenceNumber parameter for gap detection
    */
   async saveVideoChunk(
     sessionId: string,
     chunkData: Buffer,
     timestamp: number,
-    chunkIndex: number
+    chunkIndex: number,
+    sequenceNumber?: number
   ): Promise<string> {
     const chunkKey = generateChunkKey(sessionId, 'video', timestamp, chunkIndex, MEDIA_DEFAULTS.VIDEO_FORMAT);
 
@@ -75,6 +78,7 @@ export class VideoProcessor {
           sessionId,
           timestamp: timestamp.toString(),
           chunkIndex: chunkIndex.toString(),
+          ...(sequenceNumber !== undefined && { sequenceNumber: sequenceNumber.toString() }),
         },
       })
     );
@@ -85,6 +89,7 @@ export class VideoProcessor {
       size: chunkData.length,
       timestamp,
       chunkIndex,
+      sequenceNumber,
     });
 
     return chunkKey;
@@ -166,21 +171,8 @@ export class VideoProcessor {
       // Combine chunks using ffmpeg
       const outputPath = path.join(tmpDir, 'output.webm');
 
-      // Get ffmpeg path with multiple fallback options
-      let ffmpegPath = process.env.FFMPEG_PATH;
-      if (!ffmpegPath) {
-        // Try Lambda Layer path first
-        if (fs.existsSync('/opt/bin/ffmpeg')) {
-          ffmpegPath = '/opt/bin/ffmpeg';
-        } else {
-          // Fallback to npm package (ffmpeg-static)
-          try {
-            ffmpegPath = require('ffmpeg-static');
-          } catch (error) {
-            throw new Error('ffmpeg not found. Check Lambda Layer or ffmpeg-static package.');
-          }
-        }
-      }
+      // Get ffmpeg path using centralized helper
+      const ffmpegPath = getFFmpegPath();
       const ffmpegCommand = `${ffmpegPath} -f concat -safe 0 -i "${concatListPath}" -c copy "${outputPath}"`;
 
       console.log('[VideoProcessor] Running ffmpeg:', ffmpegCommand);

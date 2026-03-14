@@ -10,6 +10,7 @@ import { BedrockAI } from '../../shared/ai/bedrock';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { logError, logWarning } from '../../shared/utils/error-logger';
 import { markdownToPlainText } from '../../shared/utils/markdown';
+import { getFFmpegPath } from '../../shared/utils/ffmpeg-helper';
 import * as crypto from 'crypto';
 
 export interface AudioProcessorConfig {
@@ -49,25 +50,8 @@ export class AudioProcessor {
   private ffmpegPath: string;
 
   constructor(private config: AudioProcessorConfig) {
-    // Initialize ffmpeg path with fallback options (same as convertToWav)
-    this.ffmpegPath = '';
-
-    if (process.env.FFMPEG_PATH) {
-      this.ffmpegPath = process.env.FFMPEG_PATH;
-    } else {
-      // Try Lambda Layer path first
-      const fs = require('fs');
-      if (fs.existsSync('/opt/bin/ffmpeg')) {
-        this.ffmpegPath = '/opt/bin/ffmpeg';
-      } else {
-        // Fallback to npm package (ffmpeg-static)
-        try {
-          this.ffmpegPath = require('ffmpeg-static');
-        } catch (error) {
-          throw new Error('ffmpeg not found. Check Lambda Layer or ffmpeg-static package.');
-        }
-      }
-    }
+    // Initialize ffmpeg path using centralized helper
+    this.ffmpegPath = getFFmpegPath();
     console.log('[AudioProcessor] Using ffmpeg path:', this.ffmpegPath);
     // Initialize STT with auto-detect (推奨) or fixed language (非推奨)
     this.stt = new AzureSpeechToText({
@@ -199,22 +183,8 @@ export class AudioProcessor {
       // Write input buffer to file
       fs.writeFileSync(inputFile, inputBuffer);
 
-      // Get ffmpeg path with multiple fallback options
-      let ffmpegPath = process.env.FFMPEG_PATH;
-
-      if (!ffmpegPath) {
-        // Try Lambda Layer path first
-        if (fs.existsSync('/opt/bin/ffmpeg')) {
-          ffmpegPath = '/opt/bin/ffmpeg';
-        } else {
-          // Fallback to npm package (ffmpeg-static)
-          try {
-            ffmpegPath = require('ffmpeg-static');
-          } catch (error) {
-            throw new Error('ffmpeg not found. Check Lambda Layer or ffmpeg-static package.');
-          }
-        }
-      }
+      // Use class instance ffmpegPath (already initialized in constructor)
+      const ffmpegPath = this.ffmpegPath;
 
       console.log('[AudioProcessor] Using ffmpeg path:', ffmpegPath);
 

@@ -208,10 +208,36 @@ fi
 rm -f "$INVOKE_RESULT"
 
 # =============================================================================
-# Check 6: Environment variables (CLOUDFRONT_DOMAIN)
+# Check 6: Environment variables (FFMPEG_PATH)
 # =============================================================================
 
-echo -e "[CHECK 6/6] Environment variables (CLOUDFRONT_DOMAIN)"
+echo -e "[CHECK 6/7] Environment variables (FFMPEG_PATH)"
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+FFMPEG_PATH=$(aws lambda get-function-configuration \
+  --function-name "$FUNCTION_NAME" \
+  --region "$REGION" \
+  --query 'Environment.Variables.FFMPEG_PATH' \
+  --output text 2>/dev/null || echo "")
+
+if [ -z "$FFMPEG_PATH" ] || [ "$FFMPEG_PATH" == "None" ]; then
+  echo -e "  ${RED}✗${NC} CRITICAL: FFMPEG_PATH not set"
+  echo -e "  ${RED}   This will cause audio/video processing errors!${NC}"
+  echo -e "  ${YELLOW}   Expected: /var/task/ffmpeg${NC}"
+  FAILED_CHECKS=$((FAILED_CHECKS + 1))
+elif [ "$FFMPEG_PATH" != "/var/task/ffmpeg" ]; then
+  echo -e "  ${YELLOW}⚠${NC} WARNING: FFMPEG_PATH is set to non-standard path"
+  echo -e "  ${YELLOW}   Current: $FFMPEG_PATH${NC}"
+  echo -e "  ${YELLOW}   Expected: /var/task/ffmpeg${NC}"
+else
+  echo -e "  ${GREEN}✓${NC} FFMPEG_PATH is correct: $FFMPEG_PATH"
+fi
+
+# =============================================================================
+# Check 7: Environment variables (CLOUDFRONT_DOMAIN)
+# =============================================================================
+
+echo -e "[CHECK 7/7] Environment variables (CLOUDFRONT_DOMAIN)"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 CLOUDFRONT_DOMAIN=$(aws lambda get-function-configuration \

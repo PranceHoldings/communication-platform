@@ -107,3 +107,4 @@ infrastructure/*.broken-*
 *\ [0-9]/
 package-lock\ *.json
 cdk\ *.out/
+test-results/

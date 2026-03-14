@@ -49,8 +49,8 @@
     ".next",
     "**/cdk.out",
     "**/cdk*.out*",
-    "**/*node_modules*",
-    "**/*@aws-sdk*",
+    "**/*node_modules.*",
+    "**/*@aws-sdk *",
     "**/__tests__/**",
     "**/*.spec.ts",
     "**/*.test.ts"

@@ -1183,8 +1183,9 @@ export class ApiLambdaStack extends cdk.Stack {
         DATABASE_URL,
         // JWT Secret for authentication
         JWT_SECRET: jwtSecret.secretValueFromJson('secret').unsafeUnwrap(),
-        // ffmpeg path - will use ffmpeg-static package (auto-detected at runtime)
-        // FFMPEG_PATH is optional; if not set, will fallback to ffmpeg-static
+        // ffmpeg Configuration (CRITICAL: Set explicit path where CDK copies binary)
+        FFMPEG_PATH: '/var/task/ffmpeg',
+        FFPROBE_PATH: '/var/task/ffprobe',
         // AI/Audio Service Configuration
         // 機密情報はSecrets Managerから取得、非機密情報はデフォルト値使用
         AZURE_SPEECH_KEY: azureSpeechSecret.secretValueFromJson('subscriptionKey').unsafeUnwrap(),
@@ -1261,9 +1262,11 @@ export class ApiLambdaStack extends cdk.Stack {
               `cp -r ${inputDir}/websocket/default/node_modules/ffmpeg-static/. ${outputDir}/node_modules/ffmpeg-static/ 2>/dev/null || echo "Warning: ffmpeg-static not found"`,
               `mkdir -p ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk`,
               `cp -r ${inputDir}/websocket/default/node_modules/microsoft-cognitiveservices-speech-sdk/. ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk/ 2>/dev/null || echo "Warning: Azure Speech SDK not found"`,
-              // Copy ffmpeg binary directly to root for direct access
+              // Copy ffmpeg/ffprobe binaries directly to root for direct access
               `cp ${inputDir}/websocket/default/node_modules/ffmpeg-static/ffmpeg ${outputDir}/ffmpeg 2>/dev/null || echo "Warning: ffmpeg binary not found"`,
               `chmod +x ${outputDir}/ffmpeg 2>/dev/null || true`,
+              `cp ${inputDir}/websocket/default/node_modules/ffmpeg-static/ffprobe ${outputDir}/ffprobe 2>/dev/null || echo "Info: ffprobe not found in ffmpeg-static (optional)"`,
+              `chmod +x ${outputDir}/ffprobe 2>/dev/null || true`,
               `echo "Handler, shared modules, and native dependencies copied successfully"`,
             ];
           },

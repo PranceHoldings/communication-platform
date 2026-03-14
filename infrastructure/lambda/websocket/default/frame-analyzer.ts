@@ -6,6 +6,7 @@
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { RekognitionAnalyzer, EmotionAnalysisResult } from '../../shared/analysis/rekognition';
 import { AWS_DEFAULTS } from '../../shared/config/defaults';
+import { getFFmpegPath, getFFprobePath } from '../../shared/utils/ffmpeg-helper';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -236,19 +237,8 @@ export class FrameAnalyzer {
     const totalPossibleFrames = Math.floor(duration / interval);
     const framesToExtract = maxFrames ? Math.min(maxFrames, totalPossibleFrames) : totalPossibleFrames;
 
-    // Get ffmpeg path
-    let ffmpegPath = process.env.FFMPEG_PATH;
-    if (!ffmpegPath) {
-      if (fs.existsSync('/opt/bin/ffmpeg')) {
-        ffmpegPath = '/opt/bin/ffmpeg';
-      } else {
-        try {
-          ffmpegPath = require('ffmpeg-static');
-        } catch (error) {
-          throw new Error('ffmpeg not found. Check Lambda Layer or ffmpeg-static package.');
-        }
-      }
-    }
+    // Get ffmpeg path using centralized helper
+    const ffmpegPath = getFFmpegPath();
 
     // Extract frames using ffmpeg
     // -vf "fps=1/N" extracts 1 frame every N seconds
@@ -296,17 +286,8 @@ export class FrameAnalyzer {
    * Get video duration in seconds using ffprobe
    */
   private async getVideoDuration(videoPath: string): Promise<number> {
-    // Get ffprobe path
-    let ffprobePath = process.env.FFPROBE_PATH;
-    if (!ffprobePath) {
-      if (fs.existsSync('/opt/bin/ffprobe')) {
-        ffprobePath = '/opt/bin/ffprobe';
-      } else {
-        // Assume ffprobe is in the same directory as ffmpeg
-        const ffmpegPath = process.env.FFMPEG_PATH || require('ffmpeg-static');
-        ffprobePath = ffmpegPath.replace('ffmpeg', 'ffprobe');
-      }
-    }
+    // Get ffprobe path using centralized helper
+    const ffprobePath = getFFprobePath();
 
     const command = `${ffprobePath} -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`;
 

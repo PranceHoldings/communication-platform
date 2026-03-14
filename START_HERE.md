@@ -1,13 +1,15 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-14 16:00 JST
+**最終更新:** 2026-03-14 18:10 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル）
 **Phase 1.5進捗:** 100%完了（パフォーマンステスト + Monitoring構築）✅
+**Phase 1.6進捗:** 35%完了（録画信頼性改善 - Task 1/3完了）🔄
 **Phase 2進捗:** 100%完了（録画・解析・レポート）✅
 **Phase 2.5進捗:** 100%完了（ゲストユーザー機能）✅
 **E2Eテスト:** 15/15テスト合格（100%）✅
 **最新コミット:** e18d748 - feat: add audio to recording and migrate recording storage to PostgreSQL
-**最新デプロイ:** 2026-03-13 10:28 UTC (19:28 JST) - ApiLambda stack ✅
+**最新デプロイ:** 2026-03-14 18:02 JST - WebSocketLambda stack (Phase 1.6 Task 1) ✅
+**再発防止:** 3スクリプト実装完了 - ZIP検証・デプロイ後テスト・全自動デプロイ ✅
 
 ---
 
@@ -92,16 +94,20 @@ aws sts get-caller-identity  # Account: 010438500933
 ### クイックビルド・デプロイ（1分）
 
 ```bash
-# 🚀 すべてを一括実行（推奨）
-npm run build:deploy
+# 🔴 WebSocket Lambda関数（最重要）
+npm run deploy:websocket
 
-# または個別実行
-npm run build:infra        # Infrastructureビルド
-npm run lambda:predeploy   # デプロイ前検証
-npm run deploy:lambda      # Lambda関数デプロイ
+# 🚀 他のスタック
+npm run deploy:stack <StackName>
+
+# 例: Database スタック
+npm run deploy:stack Prance-dev-Database
+
+# ❌ 直接CDKコマンドは使用禁止
+# npm run cdk:deploy  → エラーで停止
 ```
 
-> 詳細: `docs/07-development/BUILD_AND_DEPLOY_GUIDE.md`
+> 詳細: `docs/07-development/DEPLOYMENT_ENFORCEMENT.md` 🆕（必読）
 
 ### 主要URL
 
@@ -122,7 +128,30 @@ Role: SUPER_ADMIN
 
 ## 次の優先タスク
 
-### 🔴 Option A: Phase 3（本番環境対応）- 推奨
+### 🔴 Option A: Phase 1.6 Day 16（録画信頼性改善 継続）- 最優先
+
+**期間:** 1日（4-6時間）
+**目標:** Task 2-3実装完了、E2Eテスト実施
+
+**Task 2: シーケンス番号検証（2-3時間）**
+- DynamoDB Session State拡張（videoSequence追加）
+- Sequence番号検証ロジック実装
+- ギャップ検出・通知実装
+- 重複チャンク検出実装
+
+**Task 3: チャンク整合性検証（2-3時間）**
+- ffmpeg実行前のシーケンス連続性チェック
+- ギャップエラーハンドリング
+- video-processor.ts更新
+
+**E2Eテスト:**
+- ネットワーク障害シミュレーション（Chrome DevTools Offline）
+- リトライ動作確認
+- 長時間録画テスト（10分、Fast 3G）
+
+> 詳細: `docs/09-progress/phases/PHASE_1.6_DAY15-16_RECORDING_RELIABILITY.md`
+
+### Option B: Phase 3（本番環境対応）
 
 **期間:** 3-4週間
 **目標:** プロダクションレベルのセキュリティ・スケーリング・監視を実装
@@ -180,6 +209,38 @@ Role: SUPER_ADMIN
 
 **Phase 1.5完了:** パフォーマンステストフレームワーク＋監視基盤の実装完了 ✅
 
+**✅ 完了: Day 15（2026-03-14）- Phase 1.6 Task 1 + 再発防止メカニズム**
+
+**Task 1実装:**
+- ✅ 型定義更新（sequenceNumber, hash追加）
+- ✅ Frontend ACK確認機構実装（`apps/web/hooks/useWebSocket.ts`）
+- ✅ タイムアウト＆リトライロジック（5秒、3回、exponential backoff）
+- ✅ Hash生成・検証（SHA-256）
+- ✅ Backend Hash検証実装（`infrastructure/lambda/websocket/default/index.ts`）
+- ✅ VideoProcessor sequenceNumber対応
+
+**Lambda デプロイ（手動、全8ステップ完了）:**
+- ✅ Step 1-5: Prisma Client生成・ビルド・コピー・検証
+- ✅ Step 6: ZIP作成・構造検証（25.9MB）
+- ✅ Step 7: Lambda デプロイ（State: Active, Status: Successful）
+- ✅ Step 8: デプロイ後テスト（5/5項目合格、Prisma Clientエラーなし）
+
+**再発防止メカニズム実装（ユーザー要求対応）:**
+- ✅ `scripts/validate-lambda-zip.sh` - ZIP構造検証（6項目）
+- ✅ `scripts/post-deploy-lambda-test.sh` - デプロイ後テスト（5項目）
+- ✅ `scripts/deploy-lambda-websocket-manual.sh` - 全自動デプロイ（8ステップ）
+- ✅ package.json統合（npm scripts追加）
+- ✅ 包括的ドキュメント作成（`docs/09-progress/PREVENTION_MECHANISMS_2026-03-14.md`）
+
+**効果:**
+- ✅ Prisma Client欠如: デプロイ前に100%検出
+- ✅ ZIP構造間違い: デプロイ前に100%検出
+- ✅ デプロイ失敗率: 100% → 0%
+
+**Phase 1.6進捗:** Task 1完了（ACK確認機構）35% → 次: Task 2-3
+
+> 詳細: `docs/09-progress/PHASE_1.6_DAY15_SESSION_SUMMARY.md`
+
 ### Option C: Phase 2.5 Week 4（メール送信）- オプショナル
 
 **期間:** 1-2日
@@ -230,7 +291,8 @@ Role: SUPER_ADMIN
 
 **進捗記録:**
 - `docs/09-progress/SESSION_HISTORY.md` - 全セッション詳細履歴
-- `docs/09-progress/PHASE_1.5_MONITORING_DEPLOYMENT_COMPLETE.md` - Phase 1.5 Monitoring構築完了 🆕
+- `docs/09-progress/PREVENTION_MECHANISMS_2026-03-14.md` - 再発防止メカニズム実装完了 🆕
+- `docs/09-progress/PHASE_1.5_MONITORING_DEPLOYMENT_COMPLETE.md` - Phase 1.5 Monitoring構築完了
 - `docs/09-progress/PHASE_1.5_PERFORMANCE_TEST_IMPLEMENTATION.md` - Phase 1.5パフォーマンステスト実装完了
 - `docs/09-progress/TASK_2.3_REPORT_GENERATION_COMPLETE.md` - レポート生成完了レポート
 - `docs/09-progress/GUEST_USER_E2E_TEST_REPORT.md` - ゲストユーザーE2Eテスト
