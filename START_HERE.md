@@ -1,15 +1,15 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-14 23:40 JST
+**最終更新:** 2026-03-14 17:00 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル）
 **Phase 1.5進捗:** 100%完了（パフォーマンステスト + Monitoring構築）✅
-**Phase 1.6進捗:** 98%完了（初期挨拶TTS実装完了 - UIテスト待ち）⚠️
+**Phase 1.6進捗:** 95%完了（i18n修正完了 - Prisma問題対応中）⚠️
 **Phase 2進捗:** 100%完了（録画・解析・レポート）✅
 **Phase 2.5進捗:** 100%完了（ゲストユーザー機能）✅
 **E2Eテスト:** 15/15テスト合格（100%）✅
-**最新コミット:** bed6caf - fix(ffmpeg): 完全リファクタリング - 全てのffmpeg問題を根絶
-**最新デプロイ:** 2026-03-14 23:39 JST (14:39 UTC) - WebSocketLambda (初期挨拶TTS) ✅
-**再発防止:** 5スクリプト実装完了 - デプロイ検証システム完全統合 ✅
+**最新コミット:** 461d1c4 - security: redact API keys and secrets from documentation (9コミット、プッシュ保留中)
+**最新デプロイ:** 2026-03-14 17:00 JST - ApiLambda (Prisma Client追加) ✅
+**ステータス:** 🔴 Prisma Client問題継続中、GitHubプッシュ保留中
 
 ---
 
@@ -126,9 +126,108 @@ Role: SUPER_ADMIN
 
 ---
 
-## 🎯 今回のセッションで完了した作業 (Day 15 - 2026-03-14)
+## 🎯 今回のセッションで完了した作業 (Day 15-16 - 2026-03-14)
 
-### **1. 古いコードデプロイ問題の根本解決** ✅
+### **Day 16: i18n翻訳システム & Prisma Client修正** 🟡
+
+**セッション時刻:** 2026-03-14 15:00-17:00 JST
+**詳細:** `docs/09-progress/SESSION_2026-03-14_i18n_prisma_fixes.md`
+
+#### 1. i18n翻訳システム修正 ✅
+
+**問題:** UI上で翻訳キーが生文字列表示（"common.appNameShort"等）
+
+**根本原因:** messages.tsでspread operatorを使用 → カテゴリ構造が失われた
+
+**修正内容:**
+- ✅ messages.ts構造修正（spread → explicit categories）
+- ✅ navigation.json作成（英語・日本語）
+- ✅ 全10言語でFlat JSON構造に統一
+- ✅ 505翻訳キー × 10言語 = 5,050キー完全対応
+- ✅ pre-commit最適化（SKIP_UNUSED_CHECK追加）
+
+**コミット:** `f905daf` (116ファイル変更)
+
+---
+
+#### 2. Prisma Client依存関係修正 🟡
+
+**問題:** WebSocket Lambda関数で `Cannot find module '@prisma/client'` エラー
+
+**根本原因:** package.jsonに@prisma/clientが宣言されていなかった
+
+**修正内容:**
+- ✅ package.jsonに `@prisma/client: ^5.22.0` 追加
+- ✅ `prisma: ^5.9.0` 追加
+- ✅ npm install & prisma generate実行
+- ✅ 検証スクリプト強化（Prismaチェック追加）
+- ✅ Lambda関数デプロイ（193秒）
+- ⚠️ **デプロイ後もエラー継続中**
+
+**検証結果（ローカル）:**
+- ✅ @prisma/client: ✓
+- ✅ .prisma/client (generated): ✓
+- ✅ 全依存関係: 13/13項目合格
+
+**検証結果（Lambda実行）:**
+- ❌ `Runtime.ImportModuleError: Cannot find module '@prisma/client'`
+- ❌ WebSocket認証失敗
+- ❌ Initial greeting動作不可
+
+**コミット:** `0c2ef1b` (2ファイル変更)
+
+**次回調査項目:**
+1. デプロイされたLambdaパッケージ内容確認
+2. CDK bundling設定修正（Prisma Client明示的バンドル）
+3. 手動デプロイスクリプト実行
+4. Lambda Layer検討
+
+---
+
+#### 3. Lambda環境変数検証スクリプト修正 ✅
+
+**問題:** 誤った変数名をチェック → 誤検知
+
+**修正内容:**
+- ✅ AWS_REGION → （削除、Lambda runtimeが自動設定）
+- ✅ BUCKET_NAME → S3_BUCKET
+- ✅ DDB_CONNECTIONS_TABLE → CONNECTIONS_TABLE_NAME
+- ✅ WEBSOCKET_ENDPOINT 追加
+
+**検証結果:** 全環境変数合格
+
+**コミット:** `74cc55a` (1ファイル変更)
+
+---
+
+#### 4. GitHub Secret Scanning問題 🔴
+
+**問題:** Git履歴にAzure Speech Keyが含まれている → プッシュブロック
+
+**該当コミット:** `bed6caff` (Day 15)
+
+**実施した対応:**
+- ✅ ドキュメントからシークレット削除
+- ✅ コミット: `461d1c4` - security: redact API keys
+- ❌ git filter-branch実行 → reflogに残存
+- ❌ プッシュ失敗
+
+**解決方法（次回）:**
+1. **Option A（推奨）:** GitHubでシークレットを許可
+   - URL: https://github.com/PranceHoldings/communication-platform/security/secret-scanning/unblock-secret/3AwTuLIEFfXVM1GTHlZyzkjhQlL
+   - 「Allow secret」をクリック
+   - 再プッシュ: `git push origin main`
+
+2. **Option B:** Git履歴完全クリーンアップ
+   ```bash
+   git reflog expire --expire=now --all
+   git gc --prune=now --aggressive
+   git push --force origin main
+   ```
+
+---
+
+### **Day 15: 古いコードデプロイ問題の根本解決** ✅
 
 **問題:** TypeScript更新後もデプロイ時に古い.jsファイルが使われる（3回失敗）
 
@@ -210,7 +309,83 @@ Role: SUPER_ADMIN
 
 ## 次の優先タスク
 
-### 🔴 Option A: Phase 1.6 Day 16（録画信頼性改善 継続）- 最優先
+### 🔴 最優先: Prisma Client問題の根本解決（Day 16継続）
+
+**期間:** 1-2時間
+**目標:** Lambda関数でPrisma Clientが正しく動作するようにする
+
+**Option 1: デプロイされたパッケージ内容確認（10分）**
+```bash
+# Lambdaパッケージダウンロード
+aws lambda get-function --function-name prance-websocket-default-dev \
+  --query 'Code.Location' --output text | \
+  xargs curl -s -o /tmp/lambda-deployed.zip
+
+# Prisma関連ファイル確認
+unzip -l /tmp/lambda-deployed.zip | grep -E "prisma|@prisma"
+
+# 期待: node_modules/@prisma/client/, node_modules/.prisma/client/
+```
+
+**Option 2: CDK bundling設定修正（30分）**
+```typescript
+// infrastructure/lib/api-lambda-stack.ts
+bundling: {
+  nodeModules: ['@prisma/client', 'prisma'],
+  commandHooks: {
+    afterBundling(inputDir: string, outputDir: string): string[] {
+      return [
+        `cd ${outputDir}`,
+        `npx prisma generate --schema=${inputDir}/../../../packages/database/prisma/schema.prisma`,
+      ];
+    },
+  },
+}
+```
+
+**Option 3: 手動デプロイスクリプト実行（15分）**
+```bash
+bash scripts/deploy-lambda-websocket-manual.sh
+```
+
+**Option 4: Lambda Layer使用（1時間）**
+```typescript
+const prismaLayer = new lambda.LayerVersion(this, 'PrismaLayer', {
+  code: lambda.Code.fromAsset('layers/prisma'),
+  compatibleRuntimes: [lambda.Runtime.NODEJS_22_X],
+});
+```
+
+---
+
+### 🟡 次: GitHubプッシュ問題の解決（5分）
+
+**Option A（推奨）:** GitHubでシークレットを許可
+1. URL: https://github.com/PranceHoldings/communication-platform/security/secret-scanning/unblock-secret/3AwTuLIEFfXVM1GTHlZyzkjhQlL
+2. 「Allow secret」をクリック
+3. `git push origin main`
+
+**Option B:** Git履歴クリーンアップ
+```bash
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+git push --force origin main
+```
+
+---
+
+### ✅ その後: Initial Greeting UIテスト
+
+Prisma Client問題解決後：
+1. ブラウザ再読み込み（Ctrl+Shift+R）
+2. セッションページへ移動
+3. 「Start Session」をクリック
+4. Initial greetingが流れるか確認
+5. CloudWatch Logsで詳細確認
+
+---
+
+### Option B: Phase 1.6 Day 17（録画信頼性改善 継続）
 
 **期間:** 1日（4-6時間）
 **目標:** Task 2-3実装完了、E2Eテスト実施
