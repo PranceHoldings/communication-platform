@@ -1258,9 +1258,12 @@ export class ApiLambdaStack extends cdk.Stack {
               `cp -r ${inputDir}/../packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Warning: Prisma client not found, will be generated at runtime"`,
               // Copy native dependencies (CRITICAL: ffmpeg-static for audio processing, Azure Speech SDK for STT)
               `mkdir -p ${outputDir}/node_modules/ffmpeg-static`,
-              `cp -r ${inputDir}/websocket/default/node_modules/ffmpeg-static/* ${outputDir}/node_modules/ffmpeg-static/ 2>/dev/null || echo "Warning: ffmpeg-static not found"`,
+              `cp -r ${inputDir}/websocket/default/node_modules/ffmpeg-static/. ${outputDir}/node_modules/ffmpeg-static/ 2>/dev/null || echo "Warning: ffmpeg-static not found"`,
               `mkdir -p ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk`,
-              `cp -r ${inputDir}/websocket/default/node_modules/microsoft-cognitiveservices-speech-sdk/* ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk/ 2>/dev/null || echo "Warning: Azure Speech SDK not found"`,
+              `cp -r ${inputDir}/websocket/default/node_modules/microsoft-cognitiveservices-speech-sdk/. ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk/ 2>/dev/null || echo "Warning: Azure Speech SDK not found"`,
+              // Copy ffmpeg binary directly to root for direct access
+              `cp ${inputDir}/websocket/default/node_modules/ffmpeg-static/ffmpeg ${outputDir}/ffmpeg 2>/dev/null || echo "Warning: ffmpeg binary not found"`,
+              `chmod +x ${outputDir}/ffmpeg 2>/dev/null || true`,
               `echo "Handler, shared modules, and native dependencies copied successfully"`,
             ];
           },
