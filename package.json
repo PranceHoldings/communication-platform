@@ -49,11 +49,17 @@
     "deploy:lambda": "cd infrastructure && npm run deploy:lambda",
     "build:deploy": "bash scripts/build-and-deploy.sh",
     "pre-commit": "npm run i18n:validate && npm run lambda:validate && npm run consistency:validate && npm run lint && npm run typecheck",
-    "env:validate": "bash scripts/validate-env.sh"
+    "env:validate": "bash scripts/validate-env.sh",
+    "perf:test": "npx tsx scripts/performance-test.ts",
+    "perf:load": "npx tsx scripts/performance-test.ts --load 10",
+    "perf:metrics": "bash scripts/collect-metrics.sh",
+    "perf:dashboard": "bash scripts/create-cloudwatch-dashboard.sh",
+    "perf:alarms": "bash scripts/create-cloudwatch-alarms.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^22.19.15",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "dotenv": "^17.3.1",
@@ -61,6 +67,7 @@
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-prettier": "^5.5.5",
     "prettier": "^3.2.4",
+    "tsx": "^4.21.0",
     "turbo": "^1.12.0",
     "typescript": "^5.3.3"
   },

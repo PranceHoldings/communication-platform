@@ -12,6 +12,7 @@ import { GuestRateLimitStack } from '../lib/guest-rate-limit-stack';
 import { ApiLambdaStack } from '../lib/api-lambda-stack';
 import { DnsStack } from '../lib/dns-stack';
 import { CertificateStack } from '../lib/certificate-stack';
+import { MonitoringStack } from '../lib/monitoring-stack';
 import { getConfig } from '../lib/config';
 
 // Load environment variables from .env file
@@ -120,6 +121,15 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   description: 'Prance Platform - API Gateway, Lambda Functions, and Authorizer',
 });
 
+// Monitoring Stack (Phase 1.5 Performance Monitoring)
+const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
+  env,
+  environment,
+  // websocketLambdaFunction: apiLambdaStack.websocketDefaultFunction, // TODO: Export from ApiLambdaStack
+  alertEmail: process.env.ALERT_EMAIL, // Optional: Set in .env for email alerts
+  description: 'Prance Platform - CloudWatch Monitoring and Alarms (Phase 1.5)',
+});
+
 // スタック依存関係の設定（デプロイ順序を保証）
 certificateStack.addDependency(dnsStack);
 storageStack.addDependency(certificateStack);
@@ -129,6 +139,7 @@ apiLambdaStack.addDependency(networkStack);
 apiLambdaStack.addDependency(databaseStack);
 apiLambdaStack.addDependency(dynamoDBStack);
 apiLambdaStack.addDependency(storageStack);
+monitoringStack.addDependency(apiLambdaStack);
 
 // タグ付け
 cdk.Tags.of(app).add('Project', 'Prance');
