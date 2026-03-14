@@ -1,112 +1,50 @@
 {
-  "sessions": {
-    "title": "Sessions",
-    "list": {
-      "title": "All Sessions",
-      "description": "View and manage your practice sessions",
-      "empty": "No sessions found",
-      "emptyDescription": "Start a new session to begin practicing",
-      "filter": {
-        "all": "All",
-        "ACTIVE": "Active",
-        "PROCESSING": "Processing",
-        "COMPLETED": "Completed",
-        "ERROR": "Error"
-      }
+  "title": "Dashboard",
+  "welcome": "Welcome back, {name}!",
+  "overview": "Overview",
+  "stats": {
+    "totalSessions": "Total Sessions",
+    "completedSessions": "Completed Sessions",
+    "averageScore": "Average Score",
+    "totalTime": "Total Time",
+    "thisMonth": "This month",
+    "allTime": "All time"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "startSession": "Start New Session",
+    "createScenario": "Create Scenario",
+    "viewReports": "View Reports",
+    "manageAvatars": "Manage Avatars"
+  },
+  "recentSessions": {
+    "title": "Recent Sessions",
+    "noSessions": "No sessions yet. Start your first session!",
+    "empty": {
+      "title": "No sessions yet",
+      "description": "Get started by creating your first session."
     },
-    "create": {
-      "title": "Create New Session",
-      "button": "New Session",
-      "scenario": "Scenario",
-      "scenarioPlaceholder": "Select a scenario",
-      "avatar": "Avatar",
-      "avatarPlaceholder": "Select an avatar",
-      "submit": "Create Session",
-      "cancel": "Cancel",
-      "success": "Session created successfully",
-      "error": "Failed to create session"
-    },
-    "detail": {
-      "title": "Session Details",
-      "information": "Session Information",
-      "scenario": "Scenario",
-      "avatar": "Avatar",
-      "status": "Status",
-      "startTime": "Start Time",
-      "endTime": "End Time",
-      "duration": "Duration",
-      "recording": "Recording",
-      "transcript": "Transcript",
-      "noRecording": "Recording not available",
-      "noTranscript": "Transcript not available",
-      "notStarted": "Not started",
-      "minutes": "{count} minutes"
-    },
+    "newSession": "New Session",
+    "viewAll": "View all",
+    "scenario": "Scenario",
+    "duration": "Duration",
+    "score": "Score",
+    "date": "Date",
     "status": {
+      "completed": "Completed",
+      "processing": "Processing",
+      "failed": "Failed",
       "ACTIVE": "Active",
       "PROCESSING": "Processing",
       "COMPLETED": "Completed",
       "ERROR": "Error"
-    },
-    "table": {
-      "scenario": "Scenario",
-      "avatar": "Avatar",
-      "status": "Status",
-      "date": "Date",
-      "duration": "Duration",
-      "actions": "Actions",
-      "view": "View",
-      "noData": "No sessions available"
     }
   },
-  "dashboard": {
-    "title": "Dashboard",
-    "welcome": "Welcome back, {name}!",
-    "overview": "Overview",
-    "stats": {
-      "totalSessions": "Total Sessions",
-      "completedSessions": "Completed Sessions",
-      "averageScore": "Average Score",
-      "totalTime": "Total Time",
-      "thisMonth": "This month",
-      "allTime": "All time"
-    },
-    "quickActions": {
-      "title": "Quick Actions",
-      "startSession": "Start New Session",
-      "createScenario": "Create Scenario",
-      "viewReports": "View Reports",
-      "manageAvatars": "Manage Avatars"
-    },
-    "recentSessions": {
-      "title": "Recent Sessions",
-      "noSessions": "No sessions yet. Start your first session!",
-      "empty": {
-        "title": "No sessions yet",
-        "description": "Get started by creating your first session."
-      },
-      "newSession": "New Session",
-      "viewAll": "View all",
-      "scenario": "Scenario",
-      "duration": "Duration",
-      "score": "Score",
-      "date": "Date",
-      "status": {
-        "completed": "Completed",
-        "processing": "Processing",
-        "failed": "Failed",
-        "ACTIVE": "Active",
-        "PROCESSING": "Processing",
-        "COMPLETED": "Completed",
-        "ERROR": "Error"
-      }
-    },
-    "performance": {
-      "title": "Performance",
-      "lastWeek": "Last 7 days",
-      "lastMonth": "Last 30 days",
-      "improvement": "+{percent}% improvement",
-      "decline": "{percent}% decline"
-    }
+  "performance": {
+    "title": "Performance",
+    "lastWeek": "Last 7 days",
+    "lastMonth": "Last 30 days",
+    "improvement": "+{percent}% improvement",
+    "decline": "{percent}% decline"
   }
 }

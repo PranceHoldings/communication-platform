@@ -120,7 +120,8 @@
     "types": {
       "open": "Open Question",
       "follow_up": "Follow-up Question",
-      "clarification": "Clarification Question"
+      "clarification": "Clarification Question",
+      "followUp": "Follow-up Question"
     },
     "form": {
       "text": "Question Text",
