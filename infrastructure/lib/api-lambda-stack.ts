@@ -1229,21 +1229,26 @@ export class ApiLambdaStack extends cdk.Stack {
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
             return [
-              // Copy the compiled handler entry point (CRITICAL: Without this, Lambda will fail with ImportModuleError)
-              // Note: inputDir is set to projectRoot (../lambda), so paths are relative to that
-              `cp ${inputDir}/websocket/default/index.js ${outputDir}/index.js`,
-              `cp ${inputDir}/websocket/default/index.d.ts ${outputDir}/index.d.ts 2>/dev/null || true`,
-              // Copy audio/video processor modules
-              `cp ${inputDir}/websocket/default/audio-processor.js ${outputDir}/audio-processor.js 2>/dev/null || true`,
-              `cp ${inputDir}/websocket/default/video-processor.js ${outputDir}/video-processor.js 2>/dev/null || true`,
-              `cp ${inputDir}/websocket/default/chunk-utils.js ${outputDir}/chunk-utils.js 2>/dev/null || true`,
-              // Fix require paths in ALL files (../../shared -> ./shared)
+              // ROOT CAUSE ANALYSIS (2026-03-14):
+              // Previous design (commit fa84e6f, 2026-03-12) copied pre-compiled .js files from source directory.
+              // This was based on INCORRECT DIAGNOSIS: "index.js missing from Lambda zip"
+              // TRUTH: esbuild automatically transpiles index.ts and bundles imported modules into outputDir/index.js
+              // PROBLEM: Copying from source directory OVERWRITES esbuild output with stale code
+              // SOLUTION: Let esbuild handle all transpilation. Only copy shared modules and native dependencies.
+              //
+              // Why previous approach failed:
+              // 1. esbuild generates fresh index.js from index.ts → outputDir/index.js (correct code)
+              // 2. afterBundling copies old index.js from source → OVERWRITES with stale code (2026-03-11)
+              // 3. Even "clean build" (rm -rf cdk.out) doesn't remove source .js files
+              // 4. Old code gets deployed repeatedly
+              //
+              // Correct approach:
+              // - esbuild: Handles index.ts transpilation + bundling (audio-processor, video-processor, chunk-utils)
+              // - afterBundling: Only copies shared/ modules and native dependencies (ffmpeg-static, Azure SDK)
+              // Fix require paths in bundled file (../../shared -> ./shared)
+              // Note: esbuild bundles all TypeScript imports, but preserves dynamic require() for shared modules
               `sed -i 's|require("../../shared/|require("./shared/|g' ${outputDir}/index.js || true`,
-              `sed -i 's|require("../../shared/|require("./shared/|g' ${outputDir}/audio-processor.js || true`,
-              `sed -i 's|require("../../shared/|require("./shared/|g' ${outputDir}/video-processor.js || true`,
               `sed -i "s|require('../../shared/|require('./shared/|g" ${outputDir}/index.js || true`,
-              `sed -i "s|require('../../shared/|require('./shared/|g" ${outputDir}/audio-processor.js || true`,
-              `sed -i "s|require('../../shared/|require('./shared/|g" ${outputDir}/video-processor.js || true`,
               // Copy ALL shared modules (CRITICAL: Without these, Lambda will fail with ImportModuleError)
               `mkdir -p ${outputDir}/shared`,
               `cp -r ${inputDir}/shared/ai ${outputDir}/shared/`,
@@ -1267,7 +1272,7 @@ export class ApiLambdaStack extends cdk.Stack {
               `chmod +x ${outputDir}/ffmpeg 2>/dev/null || true`,
               `cp ${inputDir}/websocket/default/node_modules/ffmpeg-static/ffprobe ${outputDir}/ffprobe 2>/dev/null || echo "Info: ffprobe not found in ffmpeg-static (optional)"`,
               `chmod +x ${outputDir}/ffprobe 2>/dev/null || true`,
-              `echo "Handler, shared modules, and native dependencies copied successfully"`,
+              `echo "Shared modules and native dependencies copied successfully (esbuild handles TypeScript transpilation)"`,
             ];
           },
           beforeInstall(): string[] {

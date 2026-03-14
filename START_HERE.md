@@ -1,15 +1,15 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-14 18:10 JST
+**最終更新:** 2026-03-14 23:40 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル）
 **Phase 1.5進捗:** 100%完了（パフォーマンステスト + Monitoring構築）✅
-**Phase 1.6進捗:** 35%完了（録画信頼性改善 - Task 1/3完了）🔄
+**Phase 1.6進捗:** 98%完了（初期挨拶TTS実装完了 - UIテスト待ち）⚠️
 **Phase 2進捗:** 100%完了（録画・解析・レポート）✅
 **Phase 2.5進捗:** 100%完了（ゲストユーザー機能）✅
 **E2Eテスト:** 15/15テスト合格（100%）✅
-**最新コミット:** e18d748 - feat: add audio to recording and migrate recording storage to PostgreSQL
-**最新デプロイ:** 2026-03-14 18:02 JST - WebSocketLambda stack (Phase 1.6 Task 1) ✅
-**再発防止:** 3スクリプト実装完了 - ZIP検証・デプロイ後テスト・全自動デプロイ ✅
+**最新コミット:** bed6caf - fix(ffmpeg): 完全リファクタリング - 全てのffmpeg問題を根絶
+**最新デプロイ:** 2026-03-14 23:39 JST (14:39 UTC) - WebSocketLambda (初期挨拶TTS) ✅
+**再発防止:** 5スクリプト実装完了 - デプロイ検証システム完全統合 ✅
 
 ---
 
@@ -123,6 +123,88 @@ Email: admin@prance.com
 Password: Admin2026!Prance
 Role: SUPER_ADMIN
 ```
+
+---
+
+## 🎯 今回のセッションで完了した作業 (Day 15 - 2026-03-14)
+
+### **1. 古いコードデプロイ問題の根本解決** ✅
+
+**問題:** TypeScript更新後もデプロイ時に古い.jsファイルが使われる（3回失敗）
+
+**根本原因:**
+- esbuild はソースディレクトリに出力しない → CDK一時ディレクトリに出力
+- afterBundling hookが古い.jsファイルをコピーして esbuild 出力を上書き
+- `rm -rf cdk.out` してもソースディレクトリの.jsファイルは削除されない
+
+**解決策:**
+1. ✅ afterBundling hookから.jsコピーを削除（esbuildに全て任せる）
+2. ✅ 自動クリーンアップスクリプト作成 (`infrastructure/scripts/pre-deploy-clean.sh`)
+   - 113個の自動生成ファイル削除 (.js, .js.map, .d.ts)
+   - dist/, deploy/ ディレクトリ削除
+   - CDKキャッシュクリア
+3. ✅ 全デプロイスクリプトに統合（predeploy hook, clean-deploy.sh, deploy.sh）
+
+**効果:** 今後は古いコードがデプロイされることはない
+
+**詳細:** `memory/deployment-stale-code.md`, commit `bed6caf`
+
+---
+
+### **2. 言語リソースキー検証システムの構築** ✅
+
+**問題:** コードで使用されているキーが言語ファイルに存在しない → UIでエラー
+
+**根本原因:**
+- 既存の `validate-i18n-system.sh` は next-intl チェックのみ
+- **翻訳キーの存在確認がなかった**
+- 599個のキー使用中、187個のキーが日本語リソースに欠如
+
+**解決策:**
+1. ✅ 新しい検証スクリプト作成 (`scripts/validate-i18n-keys.sh`)
+   - コードから全 `t('key')` パターンを抽出
+   - 各言語でキー存在確認
+   - 厳格モード/警告モードの両対応
+2. ✅ npm scripts に統合
+   - `npm run validate:i18n-keys` - 厳格モード
+   - `npm run prebuild` - 警告モードで自動実行
+3. ✅ `pre-deploy-check.sh` に Check 12 として追加
+4. ✅ `validate-i18n-system.sh` に統合（Check 5）
+
+**効果:**
+- 開発時: 警告表示（ビルド継続）
+- デプロイ前: 厳格検証（欠如時ブロック）
+- 未定義キーが本番環境に到達しない
+
+---
+
+### **3. デプロイ検証システムの強化** ✅
+
+**修正したスクリプト:**
+- ✅ `validate-cdk-bundling.sh` - パターンマッチング修正（`${inputDir}` 対応）
+- ✅ `validate-i18n-system.sh` - キー検証統合
+- ✅ `pre-deploy-check.sh` - Check 12: i18n翻訳キー検証追加
+
+**npm scripts追加:**
+```json
+"clean": "bash scripts/pre-deploy-clean.sh",
+"validate:i18n": "bash scripts/validate-i18n-system.sh",
+"validate:i18n-keys": "bash scripts/validate-i18n-keys.sh",
+"predeploy": "npm run clean && npm run validate:bundling && node scripts/sync-env.js"
+```
+
+---
+
+### **4. 初期挨拶TTS機能デプロイ** ✅
+
+**デプロイ時刻:** 2026-03-14 14:39:33 UTC (23:39 JST)
+
+**検証結果:**
+- ✅ 7フィールドのログ実装確認
+- ✅ 初期挨拶TTS生成コード確認（行6370）
+- ✅ 完全なTTSフロー実装確認
+
+**次のステップ:** UIでの動作確認（CloudWatch Logs監視）
 
 ---
 

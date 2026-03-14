@@ -5,10 +5,11 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
+    "clean": "bash scripts/pre-deploy-clean.sh",
     "cdk": "echo '⚠️  WARNING: Use npm run deploy instead of direct cdk commands to ensure validation' && cdk",
     "bootstrap": "cdk bootstrap",
     "validate:bundling": "bash scripts/validate-cdk-bundling.sh",
-    "predeploy": "npm run validate:bundling && node scripts/sync-env.js",
+    "predeploy": "npm run clean && npm run validate:bundling && node scripts/sync-env.js",
     "deploy": "bash scripts/cdk-wrapper.sh deploy --all",
     "deploy:lambda": "bash scripts/cdk-wrapper.sh deploy Prance-dev-ApiLambda --require-approval never",
     "deploy:dev": "./deploy.sh dev",

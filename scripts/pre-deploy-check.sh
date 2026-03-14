@@ -293,6 +293,31 @@ else
 fi
 
 # =============================================================================
+# Check 12: i18n翻訳キー検証（CRITICAL）
+# =============================================================================
+log_section "Check 12: i18n翻訳キー検証"
+
+log_info "コードで使用されている翻訳キーの存在確認中..."
+
+if [ -f "./scripts/validate-i18n-keys.sh" ]; then
+  # Run in strict mode (no --warn flag) for deployment
+  if bash ./scripts/validate-i18n-keys.sh > /tmp/i18n-validation.log 2>&1; then
+    pass_check "全ての翻訳キーが言語リソースファイルに存在します"
+  else
+    fail_check "翻訳キーの検証に失敗しました"
+    log_info "詳細:"
+    tail -30 /tmp/i18n-validation.log | sed 's/^/    /'
+    log_info ""
+    log_info "対応方法:"
+    log_info "  1. 欠けている翻訳キーを apps/web/messages/<lang>/<category>.json に追加"
+    log_info "  2. 詳細確認: npm run validate:i18n-keys"
+    log_info "  3. 開発中は警告のみ: bash scripts/validate-i18n-keys.sh --warn"
+  fi
+else
+  warn_check "i18n検証スクリプトが見つかりません"
+fi
+
+# =============================================================================
 # サマリー
 # =============================================================================
 log_section "チェック結果サマリー"

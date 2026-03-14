@@ -89,6 +89,15 @@ fi
 
 echo -e "${GREEN}✅ node_modulesクリーンアップ完了${NC}"
 
+# 1.5. Lambda auto-generated files cleanup (CRITICAL - prevents stale code deployment)
+echo -e "\n${YELLOW}🧹 Lambda自動生成ファイルをクリーンアップ中...${NC}"
+if [ -f "infrastructure/scripts/pre-deploy-clean.sh" ]; then
+  bash infrastructure/scripts/pre-deploy-clean.sh
+  echo -e "${GREEN}✅ Lambda自動生成ファイルクリーンアップ完了${NC}"
+else
+  echo -e "${RED}⚠️  警告: infrastructure/scripts/pre-deploy-clean.sh が見つかりません${NC}"
+fi
+
 # 2. ビルドキャッシュクリーンアップ
 echo -e "\n${YELLOW}🧹 ビルドキャッシュをクリーンアップ中...${NC}"
 

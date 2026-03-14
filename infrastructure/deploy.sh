@@ -35,6 +35,7 @@ fi
 echo ""
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Step 1: ビルド準備（スキップ可能）
 if [ "$SKIP_BUILD" = false ]; then
@@ -52,6 +53,15 @@ if [ "$SKIP_BUILD" = false ]; then
 
   cp "$ENV_LOCAL" "$ENV_INFRA"
   echo -e "${GREEN}   ✅ 環境変数同期完了${NC}"
+
+  # Lambda auto-generated files cleanup (CRITICAL - prevents stale code deployment)
+  echo -e "${BLUE}   Lambda自動生成ファイルをクリーンアップ中...${NC}"
+  if [ -f "$SCRIPT_DIR/scripts/pre-deploy-clean.sh" ]; then
+    bash "$SCRIPT_DIR/scripts/pre-deploy-clean.sh"
+    echo -e "${GREEN}   ✅ Lambda自動生成ファイルクリーンアップ完了${NC}"
+  else
+    echo -e "${RED}   ⚠️  警告: scripts/pre-deploy-clean.sh が見つかりません${NC}"
+  fi
 
   # 依存関係インストール
   echo -e "${BLUE}   依存関係をインストール中...${NC}"
