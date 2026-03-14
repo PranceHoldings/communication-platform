@@ -42,11 +42,16 @@ export interface LanguageMetadata {
 /**
  * All supported languages
  *
- * To add a new language:
- * 1. Add an entry to this array
- * 2. Create apps/web/messages/{languageCode}/common.json for UI translations
- * 3. Add display name to languages/languagesNative sections
- * 4. Deploy - no code changes required!
+ * SYNCHRONIZATION REQUIRED:
+ * When adding/removing a language, update these locations:
+ * 1. This array (Backend language metadata)
+ * 2. apps/web/lib/i18n/config.ts locales array (Frontend)
+ * 3. apps/web/messages/{languageCode}/ directory structure
+ * 4. apps/web/lib/i18n/messages.ts import statements
+ *
+ * Language Order Convention:
+ * The order here does NOT need to match Frontend.
+ * Frontend uses English first for fallback, Backend uses any order.
  */
 export const LANGUAGES: LanguageMetadata[] = [
   {

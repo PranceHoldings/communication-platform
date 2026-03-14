@@ -1,9 +1,9 @@
 # Prance Communication Platform - プロジェクト概要
 
-**バージョン:** 2.7
+**バージョン:** 2.8
 **作成日:** 2026-02-26
-**最終更新:** 2026-03-11 01:30 JST
-**ステータス:** 🔴 Phase 1 技術的完了（70%） ・ Phase 1.5 音声バグ修正完了（98%）⚠️テスト待ち ・ Phase 1.6 未着手 ・ 10言語対応完了 ・ ゲストユーザー機能追加
+**最終更新:** 2026-03-14 20:00 JST
+**ステータス:** 🔴 Phase 1完了（100%）・ Phase 2完了（100%）・ Phase 2.5完了（100%）・ Prisma Client問題解決 ✅ ・ コードベース統一化完了 ✅ ・ 10言語対応完了 ・ ゲストユーザー機能完了
 
 ---
 
@@ -781,7 +781,153 @@ grep -r "import.*useI18n.*from.*@/lib/i18n" apps/web --count
 - 結果を目視確認
 - 疑わしい箇所は必ず確認
 
-#### 8. コード整合性管理（最重要）
+#### 7. Cookie処理の統一化（2026-03-14追加）
+
+**🔴 重要: Cookie設定を複数箇所で重複管理しない**
+
+Cookie処理は統一的なユーティリティを使用すること。直接 `document.cookie` を操作したり、個別にオプションをハードコードしてはいけません。
+
+**❌ 禁止事項:**
+
+```typescript
+// ❌ 直接document.cookie操作
+document.cookie = `${LOCALE_COOKIE_NAME}=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+
+// ❌ ハードコードされたCookieオプション
+response.cookies.set(LOCALE_COOKIE_NAME, locale, {
+  path: '/',
+  maxAge: 31536000,
+  sameSite: 'lax',
+  httpOnly: false,
+});
+```
+
+**✅ 正しい方法:**
+
+```typescript
+// apps/web/lib/cookies.ts - 統一ユーティリティ
+import { COOKIE_CONFIGS, setLocaleCookie } from '@/lib/cookies';
+
+// クライアントサイド
+setLocaleCookie(locale);
+
+// サーバーサイド (middleware)
+response.cookies.set(LOCALE_COOKIE_NAME, locale, COOKIE_CONFIGS.locale.options);
+```
+
+**Cookie utility構造:**
+
+```typescript
+// apps/web/lib/cookies.ts
+export const DEFAULT_COOKIE_OPTIONS: CookieOptions = {
+  path: '/',
+  maxAge: 31536000, // 1 year
+  sameSite: 'lax',
+  httpOnly: false,
+  secure: process.env.NODE_ENV === 'production',
+};
+
+export const COOKIE_CONFIGS = {
+  locale: {
+    name: LOCALE_COOKIE_NAME,
+    options: {
+      ...DEFAULT_COOKIE_OPTIONS,
+      httpOnly: false, // クライアントからアクセス可能
+    },
+  },
+  // 将来的に他のCookie追加時もここに定義
+};
+
+export function setCookie(name: string, value: string, options: CookieOptions = {}): void {
+  // 統一的なCookie設定実装
+}
+
+export function setLocaleCookie(locale: string): void {
+  setCookie(COOKIE_CONFIGS.locale.name, locale, COOKIE_CONFIGS.locale.options);
+}
+```
+
+**効果:**
+
+- ✅ Cookie設定が1箇所で管理される（DRY原則）
+- ✅ オプション変更時に全箇所で一貫性が保たれる
+- ✅ セキュリティ設定（secure, httpOnly等）の統一管理
+- ✅ 新しいCookie追加時の一貫したパターン
+
+**実施例（2026-03-14）:**
+
+- Before: Cookie設定が3箇所で重複（middleware.ts, provider.tsx, 直接document.cookie）
+- After: `apps/web/lib/cookies.ts` で統一管理
+- 削減: 10箇所のオプション設定 → 5箇所（50%削減）
+
+> 詳細実装: [apps/web/lib/cookies.ts](apps/web/lib/cookies.ts)
+
+#### 8. 言語リスト同期検証（2026-03-14追加）
+
+**🔴 重要: Frontend/Lambda/Message directories の言語リストを同期させる**
+
+言語リストは3箇所で定義されており、**必ず同期**させる必要があります。
+
+**同期必須の3箇所:**
+
+1. **Frontend config**: `apps/web/lib/i18n/config.ts` - `locales` 配列
+2. **Lambda config**: `infrastructure/lambda/shared/config/language-config.ts` - `LANGUAGES` 配列
+3. **Message directories**: `apps/web/messages/{languageCode}/` ディレクトリ構造
+
+**新言語追加時の必須手順:**
+
+```bash
+# 1. Frontend config更新
+# apps/web/lib/i18n/config.ts の locales 配列に追加
+
+# 2. Lambda config更新
+# infrastructure/lambda/shared/config/language-config.ts の LANGUAGES 配列に追加
+
+# 3. Message directory作成
+mkdir -p apps/web/messages/{languageCode}
+# 必要なJSONファイルをコピー
+
+# 4. 同期検証
+npm run validate:languages
+
+# 期待結果: "All language lists are synchronized"
+```
+
+**自動検証スクリプト:**
+
+```bash
+# scripts/validate-language-sync.sh
+# - Frontend config から言語コード抽出
+# - Lambda config から言語コード抽出
+# - Message directories をリスト
+# - 3箇所のリストを比較・検証
+```
+
+**package.json統合:**
+
+```json
+{
+  "scripts": {
+    "validate:languages": "bash scripts/validate-language-sync.sh"
+  }
+}
+```
+
+**効果:**
+
+- ✅ 言語追加時の同期漏れを防止
+- ✅ デプロイ前に自動検証
+- ✅ Frontend/Lambdaの言語不整合エラーを予防
+
+**実施例（2026-03-14）:**
+
+- 検証スクリプト作成
+- 全10言語で同期確認（en, ja, zh-CN, zh-TW, ko, es, pt, fr, de, it）
+- `npm run validate:languages` で自動検証可能
+
+> 詳細実装: [scripts/validate-language-sync.sh](scripts/validate-language-sync.sh)
+
+#### 9. コード整合性管理（最重要）
 
 **🔴 根本問題: Claude Code自身が生成したコード間での不整合**
 

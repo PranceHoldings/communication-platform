@@ -20,6 +20,7 @@ import {
   LOCALE_URL_PARAM,
   isValidLocale,
 } from '@/lib/i18n/config';
+import { COOKIE_CONFIGS } from '@/lib/cookies';
 
 /**
  * Detect locale from Accept-Language header (browser settings)
@@ -70,12 +71,7 @@ export function middleware(request: NextRequest) {
 
     // Redirect to clean URL with locale cookie set
     const response = NextResponse.redirect(cleanUrl);
-    response.cookies.set(LOCALE_COOKIE_NAME, langParam, {
-      path: '/',
-      maxAge: 31536000, // 1 year
-      sameSite: 'lax',
-      httpOnly: false, // Allow JavaScript access for language switcher
-    });
+    response.cookies.set(LOCALE_COOKIE_NAME, langParam, COOKIE_CONFIGS.locale.options);
 
     return response;
   }
@@ -101,12 +97,7 @@ export function middleware(request: NextRequest) {
 
   // Save locale to Cookie (for first-time visitors or cookie expired)
   if (!request.cookies.get(LOCALE_COOKIE_NAME)) {
-    response.cookies.set(LOCALE_COOKIE_NAME, locale, {
-      path: '/',
-      maxAge: 31536000, // 1 year
-      sameSite: 'lax',
-      httpOnly: false, // Allow JavaScript access for language switcher
-    });
+    response.cookies.set(LOCALE_COOKIE_NAME, locale, COOKIE_CONFIGS.locale.options);
   }
 
   return response;

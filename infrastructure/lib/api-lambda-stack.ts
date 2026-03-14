@@ -1220,9 +1220,13 @@ export class ApiLambdaStack extends cdk.Stack {
           '@smithy/*',
           'microsoft-cognitiveservices-speech-sdk',
           'ffmpeg-static',
-          '@prisma/client',
         ],
-        nodeModules: ['microsoft-cognitiveservices-speech-sdk', 'ffmpeg-static'],
+        nodeModules: [
+          'microsoft-cognitiveservices-speech-sdk',
+          'ffmpeg-static',
+          '@prisma/client',
+          'prisma',
+        ],
         commandHooks: {
           beforeBundling(inputDir: string, outputDir: string): string[] {
             return [];
@@ -1259,9 +1263,14 @@ export class ApiLambdaStack extends cdk.Stack {
               `cp -r ${inputDir}/shared/types ${outputDir}/shared/`,       // CRITICAL: Type definitions
               `cp -r ${inputDir}/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
               `cp -r ${inputDir}/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
-              // Copy Prisma generated client (go up one level to project root)
+              // Copy Prisma Client (both @prisma/client package and .prisma/client generated code)
+              // Note: Both are required - @prisma/client is the package, .prisma/client is the generated code
+              `mkdir -p ${outputDir}/node_modules/@prisma`,
+              `cp -r ${inputDir}/websocket/default/node_modules/@prisma/client ${outputDir}/node_modules/@prisma/ 2>/dev/null || echo "Warning: @prisma/client package not found"`,
               `mkdir -p ${outputDir}/node_modules/.prisma`,
-              `cp -r ${inputDir}/../packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Warning: Prisma client not found, will be generated at runtime"`,
+              `cp -r ${inputDir}/../packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Warning: .prisma/client generated code not found"`,
+              // Copy Prisma schema (CRITICAL: Required for Prisma Client initialization)
+              `cp ${inputDir}/../packages/database/prisma/schema.prisma ${outputDir}/node_modules/.prisma/client/schema.prisma 2>/dev/null || echo "Warning: schema.prisma not found"`,
               // Copy native dependencies (CRITICAL: ffmpeg-static for audio processing, Azure Speech SDK for STT)
               `mkdir -p ${outputDir}/node_modules/ffmpeg-static`,
               `cp -r ${inputDir}/websocket/default/node_modules/ffmpeg-static/. ${outputDir}/node_modules/ffmpeg-static/ 2>/dev/null || echo "Warning: ffmpeg-static not found"`,

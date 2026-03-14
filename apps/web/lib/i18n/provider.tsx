@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useContext, ReactNode } from 'react';
-import { LOCALE_COOKIE_NAME, fallbackLocale } from '@/lib/i18n/config';
+import { fallbackLocale } from '@/lib/i18n/config';
+import { setLocaleCookie } from '@/lib/cookies';
 
 interface I18nContextType {
   locale: string;
@@ -50,8 +51,8 @@ export function I18nProvider({ children, locale, messages }: I18nProviderProps) 
   };
 
   const setLocale = (newLocale: string) => {
-    // Set cookie using centralized cookie name
-    document.cookie = `${LOCALE_COOKIE_NAME}=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
+    // Set cookie using centralized cookie utility
+    setLocaleCookie(newLocale);
 
     // Reload page to apply new locale
     window.location.reload();

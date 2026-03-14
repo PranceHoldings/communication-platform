@@ -183,7 +183,81 @@ const format = process.env.VIDEO_FORMAT || MEDIA_DEFAULTS.VIDEO_FORMAT;
 
 ---
 
-## ✅ 7. PRレビュー観点（プルリクエスト作成時）
+## ✅ 7. Cookie処理の統一（Cookie設定を追加・変更した場合） 🆕
+
+```bash
+# Cookie設定の重複検出
+grep -rn "document\.cookie\s*=\|cookies\.set.*{" apps/web --include="*.ts" --include="*.tsx" | grep -v "from '@/lib/cookies'" | grep -v node_modules
+
+# Cookie options のハードコード検出
+grep -rn "maxAge:\s*31536000\|sameSite:\s*'lax'" apps/web --include="*.ts" --include="*.tsx" | grep -v "lib/cookies.ts" | grep -v node_modules
+```
+
+**期待結果:** lib/cookies.ts 以外に重複なし
+
+**必須確認:**
+
+- Cookie設定を直接 `document.cookie` で操作していないか？
+- Cookie optionsをハードコードしていないか？
+- `lib/cookies.ts` の統一ユーティリティを使用しているか？
+
+**正しい使用例:**
+
+```typescript
+// ❌ 禁止
+document.cookie = `${LOCALE_COOKIE_NAME}=${locale}; path=/; max-age=31536000`;
+response.cookies.set(name, value, {
+  path: '/',
+  maxAge: 31536000,
+  sameSite: 'lax',
+});
+
+// ✅ 正しい
+import { setLocaleCookie, COOKIE_CONFIGS } from '@/lib/cookies';
+
+// クライアントサイド
+setLocaleCookie(locale);
+
+// サーバーサイド
+response.cookies.set(name, value, COOKIE_CONFIGS.locale.options);
+```
+
+**効果:**
+- Cookie設定の一元管理（DRY原則）
+- セキュリティ設定の統一
+- 変更時の一貫性保証
+
+---
+
+## ✅ 8. 言語リスト同期検証（言語追加・削除した場合） 🆕
+
+```bash
+# 言語リスト同期検証
+npm run validate:languages
+
+# 期待結果: "All language lists are synchronized"
+```
+
+**同期必須の3箇所:**
+
+1. `apps/web/lib/i18n/config.ts` - `locales` 配列
+2. `infrastructure/lambda/shared/config/language-config.ts` - `LANGUAGES` 配列
+3. `apps/web/messages/{languageCode}/` ディレクトリ
+
+**新言語追加フロー:**
+
+1. Frontend config の `locales` 配列に追加
+2. Lambda config の `LANGUAGES` 配列に追加
+3. Message directory 作成 (`apps/web/messages/{languageCode}/`)
+4. `npm run validate:languages` で検証
+
+**効果:**
+- 言語追加時の同期漏れ防止
+- Frontend/Lambda の言語不整合エラー予防
+
+---
+
+## ✅ 9. PRレビュー観点（プルリクエスト作成時）
 
 ```bash
 # レビュー前の自己チェック

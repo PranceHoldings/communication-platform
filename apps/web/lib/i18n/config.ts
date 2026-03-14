@@ -24,6 +24,13 @@
 /**
  * Available locales - All 10 supported languages
  *
+ * SYNCHRONIZATION REQUIRED:
+ * When adding/removing a language, update these locations:
+ * 1. This array (Frontend language codes)
+ * 2. apps/web/messages/{locale}/ directory structure
+ * 3. infrastructure/lambda/shared/config/language-config.ts LANGUAGES array (Backend)
+ * 4. lib/i18n/messages.ts import statements
+ *
  * This list is derived from message file imports in lib/i18n/messages.ts
  * Convention: English ('en') should always be first as the fallback locale
  */
