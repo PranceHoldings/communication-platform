@@ -23,39 +23,39 @@ echo "🔍 Validating i18n system (MEMORY.md Rule 1)..."
 
 FAILED=0
 
-# Check 1: next-intl imports
-echo -n "  Checking for next-intl imports... "
+# Check 1: next-intl imports (ensure NOT used)
+echo -n "  Verifying next-intl is NOT used... "
 NEXT_INTL_IMPORTS=$(grep -r "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v node_modules | wc -l)
 if [ "$NEXT_INTL_IMPORTS" -gt 0 ]; then
   echo -e "${RED}FAILED${NC}"
-  echo -e "${RED}    Found $NEXT_INTL_IMPORTS next-intl imports:${NC}"
+  echo -e "${RED}    Found $NEXT_INTL_IMPORTS next-intl imports (forbidden):${NC}"
   grep -rn "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v node_modules | head -5
   FAILED=1
 else
-  echo -e "${GREEN}OK${NC}"
+  echo -e "${GREEN}OK (none found)${NC}"
 fi
 
-# Check 2: apps/web/i18n/ directory
-echo -n "  Checking for apps/web/i18n/ directory... "
+# Check 2: apps/web/i18n/ directory (ensure NOT exists)
+echo -n "  Verifying apps/web/i18n/ does NOT exist... "
 if [ -d "apps/web/i18n" ]; then
   echo -e "${RED}FAILED${NC}"
   echo -e "${RED}    apps/web/i18n/ directory exists (should be deleted)${NC}"
   FAILED=1
 else
-  echo -e "${GREEN}OK${NC}"
+  echo -e "${GREEN}OK (deleted)${NC}"
 fi
 
-# Check 3: useI18n usage
-echo -n "  Checking for useI18n hook usage... "
+# Check 3: useI18n usage (ensure IS used)
+echo -n "  Verifying useI18n hook IS used... "
 USE_I18N_COUNT=$(grep -r "from '@/lib/i18n/provider'" apps/web --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v node_modules | wc -l)
 if [ "$USE_I18N_COUNT" -gt 0 ]; then
-  echo -e "${GREEN}OK${NC} ($USE_I18N_COUNT files)"
+  echo -e "${GREEN}OK ($USE_I18N_COUNT files)${NC}"
 else
-  echo -e "${YELLOW}WARNING${NC} (No files using custom i18n)"
+  echo -e "${YELLOW}WARNING (No files using custom i18n)${NC}"
 fi
 
-# Check 4: messages files
-echo -n "  Checking for translation message files... "
+# Check 4: messages files (ensure exist)
+echo -n "  Verifying translation message files exist... "
 if [ -d "apps/web/messages" ]; then
   # Check if at least one language has translation files
   LANG_DIRS=$(find apps/web/messages -mindepth 1 -maxdepth 1 -type d | wc -l)
