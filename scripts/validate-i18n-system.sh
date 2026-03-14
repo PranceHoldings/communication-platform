@@ -68,10 +68,25 @@ else
   echo -e "${YELLOW}WARNING${NC} (messages/ directory missing)"
 fi
 
+# Check 5: Validate all translation keys (CRITICAL - prevents runtime errors)
+echo ""
+echo "🔍 Validating translation keys (all used keys must exist in files)..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/validate-i18n-keys.sh" ]; then
+  # Skip unused key check in pre-commit (it can be slow with many keys)
+  if SKIP_UNUSED_CHECK=1 bash "$SCRIPT_DIR/validate-i18n-keys.sh"; then
+    echo ""  # Key validation prints its own success message
+  else
+    FAILED=1
+  fi
+else
+  echo -e "${YELLOW}WARNING: validate-i18n-keys.sh not found (skipping key validation)${NC}"
+fi
+
 # Summary
 echo ""
 if [ "$FAILED" -eq 0 ]; then
-  echo -e "${GREEN}✅ i18n system validation passed${NC}"
+  echo -e "${GREEN}✅ i18n system validation passed (system + keys)${NC}"
   exit 0
 else
   echo -e "${RED}❌ i18n system validation FAILED${NC}"
@@ -79,6 +94,7 @@ else
   echo "Fix steps:"
   echo "  1. Remove next-intl imports: Replace with useI18n from '@/lib/i18n/provider'"
   echo "  2. Delete apps/web/i18n/ directory: rm -rf apps/web/i18n"
-  echo "  3. See docs/07-development/I18N_SYSTEM_GUIDELINES.md"
+  echo "  3. Add missing translation keys to apps/web/messages/<lang>/<category>.json"
+  echo "  4. See docs/07-development/I18N_SYSTEM_GUIDELINES.md"
   exit 1
 fi

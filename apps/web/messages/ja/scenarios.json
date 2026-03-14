@@ -120,7 +120,8 @@
     "types": {
       "open": "オープン質問",
       "follow_up": "フォローアップ質問",
-      "clarification": "明確化質問"
+      "clarification": "明確化質問",
+      "followUp": "Follow-up Question"
     },
     "form": {
       "text": "質問文",

@@ -1,0 +1,43 @@
+{
+  "loading": "Loading analysis results...",
+  "triggering": "Starting analysis...",
+  "trigger": "Start Analysis",
+  "dashboard": {
+    "title": "Session Analysis",
+    "outOf100": "out of 100",
+    "strengths": "Strengths",
+    "improvements": "Areas for Improvement"
+  },
+  "scores": {
+    "emotion": "Emotion",
+    "audio": "Audio",
+    "content": "Content",
+    "delivery": "Delivery"
+  },
+  "radar": {
+    "title": "Performance Overview",
+    "score": "Score",
+    "stability": "Stability",
+    "positivity": "Positivity",
+    "confidence": "Confidence",
+    "clarity": "Clarity",
+    "fluency": "Fluency",
+    "pacing": "Pacing"
+  },
+  "stats": {
+    "title": "Detailed Statistics",
+    "audioAnalysis": "Audio Analysis",
+    "emotionAnalysis": "Emotion Analysis",
+    "speakingRate": "Speaking Rate",
+    "volume": "Volume",
+    "fillerWords": "Filler Words",
+    "pauses": "Pauses",
+    "dominantEmotion": "Dominant Emotion",
+    "avgConfidence": "Avg. Confidence",
+    "emotionDistribution": "Emotion Distribution"
+  },
+  "notAvailable": {
+    "title": "Analysis Not Available",
+    "description": "This session has not been analyzed yet. Click the button below to start the analysis process."
+  }
+}

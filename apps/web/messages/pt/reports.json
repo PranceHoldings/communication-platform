@@ -1,0 +1,51 @@
+{
+  "title": "Reports",
+  "subtitle": "View detailed analysis and reports from your sessions",
+  "comingSoon": {
+    "title": "Analytics Coming Soon",
+    "description": "Detailed session reports with emotion analysis, transcripts, and performance metrics."
+  },
+  "generator": {
+    "title": "PDF Report",
+    "description": "Generate a comprehensive PDF report with AI-powered improvement suggestions",
+    "generate": "Generate Report",
+    "regenerate": "Regenerate Report",
+    "generating": "Generating...",
+    "downloadAgain": "Download Again",
+    "success": "✓ Report generated successfully! Download started automatically.",
+    "generatedAt": "Generated at",
+    "info": {
+      "title": "Report includes:",
+      "scores": "Overall and detailed performance scores",
+      "aiSuggestions": "AI-powered personalized improvement suggestions",
+      "charts": "Performance radar chart and timeline",
+      "transcript": "Full conversation transcript"
+    }
+  },
+  "guide": {
+    "title": "How to Generate Reports",
+    "description": "Generate comprehensive PDF reports for your completed sessions with AI-powered analysis.",
+    "step1": "Complete a session with analysis enabled",
+    "step2": "Navigate to the session detail page",
+    "step3": "Click 'Generate Report' button to create your PDF",
+    "viewSessions": "View Sessions"
+  },
+  "features": {
+    "scores": {
+      "title": "Performance Scores",
+      "description": "Detailed breakdown of emotion, audio, content, and delivery scores with visual charts"
+    },
+    "ai": {
+      "title": "AI Suggestions",
+      "description": "Personalized improvement recommendations powered by Claude AI analyzing your session data"
+    },
+    "charts": {
+      "title": "Visual Analytics",
+      "description": "Performance radar charts and timeline graphs showing your communication patterns"
+    },
+    "transcript": {
+      "title": "Conversation Transcript",
+      "description": "Complete record of your conversation with timestamps and speaker identification"
+    }
+  }
+}

@@ -1,244 +1,245 @@
 {
-    "list": {
-        "title": "セッション",
-        "description": "会話セッションを表示・管理します",
-        "empty": "セッションが見つかりません",
-        "emptyDescription": "最初のセッションを作成して始めましょう",
-        "filter": {
-            "all": "すべて",
-            "ACTIVE": "アクティブ",
-            "PROCESSING": "処理中",
-            "COMPLETED": "完了",
-            "ERROR": "エラー"
-        }
-    },
-    "table": {
-        "scenario": "シナリオ",
-        "avatar": "アバター",
-        "status": "ステータス",
-        "date": "日時",
-        "startedAt": "開始日時",
-        "duration": "所要時間",
-        "actions": "操作",
-        "view": "表示",
-        "unknownScenario": "不明なシナリオ",
-        "unknownAvatar": "不明なアバター"
-    },
-    "status": {
-        "ACTIVE": "アクティブ",
-        "PROCESSING": "処理中",
-        "COMPLETED": "完了",
-        "ERROR": "エラー"
-    },
-    "detail": {
-        "minutes": "{count}分",
-        "loading": "セッションを読み込み中...",
-        "notFound": "セッションが見つかりません",
-        "backToList": "セッション一覧に戻る",
-        "session": "セッション",
-        "dashboard": "ダッシュボード"
-    },
-    "create": {
-        "button": "セッションを作成"
-    },
-    "new": {
-        "title": "新しいセッションを作成",
-        "description": "シナリオとアバターを選択して、会話セッションを開始します",
-        "step_1": "ステップ1: シナリオを選択",
-        "step_2": "ステップ2: アバターを選択",
-        "step_3": "ステップ3: セッション設定",
-        "scenario": {
-            "title": "シナリオを選択",
-            "description": "このセッションで使用する会話シナリオを選択してください",
-            "search_placeholder": "シナリオを検索...",
-            "filter_all": "すべてのカテゴリ",
-            "no_results": "シナリオが見つかりません",
-            "loading": "読み込み中...",
-            "card": {
-                "category": "カテゴリ",
-                "language": "言語",
-                "visibility": "公開設定"
-            }
-        },
-        "avatar": {
-            "title": "アバターを選択",
-            "description": "あなたと対話するAIアバターを選択してください",
-            "search_placeholder": "アバターを検索...",
-            "filter": {
-                "all_types": "すべてのタイプ",
-                "all_styles": "すべてのスタイル",
-                "type_2d": "2D",
-                "type_3d": "3D",
-                "style_anime": "アニメ",
-                "style_realistic": "リアル"
-            },
-            "no_results": "アバターが見つかりません",
-            "loading": "読み込み中...",
-            "card": {
-                "type": "タイプ",
-                "style": "スタイル",
-                "source": "ソース"
-            }
-        },
-        "options": {
-            "title": "セッション設定",
-            "description": "セッションの追加設定を行います",
-            "metadata": "セッションメタデータ（任意）",
-            "metadata_placeholder": "JSONメタデータを入力...",
-            "scenario": "シナリオ",
-            "avatar": "アバター"
-        },
-        "actions": {
-            "back": "戻る",
-            "next": "次へ",
-            "create": "セッションを作成",
-            "cancel": "キャンセル"
-        },
-        "validation": {
-            "scenario_required": "シナリオを選択してください",
-            "avatar_required": "アバターを選択してください",
-            "invalid_metadata": "メタデータのJSON形式が無効です"
-        },
-        "creating": "セッションを作成中...",
-        "success": "セッションが正常に作成されました！",
-        "error": "セッションの作成に失敗しました"
-    },
-    "player": {
-        "status": {
-            "notStarted": "未開始",
-            "ready": "準備中",
-            "inProgress": "進行中",
-            "paused": "一時停止",
-            "completed": "完了",
-            "unknown": "不明"
-        },
-        "silenceTimer": {
-            "label": "沈黙"
-        },
-        "help": {
-            "startSession": "「セッション開始」をクリックして{avatarName}との会話を始めましょう",
-            "listening": "🎤 音声を認識中... マイクに向かってはっきり話してください"
-        },
-        "actions": {
-            "start": "セッション開始",
-            "resume": "再開",
-            "pause": "一時停止",
-            "stop": "停止",
-            "cancel": "キャンセル",
-            "sendTestMessage": "テストメッセージを送信"
-        },
-        "avatar": {
-            "title": "アバター表示",
-            "placeholder": "アバターがここに表示されます",
-            "microphone": "マイク",
-            "camera": "カメラ",
-            "speaker": "スピーカー",
-            "active": "有効",
-            "inactive": "無効",
-            "off": "オフ",
-            "recording": "録音中",
-            "playing": "再生中",
-            "audioLevel": "音声レベル"
-        },
-        "transcript": {
-            "title": "会話の文字起こし",
-            "empty": "まだ会話がありません",
-            "emptyDescription": "セッションを開始してください",
-            "you": "あなた"
-        },
-        "websocket": {
-            "connecting": "セッションに接続中...",
-            "connectingWebSocket": "WebSocketに接続中...",
-            "connected": "接続済み",
-            "notConnected": "未接続",
-            "error": "WebSocket接続エラー"
-        },
-        "messages": {
-            "authRequired": "認証が必要です。再度ログインしてください。",
-            "sessionStarted": "セッションが開始されました！話しかけてください。",
-            "sessionResumed": "セッションを再開しました！",
-            "sessionEnded": "セッションが終了しました",
-            "sessionCompleted": "セッションが正常に完了しました！",
-            "testMessageSent": "テストメッセージを送信しました！",
-            "connectionTimeout": "接続タイムアウト。もう一度お試しください。",
-            "maxAttemptsReached": "最大接続試行回数に達しました。",
-            "reconnecting": "接続が切断されました。再接続中...",
-            "authFailed": "認証に失敗しました。再度ログインしてください。",
-            "microphoneError": "マイクエラーが発生しました。",
-            "microphonePermissionDenied": "マイクへのアクセスが拒否されました。ブラウザの設定でマイクの許可を有効にしてください。",
-            "audioPlaybackError": "音声の再生に失敗しました。ブラウザの設定を確認してください。",
-            "processingAudio": "録音を処理しています...",
-            "audioSendError": "音声の送信に失敗しました。もう一度お試しください。",
-            "authenticated": "WebSocket認証が完了しました",
-            "authenticationTimeout": "認証タイムアウト。再度お試しください。"
-        },
-        "processing": {
-            "stt": "音声を文字起こし中...",
-            "ai": "AI応答を生成中...",
-            "tts": "音声を合成中...",
-            "processing": "処理中..."
-        },
-        "shortcuts": {
-            "title": "キーボードショートカット",
-            "showHelp": "キーボードショートカットを表示",
-            "space": "セッション開始/停止",
-            "escape": "セッションキャンセル",
-            "pause": "一時停止/再開",
-            "mute": "マイクミュート/解除",
-            "help": "このヘルプを表示",
-            "note": "💡 ヒント: テキスト入力中はキーボードショートカットが無効になります。",
-            "microphoneMuted": "マイクをミュートしました",
-            "microphoneUnmuted": "マイクのミュートを解除しました"
-        },
-        "completed": {
-            "title": "セッション完了",
-            "duration": "所要時間",
-            "messageCount": "{count}件のメッセージ"
-        },
-        "info": {
-            "scenario": "シナリオ",
-            "avatar": "アバター",
-            "category": "カテゴリ"
-        },
-        "details": {
-            "title": "セッション情報",
-            "sessionId": "セッションID",
-            "scenario": "シナリオ",
-            "language": "言語",
-            "created": "作成日時"
-        },
-        "recording": {
-            "title": "録画",
-            "start": "録画開始",
-            "stop": "録画停止",
-            "pause": "録画一時停止",
-            "resume": "録画再開",
-            "speed": "再生速度",
-            "format": "フォーマット",
-            "resolution": "解像度",
-            "size": "ファイルサイズ",
-            "duration": "再生時間",
-            "status": {
-                "idle": "録画していません",
-                "recording": "録画中",
-                "paused": "一時停止中",
-                "stopped": "停止"
-            },
-            "messages": {
-                "started": "録画を開始しました",
-                "stopped": "録画を停止しました",
-                "paused": "録画を一時停止しました",
-                "resumed": "録画を再開しました",
-                "error": "録画エラー",
-                "errorUnknown": "不明なエラーが発生しました",
-                "processing": "録画を処理中",
-                "processingDescription": "動画の処理が完了するまでお待ちください。数分かかる場合があります。",
-                "notSupported": "お使いのブラウザは録画に対応していません"
-            }
-        }
-    },
-    "errors": {
-        "loadFailed": "セッションの読み込みに失敗しました",
-        "genericError": "エラーが発生しました"
+  "list": {
+    "title": "セッション",
+    "description": "会話セッションを表示・管理します",
+    "empty": "セッションが見つかりません",
+    "emptyDescription": "最初のセッションを作成して始めましょう",
+    "filter": {
+      "all": "すべて",
+      "ACTIVE": "アクティブ",
+      "PROCESSING": "処理中",
+      "COMPLETED": "完了",
+      "ERROR": "エラー"
     }
+  },
+  "table": {
+    "scenario": "シナリオ",
+    "avatar": "アバター",
+    "status": "ステータス",
+    "date": "日時",
+    "startedAt": "開始日時",
+    "duration": "所要時間",
+    "actions": "操作",
+    "view": "表示",
+    "unknownScenario": "不明なシナリオ",
+    "unknownAvatar": "不明なアバター"
+  },
+  "status": {
+    "ACTIVE": "アクティブ",
+    "PROCESSING": "処理中",
+    "COMPLETED": "完了",
+    "ERROR": "エラー"
+  },
+  "detail": {
+    "minutes": "{count}分",
+    "loading": "セッションを読み込み中...",
+    "notFound": "セッションが見つかりません",
+    "backToList": "セッション一覧に戻る",
+    "session": "セッション",
+    "dashboard": "ダッシュボード"
+  },
+  "create": {
+    "button": "セッションを作成"
+  },
+  "new": {
+    "title": "新しいセッションを作成",
+    "description": "シナリオとアバターを選択して、会話セッションを開始します",
+    "step_1": "ステップ1: シナリオを選択",
+    "step_2": "ステップ2: アバターを選択",
+    "step_3": "ステップ3: セッション設定",
+    "scenario": {
+      "title": "シナリオを選択",
+      "description": "このセッションで使用する会話シナリオを選択してください",
+      "search_placeholder": "シナリオを検索...",
+      "filter_all": "すべてのカテゴリ",
+      "no_results": "シナリオが見つかりません",
+      "loading": "読み込み中...",
+      "card": {
+        "category": "カテゴリ",
+        "language": "言語",
+        "visibility": "公開設定"
+      }
+    },
+    "avatar": {
+      "title": "アバターを選択",
+      "description": "あなたと対話するAIアバターを選択してください",
+      "search_placeholder": "アバターを検索...",
+      "filter": {
+        "all_types": "すべてのタイプ",
+        "all_styles": "すべてのスタイル",
+        "type_2d": "2D",
+        "type_3d": "3D",
+        "style_anime": "アニメ",
+        "style_realistic": "リアル"
+      },
+      "no_results": "アバターが見つかりません",
+      "loading": "読み込み中...",
+      "card": {
+        "type": "タイプ",
+        "style": "スタイル",
+        "source": "ソース"
+      }
+    },
+    "options": {
+      "title": "セッション設定",
+      "description": "セッションの追加設定を行います",
+      "metadata": "セッションメタデータ（任意）",
+      "metadata_placeholder": "JSONメタデータを入力...",
+      "scenario": "シナリオ",
+      "avatar": "アバター"
+    },
+    "actions": {
+      "back": "戻る",
+      "next": "次へ",
+      "create": "セッションを作成",
+      "cancel": "キャンセル"
+    },
+    "validation": {
+      "scenario_required": "シナリオを選択してください",
+      "avatar_required": "アバターを選択してください",
+      "invalid_metadata": "メタデータのJSON形式が無効です"
+    },
+    "creating": "セッションを作成中...",
+    "success": "セッションが正常に作成されました！",
+    "error": "セッションの作成に失敗しました"
+  },
+  "player": {
+    "status": {
+      "notStarted": "未開始",
+      "ready": "準備中",
+      "inProgress": "進行中",
+      "paused": "一時停止",
+      "completed": "完了",
+      "unknown": "不明"
+    },
+    "silenceTimer": {
+      "label": "沈黙"
+    },
+    "help": {
+      "startSession": "「セッション開始」をクリックして{avatarName}との会話を始めましょう",
+      "listening": "🎤 音声を認識中... マイクに向かってはっきり話してください"
+    },
+    "actions": {
+      "start": "セッション開始",
+      "resume": "再開",
+      "pause": "一時停止",
+      "stop": "停止",
+      "cancel": "キャンセル",
+      "sendTestMessage": "テストメッセージを送信"
+    },
+    "avatar": {
+      "title": "アバター表示",
+      "placeholder": "アバターがここに表示されます",
+      "microphone": "マイク",
+      "camera": "カメラ",
+      "speaker": "スピーカー",
+      "active": "有効",
+      "inactive": "無効",
+      "off": "オフ",
+      "recording": "録音中",
+      "playing": "再生中",
+      "audioLevel": "音声レベル"
+    },
+    "transcript": {
+      "title": "会話の文字起こし",
+      "empty": "まだ会話がありません",
+      "emptyDescription": "セッションを開始してください",
+      "you": "あなた"
+    },
+    "websocket": {
+      "connecting": "セッションに接続中...",
+      "connectingWebSocket": "WebSocketに接続中...",
+      "connected": "接続済み",
+      "notConnected": "未接続",
+      "error": "WebSocket接続エラー"
+    },
+    "messages": {
+      "authRequired": "認証が必要です。再度ログインしてください。",
+      "sessionStarted": "セッションが開始されました！話しかけてください。",
+      "sessionResumed": "セッションを再開しました！",
+      "sessionEnded": "セッションが終了しました",
+      "sessionCompleted": "セッションが正常に完了しました！",
+      "testMessageSent": "テストメッセージを送信しました！",
+      "connectionTimeout": "接続タイムアウト。もう一度お試しください。",
+      "maxAttemptsReached": "最大接続試行回数に達しました。",
+      "reconnecting": "接続が切断されました。再接続中...",
+      "authFailed": "認証に失敗しました。再度ログインしてください。",
+      "microphoneError": "マイクエラーが発生しました。",
+      "microphonePermissionDenied": "マイクへのアクセスが拒否されました。ブラウザの設定でマイクの許可を有効にしてください。",
+      "audioPlaybackError": "音声の再生に失敗しました。ブラウザの設定を確認してください。",
+      "processingAudio": "録音を処理しています...",
+      "audioSendError": "音声の送信に失敗しました。もう一度お試しください。",
+      "authenticated": "WebSocket認証が完了しました",
+      "authenticationTimeout": "認証タイムアウト。再度お試しください。",
+      "processingComplete": "Processing complete"
+    },
+    "processing": {
+      "stt": "音声を文字起こし中...",
+      "ai": "AI応答を生成中...",
+      "tts": "音声を合成中...",
+      "processing": "処理中..."
+    },
+    "shortcuts": {
+      "title": "キーボードショートカット",
+      "showHelp": "キーボードショートカットを表示",
+      "space": "セッション開始/停止",
+      "escape": "セッションキャンセル",
+      "pause": "一時停止/再開",
+      "mute": "マイクミュート/解除",
+      "help": "このヘルプを表示",
+      "note": "💡 ヒント: テキスト入力中はキーボードショートカットが無効になります。",
+      "microphoneMuted": "マイクをミュートしました",
+      "microphoneUnmuted": "マイクのミュートを解除しました"
+    },
+    "completed": {
+      "title": "セッション完了",
+      "duration": "所要時間",
+      "messageCount": "{count}件のメッセージ"
+    },
+    "info": {
+      "scenario": "シナリオ",
+      "avatar": "アバター",
+      "category": "カテゴリ"
+    },
+    "details": {
+      "title": "セッション情報",
+      "sessionId": "セッションID",
+      "scenario": "シナリオ",
+      "language": "言語",
+      "created": "作成日時"
+    },
+    "recording": {
+      "title": "録画",
+      "start": "録画開始",
+      "stop": "録画停止",
+      "pause": "録画一時停止",
+      "resume": "録画再開",
+      "speed": "再生速度",
+      "format": "フォーマット",
+      "resolution": "解像度",
+      "size": "ファイルサイズ",
+      "duration": "再生時間",
+      "status": {
+        "idle": "録画していません",
+        "recording": "録画中",
+        "paused": "一時停止中",
+        "stopped": "停止"
+      },
+      "messages": {
+        "started": "録画を開始しました",
+        "stopped": "録画を停止しました",
+        "paused": "録画を一時停止しました",
+        "resumed": "録画を再開しました",
+        "error": "録画エラー",
+        "errorUnknown": "不明なエラーが発生しました",
+        "processing": "録画を処理中",
+        "processingDescription": "動画の処理が完了するまでお待ちください。数分かかる場合があります。",
+        "notSupported": "お使いのブラウザは録画に対応していません"
+      }
+    }
+  },
+  "errors": {
+    "loadFailed": "セッションの読み込みに失敗しました",
+    "genericError": "エラーが発生しました"
+  }
 }

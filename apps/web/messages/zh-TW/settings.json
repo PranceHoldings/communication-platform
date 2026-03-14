@@ -1,0 +1,55 @@
+{
+  "title": "Settings",
+  "subtitle": "Manage your account settings and preferences",
+  "profile": {
+    "title": "Profile Information",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role"
+  },
+  "preferences": {
+    "title": "Preferences",
+    "emailNotifications": {
+      "title": "Email Notifications",
+      "description": "Receive email updates about your sessions"
+    },
+    "sessionReminders": {
+      "title": "Session Reminders",
+      "description": "Get reminders for scheduled practice sessions"
+    }
+  },
+  "security": {
+    "title": "Security",
+    "changePassword": "Change Password"
+  },
+  "aiAudio": {
+    "title": "AI & Audio Settings",
+    "subtitle": "Default settings for AI responses and audio detection",
+    "aiResponseBehavior": {
+      "title": "AI Response Behavior",
+      "description": "Configure how the AI responds during periods of silence",
+      "enableSilencePrompt": "Prompt conversation during silence",
+      "enableSilencePromptHelp": "The AI will automatically prompt the user after a period of silence",
+      "silenceTimeout": "Silence timeout",
+      "silenceTimeoutHelp": "How long to wait before the AI prompts the user (in seconds)",
+      "silenceTimeoutSeconds": "seconds",
+      "silencePromptStyle": "Prompt tone",
+      "silencePromptStyleFormal": "Formal",
+      "silencePromptStyleCasual": "Casual",
+      "silencePromptStyleNeutral": "Neutral",
+      "showSilenceTimer": "Show silence timer in UI",
+      "showSilenceTimerHelp": "Display the silence countdown timer to the user"
+    },
+    "audioDetectionSettings": {
+      "title": "Audio Detection Settings",
+      "description": "Technical parameters for speech detection",
+      "silenceThreshold": "Silence threshold",
+      "silenceThresholdHelp": "Volume threshold for silence detection (0.01-0.2, default: 0.12)",
+      "minSilenceDuration": "Minimum silence duration (ms)",
+      "minSilenceDurationHelp": "Minimum silence duration before triggering speech_end (100-2000ms, default: 500ms)"
+    },
+    "saveButton": "Save Settings",
+    "resetButton": "Reset to Defaults"
+  },
+  "comingSoon": "Profile editing and additional settings will be available soon. Currently showing read-only information."
+}

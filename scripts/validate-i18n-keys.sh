@@ -151,9 +151,11 @@ done
 echo ""
 
 # Step 4: Check for unused keys (warnings only)
-echo -e "${BLUE}[Step 4/4]${NC} Checking for unused translation keys..."
+# Skip this step if SKIP_UNUSED_CHECK is set (it can be slow with many keys)
+if [ "${SKIP_UNUSED_CHECK:-0}" = "0" ]; then
+  echo -e "${BLUE}[Step 4/4]${NC} Checking for unused translation keys..."
 
-for lang_dir in $LANG_DIRS; do
+  for lang_dir in $LANG_DIRS; do
   lang=$(basename "$lang_dir")
 
   # Collect all keys from this language
@@ -187,7 +189,10 @@ for lang_dir in $LANG_DIRS; do
   fi
 
   rm -f "$TEMP_LANG_KEYS"
-done
+  done
+else
+  echo -e "${BLUE}[Step 4/4]${NC} Skipping unused key check (SKIP_UNUSED_CHECK=1)"
+fi
 
 # Cleanup
 rm -f "$TEMP_KEYS"
