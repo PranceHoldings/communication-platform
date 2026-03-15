@@ -96,7 +96,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-          'Access-Control-Allow-Methods': 'GET,PUT,OPTIONS',
+          'Access-Control-Allow-Methods': 'GET,PUT,PATCH,OPTIONS',
         },
         body: '',
       };
@@ -136,8 +136,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return successResponse(savedSettings);
     }
 
-    // PUTリクエスト: 設定更新
-    if (event.httpMethod === 'PUT') {
+    // PUT/PATCHリクエスト: 設定更新
+    if (event.httpMethod === 'PUT' || event.httpMethod === 'PATCH') {
       // CLIENT_ADMINまたはSUPER_ADMINのみ設定更新可能
       if (currentUser.role !== 'CLIENT_ADMIN' && currentUser.role !== 'SUPER_ADMIN') {
         throw new AuthorizationError('Only administrators can update organization settings');
