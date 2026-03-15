@@ -1,15 +1,15 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-15 10:05 JST
+**最終更新:** 2026-03-15 23:30 JST (Day 20完了)
 **Phase 1進捗:** 100%完了（技術的動作レベル）
 **Phase 1.5進捗:** 100%完了（パフォーマンステスト + Monitoring構築）✅
 **Phase 1.6進捗:** 100%完了（i18n修正・Prisma Client完全解決）✅
 **Phase 2進捗:** 100%完了（録画・解析・レポート）✅
 **Phase 2.5進捗:** 100%完了（ゲストユーザー機能）✅
 **E2Eテスト:** 15/15テスト合格（100%）✅
-**最新コミット:** c6a665a - silencePromptTimeout hierarchical settings implementation ✅
-**最新デプロイ:** 2026-03-15 10:03 JST - WebSocket Lambda (silencePromptTimeout実装) ✅
-**ステータス:** 🎉 silencePromptTimeout機能完全実装・デプロイ完了、Phase 3（本番環境対応）開始準備完了
+**最新コミット:** b5c2963 - audio silence trimming with ffmpeg silenceremove ✅
+**最新デプロイ:** 2026-03-15 23:18:51 UTC (08:18 JST) - WebSocket Lambda (無音トリミング実装) ✅
+**ステータス:** 🎯 音声無音トリミング実装完了、Manual Testing待ち
 
 ---
 
@@ -126,7 +126,199 @@ Role: SUPER_ADMIN
 
 ---
 
-## 🎯 今回のセッションで完了した作業 (Day 19 - 2026-03-15)
+## 🎯 今回のセッションで完了した作業 (Day 20 - 2026-03-15)
+
+### **Day 20: 音声無音トリミング実装（根本解決）** ✅
+
+**セッション時刻:** 2026-03-15 22:45 - 23:30 JST（45分）
+**詳細:** このファイル（START_HERE.md）
+
+#### ユーザー要求
+
+**指摘内容:**
+「initialSilenceTimeoutは必要ありません。音声が無い場合はその部分をトリミングしてからSTTへ送ってください。」
+
+**理由:**
+- Day 19.5の対応（initialSilenceTimeout: 5秒 → 10秒）は対症療法
+- 根本的な解決策: 音声の無音部分を削除してからAzure STTに送信
+- より確実な認識、タイムアウト値に依存しない設計
+
+#### 実装内容 ✅
+
+**1. ffmpeg silenceremove フィルター追加**
+
+```bash
+# Before
+ffmpeg -i input.webm -af "volume=3.0,acompressor=...,alimiter=..." \
+  -acodec pcm_s16le -ar 16000 -ac 1 -f wav output.wav
+
+# After
+ffmpeg -i input.webm \
+  -af "silenceremove=start_periods=1:start_threshold=-50dB:start_duration=0.1,\
+       volume=3.0,acompressor=...,alimiter=..." \
+  -acodec pcm_s16le -ar 16000 -ac 1 -f wav output.wav
+```
+
+**silenceremove パラメータ:**
+- `start_periods=1`: 先頭の無音区間を削除
+- `start_threshold=-50dB`: -50dB以下を無音と判断
+- `start_duration=0.1`: 最低0.1秒の無音を検出
+
+**2. initialSilenceTimeout パラメータの削除・非推奨化**
+
+**修正ファイル（6ファイル）:**
+- `audio-processor.ts`: ffmpegコマンド2箇所にsilenceremove追加
+- `stt-azure.ts`: `@deprecated` コメント追加、デフォルト値 10秒 → 3秒（フォールバック用）
+- `defaults.ts` (infrastructure/lambda/shared): initialSilenceTimeout削除
+- `defaults.ts` (packages/shared/src): initialSilenceTimeout削除
+- `types/index.ts`: OrganizationSettings.initialSilenceTimeout削除
+- `audio-processor.ts`: transcribeAudio メソッドからパラメータ削除
+
+#### デプロイ ✅
+
+**デプロイ時刻:** 2026-03-15 23:18:51 UTC (08:18 JST)
+**デプロイ時間:** 106.36秒
+**更新Lambda関数:**
+- `prance-websocket-default-dev` (LastModified: 2026-03-15T23:18:51Z) ✅
+- `prance-organizations-settings-dev` ✅
+
+**検証結果:**
+- ✅ Lambda関数更新確認
+- ✅ State: Active
+- ✅ Runtime: nodejs22.x
+
+#### コミット ✅
+
+**コミット:** `b5c2963` - feat: implement audio silence trimming with ffmpeg silenceremove
+**ファイル:** 5 files changed (+72 additions, -51 deletions)
+
+**変更内容:**
+- ffmpeg silenceremove フィルター追加（2箇所）
+- initialSilenceTimeout パラメータ削除・非推奨化（6ファイル）
+- コメント追加・ドキュメント更新
+
+#### 効果
+
+**Before（initialSilenceTimeout依存）:**
+- 音声ファイル先頭に長い無音 → 認識失敗リスク
+- タイムアウト値調整は対症療法（5秒 → 10秒 → ?秒）
+- 根本的な解決ではない
+
+**After（無音トリミング）:**
+- 音声ファイル先頭の無音を自動削除
+- Azure STTに送信される音声は無音なし
+- タイムアウト値に依存しない根本的な解決
+- より確実な音声認識
+- クリーンなアーキテクチャ（前処理を適切な層で実施）
+
+#### 次のステップ 📋
+
+**Manual Testing（5-10分、次回セッション）**
+
+1. **基本テスト**
+   - セッション開始
+   - AI挨拶後、すぐに話す → 文字起こし表示確認
+   - AI挨拶後、2-3秒待ってから話す → 文字起こし表示確認
+   - AI挨拶後、5秒待ってから話す → 文字起こし表示確認
+
+2. **期待される結果**
+   - ✅ 全パターンで文字起こしが正常に表示される
+   - ✅ "No speech detected"エラーが発生しない
+   - ✅ 無音トリミングのログ確認（CloudWatch Logs）
+
+3. **CloudWatch Logs確認**
+   ```bash
+   aws logs tail /aws/lambda/prance-websocket-default-dev --since 10m --follow | grep -E "silence|converting"
+   ```
+
+   **期待されるログ:**
+   - `[AudioProcessor] Converting combined WebM to WAV with silence removal`
+   - `[AzureSTT] InitialSilenceTimeout (fallback) set to 3000ms`
+
+---
+
+## 🎯 前回のセッション完了作業 (Day 19.5 - 2026-03-15)
+
+### **Day 19.5: Azure STT音声認識タイムアウト修正（対症療法）** ✅
+
+**セッション時刻:** 2026-03-15 15:00 - 16:10 JST（70分）
+**詳細:** このファイル（START_HERE.md）
+
+#### 問題の発生
+
+**ユーザー報告:**
+「セッション開始後にAIが挨拶文を喋った後、こちらの声が認識されない。文字起こしが表示されず、"No speech detected"エラーが発生する。」
+
+**ログ分析:**
+- 3回の音声検出が発生
+- 1回目: 環境ノイズ誤検出 → `NO_AUDIO_DATA`
+- 2回目: 成功（音声認識成功、4文字の文字起こし）
+- 3回目: **失敗** → `No speech detected`
+
+**CloudWatch Logs分析:**
+- 成功ケース: Azure STT duration 3.2秒
+- **失敗ケース: Azure STT duration 9.6秒** ← 音声ファイル先頭に長い無音区間
+- Azure STT InitialSilenceTimeout: **5秒** ← 不十分
+
+#### 根本原因
+
+**Azure STT InitialSilenceTimeout超過:**
+- デフォルト値: 5000ms (5秒)
+- 実際の無音区間: 最大9.6秒
+- 結果: タイムアウトで `NoMatch` エラー
+
+**音声ファイルの問題:**
+- 音声チャンクは正常に送信されている
+- しかし、先頭に長い無音区間が含まれる
+- Azure STTが「音声がない」と判断してしまう
+
+#### 実装した解決策 ✅
+
+**修正ファイル:**
+1. `infrastructure/lambda/shared/defaults.ts`
+   - `initialSilenceTimeout`: **5000ms → 10000ms (10秒)**
+   - 理由: 音声ファイル先頭の無音区間対策
+
+2. `infrastructure/lambda/shared/audio/stt-azure.ts`
+   - デフォルト値コメント更新: 5秒 → 10秒
+   - constructor内のデフォルト値更新
+
+**デプロイ:**
+- デプロイ時刻: 2026-03-15 15:08:11 UTC (00:08 JST)
+- 更新Lambda関数: `prance-websocket-default-dev`
+- デプロイ時間: 約4分（bundling含む）
+
+**検証結果:**
+- ✅ Lambda関数更新確認（LastModified: 2026-03-15T15:08:11Z）
+- ✅ 環境変数: CLOUDFRONT_DOMAIN, FFMPEG_PATH正常
+- ✅ WebSocket Lambda Function: UPDATE_COMPLETE
+
+#### 効果
+
+**Before (5秒タイムアウト):**
+- 音声ファイル先頭に5秒以上の無音 → 認識失敗
+- ユーザー体験: "話しても反応しない"
+
+**After (10秒タイムアウト):**
+- 音声ファイル先頭に最大10秒の無音でも認識可能
+- ユーザー体験: より確実な音声認識
+
+**設定可能範囲:**
+- バリデーション範囲: 3000-15000ms（組織設定で変更可能）
+- 実用的な範囲: 5000-10000ms
+
+#### 次のステップ
+
+**Manual Testing（次回セッション、5分）:**
+1. ブラウザでセッションページを開く
+2. 「Start Session」をクリック
+3. AI挨拶後、少し待ってから話す（2-3秒無音後）
+4. 文字起こしが正常に表示されることを確認
+5. "No speech detected"エラーが発生しないことを確認
+
+---
+
+## 🎯 前回のセッション完了作業 (Day 19 - 2026-03-15)
 
 ### **Day 19: silencePromptTimeout 階層的設定実装** ✅
 
@@ -1035,7 +1227,47 @@ curl -s -X GET "https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v
 
 ## 次回セッション推奨アクション
 
-### Immediate（開始時5分）
+### 🔴 最優先: 無音トリミング機能の動作確認（5-10分）
+
+**Day 20で実装した ffmpeg silenceremove のManual Testing**
+
+1. **ブラウザでセッションページを開く**
+   ```
+   http://localhost:3000/dashboard/sessions
+   ```
+
+2. **新しいセッションを開始**
+   - 「New Session」をクリック
+   - シナリオとアバターを選択
+   - 「Start Session」をクリック
+
+3. **複数パターンでテスト**
+   - **パターンA:** AI挨拶後、すぐに話す → 文字起こし表示確認 ✅
+   - **パターンB:** AI挨拶後、2-3秒待ってから話す → 文字起こし表示確認 ✅
+   - **パターンC:** AI挨拶後、5秒待ってから話す → 文字起こし表示確認 ✅
+   - 例: "こんにちは。今日はよろしくお願いします。"
+
+4. **期待される結果**
+   - ✅ 全パターンで文字起こしが正常に表示される
+   - ✅ "No speech detected"エラーが発生しない
+   - ✅ AIが適切に応答を返す
+
+5. **CloudWatch Logsで詳細確認（オプション）**
+   ```bash
+   aws logs tail /aws/lambda/prance-websocket-default-dev --since 10m --follow | grep -E "silence|Converting"
+   ```
+
+   **期待されるログ:**
+   - `[AudioProcessor] Converting combined WebM to WAV with silence removal` ✅
+   - `[AzureSTT] InitialSilenceTimeout (fallback) set to 3000ms` ✅
+
+**テスト成功後:**
+- silencePromptTimeout機能（15秒間無音でAIが会話を促す）もテスト
+- Phase 3（本番環境対応）の開始を検討
+
+---
+
+### Immediate（開始後）
 
 1. **環境確認**
    ```bash
@@ -1045,20 +1277,23 @@ curl -s -X GET "https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v
    aws sts get-caller-identity
    ```
 
-2. **Phase 1.5パフォーマンステスト実行** 🆕
+2. **コミット推奨**
    ```bash
-   # 認証トークン取得
-   export AUTH_TOKEN=$(./scripts/get-auth-token.sh)
+   # 変更ファイルの確認
+   git status
 
-   # 単一セッションテスト
-   npm run perf:test
+   # Day 19.5の変更をコミット
+   git add infrastructure/lambda/shared/defaults.ts infrastructure/lambda/shared/audio/stt-azure.ts START_HERE.md
+   git commit -m "fix: increase Azure STT initialSilenceTimeout to 10 seconds
 
-   # CloudWatch メトリクス確認
-   npm run perf:metrics
+- Problem: Audio recognition failed with 'No speech detected' error
+- Root cause: InitialSilenceTimeout (5s) was insufficient for audio files with long initial silence (up to 9.6s)
+- Solution: Increase default timeout from 5000ms to 10000ms
+- Effect: Can now handle audio files with up to 10 seconds of initial silence
+- Deployed: 2026-03-15 15:08 UTC (prance-websocket-default-dev)"
    ```
 
 3. **優先順位決定**
-   - 🟡 Phase 1.5テスト実行・完了（推奨、10-15分）
    - 🔴 Phase 3（本番環境対応）を開始するか？
    - Phase 2.5 Week 4（メール送信）を追加するか？
 
