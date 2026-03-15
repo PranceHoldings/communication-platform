@@ -318,6 +318,31 @@ else
 fi
 
 # =============================================================================
+# Check 13: UI設定項目とデータベース同期検証（CRITICAL）
+# =============================================================================
+log_section "Check 13: UI設定項目とデータベース同期検証"
+
+log_info "UI設定可能項目のデータベース保存・取得の整合性を検証中..."
+
+if [ -f "./scripts/validate-ui-settings-sync.sh" ]; then
+  if bash ./scripts/validate-ui-settings-sync.sh > /tmp/ui-settings-validation.log 2>&1; then
+    pass_check "全てのUI設定項目が正しく同期されています"
+  else
+    fail_check "UI設定項目の同期に問題があります"
+    log_info "詳細:"
+    tail -50 /tmp/ui-settings-validation.log | sed 's/^/    /'
+    log_info ""
+    log_info "対応方法:"
+    log_info "  1. GET APIの select にフィールドを追加"
+    log_info "  2. UPDATE/CREATE APIの body抽出と updateData にフィールドを追加"
+    log_info "  3. 組織設定 DEFAULT_SETTINGS にデフォルト値を追加（該当する場合）"
+    log_info "  4. 詳細ガイド: docs/07-development/UI_SETTINGS_DATABASE_SYNC_RULES.md"
+  fi
+else
+  warn_check "UI設定同期検証スクリプトが見つかりません"
+fi
+
+# =============================================================================
 # サマリー
 # =============================================================================
 log_section "チェック結果サマリー"
