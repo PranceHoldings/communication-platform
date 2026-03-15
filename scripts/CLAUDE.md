@@ -1,0 +1,543 @@
+# Prance Communication Platform - Scripts Guide
+
+**親ドキュメント:** [../CLAUDE.md](../CLAUDE.md)
+**関連ドキュメント:** [../infrastructure/CLAUDE.md](../infrastructure/CLAUDE.md)
+
+**バージョン:** 1.0
+**最終更新:** 2026-03-15
+
+---
+
+## 📋 このディレクトリについて
+
+`scripts/` ディレクトリは開発・運用を支援するシェルスクリプトを含みます：
+
+- **検証スクリプト** - 環境変数、依存関係、言語同期等の検証
+- **デプロイスクリプト** - インフラ・Lambda関数のデプロイ補助
+- **データベーススクリプト** - マイグレーション、クエリ実行
+- **監視スクリプト** - ログ監視、ヘルスチェック
+
+---
+
+## 🔴 スクリプト使用の絶対厳守ルール
+
+### Rule 1: 検証スクリプトは必ずコミット前に実行
+
+**❌ 禁止事項:**
+- 検証スクリプトをスキップしてコミット
+- エラーを無視してデプロイ
+- 「後で直す」という先送り
+
+**✅ 必須実行手順:**
+
+```bash
+# コミット前の全検証
+npm run pre-commit
+
+# 個別検証
+bash scripts/validate-env.sh
+bash scripts/validate-lambda-dependencies.sh
+bash scripts/validate-language-sync.sh
+bash scripts/validate-ui-settings.sh
+```
+
+### Rule 2: データベースクエリシステムの使用
+
+**🔴 最重要: Aurora RDSへのアクセスは必ずLambda経由**
+
+**✅ 正しい方法:**
+
+```bash
+# 標準的なクエリ実行
+bash scripts/db-query.sh "SELECT * FROM scenarios LIMIT 5"
+
+# ファイル経由（大きなクエリ）
+bash scripts/db-query.sh --file scripts/queries/verification.sql
+
+# 書き込み操作（明示的フラグ必須）
+bash scripts/db-query.sh --write "UPDATE scenarios SET title='New' WHERE id='xxx'"
+```
+
+**❌ 禁止事項:**
+
+```bash
+# ローカルPostgreSQLへの直接接続（禁止）
+psql postgresql://localhost:5432/prance
+
+# RDSへの直接接続（VPCでブロック済み）
+psql postgresql://xxx.rds.amazonaws.com:5432/prance
+```
+
+---
+
+## 📦 スクリプト一覧
+
+### 検証スクリプト
+
+#### validate-env.sh
+
+**用途:** 環境変数が正しく設定されているか検証
+
+**実行:**
+
+```bash
+bash scripts/validate-env.sh
+```
+
+**検証項目:**
+- DATABASE_URL が AWS RDS を指しているか
+- 必須環境変数の存在確認
+- .env.local と infrastructure/.env の整合性
+
+**期待される出力:**
+
+```
+✅ DATABASE_URL is correctly configured (AWS RDS)
+✅ All required environment variables are set
+✅ .env.local and infrastructure/.env are synchronized
+```
+
+#### validate-lambda-dependencies.sh
+
+**用途:** Lambda関数の依存関係が正しくインストールされているか検証
+
+**実行:**
+
+```bash
+cd infrastructure
+npm run lambda:predeploy
+
+# または直接
+bash scripts/validate-lambda-dependencies.sh prance-scenarios-get-dev
+```
+
+**検証項目:**
+- @aws-sdk/client-s3
+- @aws-sdk/client-bedrock-runtime
+- @prisma/client
+- microsoft-cognitiveservices-speech-sdk
+- 共有モジュール (shared/config, shared/utils)
+
+**修復:**
+
+```bash
+# 依存関係破損時の修復
+npm run lambda:fix
+```
+
+#### validate-language-sync.sh
+
+**用途:** Frontend/Lambda/Message directoriesの言語リストが同期しているか検証
+
+**実行:**
+
+```bash
+npm run validate:languages
+
+# または直接
+bash scripts/validate-language-sync.sh
+```
+
+**検証項目:**
+- apps/web/lib/i18n/config.ts の locales 配列
+- infrastructure/lambda/shared/config/language-config.ts の LANGUAGES 配列
+- apps/web/messages/{languageCode}/ ディレクトリ構造
+
+**期待される出力:**
+
+```
+✅ Frontend config languages: en, ja, zh-CN, zh-TW, ko, es, pt, fr, de, it
+✅ Lambda config languages: en, ja, zh-CN, zh-TW, ko, es, pt, fr, de, it
+✅ Message directories: en, ja, zh-CN, zh-TW, ko, es, pt, fr, de, it
+✅ All language lists are synchronized
+```
+
+#### validate-ui-settings.sh
+
+**用途:** UI設定項目がデータベースに正しく保存・取得されるか検証
+
+**実行:**
+
+```bash
+npm run validate:ui-settings
+
+# 特定フィールドのみ検証
+npm run validate:ui-settings -- --field silencePromptTimeout
+```
+
+**検証項目:**
+- Prismaスキーマにフィールドが存在するか
+- GET APIの select に含まれているか
+- UPDATE/CREATE APIの updateData に含まれているか
+- 組織設定 DEFAULT_SETTINGS に適切なデフォルト値があるか
+
+**期待される出力:**
+
+```
+Validating UI setting: silencePromptTimeout
+
+✅ Field exists in Prisma schema
+✅ Included in GET API select
+✅ Included in UPDATE API updateData
+✅ Default value is appropriate (15)
+
+Validation passed ✅
+```
+
+#### validate-deployment-method.sh
+
+**用途:** 手動zipファイルが存在しないか検証（Lambda関数デプロイ前）
+
+**実行:**
+
+```bash
+bash scripts/validate-deployment-method.sh
+```
+
+**検証項目:**
+- infrastructure/lambda/**/*.zip ファイルの存在確認
+- lambda-deployment.zip 等の手動作成zipファイル検出
+
+**期待される出力:**
+
+```
+✅ No manual zip files detected
+✅ All validations passed
+```
+
+---
+
+### データベーススクリプト
+
+#### db-query.sh
+
+**用途:** Lambda経由でSQLクエリを実行（直接実行モード）
+
+**実行:**
+
+```bash
+# 基本的なSELECT
+bash scripts/db-query.sh "SELECT id, title FROM scenarios LIMIT 5"
+
+# 複雑なクエリ
+bash scripts/db-query.sh "
+SELECT
+  id,
+  title,
+  silence_prompt_timeout,
+  enable_silence_prompt
+FROM scenarios
+WHERE silence_prompt_timeout IS NOT NULL
+ORDER BY created_at DESC
+LIMIT 10
+"
+
+# ファイル経由
+bash scripts/db-query.sh --file scripts/queries/verification.sql
+
+# 最大結果数指定
+bash scripts/db-query.sh --max-results 100 "SELECT * FROM sessions"
+
+# 書き込み操作（--write フラグ必須）
+bash scripts/db-query.sh --write "UPDATE scenarios SET title='New Title' WHERE id='xxx'"
+```
+
+**オプション:**
+- `--file FILE` - SQLファイルから読み込み
+- `--write` - 書き込み操作を許可（デフォルトはread-only）
+- `--max-results N` - 最大結果数（デフォルト: 1000）
+- `--env ENV` - 環境指定（dev/staging/production、デフォルト: dev）
+
+**セキュリティ:**
+- デフォルトでread-onlyモード（SELECT, WITH句のみ許可）
+- INSERT, UPDATE, DELETE, DROP等は `--write` フラグが必須
+- 書き込み操作時は確認プロンプト表示
+
+#### db-exec.sh
+
+**用途:** Lambda経由でSQLクエリを実行（S3経由モード、大きなクエリ用）
+
+**実行:**
+
+```bash
+# ファイルから読み込み（read-only）
+bash scripts/db-exec.sh scripts/queries/large-migration.sql
+
+# 書き込み操作
+bash scripts/db-exec.sh --write scripts/queries/update.sql
+```
+
+**処理フロー:**
+1. SQLファイルをS3にアップロード
+2. Lambda関数にqueryIdを渡して実行
+3. 結果取得
+4. S3から自動削除（クリーンアップ）
+
+**S3バケット:**
+- `prance-db-queries-dev`
+- 7日後に自動削除（ライフサイクルルール）
+
+---
+
+### デプロイスクリプト
+
+#### deploy.sh
+
+**用途:** 環境ごとのCDKデプロイを実行
+
+**実行:**
+
+```bash
+cd infrastructure
+
+# 開発環境
+bash deploy.sh dev
+
+# ステージング環境
+bash deploy.sh staging
+
+# 本番環境
+bash deploy.sh production
+```
+
+**実行される処理:**
+1. 環境変数検証
+2. CDK Bootstrap確認
+3. 全Stackのデプロイ
+4. デプロイ結果の出力
+
+#### clean-deploy.sh
+
+**用途:** クリーン状態からのデプロイ（node_modules削除 → 再インストール → デプロイ）
+
+**実行:**
+
+```bash
+cd infrastructure
+bash clean-deploy.sh dev
+```
+
+**⚠️ 注意:**
+- 時間がかかる（10-20分）
+- 依存関係が破損している場合のみ使用
+- 通常は `deploy.sh` を使用すること
+
+---
+
+### 監視・ヘルスチェックスクリプト
+
+#### watch-logs.sh
+
+**用途:** CloudWatch Logsをリアルタイム監視
+
+**実行:**
+
+```bash
+# Lambda関数のログ監視
+bash scripts/watch-logs.sh prance-scenarios-get-dev
+
+# エラーログのみフィルタ
+bash scripts/watch-logs.sh prance-scenarios-get-dev ERROR
+```
+
+#### health-check.sh
+
+**用途:** システム全体のヘルスチェック
+
+**実行:**
+
+```bash
+bash scripts/health-check.sh dev
+```
+
+**チェック項目:**
+- RDS接続確認
+- Lambda関数ステータス
+- API Gatewayエンドポイント
+- S3バケット存在確認
+- DynamoDBテーブル存在確認
+
+---
+
+## 🔍 クエリファイル管理
+
+### scripts/queries/ ディレクトリ
+
+よく使うSQLクエリを保存して再利用します。
+
+```
+scripts/queries/
+├── phase6-verification.sql   # Phase 6階層的フォールバック検証
+├── list-scenarios.sql         # シナリオ一覧取得
+├── list-users.sql             # ユーザー一覧取得
+├── organization-settings.sql  # 組織設定確認
+└── [カスタムクエリ]
+```
+
+**クエリファイルの作成:**
+
+```sql
+-- scripts/queries/list-scenarios.sql
+SELECT
+  id,
+  title,
+  language,
+  silence_prompt_timeout,
+  enable_silence_prompt
+FROM scenarios
+WHERE org_id = 'YOUR_ORG_ID'
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+**実行:**
+
+```bash
+bash scripts/db-query.sh --file scripts/queries/list-scenarios.sql
+```
+
+---
+
+## 🧪 スクリプトテスト
+
+### 単体テスト
+
+```bash
+# スクリプトの構文チェック
+bash -n scripts/validate-env.sh
+
+# ShellCheck（静的解析）
+shellcheck scripts/validate-env.sh
+```
+
+### 統合テスト
+
+```bash
+# 全検証スクリプト実行
+for script in scripts/validate-*.sh; do
+  echo "Testing $script"
+  bash "$script"
+done
+```
+
+---
+
+## 📚 スクリプト作成ガイドライン
+
+### ベストプラクティス
+
+**1. エラーハンドリング**
+
+```bash
+#!/bin/bash
+set -e  # エラーで即座に終了
+
+# エラー時のクリーンアップ
+trap 'echo "Error occurred"; cleanup' ERR
+
+function cleanup() {
+  # クリーンアップ処理
+  rm -f /tmp/temp-file
+}
+```
+
+**2. カラー出力**
+
+```bash
+# 色定義
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# 使用
+echo -e "${GREEN}✓ Success${NC}"
+echo -e "${RED}✗ Error${NC}"
+echo -e "${YELLOW}⚠️  Warning${NC}"
+```
+
+**3. 引数パース**
+
+```bash
+# デフォルト値
+ENVIRONMENT="dev"
+VERBOSE=false
+
+# 引数パース
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --env)
+      ENVIRONMENT="$2"
+      shift 2
+      ;;
+    --verbose)
+      VERBOSE=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+  esac
+done
+```
+
+**4. ドライラン対応**
+
+```bash
+DRY_RUN=false
+
+if [ "$DRY_RUN" = true ]; then
+  echo "Would execute: aws s3 cp file.txt s3://bucket/"
+else
+  aws s3 cp file.txt s3://bucket/
+fi
+```
+
+---
+
+## 🔍 トラブルシューティング
+
+### よくある問題
+
+**1. Permission denied**
+
+```bash
+# 実行権限付与
+chmod +x scripts/validate-env.sh
+```
+
+**2. Command not found**
+
+```bash
+# 依存コマンドのインストール確認
+which aws    # AWS CLI
+which jq     # JSON processor
+which psql   # PostgreSQL client
+```
+
+**3. Environment variable not set**
+
+```bash
+# 環境変数確認
+echo $DATABASE_URL
+env | grep DATABASE_URL
+
+# .env読み込み
+set -a
+source .env.local
+set +a
+```
+
+---
+
+## 📚 関連ドキュメント
+
+- [データベースクエリシステム](../docs/07-development/DATABASE_QUERY_SYSTEM.md)
+- [デプロイメント](../docs/08-operations/DEPLOYMENT.md)
+- [環境アーキテクチャ](../docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md)
+
+---
+
+**最終更新:** 2026-03-15
+**次回レビュー:** 新規スクリプト追加時

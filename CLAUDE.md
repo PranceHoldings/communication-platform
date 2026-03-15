@@ -1,9 +1,9 @@
 # Prance Communication Platform - プロジェクト概要
 
-**バージョン:** 2.8
+**バージョン:** 2.9
 **作成日:** 2026-02-26
-**最終更新:** 2026-03-14 20:00 JST
-**ステータス:** 🔴 Phase 1完了（100%）・ Phase 2完了（100%）・ Phase 2.5完了（100%）・ Prisma Client問題解決 ✅ ・ コードベース統一化完了 ✅ ・ 10言語対応完了 ・ ゲストユーザー機能完了
+**最終更新:** 2026-03-15
+**ステータス:** 🔴 Phase 1完了（100%）・ Phase 2完了（100%）・ Phase 2.5完了（100%）・ Prisma Client問題解決 ✅ ・ コードベース統一化完了 ✅ ・ 10言語対応完了 ・ ゲストユーザー機能完了 ・ **CLAUDE.md階層化完了 ✅**
 
 ---
 
@@ -14,10 +14,28 @@
 
 ### 📚 ドキュメント構成
 
+#### 階層化されたCLAUDE.mdファイル
+
 ```
 START_HERE.md                            ← 次回セッション開始（唯一のエントリーポイント）
 CLAUDE.md (このファイル)                 ← プロジェクト概要・重要方針
-├── docs/01-getting-started/             ← 初心者向けガイド
+├── apps/CLAUDE.md                        ← フロントエンド開発ガイド
+├── infrastructure/CLAUDE.md              ← インフラ・Lambda開発ガイド
+├── scripts/CLAUDE.md                     ← スクリプト使用ガイド
+└── docs/CLAUDE.md                        ← ドキュメント管理ガイド
+```
+
+**各ファイルの役割:**
+
+- **[apps/CLAUDE.md](apps/CLAUDE.md)** - Next.js 15、多言語対応、UI開発ガイド
+- **[infrastructure/CLAUDE.md](infrastructure/CLAUDE.md)** - AWS CDK、Lambda関数、サーバーレス開発ガイド
+- **[scripts/CLAUDE.md](scripts/CLAUDE.md)** - 検証・デプロイ・データベーススクリプト使用ガイド
+- **[docs/CLAUDE.md](docs/CLAUDE.md)** - ドキュメント管理・更新ルール
+
+#### 詳細ドキュメント構造
+
+```
+docs/01-getting-started/             ← 初心者向けガイド
 │   ├── README.md                        - プロジェクト概要
 │   ├── QUICKSTART.md                    - クイックスタート
 │   ├── SETUP.md                         - セットアップガイド
@@ -525,6 +543,204 @@ grep -r "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" | grep -v 
 - [ ] 翻訳キーは `category.key` 形式？
 
 > 詳細: docs/07-development/I18N_SYSTEM_GUIDELINES.md
+
+#### Rule 6: UI設定項目のデータベース同期原則（CRITICAL - 2026-03-15追加）
+
+**🔴 最重要: UI上で設定可能にした項目は、必ずデータベースに正しく保存・取得されることを保証すること**
+
+**❌ 禁止事項:**
+
+- UI設定項目を追加したのに、GET APIの select に含めないこと
+- UPDATE/CREATE APIの updateData に含めないこと
+- 組織設定のデフォルト値を不適切な値（機能を無効化する値）にすること
+- データフロー全体（Scenario > Organization > System Default）の検証を怠ること
+
+**✅ 必須実行手順（5 Phase）:**
+
+**Phase 1: データモデル設計**
+```bash
+# Prismaスキーマにフィールド追加
+# packages/database/prisma/schema.prisma
+showSilenceTimer Boolean? @map("show_silence_timer")
+
+# マイグレーション作成
+cd packages/database
+npx prisma migrate dev --name add_<feature>_settings
+npx prisma generate
+```
+
+**Phase 2: 型定義**
+```typescript
+// packages/shared/src/types/index.ts に追加
+export interface Scenario {
+  showSilenceTimer?: boolean;
+}
+```
+
+**Phase 3: バックエンド実装**
+```typescript
+// GET API: select に含める
+const scenario = await prisma.scenario.findUnique({
+  select: {
+    showSilenceTimer: true,  // ✅ 必須
+  },
+});
+
+// UPDATE API: body抽出 → updateData → select（レスポンス）
+const { showSilenceTimer } = body;
+if (showSilenceTimer !== undefined) updateData.showSilenceTimer = showSilenceTimer;
+
+// 組織設定: DEFAULT_SETTINGS に追加
+const DEFAULT_SETTINGS = {
+  showSilenceTimer: true,  // ✅ 適切なデフォルト値
+};
+```
+
+**Phase 4: フロントエンド実装**
+```typescript
+// API型定義に追加
+export interface Scenario {
+  showSilenceTimer?: boolean;
+}
+
+// フォーム実装
+const [showSilenceTimer, setShowSilenceTimer] = useState<boolean | undefined>(undefined);
+
+// API送信
+await updateScenario(id, { showSilenceTimer });
+```
+
+**Phase 5: 検証**
+```bash
+# コミット前に必ず実行
+npm run validate:ui-settings
+
+# 特定フィールドのみ検証
+npm run validate:ui-settings -- --field showSilenceTimer
+```
+
+**過去の失敗例（2026-03-15）:**
+
+**問題:** 沈黙タイマー設定 - UI上で設定可能だが、組織設定デフォルト値が `false` でハードコード
+
+**影響:**
+- シナリオ設定を「デフォルト使用」にすると、タイマーが表示されない
+- ユーザーが有効化したつもりでも動作しない
+- データフロー全体の検証が不十分だった
+
+**根本原因:**
+```typescript
+// ❌ 間違い - infrastructure/lambda/organizations/settings/index.ts
+const DEFAULT_SETTINGS = {
+  showSilenceTimer: false,  // 機能を無効化するデフォルト値
+};
+```
+
+**教訓:**
+- デフォルト値は「最も便利な値」にする（有効化 > 無効化）
+- 階層的設定の全レイヤーを検証する（Scenario > Organization > System Default）
+- UI設定項目追加時は必ず検証スクリプトを実行する
+
+**チェックリスト:**
+
+- [ ] Prismaスキーマにフィールド追加？
+- [ ] GET APIの select に含まれている？
+- [ ] UPDATE/CREATE APIの updateData に含まれている？
+- [ ] 組織設定 DEFAULT_SETTINGS に適切なデフォルト値？
+- [ ] フロントエンド型定義に追加？
+- [ ] フォーム実装完了？
+- [ ] `npm run validate:ui-settings` 実行して合格？
+
+> 詳細: docs/07-development/UI_SETTINGS_DATABASE_SYNC_RULES.md
+
+#### Rule 7: Lambda関数デプロイメント原則（CRITICAL - 2026-03-15追加）🆕
+
+**🔴 最重要: Lambda関数デプロイはCDK経由のみ。手動zipアップロード絶対禁止**
+
+**❌ 絶対禁止事項:**
+
+```bash
+# 手動zipアップロード（絶対に実行してはいけない）
+cd infrastructure/lambda/websocket/default
+zip -r lambda-deployment.zip .
+aws lambda update-function-code --function-name prance-websocket-default-dev --zip-file fileb://lambda-deployment.zip
+```
+
+**理由:**
+- TypeScriptファイル（.ts）がそのままzipされる
+- esbuildによるトランスパイル（TypeScript → JavaScript）がスキップされる
+- Lambda Runtimeは`.js`ファイルを期待するが、`.ts`ファイルしかない
+- 結果: `Runtime.ImportModuleError: Cannot find module 'index'`
+
+**✅ 正しいデプロイ方法（唯一の方法）:**
+
+```bash
+# WebSocket Lambda関数のデプロイ
+cd infrastructure
+npm run deploy:lambda
+
+# CDKが自動的に実行する処理:
+# 1. esbuildでトランスパイル (index.ts → index.js)
+# 2. 依存関係のbundling
+# 3. 共有モジュール・ネイティブ依存関係のコピー
+# 4. 最適化されたzipファイル生成
+# 5. Lambda関数への自動アップロード
+```
+
+**CDKが「no changes」と判断した場合の対処:**
+
+```bash
+# Option 1: ソースコードに小さな変更を加える（推奨）
+# index.ts のコメントに現在時刻（秒まで）を追加
+# Last updated: 2026-03-15 07:50:43 UTC
+
+# Option 2: CDKキャッシュクリア
+rm -rf infrastructure/cdk.out/
+
+# 再デプロイ
+cd infrastructure && npm run deploy:lambda
+```
+
+**デプロイ前の検証:**
+
+```bash
+# 手動zipファイルが存在しないか確認
+bash scripts/validate-deployment-method.sh
+
+# 期待される結果:
+# ✅ All validations passed
+# ❌ Manual zip files detected → 削除してからデプロイ
+```
+
+**過去の失敗例（2026-03-15）:**
+
+**問題:** WebSocket接続が全て失敗、Internal server error
+
+**エラーログ:**
+```
+Runtime.ImportModuleError: Error: Cannot find module 'index'
+```
+
+**発生プロセス:**
+1. CDKデプロイ → "no changes"
+2. 焦って手動zipアップロードを試みる
+3. TypeScriptファイルをそのままzip
+4. Lambda関数起動失敗
+
+**教訓:**
+- **手動zipアップロードは絶対に使用しない**
+- CDKの自動ビルドプロセス（esbuild）を信頼する
+- 焦って設計を無視した対処をしない
+- ソースコードに小さな変更を加えてハッシュを更新
+
+**チェックリスト:**
+
+- [ ] CDK経由でデプロイしている？（`npm run deploy:lambda`）
+- [ ] 手動zipファイルが存在しない？（`validate-deployment-method.sh`実行）
+- [ ] デプロイ後、Lambda関数のLastModifiedタイムスタンプを確認？
+- [ ] CloudWatch Logsでエラーがないか確認？
+
+> 詳細: memory/deployment-rules.md
 
 ---
 
