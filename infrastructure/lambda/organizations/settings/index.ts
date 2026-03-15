@@ -14,16 +14,14 @@ import {
   ValidationError,
   OrganizationSettings,
 } from '../../shared/types';
+import {
+  DEFAULT_ORGANIZATION_SETTINGS,
+  VALIDATION_RANGES,
+  ALLOWED_VALUES,
+} from '../../shared/defaults';
 
-// デフォルト設定値
-const DEFAULT_SETTINGS: OrganizationSettings = {
-  enableSilencePrompt: true,
-  silenceTimeout: 10,
-  silencePromptStyle: 'neutral',
-  showSilenceTimer: false,
-  silenceThreshold: 0.12,
-  minSilenceDuration: 500,
-};
+// 🔴 CRITICAL: デフォルト値は shared/defaults から取得（多重管理禁止）
+const DEFAULT_SETTINGS = DEFAULT_ORGANIZATION_SETTINGS;
 
 /**
  * 設定のバリデーション
@@ -34,14 +32,22 @@ function validateSettings(settings: Partial<OrganizationSettings>): void {
   }
 
   if (settings.silenceTimeout !== undefined) {
-    if (typeof settings.silenceTimeout !== 'number' || settings.silenceTimeout < 5 || settings.silenceTimeout > 60) {
-      throw new ValidationError('silenceTimeout must be a number between 5 and 60');
+    const { min, max } = VALIDATION_RANGES.silenceTimeout;
+    if (typeof settings.silenceTimeout !== 'number' || settings.silenceTimeout < min || settings.silenceTimeout > max) {
+      throw new ValidationError(`silenceTimeout must be a number between ${min} and ${max}`);
+    }
+  }
+
+  if (settings.silencePromptTimeout !== undefined) {
+    const { min, max } = VALIDATION_RANGES.silencePromptTimeout;
+    if (typeof settings.silencePromptTimeout !== 'number' || settings.silencePromptTimeout < min || settings.silencePromptTimeout > max) {
+      throw new ValidationError(`silencePromptTimeout must be a number between ${min} and ${max}`);
     }
   }
 
   if (settings.silencePromptStyle !== undefined) {
-    if (!['formal', 'casual', 'neutral'].includes(settings.silencePromptStyle)) {
-      throw new ValidationError('silencePromptStyle must be formal, casual, or neutral');
+    if (!ALLOWED_VALUES.silencePromptStyle.includes(settings.silencePromptStyle as any)) {
+      throw new ValidationError(`silencePromptStyle must be one of: ${ALLOWED_VALUES.silencePromptStyle.join(', ')}`);
     }
   }
 
@@ -50,14 +56,23 @@ function validateSettings(settings: Partial<OrganizationSettings>): void {
   }
 
   if (settings.silenceThreshold !== undefined) {
-    if (typeof settings.silenceThreshold !== 'number' || settings.silenceThreshold < 0.01 || settings.silenceThreshold > 0.2) {
-      throw new ValidationError('silenceThreshold must be a number between 0.01 and 0.2');
+    const { min, max } = VALIDATION_RANGES.silenceThreshold;
+    if (typeof settings.silenceThreshold !== 'number' || settings.silenceThreshold < min || settings.silenceThreshold > max) {
+      throw new ValidationError(`silenceThreshold must be a number between ${min} and ${max}`);
     }
   }
 
   if (settings.minSilenceDuration !== undefined) {
-    if (typeof settings.minSilenceDuration !== 'number' || settings.minSilenceDuration < 100 || settings.minSilenceDuration > 2000) {
-      throw new ValidationError('minSilenceDuration must be a number between 100 and 2000');
+    const { min, max } = VALIDATION_RANGES.minSilenceDuration;
+    if (typeof settings.minSilenceDuration !== 'number' || settings.minSilenceDuration < min || settings.minSilenceDuration > max) {
+      throw new ValidationError(`minSilenceDuration must be a number between ${min} and ${max}`);
+    }
+  }
+
+  if (settings.initialSilenceTimeout !== undefined) {
+    const { min, max } = VALIDATION_RANGES.initialSilenceTimeout;
+    if (typeof settings.initialSilenceTimeout !== 'number' || settings.initialSilenceTimeout < min || settings.initialSilenceTimeout > max) {
+      throw new ValidationError(`initialSilenceTimeout must be a number between ${min} and ${max} ms`);
     }
   }
 }
@@ -69,6 +84,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   console.log('Organization settings request:', {
     method: event.httpMethod,
     path: event.path,
+    queryStringParameters: event.queryStringParameters,
+    timestamp: new Date().toISOString(),
   });
 
   try {
@@ -106,16 +123,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         throw new AuthorizationError('Organization not found');
       }
 
-      // 保存済み設定とデフォルト設定をマージ
+      // 🔴 CRITICAL: Return raw DB values WITHOUT merging with defaults
+      // Frontend/SessionPlayer will handle hierarchical resolution: Org → DEFAULT_SETTINGS
       const savedSettings = (organization.settings as OrganizationSettings) || {};
-      const mergedSettings: OrganizationSettings = {
-        ...DEFAULT_SETTINGS,
-        ...savedSettings,
-      };
 
-      console.log('Settings retrieved successfully:', { orgId: organization.id });
+      console.log('Settings retrieved successfully:', {
+        orgId: organization.id,
+        savedSettings,
+        timestamp: new Date().toISOString(),
+      });
 
-      return successResponse(mergedSettings);
+      return successResponse(savedSettings);
     }
 
     // PUTリクエスト: 設定更新
@@ -128,6 +146,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       // リクエストボディをパース
       const body = JSON.parse(event.body || '{}');
       const newSettings: Partial<OrganizationSettings> = body;
+
+      console.log('Updating organization settings:', {
+        orgId: currentUser.orgId,
+        requestBody: newSettings,
+        timestamp: new Date().toISOString(),
+      });
 
       // バリデーション
       validateSettings(newSettings);
@@ -142,11 +166,21 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
       const currentSettings = (organization?.settings as OrganizationSettings) || {};
 
+      console.log('Current settings before update:', {
+        orgId: currentUser.orgId,
+        currentSettings,
+      });
+
       // 設定をマージして更新
       const updatedSettings: OrganizationSettings = {
         ...currentSettings,
         ...newSettings,
       };
+
+      console.log('Merged settings to save:', {
+        orgId: currentUser.orgId,
+        updatedSettings,
+      });
 
       // データベースに保存
       await prisma.organization.update({
@@ -156,7 +190,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         },
       });
 
-      console.log('Settings updated successfully:', { orgId: currentUser.orgId });
+      console.log('Settings updated successfully:', {
+        orgId: currentUser.orgId,
+        updatedSettings,
+        timestamp: new Date().toISOString(),
+      });
 
       return successResponse(updatedSettings);
     }

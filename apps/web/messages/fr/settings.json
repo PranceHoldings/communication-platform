@@ -32,6 +32,8 @@
       "enableSilencePromptHelp": "The AI will automatically prompt the user after a period of silence",
       "silenceTimeout": "Silence timeout",
       "silenceTimeoutHelp": "How long to wait before the AI prompts the user (in seconds)",
+      "silencePromptTimeout": "AI prompt trigger timeout",
+      "silencePromptTimeoutHelp": "Time to wait for user speech before AI prompt throughout entire conversation (5-60 seconds)",
       "silenceTimeoutSeconds": "seconds",
       "silencePromptStyle": "Prompt tone",
       "silencePromptStyleFormal": "Formal",

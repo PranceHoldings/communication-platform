@@ -130,12 +130,13 @@ model Scenario {
   createdAt  DateTime   @default(now()) @map("created_at")
 
   // 無音時間管理（Silence Management）
-  initialGreeting     String?  @map("initial_greeting") @db.Text // AI初回挨拶テキスト
-  silenceTimeout      Int?     @map("silence_timeout") // 無音タイマー（秒、null = use org default）
-  enableSilencePrompt Boolean? @map("enable_silence_prompt") // 無音促し有効/無効（null = use org default）
-  showSilenceTimer    Boolean? @map("show_silence_timer") // UIにタイマー表示（null = use org default）
-  silenceThreshold    Float?   @map("silence_threshold") // 音量閾値（0.01-0.2、null = use org default）
-  minSilenceDuration  Int?     @map("min_silence_duration") // 最小無音継続時間（ms、null = use org default）
+  initialGreeting      String?  @map("initial_greeting") @db.Text // AI初回挨拶テキスト
+  silenceTimeout       Int?     @map("silence_timeout") // 無音タイマー（秒、null = use org default）
+  enableSilencePrompt  Boolean? @map("enable_silence_prompt") // 無音促し有効/無効（null = use org default）
+  silencePromptTimeout Int?     @map("silence_prompt_timeout") // AI会話促し待機時間（秒、null = use org default）
+  showSilenceTimer     Boolean? @map("show_silence_timer") // UIにタイマー表示（null = use org default）
+  silenceThreshold     Float?   @map("silence_threshold") // 音量閾値（0.01-0.2、null = use org default）
+  minSilenceDuration   Int?     @map("min_silence_duration") // 最小無音継続時間（ms、null = use org default）
 
   organization  Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
   sessions      Session[]

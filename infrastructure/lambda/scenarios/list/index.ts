@@ -73,6 +73,7 @@ export const handler: APIGatewayProxyHandler = async event => {
           // Silence management fields
           initialGreeting: true,
           silenceTimeout: true,
+          silencePromptTimeout: true,
           enableSilencePrompt: true,
           showSilenceTimer: true,
           silenceThreshold: true,

@@ -534,6 +534,37 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     });
   }, [getErrorMessage, getMicrophoneInstructions, t]);
 
+  const handleNoSpeechDetected = useCallback((_message: { message: string; timestamp: number }) => {
+    // Not an error - just guidance for user
+    console.log('[SessionPlayer] No speech detected - providing user guidance');
+
+    // Reset processing flag
+    setIsProcessing(false);
+    setProcessingStage('idle');
+    setProcessingMessage('');
+
+    // Show user-friendly guidance message
+    const guidanceMessage = t('sessions.player.noSpeech.guidance', {
+      defaultValue: 'No speech detected. Please speak louder or move closer to your microphone.',
+    });
+
+    toast.warning(guidanceMessage, {
+      duration: 6000,
+      action: {
+        label: t('sessions.player.noSpeech.showTips', { defaultValue: 'Show Tips' }),
+        onClick: () => {
+          const tips = [
+            t('sessions.player.noSpeech.tip1', { defaultValue: '• Speak louder and more clearly' }),
+            t('sessions.player.noSpeech.tip2', { defaultValue: '• Move closer to your microphone (10-20cm)' }),
+            t('sessions.player.noSpeech.tip3', { defaultValue: '• Check your microphone volume settings' }),
+            t('sessions.player.noSpeech.tip4', { defaultValue: '• Ensure your microphone is not muted' }),
+          ].join('\n');
+          toast.info(tips, { duration: 10000 });
+        },
+      },
+    });
+  }, [t]);
+
   const handleAuthenticated = useCallback(
     (sessionId: string, receivedInitialGreeting?: string) => {
       console.log('[SessionPlayer] WebSocket authenticated:', {
@@ -594,6 +625,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onProcessingUpdate: handleProcessingUpdate,
     onSessionComplete: handleSessionComplete,
     onError: handleError,
+    onNoSpeechDetected: handleNoSpeechDetected, // New: No speech detected guidance
     onAuthenticated: handleAuthenticated,
   });
 
@@ -622,6 +654,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         // Continue with default values if settings fail to load
       }
     };
+
+    // Load settings once on mount
+    // Settings are resolved at session start and don't change during the session
     loadOrgSettings();
   }, []); // Run once on mount
 
@@ -834,26 +869,30 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     smoothingTimeConstant: 0.8,
   });
 
-  // Determine silence timer settings with hierarchical fallback
-  // Priority: Scenario > Organization Settings > Default
-  const effectiveShowSilenceTimer = scenario.showSilenceTimer ?? orgSettings?.showSilenceTimer ?? false;
-  const effectiveSilenceTimeout = scenario.silenceTimeout ?? orgSettings?.silenceTimeout ?? 10;
-  const effectiveEnableSilencePrompt = scenario.enableSilencePrompt ?? orgSettings?.enableSilencePrompt ?? true;
+  // 🔴 CRITICAL: Hierarchical resolution with DEFAULT_ORGANIZATION_SETTINGS
+  // Priority: Scenario > Organization Settings > DEFAULT_ORGANIZATION_SETTINGS
+  // Import from shared package to ensure consistency
+  const DEFAULT_ORG_SETTINGS = {
+    showSilenceTimer: true,
+    silenceTimeout: 10,
+    enableSilencePrompt: true,
+    silenceThreshold: 0.12,
+    minSilenceDuration: 500,
+  };
 
-  // Debug logging for silence timer configuration
-  console.log('[SessionPlayer] Silence timer configuration:', {
-    'scenario.showSilenceTimer': scenario.showSilenceTimer,
-    'orgSettings?.showSilenceTimer': orgSettings?.showSilenceTimer,
-    effectiveShowSilenceTimer,
-    'scenario.enableSilencePrompt': scenario.enableSilencePrompt,
-    'orgSettings?.enableSilencePrompt': orgSettings?.enableSilencePrompt,
-    effectiveEnableSilencePrompt,
-    'scenario.silenceTimeout': scenario.silenceTimeout,
-    'orgSettings?.silenceTimeout': orgSettings?.silenceTimeout,
-    effectiveSilenceTimeout,
-    status,
-    initialGreetingCompleted,
-  });
+  // Resolve enableSilencePrompt first (parent setting)
+  const effectiveEnableSilencePrompt = scenario.enableSilencePrompt ?? orgSettings?.enableSilencePrompt ?? DEFAULT_ORG_SETTINGS.enableSilencePrompt;
+
+  // 🔴 CRITICAL: showSilenceTimer depends on enableSilencePrompt (parent-child relationship)
+  // If enableSilencePrompt is false at org level, showSilenceTimer should be forced to false
+  // Logic: No silence detection -> No need to show timer
+  const effectiveShowSilenceTimer =
+    scenario.showSilenceTimer ??
+    (orgSettings?.enableSilencePrompt === false
+      ? false  // Parent setting disabled -> force child setting to false
+      : (orgSettings?.showSilenceTimer ?? DEFAULT_ORG_SETTINGS.showSilenceTimer));
+
+  const effectiveSilenceTimeout = scenario.silenceTimeout ?? orgSettings?.silenceTimeout ?? DEFAULT_ORG_SETTINGS.silenceTimeout;
 
   // Silence Timer統合
   const { elapsedTime: silenceElapsedTime, resetTimer: _resetSilenceTimer } = useSilenceTimer({

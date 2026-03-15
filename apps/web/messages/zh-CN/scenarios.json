@@ -78,7 +78,15 @@
     "actions": "Actions",
     "notFound": "Scenario not found",
     "backToList": "Back to Scenarios",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "silenceSettings": "Silence Timer Settings",
+    "enableSilencePrompt": "Enable Silence Prompt",
+    "silenceTimeout": "Silence Timeout",
+    "silencePromptTimeout": "AI Prompt Trigger Timeout",
+    "questions": "Questions",
+    "questionCategory": "Category",
+    "otherConfig": "Other Configuration",
+    "orgDefault": "Org Default"
   },
   "edit": {
     "title": "Edit Scenario",

@@ -16,6 +16,9 @@
 // All shared types that Lambda needs should be defined here or copied
 // For language types, see ../config/language-config.ts
 
+// Export organization types
+export * from './organization';
+
 // ========================================
 // Error Types (copied from @prance/shared)
 // ========================================

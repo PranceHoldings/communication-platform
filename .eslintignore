@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+node_modules.*/
+**/node_modules.*/
 
 # Build outputs
 dist/
@@ -7,6 +9,8 @@ build/
 .next/
 out/
 cdk.out/
+cdk.out.*/
+infrastructure/cdk.out.*/
 
 # Prisma generated
 packages/database/node_modules/

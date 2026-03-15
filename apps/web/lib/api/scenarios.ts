@@ -15,6 +15,7 @@ export interface Scenario {
   // Silence management fields
   initialGreeting?: string;
   silenceTimeout?: number;
+  silencePromptTimeout?: number;
   enableSilencePrompt?: boolean;
   showSilenceTimer?: boolean;
   silenceThreshold?: number;
@@ -35,6 +36,7 @@ export interface CreateScenarioRequest {
   // Silence management fields
   initialGreeting?: string;
   silenceTimeout?: number;
+  silencePromptTimeout?: number;
   enableSilencePrompt?: boolean;
   showSilenceTimer?: boolean;
   silenceThreshold?: number;
@@ -50,6 +52,7 @@ export interface UpdateScenarioRequest {
   // Silence management fields
   initialGreeting?: string;
   silenceTimeout?: number;
+  silencePromptTimeout?: number;
   enableSilencePrompt?: boolean;
   showSilenceTimer?: boolean;
   silenceThreshold?: number;

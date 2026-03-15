@@ -115,8 +115,8 @@ export function getCookie(name: string): string | null {
 
   for (const cookie of cookies) {
     const [cookieName, cookieValue] = cookie.trim().split('=');
-    if (decodeURIComponent(cookieName) === name) {
-      return decodeURIComponent(cookieValue);
+    if (cookieName && decodeURIComponent(cookieName) === name) {
+      return cookieValue ? decodeURIComponent(cookieValue) : '';
     }
   }
 

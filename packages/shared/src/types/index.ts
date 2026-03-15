@@ -45,13 +45,15 @@ export interface Organization {
 export interface OrganizationSettings {
   // AI Response Behavior
   enableSilencePrompt?: boolean; // 無音時に会話を促す
-  silenceTimeout?: number; // 無音待機時間（秒）
+  silenceTimeout?: number; // 無音待機時間（秒）- ユーザー発話終了検出用
+  silencePromptTimeout?: number; // AI会話促し待機時間（秒）- AIプロンプト発動用
   silencePromptStyle?: 'formal' | 'casual' | 'neutral'; // 促し言葉のトーン
   showSilenceTimer?: boolean; // UIに無音タイマーを表示
 
   // Audio Detection Settings
   silenceThreshold?: number; // 音量閾値（0.01-0.2）
   minSilenceDuration?: number; // 最小無音継続時間（ms）
+  initialSilenceTimeout?: number; // Azure STT初期無音タイムアウト（ms、3000-15000、組織設定のみ）
 }
 
 export interface User {
@@ -464,6 +466,16 @@ export interface PongMessage extends WebSocketMessageBase {
 }
 
 /**
+ * 音声未検出メッセージ（サーバー → クライアント）
+ * エラーではなく、ユーザーへの案内として使用
+ */
+export interface NoSpeechDetectedMessage extends WebSocketMessageBase {
+  type: 'no_speech_detected';
+  message: string;
+  timestamp: number;
+}
+
+/**
  * バージョン情報メッセージ（サーバー → クライアント）
  */
 export interface VersionMessage extends WebSocketMessageBase {
@@ -508,6 +520,7 @@ export type ServerToClientMessage =
   | VideoReadyMessage
   | SessionCompleteMessage
   | ErrorMessage
+  | NoSpeechDetectedMessage
   | PongMessage
   | VersionMessage;
 

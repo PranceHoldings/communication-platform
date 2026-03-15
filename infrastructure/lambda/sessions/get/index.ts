@@ -35,6 +35,14 @@ export const handler: APIGatewayProxyHandler = async event => {
             category: true,
             language: true,
             configJson: true,
+            // Silence management fields
+            initialGreeting: true,
+            silenceTimeout: true,
+            silencePromptTimeout: true,
+            enableSilencePrompt: true,
+            showSilenceTimer: true,
+            silenceThreshold: true,
+            minSilenceDuration: true,
           },
         },
         avatar: {

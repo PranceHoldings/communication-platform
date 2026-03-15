@@ -68,6 +68,7 @@ export const handler: APIGatewayProxyHandler = async event => {
       // Silence management fields
       initialGreeting,
       silenceTimeout,
+      silencePromptTimeout,
       enableSilencePrompt,
       showSilenceTimer,
       silenceThreshold,
@@ -100,19 +101,21 @@ export const handler: APIGatewayProxyHandler = async event => {
     }
 
     // Build update data object (only include provided fields)
+    // 🔴 CRITICAL: Use 'in' operator to detect null values for "use default" setting
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
     if (category !== undefined) updateData.category = category;
     if (configJson !== undefined) updateData.configJson = configJson;
     if (language !== undefined) updateData.language = language;
     if (visibility !== undefined) updateData.visibility = visibility;
-    // Silence management fields
-    if (initialGreeting !== undefined) updateData.initialGreeting = initialGreeting;
-    if (silenceTimeout !== undefined) updateData.silenceTimeout = silenceTimeout;
-    if (enableSilencePrompt !== undefined) updateData.enableSilencePrompt = enableSilencePrompt;
-    if (showSilenceTimer !== undefined) updateData.showSilenceTimer = showSilenceTimer;
-    if (silenceThreshold !== undefined) updateData.silenceThreshold = silenceThreshold;
-    if (minSilenceDuration !== undefined) updateData.minSilenceDuration = minSilenceDuration;
+    // Silence management fields (null = use organization default)
+    if ('initialGreeting' in body) updateData.initialGreeting = initialGreeting;
+    if ('silenceTimeout' in body) updateData.silenceTimeout = silenceTimeout;
+    if ('silencePromptTimeout' in body) updateData.silencePromptTimeout = silencePromptTimeout;
+    if ('enableSilencePrompt' in body) updateData.enableSilencePrompt = enableSilencePrompt;
+    if ('showSilenceTimer' in body) updateData.showSilenceTimer = showSilenceTimer;
+    if ('silenceThreshold' in body) updateData.silenceThreshold = silenceThreshold;
+    if ('minSilenceDuration' in body) updateData.minSilenceDuration = minSilenceDuration;
 
     // Check if there's anything to update
     if (Object.keys(updateData).length === 0) {
@@ -136,6 +139,7 @@ export const handler: APIGatewayProxyHandler = async event => {
         // Silence management fields
         initialGreeting: true,
         silenceTimeout: true,
+        silencePromptTimeout: true,
         enableSilencePrompt: true,
         showSilenceTimer: true,
         silenceThreshold: true,

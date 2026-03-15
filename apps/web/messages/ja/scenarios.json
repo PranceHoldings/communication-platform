@@ -78,7 +78,15 @@
     "actions": "操作",
     "notFound": "シナリオが見つかりません",
     "backToList": "シナリオ一覧に戻る",
-    "loading": "読み込み中..."
+    "loading": "読み込み中...",
+    "silenceSettings": "沈黙タイマー設定",
+    "enableSilencePrompt": "沈黙時プロンプト有効化",
+    "silenceTimeout": "沈黙タイムアウト",
+    "silencePromptTimeout": "AI会話促し待機時間",
+    "questions": "質問",
+    "questionCategory": "カテゴリ",
+    "otherConfig": "その他の設定",
+    "orgDefault": "組織デフォルト"
   },
   "edit": {
     "title": "シナリオを編集",

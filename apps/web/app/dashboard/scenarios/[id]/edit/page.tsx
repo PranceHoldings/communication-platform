@@ -58,9 +58,30 @@ export default function EditScenarioPage() {
           setSystemPrompt(config.systemPrompt);
         }
 
-        // Load questions from config
+        // Load questions from config with unique ID validation
         if (config.questions && Array.isArray(config.questions)) {
-          setQuestions(config.questions);
+          // Ensure all questions have unique IDs
+          const questionsWithIds = config.questions.map((q: any, index: number) => ({
+            ...q,
+            id: q.id || `question-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+            order: q.order ?? index,
+          }));
+
+          // Check for duplicate IDs and regenerate if necessary
+          const ids = new Set<string>();
+          const uniqueQuestions = questionsWithIds.map((q: any, index: number) => {
+            if (ids.has(q.id)) {
+              console.warn(`[ScenarioEdit] Duplicate question ID detected: ${q.id}, regenerating`);
+              return {
+                ...q,
+                id: `question-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+              };
+            }
+            ids.add(q.id);
+            return q;
+          });
+
+          setQuestions(uniqueQuestions);
         }
 
         // Remove systemPrompt and questions from config display
@@ -71,6 +92,11 @@ export default function EditScenarioPage() {
         setInitialGreeting(scenario.initialGreeting || '');
 
         // Load silence timer display setting
+        console.log('[ScenarioEdit] Loaded scenario from DB:', {
+          showSilenceTimer: scenario.showSilenceTimer,
+          enableSilencePrompt: scenario.enableSilencePrompt,
+          silenceTimeout: scenario.silenceTimeout,
+        });
         setShowSilenceTimer(scenario.showSilenceTimer);
 
         setIsLoading(false);
@@ -88,6 +114,11 @@ export default function EditScenarioPage() {
     const loadOrgSettings = async () => {
       try {
         const settings = await getOrganizationSettings();
+        console.log('[ScenarioEdit] Organization settings loaded:', {
+          showSilenceTimer: settings.showSilenceTimer,
+          enableSilencePrompt: settings.enableSilencePrompt,
+          silenceTimeout: settings.silenceTimeout,
+        });
         setOrgSettings(settings);
       } catch (error) {
         console.error('Failed to load organization settings:', error);
@@ -132,18 +163,23 @@ export default function EditScenarioPage() {
 
     setIsSubmitting(true);
 
+    // Debug: Log the data being sent
+    const updateData = {
+      title: title.trim(),
+      category: category.trim(),
+      language,
+      visibility,
+      configJson: parsedConfig,
+      // Initial greeting
+      initialGreeting: initialGreeting.trim() || undefined,
+      // Silence timer display (undefined = use organization default, true/false = explicit setting)
+      showSilenceTimer: showSilenceTimer,
+    };
+    console.log('[ScenarioEdit] Updating scenario with data:', updateData);
+    console.log('[ScenarioEdit] showSilenceTimer value:', showSilenceTimer, 'type:', typeof showSilenceTimer);
+
     try {
-      await updateScenario(scenarioId, {
-        title: title.trim(),
-        category: category.trim(),
-        language,
-        visibility,
-        configJson: parsedConfig,
-        // Initial greeting
-        initialGreeting: initialGreeting.trim() || undefined,
-        // Silence timer display (undefined = use organization default)
-        showSilenceTimer,
-      });
+      await updateScenario(scenarioId, updateData);
 
       toast.success(t('scenarios.edit.success'));
       router.push(`/dashboard/scenarios/${scenarioId}`);

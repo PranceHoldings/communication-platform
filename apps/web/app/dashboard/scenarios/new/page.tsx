@@ -98,8 +98,8 @@ export default function NewScenarioPage() {
         configJson: parsedConfig,
         // Initial greeting
         initialGreeting: initialGreeting.trim() || undefined,
-        // Silence timer display (undefined = use organization default)
-        showSilenceTimer,
+        // Silence timer display (undefined = use organization default, true/false = explicit setting)
+        showSilenceTimer: showSilenceTimer,
       });
 
       // Success - redirect to scenario detail page

@@ -39,6 +39,7 @@ export const handler: APIGatewayProxyHandler = async event => {
       // Silence management fields
       initialGreeting,
       silenceTimeout,
+      silencePromptTimeout,
       enableSilencePrompt,
       showSilenceTimer,
       silenceThreshold,
@@ -94,6 +95,7 @@ export const handler: APIGatewayProxyHandler = async event => {
         // Silence management fields (optional, will use DB defaults if not provided)
         initialGreeting,
         silenceTimeout,
+        silencePromptTimeout,
         enableSilencePrompt,
         showSilenceTimer,
         silenceThreshold,
@@ -111,6 +113,7 @@ export const handler: APIGatewayProxyHandler = async event => {
         // Silence management fields
         initialGreeting: true,
         silenceTimeout: true,
+        silencePromptTimeout: true,
         enableSilencePrompt: true,
         showSilenceTimer: true,
         silenceThreshold: true,

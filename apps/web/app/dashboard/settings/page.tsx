@@ -16,6 +16,7 @@ export default function SettingsPage() {
   // AI & Audio Settings state
   const [enableSilencePrompt, setEnableSilencePrompt] = useState(true);
   const [silenceTimeout, setSilenceTimeout] = useState(10);
+  const [silencePromptTimeout, setSilencePromptTimeout] = useState(15);
   const [silencePromptStyle, setSilencePromptStyle] = useState<'formal' | 'casual' | 'neutral'>('neutral');
   const [showSilenceTimer, setShowSilenceTimer] = useState(false);
   const [silenceThreshold, setSilenceThreshold] = useState(0.12);
@@ -42,6 +43,9 @@ export default function SettingsPage() {
         }
         if (settings.silenceTimeout !== undefined) {
           setSilenceTimeout(settings.silenceTimeout);
+        }
+        if (settings.silencePromptTimeout !== undefined) {
+          setSilencePromptTimeout(settings.silencePromptTimeout);
         }
         if (settings.silencePromptStyle !== undefined) {
           setSilencePromptStyle(settings.silencePromptStyle);
@@ -76,6 +80,7 @@ export default function SettingsPage() {
       await updateOrganizationSettings({
         enableSilencePrompt,
         silenceTimeout,
+        silencePromptTimeout,
         silencePromptStyle,
         showSilenceTimer,
         silenceThreshold,
@@ -92,14 +97,18 @@ export default function SettingsPage() {
     }
   };
 
-  // Reset to default settings
-  const handleResetSettings = () => {
-    setEnableSilencePrompt(true);
-    setSilenceTimeout(10);
-    setSilencePromptStyle('neutral');
-    setShowSilenceTimer(false);
-    setSilenceThreshold(0.12);
-    setMinSilenceDuration(500);
+  // Reset to default settings (from @prance/shared)
+  const handleResetSettings = async () => {
+    // 🔴 CRITICAL: デフォルト値は共有パッケージから取得
+    // ハードコード禁止 - defaults.tsと整合性を保つ
+    const { DEFAULT_ORGANIZATION_SETTINGS } = await import('@prance/shared');
+    setEnableSilencePrompt(DEFAULT_ORGANIZATION_SETTINGS.enableSilencePrompt!);
+    setSilenceTimeout(DEFAULT_ORGANIZATION_SETTINGS.silenceTimeout!);
+    setSilencePromptTimeout(DEFAULT_ORGANIZATION_SETTINGS.silencePromptTimeout!);
+    setSilencePromptStyle(DEFAULT_ORGANIZATION_SETTINGS.silencePromptStyle!);
+    setShowSilenceTimer(DEFAULT_ORGANIZATION_SETTINGS.showSilenceTimer!);
+    setSilenceThreshold(DEFAULT_ORGANIZATION_SETTINGS.silenceThreshold!);
+    setMinSilenceDuration(DEFAULT_ORGANIZATION_SETTINGS.minSilenceDuration!);
     toast.info('Settings reset to defaults');
   };
 
@@ -298,6 +307,29 @@ export default function SettingsPage() {
                       </div>
                       <p className="mt-1 text-sm text-gray-500">
                         {t('settings.aiAudio.aiResponseBehavior.silenceTimeoutHelp')}
+                      </p>
+                    </div>
+
+                    {/* Silence Prompt Timeout */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('settings.aiAudio.aiResponseBehavior.silencePromptTimeout')}
+                      </label>
+                      <div className="flex items-center space-x-4">
+                        <input
+                          type="number"
+                          min="5"
+                          max="60"
+                          value={silencePromptTimeout}
+                          onChange={e => setSilencePromptTimeout(parseInt(e.target.value) || 15)}
+                          className="block w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                        <span className="text-sm text-gray-600">
+                          {t('settings.aiAudio.aiResponseBehavior.silenceTimeoutSeconds')}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {t('settings.aiAudio.aiResponseBehavior.silencePromptTimeoutHelp')}
                       </p>
                     </div>
 

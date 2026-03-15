@@ -32,6 +32,8 @@
       "enableSilencePromptHelp": "一定時間無音が続くとAIが自動的にユーザーに話しかけます",
       "silenceTimeout": "無音待機時間",
       "silenceTimeoutHelp": "AIがユーザーに話しかけるまでの待機時間（秒）",
+      "silencePromptTimeout": "AI会話促し待機時間",
+      "silencePromptTimeoutHelp": "会話全体を通して、ユーザーの発話がない場合にAIが会話を促すまでの待機時間（5-60秒）",
       "silenceTimeoutSeconds": "秒",
       "silencePromptStyle": "促し言葉のトーン",
       "silencePromptStyleFormal": "フォーマル",
