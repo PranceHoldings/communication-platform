@@ -437,8 +437,7 @@ export class ApiLambdaStack extends cdk.Stack {
               `mkdir -p ${outputDir}/prisma`,
               `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
               // Copy all migration SQL files
-              `mkdir -p ${outputDir}/migrations`,
-              `cp ${inputDir}/infrastructure/lambda/migrations/*.sql ${outputDir}/migrations/ || true`,
+              `cp ${inputDir}/infrastructure/lambda/migrations/*.sql ${outputDir}/ || true`,
             ];
           },
           beforeInstall(): string[] {
