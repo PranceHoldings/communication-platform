@@ -43,9 +43,8 @@
   "of": "of",
   "loadMore": "Load More",
   "enabled": "Enabled",
-  "contact": "Contact",
-  "privacyPolicy": "Privacy Policy",
-  "termsOfService": "Terms of Service",
+  "disabled": "Disabled",
+  "useDefault": "Use Default",
   "languagesNative": {
     "en": "English",
     "ja": "日本語",

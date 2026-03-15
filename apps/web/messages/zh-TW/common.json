@@ -43,6 +43,8 @@
   "of": "of",
   "loadMore": "Load More",
   "enabled": "Enabled",
+  "disabled": "Disabled",
+  "useDefault": "Use Default",
   "contact": "Contact",
   "privacyPolicy": "Privacy Policy",
   "termsOfService": "Terms of Service",

@@ -62,6 +62,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [processingMessage, setProcessingMessage] = useState<string>('');
   const [isMuted, setIsMuted] = useState(false);
   const [ariaLiveMessage, setAriaLiveMessage] = useState<string>('');
+  const [isCameraActive, setIsCameraActive] = useState(false);
 
   // Silence management state
   const [initialGreetingCompleted, setInitialGreetingCompleted] = useState(false);
@@ -1021,6 +1022,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         if (userVideoRef.current) {
           userVideoRef.current.srcObject = stream;
           await userVideoRef.current.play();
+          setIsCameraActive(true);
           console.log('[SessionPlayer] User camera started');
         }
       } catch (error) {
@@ -1127,6 +1129,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           console.log('[SessionPlayer] Stopped camera track:', track.kind);
         });
         userVideoRef.current.srcObject = null;
+        setIsCameraActive(false);
       }
 
       // 5. If audio was recording, wait for transcript before sending session_end
@@ -1659,7 +1662,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               </div>
             )}
 
-            {/* カメラステータス（将来実装） */}
+            {/* カメラステータス */}
             <div className="flex items-center justify-between text-sm text-gray-600">
               <div className="flex items-center">
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -1667,7 +1670,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 </svg>
                 <span>{t('sessions.player.avatar.camera')}:</span>
               </div>
-              <span className="font-medium text-gray-500">{t('sessions.player.avatar.off')}</span>
+              <span className={`font-medium ${isCameraActive ? 'text-green-600' : 'text-gray-500'}`}>
+                {isCameraActive ? t('sessions.player.avatar.on') : t('sessions.player.avatar.off')}
+              </span>
             </div>
 
             {/* 音声再生ステータス */}

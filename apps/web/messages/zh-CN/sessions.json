@@ -135,6 +135,7 @@
       "speaker": "Speaker",
       "active": "Active",
       "inactive": "Inactive",
+      "on": "On",
       "off": "Off",
       "recording": "Recording",
       "playing": "Playing",
