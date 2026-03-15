@@ -213,7 +213,7 @@ export default function GuestLandingPage() {
                 type="text"
                 id="pin"
                 value={pin}
-                onChange={(e) => setPin(e.target.value)}
+                onChange={e => setPin(e.target.value)}
                 placeholder={t('guestSessions.landing.pinPlaceholder')}
                 pattern="\d{4,8}"
                 required
@@ -302,7 +302,9 @@ export default function GuestLandingPage() {
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
               </svg>
-              <p className="text-sm text-yellow-800">{t('guestSessions.landing.recordingNotice')}</p>
+              <p className="text-sm text-yellow-800">
+                {t('guestSessions.landing.recordingNotice')}
+              </p>
             </div>
           </div>
         </div>

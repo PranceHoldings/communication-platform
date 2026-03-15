@@ -173,7 +173,11 @@ export function hasCookie(name: string): boolean {
  * @param locale - Locale code (e.g., 'en', 'ja')
  */
 export function setLocaleCookie(locale: string): void {
-  setCookie(COOKIE_CONFIGS.locale.name, locale, COOKIE_CONFIGS.locale.options);
+  const config = COOKIE_CONFIGS['locale'];
+  if (!config) {
+    throw new Error('Locale cookie configuration not found');
+  }
+  setCookie(config.name, locale, config.options);
 }
 
 /**
@@ -182,5 +186,9 @@ export function setLocaleCookie(locale: string): void {
  * @returns Locale code or null if not set
  */
 export function getLocaleCookie(): string | null {
-  return getCookie(COOKIE_CONFIGS.locale.name);
+  const config = COOKIE_CONFIGS['locale'];
+  if (!config) {
+    throw new Error('Locale cookie configuration not found');
+  }
+  return getCookie(config.name);
 }

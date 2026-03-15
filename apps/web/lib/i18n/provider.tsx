@@ -5,7 +5,7 @@ import { fallbackLocale } from '@/lib/i18n/config';
 import { setLocaleCookie } from '@/lib/cookies';
 
 // Recursive type for nested translation messages
-type TranslationValue = string | Record<string, TranslationValue>;
+type TranslationValue = string | { [key: string]: string | TranslationValue };
 type TranslationMessages = Record<string, TranslationValue>;
 
 interface I18nContextType {
@@ -30,7 +30,19 @@ export function I18nProvider({ children, locale, messages }: I18nProviderProps) 
     // Navigate through nested object
     for (const k of keys) {
       if (typeof value === 'object' && !Array.isArray(value) && value !== null && k in value) {
-        value = value[k];
+        const nextValue: TranslationValue | undefined = value[k];
+        if (nextValue === undefined) {
+          // Translation key not found
+          if (locale !== fallbackLocale) {
+            console.warn(
+              `[i18n] Translation missing: ${key} (locale: ${locale}), will use ${fallbackLocale} fallback`
+            );
+          } else {
+            console.warn(`[i18n] Translation missing: ${key} (fallback locale: ${fallbackLocale})`);
+          }
+          return key; // Return key as final fallback
+        }
+        value = nextValue;
       } else {
         // Translation key not found - this is expected for incomplete translations
         if (locale !== fallbackLocale) {

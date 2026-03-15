@@ -1,6 +1,6 @@
 # 不整合検出レポート
 
-**生成日時:** 2026-03-11 13:07:50
+**生成日時:** 2026-03-15 12:42:48
 
 ---
 
@@ -15,29 +15,30 @@
 **検出数:** 1 件
 
 ```
-infrastructure/lambda/auth/authorizer/index.ts:91:    // IMPORTANT: Context field names should match Prisma schema (orgId, not organizationId)
+infrastructure/lambda/auth/authorizer/index.ts:93:    // IMPORTANT: Context field names should match Prisma schema (orgId, not organizationId)
 ```
 
 ## 3. ハードコードされた設定値
 
 ### ❌ ハードコードされた言語コード
 
-**検出数:** 11 件
+**検出数:** 12 件
 
 **除外対象:** *.d.ts, defaults.ts, language-config.ts, node_modules/, __tests__/, .next*/
 
 ```
-infrastructure/lambda/websocket/default/index.ts:44:// Supported languages (ISO 639-1 format: 'ja', 'en', 'zh-CN', 'zh-TW', etc.)
-infrastructure/lambda/websocket/default/index.ts:46:const SUPPORTED_LANGUAGES = ['ja', 'en', 'zh-CN', 'zh-TW', 'ko', 'es', 'pt', 'fr', 'de', 'it'];
+infrastructure/lambda/websocket/default/index.ts:46:// Supported languages (ISO 639-1 format: 'ja', 'en', 'zh-CN', 'zh-TW', etc.)
+infrastructure/lambda/websocket/default/index.ts:48:const SUPPORTED_LANGUAGES = ['ja', 'en', 'zh-CN', 'zh-TW', 'ko', 'es', 'pt', 'fr', 'de', 'it'];
 infrastructure/lambda/shared/audio/stt-azure.ts:15:  autoDetectLanguages?: string[]; // 自動言語検出候補（推奨: ['ja-JP', 'en-US']）
-infrastructure/lambda/scenarios/update/index.ts:80:    // Validate language if provided (ISO 639-1 format: 'ja', 'en', 'zh-CN', etc.)
-infrastructure/lambda/scenarios/create/index.ts:62:    // Validate language if provided (ISO 639-1 format: 'ja', 'en', 'zh-CN', etc.)
+infrastructure/lambda/scenarios/update/index.ts:94:    // Validate language if provided (ISO 639-1 format: 'ja', 'en', 'zh-CN', etc.)
+infrastructure/lambda/scenarios/create/index.ts:76:    // Validate language if provided (ISO 639-1 format: 'ja', 'en', 'zh-CN', etc.)
+infrastructure/lambda/report/templates/default-template.tsx:27:  return new Intl.DateTimeFormat('ja-JP', {
 apps/web/components/language-switcher.tsx:24:  'zh-CN': '🇨🇳',
 apps/web/components/language-switcher.tsx:25:  'zh-TW': '🇹🇼',
-apps/web/lib/i18n/messages.ts:88:  'zh-CN': {
-apps/web/lib/i18n/messages.ts:101:  'zh-TW': {
-apps/web/lib/i18n/config.ts:33:  'zh-CN',   // Chinese (Simplified)
-apps/web/lib/i18n/config.ts:34:  'zh-TW',   // Chinese (Traditional)
+apps/web/lib/i18n/messages.ts:100:  'zh-CN': {
+apps/web/lib/i18n/messages.ts:116:  'zh-TW': {
+apps/web/lib/i18n/config.ts:40:  'zh-CN', // Chinese (Simplified)
+apps/web/lib/i18n/config.ts:41:  'zh-TW', // Chinese (Traditional)
 ```
 
 ### ❌ ハードコードされたメディアフォーマット
@@ -50,16 +51,16 @@ apps/web/lib/i18n/config.ts:34:  'zh-TW',   // Chinese (Traditional)
 infrastructure/lambda/websocket/default/chunk-utils.ts:151: * @param extension - File extension (e.g., 'webm', 'wav')
 infrastructure/lambda/websocket/default/chunk-utils.ts:155: * generateChunkKey('abc123', 'audio', 1772952987123, 5, 'webm')
 infrastructure/lambda/websocket/default/chunk-utils.ts:176: * // Returns: { sessionId: 'abc123', chunkType: 'audio', timestamp: 1772952987123, chunkNumber: 5, extension: 'webm' }
-infrastructure/lambda/websocket/default/audio-processor.ts:429:      audioFormat = 'webm';
-infrastructure/lambda/websocket/default/audio-processor.ts:430:      wavBuffer = await this.convertToWav(audioData, 'webm');
-infrastructure/lambda/websocket/default/audio-processor.ts:439:      audioFormat = 'webm';
-infrastructure/lambda/websocket/default/audio-processor.ts:440:      wavBuffer = await this.convertToWav(audioData, 'webm');
-infrastructure/lambda/websocket/default/audio-processor.ts:733:      const ttsContentType = 'audio/mpeg'; // ElevenLabs returns MP3
-infrastructure/lambda/websocket/default/index.ts:1445:    const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm'}`;
-infrastructure/lambda/websocket/default/index.ts:1593:          const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm'}`;
-infrastructure/lambda/websocket/default/index.ts:1725:    const audioKey = `sessions/${sessionId}/audio/ai-response-${audioTimestamp}.${result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm'}`;
+infrastructure/lambda/websocket/default/audio-processor.ts:345:      audioFormat = 'webm';
+infrastructure/lambda/websocket/default/audio-processor.ts:346:      wavBuffer = await this.convertToWav(audioData, 'webm');
+infrastructure/lambda/websocket/default/audio-processor.ts:355:      audioFormat = 'webm';
+infrastructure/lambda/websocket/default/audio-processor.ts:356:      wavBuffer = await this.convertToWav(audioData, 'webm');
+infrastructure/lambda/websocket/default/audio-processor.ts:659:      const ttsContentType = 'audio/mpeg'; // ElevenLabs returns MP3
+infrastructure/lambda/websocket/default/index.ts:1478:          const extension = contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm';
+infrastructure/lambda/websocket/default/index.ts:1606:    let audioContentType = 'audio/mpeg';
+infrastructure/lambda/websocket/default/index.ts:1660:    const extensionLegacy = audioContentType.includes('mpeg') || audioContentType.includes('mp3') ? 'mp3' : 'webm';
 infrastructure/lambda/shared/audio/tts-elevenlabs.ts:123:      const contentType = response.headers.get('content-type') || 'audio/mpeg';
-apps/web/components/session-player/recording-player.tsx:8:const DEFAULT_VIDEO_RESOLUTION = '1280x720';
+apps/web/components/session-player/recording-player.tsx:9:const DEFAULT_VIDEO_RESOLUTION = '1280x720';
 ```
 
 ## 4. 型定義の重複
@@ -78,12 +79,20 @@ apps/web/components/session-player/recording-player.tsx:8:const DEFAULT_VIDEO_RE
 
 ### ⚠️ API型定義の命名パターンを確認
 
-**検出数:** 12 件
+**検出数:** 20 件
 
 ```
+apps/web/lib/api/guest-sessions.ts:59:export interface GuestSessionListResponse {
+apps/web/lib/api/guest-sessions.ts:64:export interface CreateGuestSessionRequest {
+apps/web/lib/api/guest-sessions.ts:75:export interface CreateGuestSessionResponse {
+apps/web/lib/api/guest-sessions.ts:88:export interface BatchCreateGuestSessionRequest {
+apps/web/lib/api/guest-sessions.ts:92:export interface BatchCreateGuestSessionResponse {
+apps/web/lib/api/guest-sessions.ts:106:export interface UpdateGuestSessionRequest {
+apps/web/lib/api/guest-sessions.ts:115:export interface GuestSessionLogsResponse {
 apps/web/lib/api/avatars.ts:15:export interface AvatarListResponse {
 apps/web/lib/api/avatars.ts:20:export interface CreateAvatarRequest {
 apps/web/lib/api/avatars.ts:33:export interface UpdateAvatarRequest {
+apps/web/lib/api/reports.ts:9:export interface ReportResponse {
 apps/web/lib/api/client.ts:10:export interface ApiResponse<T> {
 apps/web/lib/api/sessions.ts:59:export interface CreateSessionRequest {
 apps/web/lib/api/sessions.ts:65:export interface ListSessionsRequest {
@@ -91,9 +100,8 @@ apps/web/lib/api/sessions.ts:71:export interface ListSessionsResponse {
 apps/web/lib/api/auth.ts:17:export interface LoginRequest {
 apps/web/lib/api/auth.ts:22:export interface RegisterRequest {
 apps/web/lib/api/auth.ts:28:export interface AuthResponse {
-apps/web/lib/api/scenarios.ts:17:export interface ScenarioListResponse {
-apps/web/lib/api/scenarios.ts:22:export interface CreateScenarioRequest {
-apps/web/lib/api/scenarios.ts:30:export interface UpdateScenarioRequest {
+apps/web/lib/api/scenarios.ts:25:export interface ScenarioListResponse {
+apps/web/lib/api/scenarios.ts:30:export interface CreateScenarioRequest {
 ```
 
 ## 8. Import文の不整合
@@ -115,9 +123,9 @@ apps/web/lib/api/sessions.ts:16:export interface Session {
 
 ## 📊 サマリー
 
-**検出された不整合の総数:** 28 件
+**検出された不整合の総数:** 29 件
 
-⚠️ **28 件の不整合が検出されました。修正が必要です。**
+⚠️ **29 件の不整合が検出されました。修正が必要です。**
 
 ### 次のアクション
 

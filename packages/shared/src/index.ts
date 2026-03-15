@@ -10,6 +10,9 @@ export * from './types';
 // Export language configuration
 export * from './language';
 
+// Export default settings (CRITICAL: Single Source of Truth)
+export * from './defaults';
+
 // Export utilities (will be implemented later)
 // export * from './utils';
 

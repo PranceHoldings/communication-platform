@@ -75,15 +75,7 @@ export function WaveformDisplay({
 
       ctx.fillRect(x, y, barWidth, barHeight);
     });
-  }, [
-    waveformData,
-    audioLevel,
-    isActive,
-    barWidth,
-    barGap,
-    activeColor,
-    inactiveColor,
-  ]);
+  }, [waveformData, audioLevel, isActive, barWidth, barGap, activeColor, inactiveColor]);
 
   return (
     <canvas

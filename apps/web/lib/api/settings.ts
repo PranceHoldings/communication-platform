@@ -8,9 +8,14 @@ import type { OrganizationSettings } from '@prance/shared';
 
 /**
  * 組織設定を取得
+ * Cache busting: 常に最新の設定を取得するため、タイムスタンプをクエリパラメータに追加
  */
 export async function getOrganizationSettings(): Promise<OrganizationSettings> {
-  const response = await apiClient.get<OrganizationSettings>('/organizations/settings');
+  // キャッシュバスティング: 毎回異なるURLを生成してブラウザキャッシュをバイパス
+  const timestamp = Date.now();
+  const response = await apiClient.get<OrganizationSettings>(
+    `/organizations/settings?_t=${timestamp}`
+  );
   return apiClient.unwrapResponse(response);
 }
 

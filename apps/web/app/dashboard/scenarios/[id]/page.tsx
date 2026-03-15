@@ -48,9 +48,24 @@ export default function ScenarioDetailPage() {
     try {
       const data = await getScenario(scenarioId);
       console.log('[ScenarioDetail] Loaded scenario data:', data);
-      console.log('[ScenarioDetail] showSilenceTimer:', data.showSilenceTimer, 'type:', typeof data.showSilenceTimer);
-      console.log('[ScenarioDetail] enableSilencePrompt:', data.enableSilencePrompt, 'type:', typeof data.enableSilencePrompt);
-      console.log('[ScenarioDetail] silenceTimeout:', data.silenceTimeout, 'type:', typeof data.silenceTimeout);
+      console.log(
+        '[ScenarioDetail] showSilenceTimer:',
+        data.showSilenceTimer,
+        'type:',
+        typeof data.showSilenceTimer
+      );
+      console.log(
+        '[ScenarioDetail] enableSilencePrompt:',
+        data.enableSilencePrompt,
+        'type:',
+        typeof data.enableSilencePrompt
+      );
+      console.log(
+        '[ScenarioDetail] silenceTimeout:',
+        data.silenceTimeout,
+        'type:',
+        typeof data.silenceTimeout
+      );
       setScenario(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('scenarios.errors.loadFailed'));
@@ -199,7 +214,9 @@ export default function ScenarioDetailPage() {
       {/* Initial Greeting */}
       {scenario.initialGreeting && (
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">{t('scenarios.create.form.initialGreeting')}</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            {t('scenarios.create.form.initialGreeting')}
+          </h2>
           <div className="bg-gray-50 rounded p-4 text-sm whitespace-pre-wrap">
             {scenario.initialGreeting}
           </div>
@@ -228,13 +245,17 @@ export default function ScenarioDetailPage() {
                   </span>
                   {orgSettings && (
                     <div className="text-xs text-gray-500">
-                      ({t('scenarios.detail.orgDefault')}: {
+                      ({t('scenarios.detail.orgDefault')}:{' '}
+                      {
                         // 🔴 CRITICAL: Parent-child relationship
                         // If enableSilencePrompt is disabled, showSilenceTimer should be forced to disabled
                         orgSettings.enableSilencePrompt === false
                           ? t('common.disabled')
-                          : (orgSettings.showSilenceTimer ? t('common.enabled') : t('common.disabled'))
-                      })
+                          : orgSettings.showSilenceTimer
+                            ? t('common.enabled')
+                            : t('common.disabled')
+                      }
+                      )
                     </div>
                   )}
                 </div>
@@ -274,7 +295,8 @@ export default function ScenarioDetailPage() {
           <div>
             <span className="text-gray-600">{t('scenarios.detail.silencePromptTimeout')}:</span>
             <div className="font-medium mt-1">
-              {scenario.silencePromptTimeout !== null && scenario.silencePromptTimeout !== undefined ? (
+              {scenario.silencePromptTimeout !== null &&
+              scenario.silencePromptTimeout !== undefined ? (
                 <span className="text-gray-900">{scenario.silencePromptTimeout}s</span>
               ) : (
                 <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm">
@@ -297,44 +319,54 @@ export default function ScenarioDetailPage() {
       )}
 
       {/* Questions */}
-      {scenario.configJson && Array.isArray((scenario.configJson as any).questions) && (scenario.configJson as any).questions.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">{t('scenarios.detail.questions')}</h2>
-          <div className="space-y-3">
-            {((scenario.configJson as any).questions as any[]).map((question, index) => (
-              <div key={question.id || index} className="border-l-4 border-indigo-500 pl-4 py-2 bg-gray-50">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">{question.text}</div>
-                    {question.category && (
-                      <div className="text-sm text-gray-500 mt-1">
-                        {t('scenarios.detail.questionCategory')}: {question.category}
-                      </div>
-                    )}
+      {scenario.configJson &&
+        Array.isArray((scenario.configJson as any).questions) &&
+        (scenario.configJson as any).questions.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">{t('scenarios.detail.questions')}</h2>
+            <div className="space-y-3">
+              {((scenario.configJson as any).questions as any[]).map((question, index) => (
+                <div
+                  key={question.id || index}
+                  className="border-l-4 border-indigo-500 pl-4 py-2 bg-gray-50"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{question.text}</div>
+                      {question.category && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          {t('scenarios.detail.questionCategory')}: {question.category}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-sm text-gray-400 ml-4">#{index + 1}</span>
                   </div>
-                  <span className="text-sm text-gray-400 ml-4">#{index + 1}</span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Other Configuration (Raw JSON) */}
-      {scenario.configJson && Object.keys(scenario.configJson).some(key => key !== 'systemPrompt' && key !== 'questions') && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">{t('scenarios.detail.otherConfig')}</h2>
-          <pre className="bg-gray-50 rounded p-4 text-sm overflow-auto font-mono">
-            {JSON.stringify(
-              Object.fromEntries(
-                Object.entries(scenario.configJson).filter(([key]) => key !== 'systemPrompt' && key !== 'questions')
-              ),
-              null,
-              2
-            )}
-          </pre>
-        </div>
-      )}
+      {scenario.configJson &&
+        Object.keys(scenario.configJson).some(
+          key => key !== 'systemPrompt' && key !== 'questions'
+        ) && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">{t('scenarios.detail.otherConfig')}</h2>
+            <pre className="bg-gray-50 rounded p-4 text-sm overflow-auto font-mono">
+              {JSON.stringify(
+                Object.fromEntries(
+                  Object.entries(scenario.configJson).filter(
+                    ([key]) => key !== 'systemPrompt' && key !== 'questions'
+                  )
+                ),
+                null,
+                2
+              )}
+            </pre>
+          </div>
+        )}
 
       {/* Actions */}
       <div className="bg-white rounded-lg shadow p-6">

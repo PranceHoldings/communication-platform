@@ -35,16 +35,16 @@
  * Convention: English ('en') should always be first as the fallback locale
  */
 export const locales = [
-  'en',      // English (United States)
-  'ja',      // Japanese
-  'zh-CN',   // Chinese (Simplified)
-  'zh-TW',   // Chinese (Traditional)
-  'ko',      // Korean
-  'es',      // Spanish
-  'pt',      // Portuguese
-  'fr',      // French
-  'de',      // German
-  'it',      // Italian
+  'en', // English (United States)
+  'ja', // Japanese
+  'zh-CN', // Chinese (Simplified)
+  'zh-TW', // Chinese (Traditional)
+  'ko', // Korean
+  'es', // Spanish
+  'pt', // Portuguese
+  'fr', // French
+  'de', // German
+  'it', // Italian
 ] as const;
 
 /**

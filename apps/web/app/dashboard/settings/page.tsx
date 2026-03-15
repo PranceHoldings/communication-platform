@@ -17,7 +17,9 @@ export default function SettingsPage() {
   const [enableSilencePrompt, setEnableSilencePrompt] = useState(true);
   const [silenceTimeout, setSilenceTimeout] = useState(10);
   const [silencePromptTimeout, setSilencePromptTimeout] = useState(15);
-  const [silencePromptStyle, setSilencePromptStyle] = useState<'formal' | 'casual' | 'neutral'>('neutral');
+  const [silencePromptStyle, setSilencePromptStyle] = useState<'formal' | 'casual' | 'neutral'>(
+    'neutral'
+  );
   const [showSilenceTimer, setShowSilenceTimer] = useState(false);
   const [silenceThreshold, setSilenceThreshold] = useState(0.12);
   const [minSilenceDuration, setMinSilenceDuration] = useState(500);
@@ -350,7 +352,9 @@ export default function SettingsPage() {
                               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
                             />
                             <span className="ml-2 text-sm text-gray-700">
-                              {t(`settings.aiAudio.aiResponseBehavior.silencePromptStyle${style.charAt(0).toUpperCase() + style.slice(1)}`)}
+                              {t(
+                                `settings.aiAudio.aiResponseBehavior.silencePromptStyle${style.charAt(0).toUpperCase() + style.slice(1)}`
+                              )}
                             </span>
                           </label>
                         ))}

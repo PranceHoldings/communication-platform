@@ -52,12 +52,7 @@ export function KeyboardShortcuts({ className = '' }: KeyboardShortcutsProps) {
         className={`flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors ${className}`}
         title={t('sessions.player.shortcuts.showHelp')}
       >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -76,7 +71,7 @@ export function KeyboardShortcuts({ className = '' }: KeyboardShortcutsProps) {
         >
           <div
             className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
@@ -115,9 +110,7 @@ export function KeyboardShortcuts({ className = '' }: KeyboardShortcutsProps) {
             </div>
 
             <div className="mt-6 p-3 bg-blue-50 rounded-lg">
-              <p className="text-xs text-blue-800">
-                {t('sessions.player.shortcuts.note')}
-              </p>
+              <p className="text-xs text-blue-800">{t('sessions.player.shortcuts.note')}</p>
             </div>
           </div>
         </div>

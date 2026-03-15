@@ -27,7 +27,7 @@ export interface AudioProcessorConfig {
 }
 
 // Phase B: Batch processing types removed - only streaming version used
-// ProcessAudioOptions and ProcessAudioResult removed
+// ProcessAudioOptions removed - only ProcessAudioStreamingOptions used
 
 export interface StreamingCallbacks {
   onTranscriptComplete?: (transcript: string) => Promise<void>;
@@ -37,8 +37,21 @@ export interface StreamingCallbacks {
   onTTSComplete?: (audio: Buffer, contentType: string) => Promise<void>;
 }
 
-export interface ProcessAudioStreamingOptions extends ProcessAudioOptions {
+export interface ProcessAudioStreamingOptions {
+  audioData: Buffer;
+  sessionId: string;
+  scenarioPrompt?: string;
+  scenarioLanguage?: string;
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
   callbacks: StreamingCallbacks;
+  initialSilenceTimeout?: number; // Azure STT initial silence timeout (ms)
+}
+
+export interface ProcessAudioResult {
+  transcript: string;
+  aiResponse: string;
+  audioResponse: Buffer;
+  audioContentType: string;
 }
 
 export class AudioProcessor {
@@ -310,7 +323,11 @@ export class AudioProcessor {
   /**
    * Transcribe audio using Azure Speech Services
    */
-  private async transcribeAudio(audioData: Buffer, scenarioLanguage?: string): Promise<string> {
+  private async transcribeAudio(
+    audioData: Buffer,
+    scenarioLanguage?: string,
+    initialSilenceTimeout?: number
+  ): Promise<string> {
     const fs = await import('fs');
 
     // Detect audio format from buffer header
@@ -383,6 +400,7 @@ export class AudioProcessor {
           subscriptionKey: this.config.azureSpeechKey,
           region: this.config.azureSpeechRegion,
           autoDetectLanguages, // 言語設定ファイルから取得した優先順位リスト
+          initialSilenceTimeout, // 組織設定から渡された初期無音タイムアウト
         });
 
         const result = await tempSTT.recognizeFromFile(tempFile);
@@ -518,6 +536,7 @@ export class AudioProcessor {
       scenarioLanguage,
       conversationHistory = [],
       callbacks,
+      initialSilenceTimeout,
     } = options;
 
     console.log('[AudioProcessor] Starting streaming pipeline:', {
@@ -533,7 +552,7 @@ export class AudioProcessor {
       await this.saveAudioToS3(audioData, sessionId, 'input');
 
       // Step 2: Transcribe audio using Azure STT
-      const transcript = await this.transcribeAudio(audioData, scenarioLanguage);
+      const transcript = await this.transcribeAudio(audioData, scenarioLanguage, initialSilenceTimeout);
 
       if (!transcript || transcript.trim().length === 0) {
         throw new Error('No speech detected in audio');

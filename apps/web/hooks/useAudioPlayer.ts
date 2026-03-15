@@ -67,48 +67,51 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
   }, []);
 
   // Play audio chunk
-  const playChunk = useCallback(async (chunk: AudioChunk) => {
-    if (!audioContextRef.current) {
-      console.warn('[AudioPlayer] Not initialized, auto-initializing...');
-      await initialize();
-    }
-
-    const context = audioContextRef.current!;
-
-    try {
-      // Decode base64 to ArrayBuffer
-      const binaryString = atob(chunk.audio);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+  const playChunk = useCallback(
+    async (chunk: AudioChunk) => {
+      if (!audioContextRef.current) {
+        console.warn('[AudioPlayer] Not initialized, auto-initializing...');
+        await initialize();
       }
 
-      // Decode MP3 to AudioBuffer
-      const audioBuffer = await context.decodeAudioData(bytes.buffer);
+      const context = audioContextRef.current!;
 
-      console.log('[AudioPlayer] Decoded audio chunk:', {
-        duration: audioBuffer.duration.toFixed(2),
-        sampleRate: audioBuffer.sampleRate,
-        channels: audioBuffer.numberOfChannels,
-        isFinal: chunk.isFinal,
-      });
+      try {
+        // Decode base64 to ArrayBuffer
+        const binaryString = atob(chunk.audio);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
 
-      // Add to queue
-      audioQueueRef.current.push(audioBuffer);
+        // Decode MP3 to AudioBuffer
+        const audioBuffer = await context.decodeAudioData(bytes.buffer);
 
-      // Start playback if not already playing
-      if (!isPlayingRef.current) {
-        isPlayingRef.current = true;
-        setIsPlaying(true);
-        nextStartTimeRef.current = context.currentTime;
-        processQueue();
+        console.log('[AudioPlayer] Decoded audio chunk:', {
+          duration: audioBuffer.duration.toFixed(2),
+          sampleRate: audioBuffer.sampleRate,
+          channels: audioBuffer.numberOfChannels,
+          isFinal: chunk.isFinal,
+        });
+
+        // Add to queue
+        audioQueueRef.current.push(audioBuffer);
+
+        // Start playback if not already playing
+        if (!isPlayingRef.current) {
+          isPlayingRef.current = true;
+          setIsPlaying(true);
+          nextStartTimeRef.current = context.currentTime;
+          processQueue();
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to play audio chunk';
+        setError(errorMsg);
+        console.error('[AudioPlayer] Failed to play chunk:', err);
       }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to play audio chunk';
-      setError(errorMsg);
-      console.error('[AudioPlayer] Failed to play chunk:', err);
-    }
-  }, [initialize]);
+    },
+    [initialize]
+  );
 
   // Process audio queue
   const processQueue = useCallback(() => {

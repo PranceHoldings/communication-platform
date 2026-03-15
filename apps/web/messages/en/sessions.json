@@ -173,6 +173,14 @@
       "authenticationTimeout": "Authentication timeout. Please try again.",
       "processingComplete": "Processing Complete"
     },
+    "noSpeech": {
+      "guidance": "No speech detected. Please speak louder or move closer to your microphone.",
+      "showTips": "Show Tips",
+      "tip1": "• Speak louder and more clearly",
+      "tip2": "• Move closer to your microphone (10-20cm)",
+      "tip3": "• Check your microphone volume settings",
+      "tip4": "• Ensure your microphone is not muted"
+    },
     "processing": {
       "stt": "Transcribing speech...",
       "ai": "Generating AI response...",

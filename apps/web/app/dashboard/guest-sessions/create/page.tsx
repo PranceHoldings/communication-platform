@@ -162,7 +162,7 @@ export default function CreateGuestSessionPage() {
       {/* Progress Steps */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between">
-          {[1, 2, 3].map((step) => (
+          {[1, 2, 3].map(step => (
             <div key={step} className="flex items-center flex-1">
               <div className="flex items-center w-full">
                 <div
@@ -170,20 +170,27 @@ export default function CreateGuestSessionPage() {
                     step === currentStep
                       ? 'bg-indigo-600 text-white'
                       : step < currentStep
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-600'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-200 text-gray-600'
                   }`}
                 >
                   {step < currentStep ? (
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   ) : (
                     step
                   )}
                 </div>
                 <div className="ml-4 flex-1">
-                  <p className={`text-sm font-medium ${step === currentStep ? 'text-indigo-600' : 'text-gray-500'}`}>
+                  <p
+                    className={`text-sm font-medium ${step === currentStep ? 'text-indigo-600' : 'text-gray-500'}`}
+                  >
                     {t(`guestSessions.create.step${step}`)}
                   </p>
                 </div>
@@ -205,7 +212,11 @@ export default function CreateGuestSessionPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex">
             <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
             </svg>
             <p className="ml-3 text-sm text-red-800">{error}</p>
           </div>
@@ -217,7 +228,11 @@ export default function CreateGuestSessionPage() {
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex">
             <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
             </svg>
             <p className="ml-3 text-sm text-green-800">{t('guestSessions.create.success')}</p>
           </div>
@@ -238,12 +253,12 @@ export default function CreateGuestSessionPage() {
               ) : (
                 <select
                   value={scenarioId}
-                  onChange={(e) => setScenarioId(e.target.value)}
+                  onChange={e => setScenarioId(e.target.value)}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   required
                 >
                   <option value="">{t('guestSessions.create.scenario.placeholder')}</option>
-                  {scenarios.map((scenario) => (
+                  {scenarios.map(scenario => (
                     <option key={scenario.id} value={scenario.id}>
                       {scenario.title} ({scenario.language})
                     </option>
@@ -261,11 +276,11 @@ export default function CreateGuestSessionPage() {
               ) : (
                 <select
                   value={avatarId}
-                  onChange={(e) => setAvatarId(e.target.value)}
+                  onChange={e => setAvatarId(e.target.value)}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 >
                   <option value="">{t('guestSessions.create.avatar.placeholder')}</option>
-                  {avatars.map((avatar) => (
+                  {avatars.map(avatar => (
                     <option key={avatar.id} value={avatar.id}>
                       {avatar.name}
                     </option>
@@ -286,7 +301,7 @@ export default function CreateGuestSessionPage() {
               <input
                 type="text"
                 value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
+                onChange={e => setGuestName(e.target.value)}
                 placeholder={t('guestSessions.create.guestName.placeholder')}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
@@ -299,7 +314,7 @@ export default function CreateGuestSessionPage() {
               <input
                 type="email"
                 value={guestEmail}
-                onChange={(e) => setGuestEmail(e.target.value)}
+                onChange={e => setGuestEmail(e.target.value)}
                 placeholder={t('guestSessions.create.guestEmail.placeholder')}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
@@ -317,7 +332,7 @@ export default function CreateGuestSessionPage() {
               <input
                 type="datetime-local"
                 value={validUntil}
-                onChange={(e) => setValidUntil(e.target.value)}
+                onChange={e => setValidUntil(e.target.value)}
                 min={new Date().toISOString().slice(0, 16)}
                 defaultValue={getDefaultValidUntil()}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -335,7 +350,7 @@ export default function CreateGuestSessionPage() {
               <input
                 type="number"
                 value={dataRetentionDays}
-                onChange={(e) => setDataRetentionDays(e.target.value)}
+                onChange={e => setDataRetentionDays(e.target.value)}
                 placeholder="30"
                 min="1"
                 max="365"
@@ -353,7 +368,7 @@ export default function CreateGuestSessionPage() {
               <input
                 type="text"
                 value={customPin}
-                onChange={(e) => setCustomPin(e.target.value)}
+                onChange={e => setCustomPin(e.target.value)}
                 placeholder={t('guestSessions.create.customPin.placeholder')}
                 pattern="\d{4,8}"
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"

@@ -34,6 +34,7 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly getCurrentUserFunction: nodejs.NodejsFunction;
   public readonly organizationSettingsFunction: nodejs.NodejsFunction;
   public readonly migrationFunction: nodejs.NodejsFunction;
+  public readonly dbQueryFunction: nodejs.NodejsFunction;
   public readonly populateScenarioDefaultsFunction: nodejs.NodejsFunction;
   public readonly listSessionsFunction: nodejs.NodejsFunction;
   public readonly createSessionFunction: nodejs.NodejsFunction;
@@ -446,6 +447,57 @@ export class ApiLambdaStack extends cdk.Stack {
         },
       },
     });
+
+    // Database Query Lambda関数（開発用データベース操作）
+    this.dbQueryFunction = new nodejs.NodejsFunction(this, 'DbQueryFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-db-query-${props.environment}`,
+      description: 'Execute database queries from local development environment (read-only by default)',
+      entry: path.join(__dirname, '../lambda/db-query/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(60), // 1分
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      environment: {
+        ...commonLambdaProps.environment,
+        DB_QUERIES_BUCKET: `prance-db-queries-${props.environment}`,
+      },
+      bundling: {
+        minify: false,
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+        nodeModules: ['@prisma/client'],
+        commandHooks: {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            return [
+              // Copy Prisma generated client
+              `mkdir -p ${outputDir}/node_modules/.prisma`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+              // Copy Prisma schema
+              `mkdir -p ${outputDir}/prisma`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+            ];
+          },
+          beforeInstall(): string[] {
+            return [];
+          },
+        },
+      },
+    });
+
+    // Grant S3 read permissions for query files
+    const dbQueriesBucket = s3.Bucket.fromBucketName(
+      this,
+      'DbQueriesBucket',
+      `prance-db-queries-${props.environment}`
+    );
+    dbQueriesBucket.grantRead(this.dbQueryFunction);
 
     // データベース保守Lambda関数（Scenario Default Values設定）
     this.populateScenarioDefaultsFunction = new nodejs.NodejsFunction(

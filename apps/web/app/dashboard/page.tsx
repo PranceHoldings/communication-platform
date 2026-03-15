@@ -204,9 +204,7 @@ export default function DashboardPage() {
                         <div className="text-sm font-medium text-gray-900">
                           {session.scenario?.title || t('sessions.table.unknownScenario')}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {session.scenario?.category}
-                        </div>
+                        <div className="text-sm text-gray-500">{session.scenario?.category}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -228,10 +226,10 @@ export default function DashboardPage() {
                             session.status === 'COMPLETED'
                               ? 'bg-green-100 text-green-800'
                               : session.status === 'ACTIVE'
-                              ? 'bg-blue-100 text-blue-800'
-                              : session.status === 'PROCESSING'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
+                                ? 'bg-blue-100 text-blue-800'
+                                : session.status === 'PROCESSING'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
                           }`}
                         >
                           {t(`sessions.status.${session.status}`)}

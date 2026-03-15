@@ -37,7 +37,8 @@ interface UseWebSocketOptions {
   scenarioPrompt?: string; // System prompt from scenario
   scenarioLanguage?: string; // Scenario language
   initialGreeting?: string; // Initial AI greeting from scenario
-  silenceTimeout?: number; // Silence timeout in seconds from scenario
+  silenceTimeout?: number; // Silence timeout in seconds from scenario (Azure STT)
+  silencePromptTimeout?: number; // AI silence prompt timeout (frontend timer)
   enableSilencePrompt?: boolean; // Enable silence prompt from scenario
   silenceThreshold?: number; // Audio level threshold (0.0-1.0) to detect speech vs silence
   minSilenceDuration?: number; // Minimum silence duration in milliseconds to trigger speech_end
@@ -77,6 +78,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     scenarioLanguage,
     initialGreeting,
     silenceTimeout,
+    silencePromptTimeout,
     enableSilencePrompt,
     silenceThreshold,
     minSilenceDuration,
@@ -397,6 +399,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
           scenarioLanguage,
           initialGreeting,
           silenceTimeout,
+          silencePromptTimeout,
           enableSilencePrompt,
           silenceThreshold,
           minSilenceDuration,
@@ -408,6 +411,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
           language: scenarioLanguage,
           hasInitialGreeting: !!initialGreeting,
           silenceTimeout,
+          silencePromptTimeout,
           enableSilencePrompt,
           silenceThreshold,
           minSilenceDuration,

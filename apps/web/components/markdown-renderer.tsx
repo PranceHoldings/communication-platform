@@ -21,9 +21,7 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
         remarkPlugins={[remarkGfm]}
         components={{
           // Paragraph
-          p: ({ children }) => (
-            <p className="text-sm text-gray-900 mb-2 last:mb-0">{children}</p>
-          ),
+          p: ({ children }) => <p className="text-sm text-gray-900 mb-2 last:mb-0">{children}</p>,
           // Headers
           h1: ({ children }) => (
             <h1 className="text-xl font-bold text-gray-900 mb-2">{children}</h1>

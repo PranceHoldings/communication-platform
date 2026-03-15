@@ -17,6 +17,7 @@ export interface StorageStackProps extends cdk.StackProps {
 export class StorageStack extends cdk.Stack {
   public readonly recordingsBucket: s3.Bucket;
   public readonly avatarsBucket: s3.Bucket;
+  public readonly dbQueriesBucket: s3.Bucket;
   public readonly distribution: cloudfront.Distribution;
 
   constructor(scope: Construct, id: string, props: StorageStackProps) {
@@ -91,10 +92,27 @@ export class StorageStack extends cdk.Stack {
       autoDeleteObjects: config.environment !== 'production',
     });
 
+    // Database Queries用S3バケット（開発用）
+    this.dbQueriesBucket = new s3.Bucket(this, 'DbQueriesBucket', {
+      bucketName: `prance-db-queries-${config.environment}`,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      versioned: false,
+      lifecycleRules: [
+        {
+          id: 'DeleteOldQueries',
+          enabled: true,
+          expiration: cdk.Duration.days(7), // 7日後に自動削除
+        },
+      ],
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+
     // CloudFront Distribution (CDN)
     this.distribution = new cloudfront.Distribution(this, 'CDNDistribution', {
       defaultBehavior: {
-        origin: new origins.S3Origin(this.avatarsBucket),
+        origin: origins.S3BucketOrigin.withOriginAccessControl(this.avatarsBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
         cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
@@ -103,7 +121,7 @@ export class StorageStack extends cdk.Stack {
       },
       additionalBehaviors: {
         '/recordings/*': {
-          origin: new origins.S3Origin(this.recordingsBucket),
+          origin: origins.S3BucketOrigin.withOriginAccessControl(this.recordingsBucket),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
           cachePolicy: new cloudfront.CachePolicy(this, 'RecordingsCachePolicy', {
@@ -114,7 +132,7 @@ export class StorageStack extends cdk.Stack {
           }),
         },
         '/sessions/*': {
-          origin: new origins.S3Origin(this.recordingsBucket),
+          origin: origins.S3BucketOrigin.withOriginAccessControl(this.recordingsBucket),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
           cachePolicy: new cloudfront.CachePolicy(this, 'SessionsCachePolicy', {

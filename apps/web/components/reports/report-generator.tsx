@@ -82,11 +82,10 @@ export function ReportGenerator({ sessionId, sessionStatus }: ReportGeneratorPro
 
       {lastReport && !generating && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-700 mb-2">
-            {t('reports.generator.success')}
-          </p>
+          <p className="text-sm text-green-700 mb-2">{t('reports.generator.success')}</p>
           <p className="text-xs text-gray-600">
-            {t('reports.generator.generatedAt')}: {new Date(lastReport.generatedAt).toLocaleString()}
+            {t('reports.generator.generatedAt')}:{' '}
+            {new Date(lastReport.generatedAt).toLocaleString()}
           </p>
         </div>
       )}

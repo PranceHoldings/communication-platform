@@ -257,7 +257,8 @@ export interface AuthenticateMessage extends WebSocketMessageBase {
   scenarioPrompt?: string; // Optional: System prompt from scenario configJson
   scenarioLanguage?: string; // Optional: Scenario language ('ja', 'en', etc.)
   initialGreeting?: string; // Optional: Initial AI greeting text from scenario
-  silenceTimeout?: number; // Optional: Silence timeout in seconds from scenario
+  silenceTimeout?: number; // Optional: Silence timeout in seconds from scenario (Azure STT)
+  silencePromptTimeout?: number; // Optional: AI silence prompt timeout (frontend timer)
   enableSilencePrompt?: boolean; // Optional: Enable silence prompt from scenario
   silenceThreshold?: number; // Optional: Audio level threshold (0.0-1.0) to detect speech vs silence
   minSilenceDuration?: number; // Optional: Minimum silence duration in milliseconds to trigger speech_end

@@ -1,0 +1,19 @@
+{
+  "name": "prance-lambda-db-query",
+  "version": "1.0.0",
+  "description": "Database Query Lambda Function",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node index.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.709.0",
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.15",
+    "@types/aws-lambda": "^8.10.145",
+    "typescript": "^5.3.3"
+  }
+}

@@ -18,19 +18,13 @@ export function checkBrowserCapabilities(): BrowserCapabilities {
   const unsupportedFeatures: string[] = [];
 
   // Check MediaDevices API
-  const hasMediaDevices = !!(
-    typeof navigator !== 'undefined' &&
-    navigator.mediaDevices
-  );
+  const hasMediaDevices = !!(typeof navigator !== 'undefined' && navigator.mediaDevices);
   if (!hasMediaDevices) {
     unsupportedFeatures.push('MediaDevices API');
   }
 
   // Check getUserMedia
-  const hasGetUserMedia = !!(
-    hasMediaDevices &&
-    navigator.mediaDevices.getUserMedia
-  );
+  const hasGetUserMedia = !!(hasMediaDevices && navigator.mediaDevices.getUserMedia);
   if (!hasGetUserMedia) {
     unsupportedFeatures.push('getUserMedia');
   }

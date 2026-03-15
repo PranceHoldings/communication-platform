@@ -109,14 +109,10 @@ function SortableQuestionItem({
               </span>
             )}
             {question.expectedDuration && (
-              <span className="text-xs text-gray-500">
-                ~{question.expectedDuration}s
-              </span>
+              <span className="text-xs text-gray-500">~{question.expectedDuration}s</span>
             )}
           </div>
-          <p className="text-sm text-gray-900 whitespace-pre-wrap break-words">
-            {question.text}
-          </p>
+          <p className="text-sm text-gray-900 whitespace-pre-wrap break-words">{question.text}</p>
           {question.hints && question.hints.length > 0 && (
             <div className="mt-2">
               <p className="text-xs font-medium text-gray-700 mb-1">
@@ -188,8 +184,7 @@ function QuestionForm({ question, onSave, onCancel }: QuestionFormProps) {
     question?.evaluationCriteria?.join('\n') || ''
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = () => {
     if (!text.trim()) return;
 
     onSave({
@@ -209,7 +204,7 @@ function QuestionForm({ question, onSave, onCancel }: QuestionFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
       <div>
         <label htmlFor="questionText" className="block text-sm font-medium text-gray-700 mb-1">
           {t('scenarios.questions.form.text')} <span className="text-red-500">*</span>
@@ -243,7 +238,10 @@ function QuestionForm({ question, onSave, onCancel }: QuestionFormProps) {
         </div>
 
         <div>
-          <label htmlFor="expectedDuration" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="expectedDuration"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             {t('scenarios.questions.form.expectedDuration')}
           </label>
           <input
@@ -284,13 +282,14 @@ function QuestionForm({ question, onSave, onCancel }: QuestionFormProps) {
           rows={2}
           className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
         />
-        <p className="mt-1 text-xs text-gray-500">
-          {t('scenarios.questions.form.hintsHelp')}
-        </p>
+        <p className="mt-1 text-xs text-gray-500">{t('scenarios.questions.form.hintsHelp')}</p>
       </div>
 
       <div>
-        <label htmlFor="evaluationCriteria" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="evaluationCriteria"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           {t('scenarios.questions.form.evaluationCriteria')}
         </label>
         <textarea
@@ -315,13 +314,14 @@ function QuestionForm({ question, onSave, onCancel }: QuestionFormProps) {
           {t('common.cancel')}
         </button>
         <button
-          type="submit"
+          type="button"
+          onClick={handleSave}
           className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
         >
           {question ? t('common.save') : t('scenarios.questions.addQuestion')}
         </button>
       </div>
-    </form>
+    </div>
   );
 }
 
@@ -389,12 +389,8 @@ export function QuestionEditor({ questions, onChange, disabled = false }: Questi
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">
-            {t('scenarios.questions.title')}
-          </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {t('scenarios.questions.description')}
-          </p>
+          <h3 className="text-lg font-medium text-gray-900">{t('scenarios.questions.title')}</h3>
+          <p className="mt-1 text-sm text-gray-500">{t('scenarios.questions.description')}</p>
         </div>
         {!isAdding && !editingId && (
           <button
@@ -416,9 +412,7 @@ export function QuestionEditor({ questions, onChange, disabled = false }: Questi
       </div>
 
       {/* Add Form */}
-      {isAdding && (
-        <QuestionForm onSave={handleAdd} onCancel={() => setIsAdding(false)} />
-      )}
+      {isAdding && <QuestionForm onSave={handleAdd} onCancel={() => setIsAdding(false)} />}
 
       {/* Edit Form */}
       {editingId && editingQuestion && (
@@ -448,9 +442,7 @@ export function QuestionEditor({ questions, onChange, disabled = false }: Questi
           <h3 className="mt-2 text-sm font-medium text-gray-900">
             {t('scenarios.questions.empty')}
           </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {t('scenarios.questions.emptyDescription')}
-          </p>
+          <p className="mt-1 text-sm text-gray-500">{t('scenarios.questions.emptyDescription')}</p>
         </div>
       )}
 

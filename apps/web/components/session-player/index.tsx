@@ -212,90 +212,98 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     [pendingSessionEnd]
   );
 
-  const handleAvatarResponse = useCallback((message: AvatarResponseMessage) => {
-    // AIアバターの応答
-    if (message.type === 'avatar_response_partial') {
-      // Partial AI response - update transcript
-      setTranscript(prev => {
-        const lastItem = prev[prev.length - 1];
-        if (lastItem && lastItem.partial && lastItem.speaker === 'AI') {
-          // Update existing partial AI response
+  const handleAvatarResponse = useCallback(
+    (message: AvatarResponseMessage) => {
+      // AIアバターの応答
+      if (message.type === 'avatar_response_partial') {
+        // Partial AI response - update transcript
+        setTranscript(prev => {
+          const lastItem = prev[prev.length - 1];
+          if (lastItem && lastItem.partial && lastItem.speaker === 'AI') {
+            // Update existing partial AI response
+            return [
+              ...prev.slice(0, -1),
+              {
+                ...lastItem,
+                text: message.text,
+                timestamp: message.timestamp,
+              },
+            ];
+          } else {
+            // Add new partial AI response
+            return [
+              ...prev,
+              {
+                id: `ai-partial-${Date.now()}`,
+                speaker: 'AI',
+                text: message.text,
+                timestamp: message.timestamp,
+                partial: true,
+              },
+            ];
+          }
+        });
+
+        // AI response started, move to TTS stage
+        setProcessingStage('tts');
+        setProcessingMessage('');
+      } else if (message.type === 'avatar_response_final') {
+        // Final AI response
+        setTranscript(prev => {
+          const filtered = prev.filter(item => !item.partial || item.speaker !== 'AI');
           return [
-            ...prev.slice(0, -1),
+            ...filtered,
             {
-              ...lastItem,
-              text: message.text,
-              timestamp: message.timestamp,
-            },
-          ];
-        } else {
-          // Add new partial AI response
-          return [
-            ...prev,
-            {
-              id: `ai-partial-${Date.now()}`,
+              id: `ai-${message.timestamp}`,
               speaker: 'AI',
               text: message.text,
               timestamp: message.timestamp,
-              partial: true,
+              partial: false,
             },
           ];
+        });
+
+        // Clear processing timeout (AI response received successfully)
+        if (processingTimeoutRef.current) {
+          clearTimeout(processingTimeoutRef.current);
+          processingTimeoutRef.current = null;
         }
-      });
+        processingStartTimeRef.current = null;
 
-      // AI response started, move to TTS stage
-      setProcessingStage('tts');
-      setProcessingMessage('');
-    } else if (message.type === 'avatar_response_final') {
-      // Final AI response
-      setTranscript(prev => {
-        const filtered = prev.filter(item => !item.partial || item.speaker !== 'AI');
-        return [
-          ...filtered,
-          {
-            id: `ai-${message.timestamp}`,
-            speaker: 'AI',
-            text: message.text,
-            timestamp: message.timestamp,
-            partial: false,
-          },
-        ];
-      });
-
-      // Clear processing timeout (AI response received successfully)
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current);
-        processingTimeoutRef.current = null;
-      }
-      processingStartTimeRef.current = null;
-
-      // Check if this is the initial greeting (first AI message)
-      if (!initialGreetingCompleted) {
-        console.log('[SessionPlayer] Initial AI greeting completed, silence timer will start after audio playback');
-        // Note: We'll set initialGreetingCompleted=true when audio playback finishes
-      }
-    }
-  }, [initialGreetingCompleted]);
-
-  const handleProcessingUpdate = useCallback((message: ProcessingUpdateMessage) => {
-    // 処理状況の更新（オプション：UI表示用）
-    console.log('Processing:', message.stage, message.progress);
-
-    // Start timeout detection
-    if (!processingStartTimeRef.current) {
-      processingStartTimeRef.current = Date.now();
-
-      // Set timeout warning
-      processingTimeoutRef.current = setTimeout(() => {
-        const elapsed = Date.now() - (processingStartTimeRef.current || 0);
-        if (elapsed >= PROCESSING_TIMEOUT_MS) {
-          toast.warning(t('errors.api.timeout'), {
-            duration: 5000,
-          });
+        // Check if this is the initial greeting (first AI message)
+        if (!initialGreetingCompleted) {
+          console.log(
+            '[SessionPlayer] Initial AI greeting completed, silence timer will start after audio playback'
+          );
+          // Note: We'll set initialGreetingCompleted=true when audio playback finishes
         }
-      }, PROCESSING_TIMEOUT_MS);
-    }
-  }, [t, PROCESSING_TIMEOUT_MS]);
+      }
+    },
+    [initialGreetingCompleted]
+  );
+
+  const handleProcessingUpdate = useCallback(
+    (message: ProcessingUpdateMessage) => {
+      // 処理状況の更新（オプション：UI表示用）
+      console.log('Processing:', message.stage, message.progress);
+
+      // Start timeout detection
+      if (!processingStartTimeRef.current) {
+        processingStartTimeRef.current = Date.now();
+
+        // Set timeout warning
+        processingTimeoutRef.current = setTimeout(() => {
+          const elapsed = Date.now() - (processingStartTimeRef.current || 0);
+          if (elapsed >= PROCESSING_TIMEOUT_MS) {
+            toast.warning(t('errors.api.timeout'), {
+              duration: 5000,
+            });
+          }
+        }, PROCESSING_TIMEOUT_MS);
+      }
+    },
+    [t, PROCESSING_TIMEOUT_MS]
+  );
 
   const handleSessionComplete = useCallback(
     (_message: SessionCompleteMessage) => {
@@ -322,20 +330,17 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   );
 
   // Phase 1.5: Handle TTS streaming chunks
-  const handleTTSAudioChunk = useCallback(
-    (message: TTSAudioChunkMessage) => {
-      console.log('[SessionPlayer] TTS audio chunk received:', {
-        audioLength: message.audio?.length || 0,
-        isFinal: message.isFinal,
-        timestamp: message.timestamp,
-      });
+  const handleTTSAudioChunk = useCallback((message: TTSAudioChunkMessage) => {
+    console.log('[SessionPlayer] TTS audio chunk received:', {
+      audioLength: message.audio?.length || 0,
+      isFinal: message.isFinal,
+      timestamp: message.timestamp,
+    });
 
-      // For now, we'll wait for the final audio_response message with the complete audio URL
-      // Real-time streaming playback would require MediaSource API or Web Audio API
-      // This is a placeholder for future implementation
-    },
-    []
-  );
+    // For now, we'll wait for the final audio_response message with the complete audio URL
+    // Real-time streaming playback would require MediaSource API or Web Audio API
+    // This is a placeholder for future implementation
+  }, []);
 
   const handleAudioResponse = useCallback(
     (message: AudioResponseMessage) => {
@@ -430,7 +435,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           // Mark initial greeting as complete when first AI audio finishes
           if (!initialGreetingCompleted) {
             setInitialGreetingCompleted(true);
-            console.log('[SessionPlayer] Initial AI greeting audio complete, silence timer will now start');
+            console.log(
+              '[SessionPlayer] Initial AI greeting audio complete, silence timer will now start'
+            );
           }
         };
 
@@ -466,7 +473,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           console.error('[SessionPlayer] Error details:', {
             name: (error as Error).name,
             message: (error as Error).message,
-            code: (error as any).code,
+            code: error.code,
           });
           toast.error(t('sessions.player.messages.audioPlaybackError'));
           setIsPlayingAudio(false);
@@ -486,84 +493,99 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     [t, initialGreetingCompleted]
   );
 
-  const handleError = useCallback((message: ErrorMessage) => {
-    // エラー処理
-    console.error('WebSocket error:', message);
+  const handleError = useCallback(
+    (message: ErrorMessage) => {
+      // エラー処理
+      console.error('WebSocket error:', message);
 
-    // Filter non-critical errors (user silence is normal during AI responses)
-    const isNonCritical =
-      message.code === 'NO_AUDIO_DATA' ||
-      (message.code === 'AUDIO_PROCESSING_ERROR' && (
-        message.message?.includes('RMS level') ||
-        message.message?.includes('No speech recognized')
-      ));
+      // Filter non-critical errors (user silence is normal during AI responses)
+      const isNonCritical =
+        message.code === 'NO_AUDIO_DATA' ||
+        (message.code === 'AUDIO_PROCESSING_ERROR' &&
+          (message.message?.includes('RMS level') ||
+            message.message?.includes('No speech recognized')));
 
-    if (isNonCritical) {
-      console.warn('[SessionPlayer] Non-critical error (user silence):', message.code);
-      // Reset processing flag to allow silence timer to resume
+      if (isNonCritical) {
+        console.warn('[SessionPlayer] Non-critical error (user silence):', message.code);
+        // Reset processing flag to allow silence timer to resume
+        setIsProcessing(false);
+        setProcessingStage('idle');
+        setProcessingMessage('');
+        console.log('[SessionPlayer] Processing flags reset, silence timer can resume');
+        return; // Don't show toast for expected silence
+      }
+
+      // Clear processing timeout
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+      }
+      processingStartTimeRef.current = null;
+
+      // Get user-friendly error message
+      const errorMessage = getErrorMessage({
+        code: message.code || 'UNKNOWN_ERROR',
+        message: message.message,
+        originalError: message.details as string,
+      });
+
+      toast.error(errorMessage, {
+        duration: 8000,
+        action: message.code?.includes('MICROPHONE')
+          ? {
+              label: t('errors.actions.viewDetails'),
+              onClick: () => {
+                const instructions = getMicrophoneInstructions();
+                toast.info(instructions, { duration: 12000 });
+              },
+            }
+          : undefined,
+      });
+    },
+    [getErrorMessage, getMicrophoneInstructions, t]
+  );
+
+  const handleNoSpeechDetected = useCallback(
+    (_message: { message: string; timestamp: number }) => {
+      // Not an error - just guidance for user
+      console.log('[SessionPlayer] No speech detected - providing user guidance');
+
+      // Reset processing flag
       setIsProcessing(false);
       setProcessingStage('idle');
       setProcessingMessage('');
-      console.log('[SessionPlayer] Processing flags reset, silence timer can resume');
-      return; // Don't show toast for expected silence
-    }
 
-    // Clear processing timeout
-    if (processingTimeoutRef.current) {
-      clearTimeout(processingTimeoutRef.current);
-      processingTimeoutRef.current = null;
-    }
-    processingStartTimeRef.current = null;
+      // Show user-friendly guidance message
+      const guidanceMessage = t('sessions.player.noSpeech.guidance', {
+        defaultValue: 'No speech detected. Please speak louder or move closer to your microphone.',
+      });
 
-    // Get user-friendly error message
-    const errorMessage = getErrorMessage({
-      code: message.code || 'UNKNOWN_ERROR',
-      message: message.message,
-      originalError: message.details as string,
-    });
-
-    toast.error(errorMessage, {
-      duration: 8000,
-      action: message.code?.includes('MICROPHONE') ? {
-        label: t('errors.actions.viewDetails'),
-        onClick: () => {
-          const instructions = getMicrophoneInstructions();
-          toast.info(instructions, { duration: 12000 });
+      toast.warning(guidanceMessage, {
+        duration: 6000,
+        action: {
+          label: t('sessions.player.noSpeech.showTips', { defaultValue: 'Show Tips' }),
+          onClick: () => {
+            const tips = [
+              t('sessions.player.noSpeech.tip1', {
+                defaultValue: '• Speak louder and more clearly',
+              }),
+              t('sessions.player.noSpeech.tip2', {
+                defaultValue: '• Move closer to your microphone (10-20cm)',
+              }),
+              t('sessions.player.noSpeech.tip3', {
+                defaultValue: '• Check your microphone volume settings',
+              }),
+              t('sessions.player.noSpeech.tip4', {
+                defaultValue: '• Ensure your microphone is not muted',
+              }),
+            ].join('\n');
+            toast.info(tips, { duration: 10000 });
+          },
         },
-      } : undefined,
-    });
-  }, [getErrorMessage, getMicrophoneInstructions, t]);
-
-  const handleNoSpeechDetected = useCallback((_message: { message: string; timestamp: number }) => {
-    // Not an error - just guidance for user
-    console.log('[SessionPlayer] No speech detected - providing user guidance');
-
-    // Reset processing flag
-    setIsProcessing(false);
-    setProcessingStage('idle');
-    setProcessingMessage('');
-
-    // Show user-friendly guidance message
-    const guidanceMessage = t('sessions.player.noSpeech.guidance', {
-      defaultValue: 'No speech detected. Please speak louder or move closer to your microphone.',
-    });
-
-    toast.warning(guidanceMessage, {
-      duration: 6000,
-      action: {
-        label: t('sessions.player.noSpeech.showTips', { defaultValue: 'Show Tips' }),
-        onClick: () => {
-          const tips = [
-            t('sessions.player.noSpeech.tip1', { defaultValue: '• Speak louder and more clearly' }),
-            t('sessions.player.noSpeech.tip2', { defaultValue: '• Move closer to your microphone (10-20cm)' }),
-            t('sessions.player.noSpeech.tip3', { defaultValue: '• Check your microphone volume settings' }),
-            t('sessions.player.noSpeech.tip4', { defaultValue: '• Ensure your microphone is not muted' }),
-          ].join('\n');
-          toast.info(tips, { duration: 10000 });
-        },
-      },
-    });
-  }, [t]);
+      });
+    },
+    [t]
+  );
 
   const handleAuthenticated = useCallback(
     (sessionId: string, receivedInitialGreeting?: string) => {
@@ -613,7 +635,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     scenarioPrompt: (scenario.configJson as any)?.systemPrompt, // Extract system prompt from scenario config
     scenarioLanguage: scenario.language,
     initialGreeting: scenario.initialGreeting, // Initial AI greeting from scenario
-    silenceTimeout: scenario.silenceTimeout, // Silence timeout in seconds
+    silenceTimeout: scenario.silenceTimeout, // Silence timeout in seconds (Azure STT)
+    silencePromptTimeout: scenario.silencePromptTimeout ?? 15, // AI silence prompt timeout (frontend timer)
     enableSilencePrompt: scenario.enableSilencePrompt, // Enable silence prompt flag
     silenceThreshold: scenario.silenceThreshold, // Audio level threshold to detect speech vs silence
     minSilenceDuration: scenario.minSilenceDuration, // Minimum silence duration to trigger speech_end
@@ -800,7 +823,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       // Filter LOW_VOLUME errors (user silence during AI response is normal)
       if ((error as any).code === 'LOW_VOLUME') {
-        console.warn('[SessionPlayer] Low volume detected (user silence is normal during AI response)');
+        console.warn(
+          '[SessionPlayer] Low volume detected (user silence is normal during AI response)'
+        );
         return; // Don't show toast for LOW_VOLUME
       }
 
@@ -809,32 +834,31 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       toast.error(errorMessage, {
         duration: 10000,
-        action: (error as any).code?.includes('MICROPHONE') ? {
-          label: t('errors.actions.viewDetails'),
-          onClick: () => {
-            const instructions = getMicrophoneInstructions();
-            toast.info(instructions, { duration: 15000 });
-          },
-        } : undefined,
+        action: (error as any).code?.includes('MICROPHONE')
+          ? {
+              label: t('errors.actions.viewDetails'),
+              onClick: () => {
+                const instructions = getMicrophoneInstructions();
+                toast.info(instructions, { duration: 15000 });
+              },
+            }
+          : undefined,
       });
     },
     [t, getErrorMessage, getMicrophoneInstructions]
   );
 
-  const handleRecordingComplete = useCallback(
-    async (audioBlob: Blob) => {
-      // Recording complete - リアルタイム方式では使用しない
-      // (音声処理はリアルタイムチャンク + speech_end で完結)
-      console.log('[SessionPlayer] Recording complete (audio processed via real-time chunks):', {
-        size: audioBlob.size,
-        type: audioBlob.type,
-      });
+  const handleRecordingComplete = useCallback(async (audioBlob: Blob) => {
+    // Recording complete - リアルタイム方式では使用しない
+    // (音声処理はリアルタイムチャンク + speech_end で完結)
+    console.log('[SessionPlayer] Recording complete (audio processed via real-time chunks):', {
+      size: audioBlob.size,
+      type: audioBlob.type,
+    });
 
-      // Note: 完全音声データ方式（audio_data_part）は削除済み
-      // リアルタイムチャンク方式（audio_chunk_realtime + speech_end）のみ使用
-    },
-    []
-  );
+    // Note: 完全音声データ方式（audio_data_part）は削除済み
+    // リアルタイムチャンク方式（audio_chunk_realtime + speech_end）のみ使用
+  }, []);
 
   const {
     isRecording: isMicRecording,
@@ -878,10 +902,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     enableSilencePrompt: true,
     silenceThreshold: 0.12,
     minSilenceDuration: 500,
+    silencePromptTimeout: 15,
   };
 
   // Resolve enableSilencePrompt first (parent setting)
-  const effectiveEnableSilencePrompt = scenario.enableSilencePrompt ?? orgSettings?.enableSilencePrompt ?? DEFAULT_ORG_SETTINGS.enableSilencePrompt;
+  const effectiveEnableSilencePrompt =
+    scenario.enableSilencePrompt ??
+    orgSettings?.enableSilencePrompt ??
+    DEFAULT_ORG_SETTINGS.enableSilencePrompt;
 
   // 🔴 CRITICAL: showSilenceTimer depends on enableSilencePrompt (parent-child relationship)
   // If enableSilencePrompt is false at org level, showSilenceTimer should be forced to false
@@ -889,17 +917,20 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const effectiveShowSilenceTimer =
     scenario.showSilenceTimer ??
     (orgSettings?.enableSilencePrompt === false
-      ? false  // Parent setting disabled -> force child setting to false
+      ? false // Parent setting disabled -> force child setting to false
       : (orgSettings?.showSilenceTimer ?? DEFAULT_ORG_SETTINGS.showSilenceTimer));
 
-  const effectiveSilenceTimeout = scenario.silenceTimeout ?? orgSettings?.silenceTimeout ?? DEFAULT_ORG_SETTINGS.silenceTimeout;
+  const effectiveSilenceTimeout =
+    scenario.silenceTimeout ?? orgSettings?.silenceTimeout ?? DEFAULT_ORG_SETTINGS.silenceTimeout;
+
+  // Resolve silencePromptTimeout (AI silence prompt timeout for frontend timer)
+  const effectiveSilencePromptTimeout =
+    scenario.silencePromptTimeout ?? orgSettings?.silencePromptTimeout ?? DEFAULT_ORG_SETTINGS.silencePromptTimeout;
 
   // Silence Timer統合
   const { elapsedTime: silenceElapsedTime, resetTimer: _resetSilenceTimer } = useSilenceTimer({
-    enabled: status === 'ACTIVE' &&
-             initialGreetingCompleted &&
-             effectiveEnableSilencePrompt,
-    timeoutSeconds: effectiveSilenceTimeout,
+    enabled: status === 'ACTIVE' && initialGreetingCompleted && effectiveEnableSilencePrompt,
+    timeoutSeconds: effectiveSilencePromptTimeout,
     isAIPlaying: isPlayingAudio,
     isUserSpeaking: isMicRecording,
     isProcessing: isProcessing,
@@ -1100,7 +1131,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       // 5. If audio was recording, wait for transcript before sending session_end
       if (wasRecording) {
-        console.log('[SessionPlayer] Audio was recording, will wait for audio processing before session_end');
+        console.log(
+          '[SessionPlayer] Audio was recording, will wait for audio processing before session_end'
+        );
         setPendingSessionEnd(true);
         // session_end will be sent after transcript_final is received
       } else {
@@ -1128,11 +1161,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ignore shortcuts when typing in input fields
       const target = event.target as HTMLElement;
-      if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
-      ) {
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
         return;
       }
 
@@ -1238,7 +1267,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const handleVideoChunk = useCallback(
     async (chunk: Blob, timestamp: number) => {
       // 認証完了後のみビデオチャンクを送信
-      if (isConnectedRef.current && isAuthenticated && status === 'ACTIVE' && sendVideoChunkRef.current) {
+      if (
+        isConnectedRef.current &&
+        isAuthenticated &&
+        status === 'ACTIVE' &&
+        sendVideoChunkRef.current
+      ) {
         try {
           // WebSocketでビデオチャンク送信
           await sendVideoChunkRef.current(chunk, timestamp);
@@ -1464,19 +1498,22 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   };
 
   return (
-    <div className="space-y-6" role="main" aria-label={t('sessions.player.info.scenario') + ': ' + scenario.title}>
+    <div
+      className="space-y-6"
+      role="main"
+      aria-label={t('sessions.player.info.scenario') + ': ' + scenario.title}
+    >
       {/* Screen reader announcements */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {ariaLiveMessage}
       </div>
 
       {/* ヘッダー */}
-      <div className="bg-white rounded-lg shadow p-6" role="region" aria-label={t('sessions.player.details.title')}>
+      <div
+        className="bg-white rounded-lg shadow p-6"
+        role="region"
+        aria-label={t('sessions.player.details.title')}
+      >
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <h2 className="text-2xl font-bold">{scenario.title}</h2>
@@ -1504,9 +1541,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             <div className="text-right">
               <div className={`text-lg font-semibold ${getStatusColor(status)}`}>
                 {getStatusText(status)}
-                {isMuted && status === 'ACTIVE' && (
-                  <span className="ml-2 text-red-600">🔇</span>
-                )}
+                {isMuted && status === 'ACTIVE' && <span className="ml-2 text-red-600">🔇</span>}
               </div>
               <div className="text-2xl font-mono font-bold text-gray-900 mt-1">
                 {formatTime(currentTime)}
@@ -1519,8 +1554,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       {/* メインコンテンツ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 左側: アバター表示エリア */}
-        <div className="bg-white rounded-lg shadow p-6" role="region" aria-label={t('sessions.player.avatar.title')}>
-          <h3 className="text-lg font-semibold mb-4" id="avatar-section">{t('sessions.player.avatar.title')}</h3>
+        <div
+          className="bg-white rounded-lg shadow p-6"
+          role="region"
+          aria-label={t('sessions.player.avatar.title')}
+        >
+          <h3 className="text-lg font-semibold mb-4" id="avatar-section">
+            {t('sessions.player.avatar.title')}
+          </h3>
           <div className="aspect-video bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
             {avatar.thumbnailUrl ? (
               <img
@@ -1701,8 +1742,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         </div>
 
         {/* 右側: トランスクリプト */}
-        <div className="bg-white rounded-lg shadow p-6" role="region" aria-label={t('sessions.player.transcript.title')}>
-          <h3 className="text-lg font-semibold mb-4" id="transcript-section">{t('sessions.player.transcript.title')}</h3>
+        <div
+          className="bg-white rounded-lg shadow p-6"
+          role="region"
+          aria-label={t('sessions.player.transcript.title')}
+        >
+          <h3 className="text-lg font-semibold mb-4" id="transcript-section">
+            {t('sessions.player.transcript.title')}
+          </h3>
           <div
             className="h-[400px] overflow-y-auto space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50"
             role="log"
@@ -1766,19 +1813,17 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 <>
                   <div className="h-3 w-3 bg-red-500 rounded-full"></div>
                   <span className="text-sm text-red-600">
-                    {wsError.startsWith('WEBSOCKET_RECONNECTING:') ? (
-                      (() => {
-                        const [, attempt = '1', maxAttempts = '5'] = wsError.split(':');
-                        return t('errors.websocket.reconnecting', { attempt, maxAttempts });
-                      })()
-                    ) : wsError.startsWith('WEBSOCKET_RECONNECT_FAILED:') ? (
-                      (() => {
-                        const [, maxAttempts = '5'] = wsError.split(':');
-                        return t('errors.websocket.reconnectFailed', { maxAttempts });
-                      })()
-                    ) : (
-                      getErrorMessage(wsError)
-                    )}
+                    {wsError.startsWith('WEBSOCKET_RECONNECTING:')
+                      ? (() => {
+                          const [, attempt = '1', maxAttempts = '5'] = wsError.split(':');
+                          return t('errors.websocket.reconnecting', { attempt, maxAttempts });
+                        })()
+                      : wsError.startsWith('WEBSOCKET_RECONNECT_FAILED:')
+                        ? (() => {
+                            const [, maxAttempts = '5'] = wsError.split(':');
+                            return t('errors.websocket.reconnectFailed', { maxAttempts });
+                          })()
+                        : getErrorMessage(wsError)}
                   </span>
                 </>
               )}
@@ -1807,15 +1852,28 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       />
 
       {/* コントロールパネル */}
-      <div className="bg-white rounded-lg shadow p-6" role="region" aria-label={t('sessions.player.actions.start')}>
-        <div className="flex items-center justify-center space-x-4" role="group" aria-label="Session controls">
+      <div
+        className="bg-white rounded-lg shadow p-6"
+        role="region"
+        aria-label={t('sessions.player.actions.start')}
+      >
+        <div
+          className="flex items-center justify-center space-x-4"
+          role="group"
+          aria-label="Session controls"
+        >
           {status === 'IDLE' && (
             <button
               onClick={handleStart}
               className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 flex items-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               aria-label={t('sessions.player.actions.start') + ' (Space)'}
             >
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
@@ -1828,7 +1886,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
           {status === 'READY' && (
             <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600" role="status" aria-label={t('sessions.player.websocket.connecting')}></div>
+              <div
+                className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"
+                role="status"
+                aria-label={t('sessions.player.websocket.connecting')}
+              ></div>
               <span className="text-lg text-gray-600">
                 {t('sessions.player.websocket.connecting')}
               </span>
@@ -1849,7 +1911,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                 aria-label={t('sessions.player.actions.resume') + ' (P or Space)'}
               >
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
                   <path
                     fillRule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
@@ -1863,7 +1930,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                 aria-label={t('sessions.player.actions.stop') + ' (Escape)'}
               >
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
                   <path
                     fillRule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z"
@@ -1882,7 +1954,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 className="px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 flex items-center focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
                 aria-label={t('sessions.player.actions.pause') + ' (P)'}
               >
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
                   <path
                     fillRule="evenodd"
                     d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
@@ -1896,7 +1973,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                 aria-label={t('sessions.player.actions.stop') + ' (Space or Escape)'}
               >
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
                   <path
                     fillRule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z"
@@ -1907,7 +1989,6 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               </button>
             </>
           )}
-
 
           {status === 'COMPLETED' && (
             <div className="text-center py-2">

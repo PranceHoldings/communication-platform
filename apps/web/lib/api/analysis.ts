@@ -84,7 +84,9 @@ export async function triggerAnalysis(sessionId: string): Promise<{ message: str
 /**
  * Get session score only (lightweight)
  */
-export async function getScore(sessionId: string): Promise<SessionScore & { scoreLevel: ScoreLevel }> {
+export async function getScore(
+  sessionId: string
+): Promise<SessionScore & { scoreLevel: ScoreLevel }> {
   const response = await apiClient.get<SessionScore & { scoreLevel: ScoreLevel }>(
     `/sessions/${sessionId}/score`
   );

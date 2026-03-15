@@ -179,10 +179,14 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
             // Send chunks only after speech detection (includes sequence 0 with EBML header)
             onAudioChunk(event.data, timestamp, sequence);
           } else {
-            logger.debug(LogPhase.RECORDING, 'Skipping chunk transmission (waiting for speech detection)', {
-              sequence,
-              size: event.data.size,
-            });
+            logger.debug(
+              LogPhase.RECORDING,
+              'Skipping chunk transmission (waiting for speech detection)',
+              {
+                sequence,
+                size: event.data.size,
+              }
+            );
           }
         }
 
@@ -293,7 +297,9 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
       // Speech/silence detection
       // Use higher threshold for speech start detection to avoid ambient noise
-      const speechDetectionThreshold = speechEndSentRef.current ? SPEECH_START_THRESHOLD : silenceThreshold;
+      const speechDetectionThreshold = speechEndSentRef.current
+        ? SPEECH_START_THRESHOLD
+        : silenceThreshold;
 
       if (normalizedLevel > speechDetectionThreshold) {
         // Speech detected
@@ -303,22 +309,30 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
           // Track when continuous speech started
           if (speechStartTimeRef.current === null) {
             speechStartTimeRef.current = now;
-            logger.debug(LogPhase.RECORDING, 'Potential speech detected - waiting for confirmation', {
-              level: normalizedLevel.toFixed(3),
-              threshold: speechDetectionThreshold,
-              minDuration: MINIMUM_SPEECH_DURATION,
-            });
+            logger.debug(
+              LogPhase.RECORDING,
+              'Potential speech detected - waiting for confirmation',
+              {
+                level: normalizedLevel.toFixed(3),
+                threshold: speechDetectionThreshold,
+                minDuration: MINIMUM_SPEECH_DURATION,
+              }
+            );
           } else {
             // Check if speech has continued for minimum duration
             const speechDuration = now - speechStartTimeRef.current;
             if (speechDuration >= MINIMUM_SPEECH_DURATION) {
               // Confirmed speech - RESTART to get fresh EBML header
-              logger.info(LogPhase.RECORDING, 'Confirmed speech detected - restarting recorder for fresh EBML header', {
-                level: normalizedLevel.toFixed(3),
-                threshold: speechDetectionThreshold,
-                speechDuration,
-                currentSequence: sequenceNumberRef.current,
-              });
+              logger.info(
+                LogPhase.RECORDING,
+                'Confirmed speech detected - restarting recorder for fresh EBML header',
+                {
+                  level: normalizedLevel.toFixed(3),
+                  threshold: speechDetectionThreshold,
+                  speechDuration,
+                  currentSequence: sequenceNumberRef.current,
+                }
+              );
 
               // CRITICAL: Restart recorder to ensure sequence 0 with EBML header
               restartRecording();
@@ -463,10 +477,14 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
               // Send chunks only after speech detection (includes sequence 0 with EBML header)
               onAudioChunk(event.data, timestamp, sequence);
             } else {
-              logger.debug(LogPhase.RECORDING, 'Skipping chunk transmission (waiting for speech detection)', {
-                sequence,
-                size: event.data.size,
-              });
+              logger.debug(
+                LogPhase.RECORDING,
+                'Skipping chunk transmission (waiting for speech detection)',
+                {
+                  sequence,
+                  size: event.data.size,
+                }
+              );
             }
           }
 
@@ -559,7 +577,8 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         switch (err.name) {
           case 'NotAllowedError':
             errorCode = 'MICROPHONE_PERMISSION_DENIED';
-            errorMessage = 'Microphone access was denied. Please allow microphone access in your browser settings.';
+            errorMessage =
+              'Microphone access was denied. Please allow microphone access in your browser settings.';
             break;
           case 'NotFoundError':
             errorCode = 'MICROPHONE_NOT_FOUND';
@@ -567,11 +586,13 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
             break;
           case 'NotReadableError':
             errorCode = 'MICROPHONE_NOT_READABLE';
-            errorMessage = 'Microphone is already in use by another application. Please close other apps using the microphone.';
+            errorMessage =
+              'Microphone is already in use by another application. Please close other apps using the microphone.';
             break;
           case 'OverconstrainedError':
             errorCode = 'MICROPHONE_CONSTRAINTS_ERROR';
-            errorMessage = 'Unable to satisfy audio constraints. Please try a different microphone.';
+            errorMessage =
+              'Unable to satisfy audio constraints. Please try a different microphone.';
             break;
           case 'AbortError':
             errorCode = 'MICROPHONE_ABORT_ERROR';
@@ -579,7 +600,8 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
             break;
           case 'SecurityError':
             errorCode = 'MICROPHONE_SECURITY_ERROR';
-            errorMessage = 'Microphone access is not allowed due to security restrictions. Please use HTTPS or localhost.';
+            errorMessage =
+              'Microphone access is not allowed due to security restrictions. Please use HTTPS or localhost.';
             break;
           default:
             errorMessage = err.message || errorMessage;
@@ -587,7 +609,8 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       } else if (err instanceof Error) {
         if (err.message === 'BROWSER_NOT_SUPPORTED') {
           errorCode = 'BROWSER_NOT_SUPPORTED';
-          errorMessage = 'Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Safari.';
+          errorMessage =
+            'Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Safari.';
         } else {
           errorMessage = err.message;
         }

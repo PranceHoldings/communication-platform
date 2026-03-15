@@ -26,14 +26,7 @@ export function ScoreDashboard({ score }: ScoreDashboardProps) {
       <div className="flex items-center justify-center mb-8">
         <div className="relative">
           <svg className="w-48 h-48 transform -rotate-90">
-            <circle
-              cx="96"
-              cy="96"
-              r="88"
-              stroke="#e5e7eb"
-              strokeWidth="12"
-              fill="none"
-            />
+            <circle cx="96" cy="96" r="88" stroke="#e5e7eb" strokeWidth="12" fill="none" />
             <circle
               cx="96"
               cy="96"
@@ -42,10 +35,10 @@ export function ScoreDashboard({ score }: ScoreDashboardProps) {
                 score.overallScore >= 80
                   ? '#10b981'
                   : score.overallScore >= 60
-                  ? '#3b82f6'
-                  : score.overallScore >= 40
-                  ? '#f59e0b'
-                  : '#ef4444'
+                    ? '#3b82f6'
+                    : score.overallScore >= 40
+                      ? '#f59e0b'
+                      : '#ef4444'
               }
               strokeWidth="12"
               fill="none"
@@ -56,7 +49,9 @@ export function ScoreDashboard({ score }: ScoreDashboardProps) {
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div className="text-5xl font-bold text-gray-900">{Math.round(score.overallScore)}</div>
             <div className="text-sm text-gray-500">{t('analysis.dashboard.outOf100')}</div>
-            <div className={`mt-2 px-3 py-1 rounded-full text-sm font-medium ${scoreLevel.bgColor} ${scoreLevel.color}`}>
+            <div
+              className={`mt-2 px-3 py-1 rounded-full text-sm font-medium ${scoreLevel.bgColor} ${scoreLevel.color}`}
+            >
               {scoreLevel.label}
             </div>
           </div>
@@ -65,11 +60,9 @@ export function ScoreDashboard({ score }: ScoreDashboardProps) {
 
       {/* Category Scores */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {categoryScores.map((category) => (
+        {categoryScores.map(category => (
           <div key={category.key} className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-900">
-              {Math.round(category.value)}
-            </div>
+            <div className="text-2xl font-bold text-gray-900">{Math.round(category.value)}</div>
             <div className="text-sm text-gray-600 mt-1">{category.label}</div>
           </div>
         ))}

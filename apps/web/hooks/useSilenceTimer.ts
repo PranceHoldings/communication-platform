@@ -23,30 +23,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface UseSilenceTimerOptions {
-  enabled: boolean;                // 無音タイマー有効/無効
-  timeoutSeconds: number;          // タイムアウト時間（秒）
-  isAIPlaying: boolean;            // AI音声再生中フラグ
-  isUserSpeaking: boolean;         // ユーザー発話中フラグ
-  isProcessing: boolean;           // speech_end処理中フラグ
-  onTimeout: () => void;           // タイムアウト時のコールバック
+  enabled: boolean; // 無音タイマー有効/無効
+  timeoutSeconds: number; // タイムアウト時間（秒）
+  isAIPlaying: boolean; // AI音声再生中フラグ
+  isUserSpeaking: boolean; // ユーザー発話中フラグ
+  isProcessing: boolean; // speech_end処理中フラグ
+  onTimeout: () => void; // タイムアウト時のコールバック
 }
 
 export interface UseSilenceTimerReturn {
-  elapsedTime: number;             // 経過時間（秒）
-  resetTimer: () => void;          // タイマーリセット関数
+  elapsedTime: number; // 経過時間（秒）
+  resetTimer: () => void; // タイマーリセット関数
 }
 
 const GRACE_PERIOD_MS = 1000; // 1秒の猶予期間
 
 export function useSilenceTimer(options: UseSilenceTimerOptions): UseSilenceTimerReturn {
-  const {
-    enabled,
-    timeoutSeconds,
-    isAIPlaying,
-    isUserSpeaking,
-    isProcessing,
-    onTimeout,
-  } = options;
+  const { enabled, timeoutSeconds, isAIPlaying, isUserSpeaking, isProcessing, onTimeout } = options;
 
   const [elapsedTime, setElapsedTime] = useState(0);
   const [graceCompleted, setGraceCompleted] = useState(false);
@@ -119,7 +112,16 @@ export function useSilenceTimer(options: UseSilenceTimerOptions): UseSilenceTime
     }, 1000);
 
     console.log('[useSilenceTimer] Timer started');
-  }, [enabled, isAIPlaying, isUserSpeaking, isProcessing, graceCompleted, timeoutSeconds, onTimeout, resetTimer]);
+  }, [
+    enabled,
+    isAIPlaying,
+    isUserSpeaking,
+    isProcessing,
+    graceCompleted,
+    timeoutSeconds,
+    onTimeout,
+    resetTimer,
+  ]);
 
   /**
    * タイマー停止条件の監視
@@ -155,7 +157,14 @@ export function useSilenceTimer(options: UseSilenceTimerOptions): UseSilenceTime
    * 猶予期間完了後、タイマーを開始
    */
   useEffect(() => {
-    if (graceCompleted && !timerRef.current && enabled && !isAIPlaying && !isUserSpeaking && !isProcessing) {
+    if (
+      graceCompleted &&
+      !timerRef.current &&
+      enabled &&
+      !isAIPlaying &&
+      !isUserSpeaking &&
+      !isProcessing
+    ) {
       console.log('[useSilenceTimer] Grace period completed, starting main timer');
       startTimer();
     }

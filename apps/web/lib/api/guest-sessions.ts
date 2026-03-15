@@ -238,7 +238,10 @@ export async function verifyGuestToken(token: string): Promise<{
 /**
  * Authenticate guest with PIN
  */
-export async function authenticateGuest(token: string, pinCode: string): Promise<{
+export async function authenticateGuest(
+  token: string,
+  pinCode: string
+): Promise<{
   success: boolean;
   accessToken?: string;
   error?: string;

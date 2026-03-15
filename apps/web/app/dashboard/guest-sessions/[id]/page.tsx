@@ -87,7 +87,8 @@ export default function GuestSessionDetailPage() {
       await completeGuestSession(sessionId);
       await loadSession();
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : t('guestSessions.errors.completeFailed');
+      const errorMsg =
+        err instanceof Error ? err.message : t('guestSessions.errors.completeFailed');
       setError(errorMsg);
     }
   };
@@ -183,7 +184,9 @@ export default function GuestSessionDetailPage() {
                 onClick={() => handleCopy(inviteUrl, 'url')}
                 className="px-4 py-2 border border-l-0 border-gray-300 rounded-r-md bg-white hover:bg-gray-50 text-sm"
               >
-                {copySuccess === 'url' ? t('guestSessions.detail.copied') : t('guestSessions.detail.copyUrl')}
+                {copySuccess === 'url'
+                  ? t('guestSessions.detail.copied')
+                  : t('guestSessions.detail.copyUrl')}
               </button>
             </div>
           </div>
@@ -214,9 +217,7 @@ export default function GuestSessionDetailPage() {
 
       {/* Session Information */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">
-          {t('guestSessions.detail.info')}
-        </h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">{t('guestSessions.detail.info')}</h2>
         <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
           <div>
             <dt className="text-sm font-medium text-gray-500">
@@ -364,15 +365,13 @@ export default function GuestSessionDetailPage() {
 
         {showLogs && logs.length > 0 && (
           <div className="mt-4 space-y-2">
-            {logs.map((log) => (
+            {logs.map(log => (
               <div key={log.id} className="border border-gray-200 rounded-md p-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900">{log.eventType}</span>
                   <span className="text-gray-500">{formatDate(log.createdAt)}</span>
                 </div>
-                {log.ipAddress && (
-                  <div className="mt-1 text-gray-600">IP: {log.ipAddress}</div>
-                )}
+                {log.ipAddress && <div className="mt-1 text-gray-600">IP: {log.ipAddress}</div>}
               </div>
             ))}
           </div>

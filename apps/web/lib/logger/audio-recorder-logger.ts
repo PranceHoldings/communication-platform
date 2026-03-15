@@ -157,11 +157,7 @@ export class AudioRecorderLogger {
  * EBML Header Verification Utility
  * Validates that the first chunk contains a valid EBML header
  */
-export function verifyEBMLHeader(
-  blob: Blob,
-  logger: AudioRecorderLogger,
-  sequence: number
-): void {
+export function verifyEBMLHeader(blob: Blob, logger: AudioRecorderLogger, sequence: number): void {
   if (sequence !== 0 || process.env.NODE_ENV !== 'development') {
     return; // Only verify first chunk in development mode
   }

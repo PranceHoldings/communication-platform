@@ -1,7 +1,7 @@
 /**
  * WebSocket $default Handler
  * Handles all WebSocket messages with STT/AI/TTS integration
- * Last updated: 2026-03-09
+ * Last updated: 2026-03-15 07:50:43 UTC (added no_speech_detected feature)
  */
 
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
@@ -217,6 +217,12 @@ interface ConnectionData {
   scenarioLanguage?: string; // Scenario language ('ja', 'en', etc.) for STT/TTS
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
 
+  // Session Settings (from organization settings)
+  silenceTimeout?: number; // Silence timeout in seconds (user speech end detection - Azure STT)
+  silencePromptTimeout?: number; // AI silence prompt timeout in seconds (frontend timer)
+  enableSilencePrompt?: boolean; // Enable AI silence prompt
+  initialSilenceTimeout?: number; // Azure STT initial silence timeout in milliseconds
+
   // Video processing (Phase 2)
   videoChunksCount?: number; // Count of video chunks received
   lastVideoChunkTime?: number;
@@ -277,7 +283,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         const scenarioPrompt = (message as any).scenarioPrompt as string | undefined;
         const initialGreeting = (message as any).initialGreeting as string | undefined;
         const silenceTimeout = (message as any).silenceTimeout as number | undefined;
+        const silencePromptTimeout = (message as any).silencePromptTimeout as number | undefined;
         const enableSilencePrompt = (message as any).enableSilencePrompt as boolean | undefined;
+        const initialSilenceTimeout = (message as any).initialSilenceTimeout as number | undefined;
 
         console.log('[authenticate] Received scenario data:', {
           hasPrompt: !!scenarioPrompt,
@@ -286,7 +294,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           hasInitialGreeting: !!initialGreeting,
           initialGreetingPreview: initialGreeting ? initialGreeting.substring(0, 50) + '...' : 'none',
           silenceTimeout,
+          silencePromptTimeout,
           enableSilencePrompt,
+          initialSilenceTimeout,
         });
 
         // Initialize conversation history
@@ -306,8 +316,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           scenarioLanguage, // Store language for audio processing
           scenarioPrompt, // Store system prompt for AI context
           initialGreeting, // Store initial AI greeting
-          silenceTimeout, // Store silence timeout
+          silenceTimeout, // Store silence timeout (Azure STT)
+          silencePromptTimeout, // Store AI silence prompt timeout (frontend timer)
           enableSilencePrompt, // Store silence prompt flag
+          initialSilenceTimeout, // Store Azure STT initial silence timeout
         });
 
         // Send authenticated response
@@ -317,7 +329,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           sessionId,
           initialGreeting, // Send initial greeting back to client
           silenceTimeout,
+          silencePromptTimeout,
           enableSilencePrompt,
+          initialSilenceTimeout,
         });
 
         // If initial greeting is provided, generate TTS and send audio
@@ -1254,6 +1268,131 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
  *
  * Phase B: Batch version (handleAudioProcessing) removed - only streaming version used
  */
+/**
+ * Generate and send AI silence prompt when user is silent or speech not detected
+ * Reuses silence_prompt_request logic
+ */
+async function handleSilencePromptGeneration(
+  connectionId: string,
+  connectionData?: ConnectionData
+): Promise<void> {
+  try {
+    // Check rate limiting - prevent spam (max 1 prompt per 30 seconds)
+    const lastPromptTime = (connectionData?.lastSilencePromptTime as number | undefined) || 0;
+    const timeSinceLastPrompt = Date.now() - lastPromptTime;
+    if (timeSinceLastPrompt < 30000) {
+      console.log('[handleSilencePromptGeneration] Too soon after last prompt, skipping:', {
+        timeSinceLastPrompt: `${timeSinceLastPrompt}ms`,
+      });
+      return;
+    }
+
+    // Update timestamp immediately to prevent concurrent requests
+    await updateConnectionData(connectionId, {
+      lastSilencePromptTime: Date.now(),
+    });
+
+    // Import generateSilencePrompt utility
+    const { generateSilencePrompt } = await import('../../shared/utils/generateSilencePrompt');
+
+    // Extract conversation history and convert to the expected format
+    const rawHistory = connectionData?.conversationHistory || [];
+    const conversationHistory = rawHistory.map((msg: any) => ({
+      speaker: msg.role === 'user' ? 'USER' as const : 'AI' as const,
+      text: msg.content || msg.text || '',
+    }));
+
+    const scenarioPrompt = connectionData?.scenarioPrompt;
+    const scenarioLanguage = connectionData?.scenarioLanguage || 'en';
+    const silencePromptStyle = (connectionData as any)?.silencePromptStyle || 'neutral';
+
+    // Get last user message for context (may be empty if no speech detected)
+    const lastUserMessage = conversationHistory
+      .slice()
+      .reverse()
+      .find((msg: any) => msg.speaker === 'USER')?.text;
+
+    console.log('[handleSilencePromptGeneration] Generating silence prompt:', {
+      conversationLength: conversationHistory.length,
+      language: scenarioLanguage,
+      style: silencePromptStyle,
+      hasLastUserMessage: !!lastUserMessage,
+    });
+
+    // Generate contextual prompt
+    const promptText = await generateSilencePrompt({
+      conversationHistory,
+      scenarioPrompt,
+      scenarioLanguage,
+      style: silencePromptStyle,
+      lastUserMessage,
+    });
+
+    console.log('[handleSilencePromptGeneration] Generated prompt:', promptText);
+
+    // Add to conversation history
+    const promptMessage = {
+      role: 'assistant' as const,
+      content: promptText,
+    };
+
+    await updateConnectionData(connectionId, {
+      conversationHistory: [...rawHistory, promptMessage],
+    });
+
+    // Send as avatar_response_final
+    await sendToConnection(connectionId, {
+      type: 'avatar_response_final',
+      text: promptText,
+      timestamp: Date.now(),
+    });
+
+    // Generate TTS for the prompt using ElevenLabs
+    const sessionId = connectionData?.sessionId || 'unknown';
+    const audioProc = getAudioProcessor();
+
+    console.log('[handleSilencePromptGeneration] Generating TTS for silence prompt...');
+
+    // Use simple TTS method (synchronous, returns complete audio)
+    const ttsResult = await audioProc.generateSimpleSpeech(promptText);
+
+    console.log('[handleSilencePromptGeneration] TTS generation complete:', {
+      audioSize: ttsResult.audio.length,
+      contentType: ttsResult.contentType,
+    });
+
+    // Save audio to S3
+    const { getSilencePromptKey } = await import('../../shared/config/s3-paths');
+    const audioKey = getSilencePromptKey(sessionId);
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: audioKey,
+        Body: ttsResult.audio,
+        ContentType: ttsResult.contentType,
+      })
+    );
+
+    // Generate CloudFront URL
+    const audioUrl = `https://${CLOUDFRONT_DOMAIN}/${audioKey}`;
+
+    console.log('[handleSilencePromptGeneration] Audio saved to S3:', audioKey);
+
+    // Send final audio_response with S3 URL
+    await sendToConnection(connectionId, {
+      type: 'audio_response',
+      audioUrl: audioUrl,
+      contentType: ttsResult.contentType,
+      timestamp: Date.now(),
+    });
+
+    console.log('[handleSilencePromptGeneration] Silence prompt sent successfully');
+  } catch (error) {
+    console.error('[handleSilencePromptGeneration] Error:', error);
+    // Don't throw - this is optional functionality
+  }
+}
+
 async function handleAudioProcessingStreaming(
   connectionId: string,
   audioBuffer: Buffer,
@@ -1280,6 +1419,7 @@ async function handleAudioProcessingStreaming(
       scenarioPrompt: connectionData?.scenarioPrompt,
       scenarioLanguage: connectionData?.scenarioLanguage,
       conversationHistory: connectionData?.conversationHistory || [],
+      initialSilenceTimeout: connectionData?.initialSilenceTimeout, // 組織設定から取得
       callbacks: {
         // Callback: Transcript complete
         onTranscriptComplete: async (transcript: string) => {
@@ -1397,13 +1537,40 @@ async function handleAudioProcessingStreaming(
     const errorMessage = error instanceof Error ? error.message : 'Failed to process audio';
     const errorDetails = error instanceof Error ? error.stack : String(error);
 
-    await sendToConnection(connectionId, {
-      type: 'error',
-      code: 'AUDIO_PROCESSING_ERROR',
-      message: errorMessage,
-      details: errorDetails,
-      timestamp: Date.now(),
-    });
+    // Check if this is a "no speech detected" error (not a real error, just no speech)
+    const isNoSpeechError =
+      errorMessage.includes('InitialSilenceTimeout') ||
+      errorMessage.includes('NotRecognized') ||
+      errorMessage.includes('No speech detected') ||
+      errorMessage.includes('No speech recognized');
+
+    if (isNoSpeechError) {
+      // This is not an error - just means the user didn't speak or audio is too quiet
+      console.log('[handleAudioProcessingStreaming] No speech detected - providing user guidance');
+
+      // Send guidance message to user (not an error)
+      await sendToConnection(connectionId, {
+        type: 'no_speech_detected',
+        message: 'No speech detected. Please speak louder or move closer to your microphone.',
+        timestamp: Date.now(),
+      });
+
+      // If silence prompts are enabled, generate an AI prompt
+      const enableSilencePrompt = connectionData?.enableSilencePrompt;
+      if (enableSilencePrompt) {
+        console.log('[handleAudioProcessingStreaming] Generating AI silence prompt...');
+        await handleSilencePromptGeneration(connectionId, connectionData);
+      }
+    } else {
+      // This is a real error - send error message
+      await sendToConnection(connectionId, {
+        type: 'error',
+        code: 'AUDIO_PROCESSING_ERROR',
+        message: errorMessage,
+        details: errorDetails,
+        timestamp: Date.now(),
+      });
+    }
   }
 }
 
@@ -1434,20 +1601,40 @@ async function handleAudioData(
     // Decode base64 audio
     const audioBuffer = Buffer.from(audioBase64, 'base64');
 
-    // Process through STT -> AI -> TTS pipeline
+    // Process through STT -> AI -> TTS pipeline (streaming mode)
     const processor = getAudioProcessor();
-    const result = await processor.processAudio({
+
+    // Use streaming version - collect result callbacks
+    let transcript = '';
+    let aiResponse = '';
+    let audioResponse: Buffer = Buffer.alloc(0);
+    let audioContentType = 'audio/mpeg';
+
+    const result = await processor.processAudioStreaming({
       audioData: audioBuffer,
       sessionId,
       scenarioPrompt: connectionData?.scenarioPrompt,
+      scenarioLanguage: connectionData?.scenarioLanguage,
       conversationHistory: connectionData?.conversationHistory || [],
+      callbacks: {
+        onTranscriptComplete: async (text: string) => {
+          transcript = text;
+        },
+        onAIComplete: async (text: string) => {
+          aiResponse = text;
+        },
+        onTTSComplete: async (audio: Buffer, contentType: string) => {
+          audioResponse = audio;
+          audioContentType = contentType;
+        },
+      },
     });
 
     // Send transcript (partial result)
     await sendToConnection(connectionId, {
       type: 'transcript_final',
       speaker: 'USER',
-      text: result.transcript,
+      text: transcript,
       timestamp_start: Date.now(),
       confidence: 0.95,
     });
@@ -1455,8 +1642,8 @@ async function handleAudioData(
     // Update conversation history
     const updatedHistory = [
       ...(connectionData?.conversationHistory || []),
-      { role: 'user' as const, content: result.transcript },
-      { role: 'assistant' as const, content: result.aiResponse },
+      { role: 'user' as const, content: transcript },
+      { role: 'assistant' as const, content: aiResponse },
     ];
 
     await updateConnectionData(connectionId, {
@@ -1467,7 +1654,7 @@ async function handleAudioData(
     await sendToConnection(connectionId, {
       type: 'avatar_response',
       speaker: 'AI',
-      text: result.aiResponse,
+      text: aiResponse,
       timestamp: Date.now(),
     });
 
@@ -1475,15 +1662,15 @@ async function handleAudioData(
     const audioTimestamp = Date.now();
     const { getAudioKey: getAudioKeyLegacy } = await import('../../shared/config/s3-paths');
     const { AudioFileType: AudioFileTypeLegacy } = await import('../../shared/config/s3-paths');
-    const extensionLegacy = result.audioContentType.includes('mpeg') || result.audioContentType.includes('mp3') ? 'mp3' : 'webm';
+    const extensionLegacy = audioContentType.includes('mpeg') || audioContentType.includes('mp3') ? 'mp3' : 'webm';
     const audioKey = getAudioKeyLegacy(sessionId, AudioFileTypeLegacy.AI_RESPONSE, audioTimestamp, extensionLegacy);
 
     await s3Client.send(
       new PutObjectCommand({
         Bucket: S3_BUCKET,
         Key: audioKey,
-        Body: result.audioResponse,
-        ContentType: result.audioContentType,
+        Body: audioResponse,
+        ContentType: audioContentType,
       })
     );
 

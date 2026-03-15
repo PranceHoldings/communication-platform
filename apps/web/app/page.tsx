@@ -18,9 +18,7 @@ export default function HomePage() {
         <div className="grid gap-4">
           <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
             <h2 className="text-xl font-semibold mb-2">{t('home.getStarted.title')}</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              {t('home.getStarted.description')}
-            </p>
+            <p className="text-sm text-muted-foreground mb-4">{t('home.getStarted.description')}</p>
             <div className="flex gap-3">
               <Link
                 href="/login"

@@ -281,26 +281,32 @@ export default function NewScenarioPage() {
                   }
                 }}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  showSilenceTimer === true ? 'bg-indigo-600' :
-                  showSilenceTimer === false ? 'bg-red-400' :
-                  'bg-gray-300'
+                  showSilenceTimer === true
+                    ? 'bg-indigo-600'
+                    : showSilenceTimer === false
+                      ? 'bg-red-400'
+                      : 'bg-gray-300'
                 }`}
                 role="switch"
                 aria-checked={showSilenceTimer === true}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    showSilenceTimer === true ? 'translate-x-6' :
-                    showSilenceTimer === false ? 'translate-x-1' :
-                    'translate-x-3'
+                    showSilenceTimer === true
+                      ? 'translate-x-6'
+                      : showSilenceTimer === false
+                        ? 'translate-x-1'
+                        : 'translate-x-3'
                   }`}
                 />
               </button>
               <div className="text-right">
                 <div className="text-sm font-medium text-gray-700">
-                  {showSilenceTimer === true ? t('common.enabled') :
-                   showSilenceTimer === false ? t('common.disabled') :
-                   t('common.useDefault')}
+                  {showSilenceTimer === true
+                    ? t('common.enabled')
+                    : showSilenceTimer === false
+                      ? t('common.disabled')
+                      : t('common.useDefault')}
                 </div>
                 {showSilenceTimer === undefined && orgSettings && (
                   <div className="text-xs text-gray-500">
@@ -314,11 +320,7 @@ export default function NewScenarioPage() {
 
         {/* Questions Editor */}
         <div className="border-t pt-6">
-          <QuestionEditor
-            questions={questions}
-            onChange={setQuestions}
-            disabled={isSubmitting}
-          />
+          <QuestionEditor questions={questions} onChange={setQuestions} disabled={isSubmitting} />
         </div>
 
         {/* Configuration JSON */}

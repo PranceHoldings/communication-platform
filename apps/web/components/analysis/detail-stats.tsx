@@ -72,9 +72,7 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
-        {t('analysis.stats.title')}
-      </h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('analysis.stats.title')}</h2>
 
       {/* Audio Statistics */}
       <div className="mb-8">
@@ -104,11 +102,7 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
           {/* Dominant Emotion */}
           <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
             <div className="flex items-center mb-2">
-              <svg
-                className="w-5 h-5 text-purple-600 mr-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg className="w-5 h-5 text-purple-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
@@ -125,11 +119,7 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
           {/* Average Confidence */}
           <div className="p-4 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg">
             <div className="flex items-center mb-2">
-              <svg
-                className="w-5 h-5 text-green-600 mr-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
