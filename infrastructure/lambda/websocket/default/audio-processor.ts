@@ -44,7 +44,10 @@ export interface ProcessAudioStreamingOptions {
   scenarioLanguage?: string;
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
   callbacks: StreamingCallbacks;
-  initialSilenceTimeout?: number; // Azure STT initial silence timeout (ms)
+  /**
+   * @deprecated 非推奨 - ffmpeg silenceremove で無音トリミング対応済み
+   */
+  initialSilenceTimeout?: number;
 }
 
 export interface ProcessAudioResult {
@@ -153,8 +156,12 @@ export class AudioProcessor {
 
       fs.writeFileSync(inputFile, combinedWebM);
 
-      // Convert combined WebM to WAV with audio enhancement
-      const command = `${this.ffmpegPath} -i ${inputFile} -af "volume=3.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000,alimiter=limit=0.9" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
+      // Convert combined WebM to WAV with silence removal and audio enhancement
+      // silenceremove: Remove leading silence before STT processing
+      //   - start_periods=1: Remove silence at the beginning
+      //   - start_threshold=-50dB: Audio below -50dB is considered silence
+      //   - start_duration=0.1: Minimum 0.1s of silence to detect
+      const command = `${this.ffmpegPath} -i ${inputFile} -af "silenceremove=start_periods=1:start_threshold=-50dB:start_duration=0.1,volume=3.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000,alimiter=limit=0.9" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
 
       console.log('[AudioProcessor] Converting combined WebM to WAV...');
       await execAsync(command);
@@ -201,10 +208,14 @@ export class AudioProcessor {
 
       console.log('[AudioProcessor] Using ffmpeg path:', ffmpegPath);
 
-      // Convert to WAV (16kHz, mono, 16-bit PCM) with volume boost for better speech recognition
+      // Convert to WAV (16kHz, mono, 16-bit PCM) with silence removal and audio enhancement
+      // silenceremove: Remove leading silence before STT processing
+      //   - start_periods=1: Remove silence at the beginning
+      //   - start_threshold=-50dB: Audio below -50dB is considered silence
+      //   - start_duration=0.1: Minimum 0.1s of silence to detect
       // Note: volume=3.0 amplifies audio by 3x (10.0 was too high and caused clipping)
       // Apply dynamic compression, then limit to prevent clipping
-      const command = `${ffmpegPath} -i ${inputFile} -af "volume=3.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000,alimiter=limit=0.9" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
+      const command = `${ffmpegPath} -i ${inputFile} -af "silenceremove=start_periods=1:start_threshold=-50dB:start_duration=0.1,volume=3.0,acompressor=threshold=0.089:ratio=9:attack=200:release=1000,alimiter=limit=0.9" -acodec pcm_s16le -ar 16000 -ac 1 -f wav ${outputFile}`;
 
       console.log('[AudioProcessor] Converting audio with ffmpeg:', command);
       const { stdout, stderr } = await execAsync(command);
@@ -325,8 +336,7 @@ export class AudioProcessor {
    */
   private async transcribeAudio(
     audioData: Buffer,
-    scenarioLanguage?: string,
-    initialSilenceTimeout?: number
+    scenarioLanguage?: string
   ): Promise<string> {
     const fs = await import('fs');
 
@@ -400,7 +410,7 @@ export class AudioProcessor {
           subscriptionKey: this.config.azureSpeechKey,
           region: this.config.azureSpeechRegion,
           autoDetectLanguages, // 言語設定ファイルから取得した優先順位リスト
-          initialSilenceTimeout, // 組織設定から渡された初期無音タイムアウト
+          // initialSilenceTimeout: DEPRECATED - 無音はffmpegでトリミング済み
         });
 
         const result = await tempSTT.recognizeFromFile(tempFile);
@@ -536,7 +546,6 @@ export class AudioProcessor {
       scenarioLanguage,
       conversationHistory = [],
       callbacks,
-      initialSilenceTimeout,
     } = options;
 
     console.log('[AudioProcessor] Starting streaming pipeline:', {
@@ -552,7 +561,7 @@ export class AudioProcessor {
       await this.saveAudioToS3(audioData, sessionId, 'input');
 
       // Step 2: Transcribe audio using Azure STT
-      const transcript = await this.transcribeAudio(audioData, scenarioLanguage, initialSilenceTimeout);
+      const transcript = await this.transcribeAudio(audioData, scenarioLanguage);
 
       if (!transcript || transcript.trim().length === 0) {
         throw new Error('No speech detected in audio');

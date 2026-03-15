@@ -24,7 +24,7 @@ export const DEFAULT_ORGANIZATION_SETTINGS: OrganizationSettings = {
   // Audio Detection Settings
   silenceThreshold: 0.12, // 音量閾値（0.01-0.2）
   minSilenceDuration: 500, // 最小無音継続時間（ms）
-  initialSilenceTimeout: 5000, // Azure STT初期無音タイムアウト（ms、デフォルト: 5秒）
+  // initialSilenceTimeout: DEPRECATED - 無音トリミング（ffmpeg silenceremove）で対応
 };
 
 /**
@@ -48,7 +48,7 @@ export const VALIDATION_RANGES = {
   silencePromptTimeout: { min: 5, max: 60 }, // 秒
   silenceThreshold: { min: 0.01, max: 0.2 }, // 音量
   minSilenceDuration: { min: 100, max: 2000 }, // ミリ秒
-  initialSilenceTimeout: { min: 3000, max: 15000 }, // ミリ秒（3-15秒）
+  // initialSilenceTimeout: DEPRECATED - 無音トリミング（ffmpeg silenceremove）で対応
 };
 
 /**

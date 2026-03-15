@@ -53,7 +53,7 @@ export interface OrganizationSettings {
   // Audio Detection Settings
   silenceThreshold?: number; // 音量閾値（0.01-0.2）
   minSilenceDuration?: number; // 最小無音継続時間（ms）
-  initialSilenceTimeout?: number; // Azure STT初期無音タイムアウト（ms、3000-15000、組織設定のみ）
+  // initialSilenceTimeout: DEPRECATED - 無音トリミング（ffmpeg silenceremove）で対応
 }
 
 export interface User {

@@ -13,7 +13,11 @@ export interface AzureSTTConfig {
   region: string;
   language?: string; // Deprecated: 固定言語設定（後方互換性のため残す）
   autoDetectLanguages?: string[]; // 自動言語検出候補（推奨: ['ja-JP', 'en-US']）
-  initialSilenceTimeout?: number; // Azure STT初期無音タイムアウト（ms、デフォルト: 5000）
+  /**
+   * @deprecated 非推奨 - ffmpeg silenceremove で無音トリミング対応済み
+   * フォールバック用に小さい値（3秒）を設定（後方互換性のため残す）
+   */
+  initialSilenceTimeout?: number;
 }
 
 export interface TranscriptResult {
@@ -51,14 +55,15 @@ export class AzureSpeechToText {
     // Enable profanity filtering
     this.config.setProfanity(sdk.ProfanityOption.Masked);
 
-    // 🔧 初期サイレンスタイムアウト設定（組織設定から取得、デフォルト: 5000ms）
-    // 理由: ユーザーがマイクの許可後に話し始めるまでの時間を確保
-    const initialSilenceTimeout = options.initialSilenceTimeout || 5000;
+    // 🔧 初期サイレンスタイムアウト設定（フォールバック用、デフォルト: 3000ms）
+    // 注: 音声の無音部分は ffmpeg silenceremove でトリミング済み
+    // このタイムアウトはフォールバック（万が一無音が残っていた場合）として機能
+    const initialSilenceTimeout = options.initialSilenceTimeout || 3000;
     this.config.setProperty(
       sdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs,
       String(initialSilenceTimeout)
     );
-    console.log('[AzureSTT] InitialSilenceTimeout set to ' + initialSilenceTimeout + 'ms');
+    console.log('[AzureSTT] InitialSilenceTimeout (fallback) set to ' + initialSilenceTimeout + 'ms');
 
     // 🔧 エンドサイレンスタイムアウトを延長（デフォルト → 2秒）
     // 理由: ユーザーの発話終了を正確に検出
