@@ -1,6 +1,6 @@
 # 不整合検出レポート
 
-**生成日時:** 2026-03-15 12:42:48
+**生成日時:** 2026-03-15 14:16:42
 
 ---
 
@@ -56,9 +56,9 @@ infrastructure/lambda/websocket/default/audio-processor.ts:346:      wavBuffer =
 infrastructure/lambda/websocket/default/audio-processor.ts:355:      audioFormat = 'webm';
 infrastructure/lambda/websocket/default/audio-processor.ts:356:      wavBuffer = await this.convertToWav(audioData, 'webm');
 infrastructure/lambda/websocket/default/audio-processor.ts:659:      const ttsContentType = 'audio/mpeg'; // ElevenLabs returns MP3
-infrastructure/lambda/websocket/default/index.ts:1478:          const extension = contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm';
-infrastructure/lambda/websocket/default/index.ts:1606:    let audioContentType = 'audio/mpeg';
-infrastructure/lambda/websocket/default/index.ts:1660:    const extensionLegacy = audioContentType.includes('mpeg') || audioContentType.includes('mp3') ? 'mp3' : 'webm';
+infrastructure/lambda/websocket/default/index.ts:1483:          const extension = contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm';
+infrastructure/lambda/websocket/default/index.ts:1611:    let audioContentType = 'audio/mpeg';
+infrastructure/lambda/websocket/default/index.ts:1665:    const extensionLegacy = audioContentType.includes('mpeg') || audioContentType.includes('mp3') ? 'mp3' : 'webm';
 infrastructure/lambda/shared/audio/tts-elevenlabs.ts:123:      const contentType = response.headers.get('content-type') || 'audio/mpeg';
 apps/web/components/session-player/recording-player.tsx:9:const DEFAULT_VIDEO_RESOLUTION = '1280x720';
 ```
