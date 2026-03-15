@@ -1,9 +1,15 @@
 # コーディングルール - クイックリファレンス
 
-**最終更新:** 2026-03-11
+**最終更新:** 2026-03-15
 
 このドキュメントはコード作成時に常に参照すべき重要ルールのクイックリファレンスです。
-詳細は [CLAUDE.md](CLAUDE.md) を参照してください。
+
+**詳細ドキュメント:**
+- [CLAUDE.md](CLAUDE.md) - プロジェクト全体概要
+- [apps/CLAUDE.md](apps/CLAUDE.md) - フロントエンド開発ガイド
+- [infrastructure/CLAUDE.md](infrastructure/CLAUDE.md) - インフラ・Lambda開発ガイド
+- [scripts/CLAUDE.md](scripts/CLAUDE.md) - スクリプト使用ガイド
+- [docs/CLAUDE.md](docs/CLAUDE.md) - ドキュメント管理ガイド
 
 ---
 
@@ -304,6 +310,215 @@ git log main..HEAD --oneline
 
 ---
 
+## ✅ 10. Next.js App Router構造準拠（フロントエンドページ追加時） 🆕
+
+**🔴 重要: URLパスを推測せず、必ず実装を確認してからテスト・コード作成**
+
+```bash
+# 実装されているページを確認
+find apps/web/app -name "page.tsx" | grep -v node_modules
+
+# APIエンドポイント確認
+grep -r "router\.get\|router\.post" infrastructure/lambda --include="*.ts"
+```
+
+**期待結果:** 実装済みのルート構造を把握
+
+**必須確認:**
+
+- [ ] 認証必要なページは `/dashboard/` 配下に配置されているか？
+- [ ] `/login`, `/register` は `(auth)/` グループ内か？
+- [ ] 動的ルートは `[id]/page.tsx` 形式か？
+- [ ] テストパスは実装から取得したか？（推測ではない）
+
+**正しい構造:**
+
+```
+apps/web/app/
+├── (auth)/                    # 認証不要ページグループ
+│   ├── login/page.tsx        # /login
+│   └── register/page.tsx     # /register
+├── dashboard/                 # 認証必要ページ（/dashboard/*）
+│   ├── scenarios/
+│   │   ├── page.tsx          # /dashboard/scenarios
+│   │   ├── [id]/page.tsx     # /dashboard/scenarios/:id
+│   │   └── new/page.tsx      # /dashboard/scenarios/new
+│   └── sessions/page.tsx     # /dashboard/sessions
+└── api/                       # API Routes
+```
+
+**過去の失敗例（2026-03-11）:**
+- E2Eテストで `/scenarios`, `/avatars` に404エラー
+- 正解は `/dashboard/scenarios`, `/dashboard/avatars`
+- 推測ではなく実装確認が必須
+
+> 詳細: [apps/CLAUDE.md](apps/CLAUDE.md) - Rule 1
+
+---
+
+## ✅ 11. next-intl使用禁止（多言語対応システム統一） 🆕
+
+**🔴 最重要: 独自I18nProviderのみ使用、next-intlは使用禁止**
+
+```bash
+# next-intl インポート検出（0件が正常）
+grep -r "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" | grep -v node_modules
+
+# 期待結果: 何も表示されない（0件）
+```
+
+**必須確認:**
+
+- [ ] `useI18n()` from '@/lib/i18n/provider' を使用しているか？
+- [ ] `useTranslations()` from 'next-intl' を使用していないか？
+- [ ] `getTranslations()` from 'next-intl/server' を使用していないか？
+
+**正しい使用例:**
+
+```typescript
+// ✅ 正しい
+import { useI18n } from '@/lib/i18n/provider';
+
+export function MyComponent() {
+  const { t, locale } = useI18n();
+  return <div>{t('common.welcome')}</div>;
+}
+
+// ❌ 間違い
+import { useTranslations } from 'next-intl';           // 使用禁止
+import { getTranslations } from 'next-intl/server';    // 使用禁止
+```
+
+**過去の失敗例（2026-03-11）:**
+- `useErrorMessage` フックで next-intl 使用 → Runtime Error
+- 不完全な移行で2つのi18nシステムが混在
+- 根本解決: next-intl完全削除、全ファイルを useI18n に統一
+
+> 詳細: [apps/CLAUDE.md](apps/CLAUDE.md) - Rule 2
+
+---
+
+## ✅ 12. Lambda依存関係検証（Lambda関数デプロイ前） 🆕
+
+**🔴 最重要: デプロイ前に必須SDK検証、欠如=本番500エラー=サービス停止**
+
+```bash
+# Lambda依存関係検証（デプロイ前必須）
+cd infrastructure
+npm run lambda:predeploy
+
+# または個別検証
+bash scripts/validate-lambda-dependencies.sh prance-websocket-default-dev
+```
+
+**期待結果:** 全SDKが正しくインストール済み
+
+**検証対象SDK:**
+
+- `@aws-sdk/client-s3`
+- `@aws-sdk/client-bedrock-runtime`
+- `@prisma/client`
+- `microsoft-cognitiveservices-speech-sdk`
+- 共有モジュール (`shared/config`, `shared/utils`)
+
+**依存関係破損時の修復:**
+
+```bash
+npm run lambda:fix
+```
+
+**過去の失敗例（2026-03-11）:**
+- Azure Speech SDK欠如 → node_modules破損（65535階層ネスト）
+- 検証プロセスなしでデプロイ → 本番500エラー
+- 根本解決: 検証スクリプト統合、修復スクリプト作成
+
+> 詳細: [infrastructure/CLAUDE.md](infrastructure/CLAUDE.md) - Rule 4
+
+---
+
+## ✅ 13. Lambda関数デプロイメント原則（Lambda関数デプロイ時） 🆕
+
+**🔴 最重要: Lambda関数デプロイはCDK経由のみ。手動zipアップロード絶対禁止**
+
+```bash
+# ✅ 正しいデプロイ方法（唯一の方法）
+cd infrastructure
+npm run deploy:websocket
+
+# または個別デプロイ
+npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+```
+
+**❌ 絶対禁止:**
+
+```bash
+# 手動zipアップロード（絶対に実行してはいけない）
+cd infrastructure/lambda/websocket/default
+zip -r lambda-deployment.zip .
+aws lambda update-function-code \
+  --function-name prance-websocket-default-dev \
+  --zip-file fileb://lambda-deployment.zip
+```
+
+**理由:**
+- TypeScriptファイル（.ts）がそのままzipされる
+- esbuildによるトランスパイル（TypeScript → JavaScript）がスキップされる
+- Lambda Runtimeは`.js`ファイルを期待するが、`.ts`ファイルしかない
+- 結果: `Runtime.ImportModuleError: Cannot find module 'index'`
+
+**過去の失敗例（複数回）:**
+- 手動zipで緊急対応 → 一時的に動作
+- CDKデプロイで古いコードに戻る → 機能が消失
+- 根本解決: CDK経由デプロイのみを徹底
+
+> 詳細: [infrastructure/CLAUDE.md](infrastructure/CLAUDE.md) - Rule 1
+
+---
+
+## ✅ 14. データベースアクセス原則（データベース操作時） 🆕
+
+**🔴 最重要: Aurora RDSへのアクセスは必ずLambda経由**
+
+```bash
+# ✅ 正しい方法
+bash scripts/db-query.sh "SELECT * FROM scenarios LIMIT 5"
+
+# ファイル経由（大きなクエリ）
+bash scripts/db-query.sh --file scripts/queries/verification.sql
+
+# 書き込み操作（明示的フラグ必須）
+bash scripts/db-query.sh --write "UPDATE scenarios SET title='New' WHERE id='xxx'"
+```
+
+**❌ 絶対禁止:**
+
+```bash
+# ローカルPostgreSQLへの直接接続（禁止）
+psql postgresql://localhost:5432/prance
+
+# RDSへの直接接続（VPCでブロック済み）
+psql postgresql://xxx.rds.amazonaws.com:5432/prance
+```
+
+**理由:**
+- このプロジェクトはAWS RDS Aurora Serverless v2専用
+- ローカルPostgreSQLは一切使用しない
+- VPC内でアクセス制御されている
+- Lambda経由でセキュアにアクセス
+
+**環境変数検証:**
+
+```bash
+# DATABASE_URLが正しく設定されているか検証
+./scripts/validate-env.sh
+
+# 期待: AWS RDS Aurora Serverless v2のURL
+```
+
+> 詳細: [scripts/CLAUDE.md](scripts/CLAUDE.md) - Rule 2, [CLAUDE.md](CLAUDE.md) - Section 4「環境変数管理」
+
+---
+
 ## 🚫 絶対にやってはいけないこと
 
 ### 1. UI文字列のハードコード
@@ -423,6 +638,118 @@ const sortedChunks = sortChunksByTimestampAndIndex(chunks);
 - ビデオでも同じバグが残っていることをユーザーが指摘
 - → 共通関数化により根本解決
 
+### 5. URLパスの推測（Next.js App Router） 🆕
+
+```typescript
+// ❌ 絶対NG - 推測でテストパスを決定
+test('should navigate to scenarios page', () => {
+  cy.visit('/scenarios');  // 推測: RESTful APIの慣習から
+  cy.visit('/avatars');    // 推測: リソース名の複数形
+});
+
+// ✅ 必ずこうする - 実装を確認してから決定
+// Step 1: 実装確認
+// $ find apps/web/app -name "page.tsx" | grep scenarios
+// apps/web/app/dashboard/scenarios/page.tsx
+
+test('should navigate to scenarios page', () => {
+  cy.visit('/dashboard/scenarios');  // 実装から確認した正しいパス
+  cy.visit('/dashboard/avatars');    // 実装から確認した正しいパス
+});
+```
+
+**なぜ推測が問題か:**
+
+1. **Next.js App Router** - 認証必要ページは `/dashboard/` 配下にグループ化される
+2. **フレームワーク構造** - 「一般的な慣習」ではなく、実装が真実
+3. **404エラー** - 推測したパスが存在しない → テスト失敗
+
+**実際に起きた問題（2026-03-11）:**
+- E2Eテストで `/scenarios`, `/avatars`, `/sessions` に404エラー
+- RESTful APIの慣習から推測してテストパスを決定
+- 正解: `/dashboard/scenarios`, `/dashboard/avatars`, `/dashboard/sessions`
+
+### 6. next-intl の使用（多言語対応システム） 🆕
+
+```typescript
+// ❌ 絶対NG - next-intl を使用
+import { useTranslations } from 'next-intl';           // 使用禁止
+import { getTranslations } from 'next-intl/server';    // 使用禁止
+
+export function MyComponent() {
+  const t = useTranslations('common');
+  return <div>{t('welcome')}</div>;
+}
+
+// ✅ 必ずこうする - 独自I18nProvider使用
+import { useI18n } from '@/lib/i18n/provider';
+
+export function MyComponent() {
+  const { t } = useI18n();
+  return <div>{t('common.welcome')}</div>;
+}
+```
+
+**なぜnext-intlが問題か:**
+
+1. **2つのi18nシステム混在** - next-intl と独自システムが衝突
+2. **Runtime Error** - `NextIntlClientProvider context not found`
+3. **不完全な移行** - 古いシステムの残骸が残る
+
+**実際に起きた問題（2026-03-11）:**
+- `useErrorMessage` フックで next-intl の `useTranslations` を使用
+- Runtime Error発生、アプリケーションクラッシュ
+- 根本解決: next-intl完全削除、全ファイルを useI18n に統一
+
+### 7. 手動Lambda zipアップロード（Lambda関数デプロイ） 🆕
+
+```bash
+# ❌ 絶対NG - 手動zipアップロード
+cd infrastructure/lambda/websocket/default
+zip -r lambda-deployment.zip .
+aws lambda update-function-code \
+  --function-name prance-websocket-default-dev \
+  --zip-file fileb://lambda-deployment.zip
+
+# ✅ 必ずこうする - CDK経由デプロイ
+cd infrastructure
+npm run deploy:websocket
+```
+
+**なぜ手動zipが問題か:**
+
+1. **TypeScript未トランスパイル** - `.ts` ファイルがそのままデプロイされる
+2. **Runtime Error** - `Runtime.ImportModuleError: Cannot find module 'index'`
+3. **一時的な動作** - 手動zipで動いても、CDKデプロイで古いコードに戻る
+
+**実際に起きた問題（複数回）:**
+- 緊急対応で手動zip → 一時的に動作
+- 次のCDKデプロイで古いコードに戻る → 機能消失
+- 根本解決: CDK経由デプロイのみを徹底
+
+### 8. 直接データベース接続（データベースアクセス） 🆕
+
+```bash
+# ❌ 絶対NG - 直接PostgreSQL接続
+psql postgresql://localhost:5432/prance         # ローカル
+psql postgresql://xxx.rds.amazonaws.com/prance  # RDS直接
+
+# ✅ 必ずこうする - Lambda経由
+bash scripts/db-query.sh "SELECT * FROM scenarios LIMIT 5"
+bash scripts/db-query.sh --file scripts/queries/verification.sql
+```
+
+**なぜ直接接続が問題か:**
+
+1. **ローカルPostgreSQL不使用** - このプロジェクトはRDS専用
+2. **VPCアクセス制御** - RDS直接接続はブロックされている
+3. **セキュリティ** - Lambda経由でセキュアにアクセス
+
+**実際に起きた問題（複数回）:**
+- `.env.local` にローカルPostgreSQL URLを設定 → 接続エラー
+- RDS直接接続を試行 → VPCでブロック
+- 根本解決: `scripts/db-query.sh` による統一アクセス
+
 ---
 
 ## 📖 共有型の使い方
@@ -452,27 +779,45 @@ import { User, Avatar, ValidationError, NotFoundError } from '../shared/types';
 
 ## 🔍 よくある間違い一覧
 
-| カテゴリ    | ❌ 間違い                           | ✅ 正しい                                     |
-| ----------- | ----------------------------------- | --------------------------------------------- |
-| **Prisma**  | `organizationId`                    | `orgId`                                       |
-| **Prisma**  | `user_id`                           | `userId`                                      |
-| **Prisma**  | `started_at`                        | `startedAt`                                   |
-| **i18n**    | `<h1>Settings</h1>`                 | `<h1>{t('settings.title')}</h1>`              |
-| **i18n**    | `placeholder="Name"`                | `placeholder={t('common.name')}`              |
-| **型定義**  | `export interface User { ... }`     | `import { User } from '@prance/shared'`       |
-| **型定義**  | `'PRIVATE' \| 'PUBLIC'`             | `import { Visibility } from '@prance/shared'` |
-| **型定義**  | `pagination: { total, limit, ... }` | `pagination: PaginationMeta`                  |
-| **DRY原則** | 同じロジックを2箇所にコピペ         | 共通関数を作成して両方で使用                  |
-| **DRY原則** | 30行のソートロジックを重複          | `utils.ts` に共通関数化                       |
+| カテゴリ         | ❌ 間違い                              | ✅ 正しい                                     |
+| ---------------- | -------------------------------------- | --------------------------------------------- |
+| **Prisma**       | `organizationId`                       | `orgId`                                       |
+| **Prisma**       | `user_id`                              | `userId`                                      |
+| **Prisma**       | `started_at`                           | `startedAt`                                   |
+| **i18n**         | `<h1>Settings</h1>`                    | `<h1>{t('settings.title')}</h1>`              |
+| **i18n**         | `placeholder="Name"`                   | `placeholder={t('common.name')}`              |
+| **i18n**         | `useTranslations()` from 'next-intl'   | `useI18n()` from '@/lib/i18n/provider'        |
+| **型定義**       | `export interface User { ... }`        | `import { User } from '@prance/shared'`       |
+| **型定義**       | `'PRIVATE' \| 'PUBLIC'`                | `import { Visibility } from '@prance/shared'` |
+| **型定義**       | `pagination: { total, limit, ... }`    | `pagination: PaginationMeta`                  |
+| **DRY原則**      | 同じロジックを2箇所にコピペ            | 共通関数を作成して両方で使用                  |
+| **DRY原則**      | 30行のソートロジックを重複             | `utils.ts` に共通関数化                       |
+| **Next.js**      | URLパス推測（`/scenarios`）            | 実装確認（`/dashboard/scenarios`）            |
+| **Lambda**       | 手動zipアップロード                    | `npm run deploy:websocket`（CDK経由）         |
+| **Lambda**       | デプロイ前に依存関係検証なし           | `npm run lambda:predeploy`（必須）            |
+| **Database**     | `psql postgresql://localhost:5432`     | `bash scripts/db-query.sh "SELECT ..."`       |
+| **Database**     | RDS直接接続                            | Lambda経由アクセス                            |
 
 ---
 
 ## 📚 詳細ドキュメント
 
-- **完全ガイド:** [CLAUDE.md](CLAUDE.md) - Section 4「開発ガイドライン」
+### マスターガイド
+
+- **[CLAUDE.md](CLAUDE.md)** - プロジェクト全体概要・重要方針
+- **[START_HERE.md](START_HERE.md)** - 次回セッション開始（エントリーポイント）
+
+### 階層化されたCLAUDE.md 🆕
+
+- **[apps/CLAUDE.md](apps/CLAUDE.md)** - フロントエンド開発ガイド（Next.js 15、多言語対応、UI開発）
+- **[infrastructure/CLAUDE.md](infrastructure/CLAUDE.md)** - インフラ・Lambda開発ガイド（AWS CDK、サーバーレス、セキュリティ）
+- **[scripts/CLAUDE.md](scripts/CLAUDE.md)** - スクリプト使用ガイド（検証、デプロイ、データベースクエリ）
+- **[docs/CLAUDE.md](docs/CLAUDE.md)** - ドキュメント管理ガイド（更新ルール、コード整合性管理）
+
+### その他
+
 - **メモリー:** `~/.claude/projects/-workspaces-prance-communication-platform/memory/MEMORY.md`
 - **重複監査:** [CODE_DUPLICATION_AUDIT.md](docs/development/CODE_DUPLICATION_AUDIT.md)
-- **Phase 1完了記録:** [START_HERE.md](START_HERE.md)
 - **DRY原則実例:** [docs/development/CHUNK_SORTING_REFACTORING.md](docs/development/CHUNK_SORTING_REFACTORING.md)
 
 ---
