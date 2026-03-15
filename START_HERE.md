@@ -1,15 +1,15 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-14 17:00 JST
+**最終更新:** 2026-03-15 00:10 JST
 **Phase 1進捗:** 100%完了（技術的動作レベル）
 **Phase 1.5進捗:** 100%完了（パフォーマンステスト + Monitoring構築）✅
-**Phase 1.6進捗:** 95%完了（i18n修正完了 - Prisma問題対応中）⚠️
+**Phase 1.6進捗:** 100%完了（i18n修正・Prisma Client完全解決）✅
 **Phase 2進捗:** 100%完了（録画・解析・レポート）✅
 **Phase 2.5進捗:** 100%完了（ゲストユーザー機能）✅
 **E2Eテスト:** 15/15テスト合格（100%）✅
-**最新コミット:** 461d1c4 - security: redact API keys and secrets from documentation (9コミット、プッシュ保留中)
-**最新デプロイ:** 2026-03-14 17:00 JST - ApiLambda (Prisma Client追加) ✅
-**ステータス:** 🔴 Prisma Client問題継続中、GitHubプッシュ保留中
+**最新コミット:** e06c303 - Git history cleanup (Azure Speech Key削除) - GitHubプッシュ済み ✅
+**最新デプロイ:** 2026-03-15 00:03 JST - ApiLambda (schema.prisma追加) ✅
+**ステータス:** 🎉 全Phase完了、Phase 3（本番環境対応）開始準備完了
 
 ---
 
@@ -126,14 +126,55 @@ Role: SUPER_ADMIN
 
 ---
 
-## 🎯 今回のセッションで完了した作業 (Day 16-17 - 2026-03-14)
+## 🎯 今回のセッションで完了した作業 (Day 17 - 2026-03-14/15)
 
-### **Day 17: Prisma Client根本解決 & コードベース統一化** ✅
+### **Day 17継続セッション: Prisma Client完全解決 & GitHubプッシュ** ✅
+
+**セッション時刻:** 2026-03-14 23:30 - 2026-03-15 00:10 JST（40分）
+**詳細:** `/tmp/session-day17-summary.md`
+
+#### 1. Git履歴クリーンアップ ✅
+
+**問題:** GitHub Secret Scanning で Azure Speech Key検出 → プッシュブロック
+
+**解決内容:**
+- ✅ git filter-branch で全207コミットから削除
+  - docs/08-operations/SECRETS_MANAGER_INTEGRATION_GUIDE.md
+  - docs/09-progress/ENVIRONMENT_VARIABLES_AUDIT_2026-03-14.md
+- ✅ reflog削除・GC実行
+- ✅ 強制プッシュ成功
+- ✅ Secret Scanningブロックなし
+
+**コミット:** `e06c303` (Git history cleanup)
+
+---
+
+#### 2. Prisma Client schema.prisma 追加 ✅
+
+**問題:** Prisma Client初期化エラー（schema.prisma not found）
+
+**根本原因:** CDK bundling設定のパスが間違っていた
+
+**修正内容:**
+- ✅ infrastructure/lib/api-lambda-stack.ts 修正（Line 1273）
+  - `${inputDir}/../packages/database/prisma/schema.prisma` → 存在しない
+  - `${inputDir}/../../packages/database/prisma/schema.prisma` → 正解
+- ✅ クリーンビルド・デプロイ実行（102秒）
+- ✅ Lambda関数動作確認成功
+  - schema.prismaデプロイ確認
+  - StatusCode: 200
+  - CloudWatch Logsエラーなし
+
+**デプロイ時刻:** 2026-03-15 00:03 JST
+
+---
+
+### **Day 17前半: Prisma Client根本解決 & コードベース統一化** ✅
 
 **セッション時刻:** 2026-03-14 17:00-20:00 JST
 **詳細:** `docs/09-progress/SESSION_2026-03-14_prisma_codebase_unification.md`
 
-#### 1. Prisma Client問題の根本解決 ✅
+#### 1. Prisma Client CDK bundling修正 ✅
 
 **問題:** WebSocket Lambda関数で `Cannot find module '@prisma/client'` エラー
 
@@ -147,7 +188,7 @@ Role: SUPER_ADMIN
 - ✅ クリーンビルド・デプロイ実行
 - ✅ 全24項目検証合格（依存関係、環境変数、デプロイパッケージ）
 
-**コミット:** `[commit-hash]` (1ファイル変更)
+**コミット:** `742582d` (1ファイル変更)
 
 ---
 
@@ -353,45 +394,59 @@ Role: SUPER_ADMIN
 
 ## 次の優先タスク
 
-### 🟢 完了: Prisma Client問題解決確認（Day 17動作確認）
+### ✅ 完了: Prisma Client問題完全解決（Day 17継続セッション 2026-03-15 00:10 JST）
 
 **実施内容:**
-- ✅ CDK bundling設定修正完了
-- ✅ クリーンビルド・デプロイ完了
+- ✅ CDK bundling設定修正完了（Day 16）
+- ✅ schema.prismaパス修正（Day 17継続）
+  - `${inputDir}/../../packages/database/prisma/schema.prisma`
+- ✅ クリーンビルド・デプロイ完了（102秒）
 - ✅ 全24項目検証合格
+- ✅ Lambda関数動作確認成功
+  - StatusCode: 200
+  - Prisma Client初期化エラーなし
+  - CloudWatch Logsエラーなし
 
-**次の確認:**
+**デプロイ後のパッケージ検証:**
 ```bash
-# WebSocket Lambda動作確認
-aws lambda invoke --function-name prance-websocket-default-dev \
-  --payload '{"requestContext":{"connectionId":"test-connection","routeKey":"$default"}}' \
-  /tmp/websocket-test-result.json
-
-# ログ確認（Prismaエラーがないこと）
-aws logs tail /aws/lambda/prance-websocket-default-dev --since 5m --follow
+# schema.prisma存在確認 ✅
+/tmp/lambda-final/node_modules/.prisma/client/schema.prisma
 ```
 
 ---
 
-### 🟡 最優先: GitHubプッシュ問題の解決（5分）
+### ✅ 完了: GitHubプッシュ問題の解決（Day 17継続セッション 2026-03-14 23:45 JST）
 
-**Option A（推奨）:** GitHubでシークレットを許可
-1. URL: https://github.com/PranceHoldings/communication-platform/security/secret-scanning/unblock-secret/3AwTuLIEFfXVM1GTHlZyzkjhQlL
-2. 「Allow secret」をクリック
-3. `git push origin main`
+**実施内容:**
+- ✅ Git履歴からAzure Speech Key削除
+  - `git filter-branch` で全207コミットからファイル削除
+  - docs/08-operations/SECRETS_MANAGER_INTEGRATION_GUIDE.md
+  - docs/09-progress/ENVIRONMENT_VARIABLES_AUDIT_2026-03-14.md
+- ✅ reflog削除・GC実行
+- ✅ 強制プッシュ成功
+- ✅ Secret Scanningブロックなし
 
-**Option B:** Git履歴クリーンアップ
-```bash
-git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-git push --force origin main
+**Git Status:**
+```
+On branch main
+Your branch is up to date with 'origin/main'.
 ```
 
 ---
 
-### ✅ その後: Initial Greeting UIテスト
+### 🎉 次のステップ: Phase 3（本番環境対応）
 
-Prisma Client問題解決後：
+**Day 17完了後の状態:**
+- ✅ Phase 1.6完了（100%）
+- ✅ Phase 2完了（100%）
+- ✅ Phase 2.5完了（100%）
+- ✅ E2Eテスト 15/15合格（100%）
+- ✅ Prisma Client完全動作
+- ✅ GitHubプッシュ成功
+
+**推奨: Initial Greeting UIテスト（5分）**
+
+Prisma Client問題解決済みなので、実際の動作確認:
 1. ブラウザ再読み込み（Ctrl+Shift+R）
 2. セッションページへ移動
 3. 「Start Session」をクリック
