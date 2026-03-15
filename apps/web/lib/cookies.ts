@@ -35,9 +35,17 @@ export const DEFAULT_COOKIE_OPTIONS: CookieOptions = {
 };
 
 /**
- * Cookie configuration for specific use cases
+ * Cookie configuration type
  */
-export const COOKIE_CONFIGS = {
+interface CookieConfig {
+  name: string;
+  options: CookieOptions;
+}
+
+/**
+ * Cookie configurations for specific use cases
+ */
+export const COOKIE_CONFIGS: Record<string, CookieConfig> = {
   locale: {
     name: LOCALE_COOKIE_NAME,
     options: {
@@ -53,7 +61,7 @@ export const COOKIE_CONFIGS = {
       secure: true, // Always require HTTPS for session cookies
     },
   },
-} as const;
+};
 
 /**
  * Set a cookie (client-side)
@@ -63,6 +71,11 @@ export const COOKIE_CONFIGS = {
  * @param options - Cookie options (merged with defaults)
  */
 export function setCookie(name: string, value: string, options: CookieOptions = {}): void {
+  if (typeof document === 'undefined') {
+    console.warn('setCookie called in non-browser environment');
+    return;
+  }
+
   const opts = { ...DEFAULT_COOKIE_OPTIONS, ...options };
 
   let cookieString = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
@@ -111,10 +124,14 @@ export function getCookie(name: string): string | null {
     return null;
   }
 
-  const cookies = document.cookie.split(';');
+  const cookieString: string = document.cookie;
+  const cookies: string[] = cookieString.split(';');
 
   for (const cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.trim().split('=');
+    const trimmedCookie: string = cookie.trim();
+    const parts: string[] = trimmedCookie.split('=');
+    const [cookieName, cookieValue] = parts;
+
     if (cookieName && decodeURIComponent(cookieName) === name) {
       return cookieValue ? decodeURIComponent(cookieValue) : '';
     }
@@ -129,7 +146,10 @@ export function getCookie(name: string): string | null {
  * @param name - Cookie name
  * @param options - Cookie options (path and domain must match the original cookie)
  */
-export function deleteCookie(name: string, options: Pick<CookieOptions, 'path' | 'domain'> = {}): void {
+export function deleteCookie(
+  name: string,
+  options: Pick<CookieOptions, 'path' | 'domain'> = {}
+): void {
   setCookie(name, '', {
     ...options,
     maxAge: 0,

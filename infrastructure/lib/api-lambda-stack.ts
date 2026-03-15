@@ -258,7 +258,7 @@ export class ApiLambdaStack extends cdk.Stack {
         externalModules: ['aws-sdk', '@aws-sdk/*'],
         nodeModules: ['@prisma/client'],
         commandHooks: {
-          beforeBundling(inputDir: string, outputDir: string): string[] {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
@@ -297,7 +297,7 @@ export class ApiLambdaStack extends cdk.Stack {
         externalModules: ['aws-sdk', '@aws-sdk/*'],
         nodeModules: ['@prisma/client'],
         commandHooks: {
-          beforeBundling(inputDir: string, outputDir: string): string[] {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
@@ -336,7 +336,7 @@ export class ApiLambdaStack extends cdk.Stack {
         externalModules: ['aws-sdk', '@aws-sdk/*'],
         nodeModules: ['@prisma/client'],
         commandHooks: {
-          beforeBundling(inputDir: string, outputDir: string): string[] {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
@@ -378,7 +378,7 @@ export class ApiLambdaStack extends cdk.Stack {
           externalModules: ['aws-sdk', '@aws-sdk/*'],
           nodeModules: ['@prisma/client'],
           commandHooks: {
-            beforeBundling(inputDir: string, outputDir: string): string[] {
+            beforeBundling(_inputDir: string, _outputDir: string): string[] {
               return [];
             },
             afterBundling(inputDir: string, outputDir: string): string[] {
@@ -425,7 +425,7 @@ export class ApiLambdaStack extends cdk.Stack {
         externalModules: ['aws-sdk', '@aws-sdk/*'],
         nodeModules: ['@prisma/client'],
         commandHooks: {
-          beforeBundling(inputDir: string, outputDir: string): string[] {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
@@ -454,7 +454,8 @@ export class ApiLambdaStack extends cdk.Stack {
       {
         ...commonLambdaProps,
         functionName: `prance-populate-scenario-defaults-${props.environment}`,
-        description: 'Populate silence management default values for existing scenarios (one-time maintenance)',
+        description:
+          'Populate silence management default values for existing scenarios (one-time maintenance)',
         entry: path.join(__dirname, '../lambda/maintenance/populate-scenario-defaults/index.ts'),
         handler: 'handler',
         timeout: cdk.Duration.seconds(300), // 5分
@@ -469,7 +470,7 @@ export class ApiLambdaStack extends cdk.Stack {
           externalModules: ['aws-sdk', '@aws-sdk/*'],
           nodeModules: ['@prisma/client'],
           commandHooks: {
-            beforeBundling(inputDir: string, outputDir: string): string[] {
+            beforeBundling(_inputDir: string, _outputDir: string): string[] {
               return [];
             },
             afterBundling(inputDir: string, outputDir: string): string[] {
@@ -500,7 +501,7 @@ export class ApiLambdaStack extends cdk.Stack {
       externalModules: ['aws-sdk', '@aws-sdk/*'],
       nodeModules: ['@prisma/client'],
       commandHooks: {
-        beforeBundling(inputDir: string, outputDir: string): string[] {
+        beforeBundling(_inputDir: string, _outputDir: string): string[] {
           return [];
         },
         afterBundling(inputDir: string, outputDir: string): string[] {
@@ -855,10 +856,10 @@ export class ApiLambdaStack extends cdk.Stack {
           '@aws-sdk/client-bedrock-runtime',
         ],
         commandHooks: {
-          beforeBundling(inputDir: string, outputDir: string): string[] {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
-          beforeInstall(inputDir: string, outputDir: string): string[] {
+          beforeInstall(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
@@ -902,19 +903,23 @@ export class ApiLambdaStack extends cdk.Stack {
     // ==================== Guest User Lambda Functions ====================
 
     // Create Guest Session
-    this.createGuestSessionFunction = new nodejs.NodejsFunction(this, 'CreateGuestSessionFunction', {
-      ...commonLambdaProps,
-      functionName: `prance-guest-sessions-create-${props.environment}`,
-      description: 'Create a new guest session',
-      entry: path.join(__dirname, '../lambda/guest-sessions/create/index.ts'),
-      handler: 'handler',
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
-      vpc: props.vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      securityGroups: [props.lambdaSecurityGroup],
-      bundling: prismaBundlingConfig,
-    });
+    this.createGuestSessionFunction = new nodejs.NodejsFunction(
+      this,
+      'CreateGuestSessionFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-guest-sessions-create-${props.environment}`,
+        description: 'Create a new guest session',
+        entry: path.join(__dirname, '../lambda/guest-sessions/create/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: prismaBundlingConfig,
+      }
+    );
 
     // List Guest Sessions
     this.listGuestSessionsFunction = new nodejs.NodejsFunction(this, 'ListGuestSessionsFunction', {
@@ -947,34 +952,42 @@ export class ApiLambdaStack extends cdk.Stack {
     });
 
     // Update Guest Session
-    this.updateGuestSessionFunction = new nodejs.NodejsFunction(this, 'UpdateGuestSessionFunction', {
-      ...commonLambdaProps,
-      functionName: `prance-guest-sessions-update-${props.environment}`,
-      description: 'Update guest session',
-      entry: path.join(__dirname, '../lambda/guest-sessions/update/index.ts'),
-      handler: 'handler',
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
-      vpc: props.vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      securityGroups: [props.lambdaSecurityGroup],
-      bundling: prismaBundlingConfig,
-    });
+    this.updateGuestSessionFunction = new nodejs.NodejsFunction(
+      this,
+      'UpdateGuestSessionFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-guest-sessions-update-${props.environment}`,
+        description: 'Update guest session',
+        entry: path.join(__dirname, '../lambda/guest-sessions/update/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: prismaBundlingConfig,
+      }
+    );
 
     // Delete Guest Session
-    this.deleteGuestSessionFunction = new nodejs.NodejsFunction(this, 'DeleteGuestSessionFunction', {
-      ...commonLambdaProps,
-      functionName: `prance-guest-sessions-delete-${props.environment}`,
-      description: 'Delete (revoke) guest session',
-      entry: path.join(__dirname, '../lambda/guest-sessions/delete/index.ts'),
-      handler: 'handler',
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
-      vpc: props.vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      securityGroups: [props.lambdaSecurityGroup],
-      bundling: prismaBundlingConfig,
-    });
+    this.deleteGuestSessionFunction = new nodejs.NodejsFunction(
+      this,
+      'DeleteGuestSessionFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-guest-sessions-delete-${props.environment}`,
+        description: 'Delete (revoke) guest session',
+        entry: path.join(__dirname, '../lambda/guest-sessions/delete/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: prismaBundlingConfig,
+      }
+    );
 
     // Batch Create Guest Sessions
     this.batchCreateGuestSessionsFunction = new nodejs.NodejsFunction(
@@ -996,34 +1009,42 @@ export class ApiLambdaStack extends cdk.Stack {
     );
 
     // Get Guest Session Logs
-    this.getGuestSessionLogsFunction = new nodejs.NodejsFunction(this, 'GetGuestSessionLogsFunction', {
-      ...commonLambdaProps,
-      functionName: `prance-guest-sessions-logs-${props.environment}`,
-      description: 'Get guest session audit logs',
-      entry: path.join(__dirname, '../lambda/guest-sessions/logs/index.ts'),
-      handler: 'handler',
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
-      vpc: props.vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      securityGroups: [props.lambdaSecurityGroup],
-      bundling: prismaBundlingConfig,
-    });
+    this.getGuestSessionLogsFunction = new nodejs.NodejsFunction(
+      this,
+      'GetGuestSessionLogsFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-guest-sessions-logs-${props.environment}`,
+        description: 'Get guest session audit logs',
+        entry: path.join(__dirname, '../lambda/guest-sessions/logs/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: prismaBundlingConfig,
+      }
+    );
 
     // Complete Guest Session
-    this.completeGuestSessionFunction = new nodejs.NodejsFunction(this, 'CompleteGuestSessionFunction', {
-      ...commonLambdaProps,
-      functionName: `prance-guest-sessions-complete-${props.environment}`,
-      description: 'Mark guest session as completed',
-      entry: path.join(__dirname, '../lambda/guest-sessions/complete/index.ts'),
-      handler: 'handler',
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
-      vpc: props.vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      securityGroups: [props.lambdaSecurityGroup],
-      bundling: prismaBundlingConfig,
-    });
+    this.completeGuestSessionFunction = new nodejs.NodejsFunction(
+      this,
+      'CompleteGuestSessionFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-guest-sessions-complete-${props.environment}`,
+        description: 'Mark guest session as completed',
+        entry: path.join(__dirname, '../lambda/guest-sessions/complete/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: prismaBundlingConfig,
+      }
+    );
 
     // Verify Guest Token
     this.verifyGuestTokenFunction = new nodejs.NodejsFunction(this, 'VerifyGuestTokenFunction', {
@@ -1056,19 +1077,23 @@ export class ApiLambdaStack extends cdk.Stack {
     });
 
     // Get Guest Session Data
-    this.getGuestSessionDataFunction = new nodejs.NodejsFunction(this, 'GetGuestSessionDataFunction', {
-      ...commonLambdaProps,
-      functionName: `prance-guest-session-data-${props.environment}`,
-      description: 'Get session data for authenticated guest',
-      entry: path.join(__dirname, '../lambda/guest/session-data/index.ts'),
-      handler: 'handler',
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 512,
-      vpc: props.vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      securityGroups: [props.lambdaSecurityGroup],
-      bundling: prismaBundlingConfig,
-    });
+    this.getGuestSessionDataFunction = new nodejs.NodejsFunction(
+      this,
+      'GetGuestSessionDataFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-guest-session-data-${props.environment}`,
+        description: 'Get session data for authenticated guest',
+        entry: path.join(__dirname, '../lambda/guest/session-data/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: prismaBundlingConfig,
+      }
+    );
 
     // ==================== WebSocket Lambda Functions ====================
 
@@ -1100,7 +1125,7 @@ export class ApiLambdaStack extends cdk.Stack {
         target: 'es2020',
         externalModules: ['aws-sdk'],
         commandHooks: {
-          beforeBundling(inputDir: string, outputDir: string): string[] {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
@@ -1228,7 +1253,7 @@ export class ApiLambdaStack extends cdk.Stack {
           'prisma',
         ],
         commandHooks: {
-          beforeBundling(inputDir: string, outputDir: string): string[] {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
@@ -1258,9 +1283,9 @@ export class ApiLambdaStack extends cdk.Stack {
               `cp -r ${inputDir}/shared/ai ${outputDir}/shared/`,
               `cp -r ${inputDir}/shared/audio ${outputDir}/shared/`,
               `cp -r ${inputDir}/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
-              `cp -r ${inputDir}/shared/config ${outputDir}/shared/`,      // CRITICAL: defaults.ts, language-config.ts
-              `cp -r ${inputDir}/shared/utils ${outputDir}/shared/`,       // CRITICAL: error-logger.ts
-              `cp -r ${inputDir}/shared/types ${outputDir}/shared/`,       // CRITICAL: Type definitions
+              `cp -r ${inputDir}/shared/config ${outputDir}/shared/`, // CRITICAL: defaults.ts, language-config.ts
+              `cp -r ${inputDir}/shared/utils ${outputDir}/shared/`, // CRITICAL: error-logger.ts
+              `cp -r ${inputDir}/shared/types ${outputDir}/shared/`, // CRITICAL: Type definitions
               `cp -r ${inputDir}/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
               `cp -r ${inputDir}/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
               // Copy Prisma Client (both @prisma/client package and .prisma/client generated code)
@@ -1628,6 +1653,12 @@ export class ApiLambdaStack extends cdk.Stack {
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
     });
+    // PATCH /api/v1/organizations/settings (Update organization settings - partial)
+    settingsResource.addMethod('PATCH', organizationSettingsIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
 
     // Sessions endpoints
     const sessionsResource = apiV1.addResource('sessions');
@@ -1940,7 +1971,7 @@ export class ApiLambdaStack extends cdk.Stack {
     wsDeployment.addDependency(defaultRoute);
 
     // WebSocket Stage
-    const wsStage = new apigatewayv2.CfnStage(this, 'WebSocketStage', {
+    const _wsStage = new apigatewayv2.CfnStage(this, 'WebSocketStage', {
       apiId: this.webSocketApi.ref,
       stageName: props.environment,
       deploymentId: wsDeployment.ref,

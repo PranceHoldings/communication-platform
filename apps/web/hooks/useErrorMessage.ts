@@ -15,7 +15,14 @@ export interface ErrorDetails {
 
 export function useErrorMessage() {
   const { t: translate } = useI18n();
-  const t = (key: string, params?: Record<string, number>) => translate(`errors.${key}`, params as Record<string, string | number>);
+  const t = (key: string, params?: Record<string, number>): string => {
+    const fullKey = `errors.${key}`;
+    if (params) {
+      const stringParams: Record<string, string | number> = params;
+      return translate(fullKey, stringParams);
+    }
+    return translate(fullKey);
+  };
 
   /**
    * Get user-friendly error message from error code

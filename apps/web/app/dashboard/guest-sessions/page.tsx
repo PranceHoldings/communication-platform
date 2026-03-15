@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
-import { listGuestSessions, type GuestSession, type GuestSessionStatus } from '@/lib/api/guest-sessions';
+import {
+  listGuestSessions,
+  type GuestSession,
+  type GuestSessionStatus,
+} from '@/lib/api/guest-sessions';
 import Link from 'next/link';
 
 export default function GuestSessionsPage() {
@@ -96,7 +100,7 @@ export default function GuestSessionsPage() {
             </label>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as GuestSessionStatus | '')}
+              onChange={e => setStatusFilter(e.target.value as '' | GuestSessionStatus)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">{t('guestSessions.list.filter.all')}</option>
@@ -153,7 +157,9 @@ export default function GuestSessionsPage() {
               d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">{t('guestSessions.list.empty')}</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            {t('guestSessions.list.empty')}
+          </h3>
           <p className="mt-1 text-sm text-gray-500">{t('guestSessions.list.description')}</p>
           <div className="mt-6">
             <Link
@@ -161,7 +167,12 @@ export default function GuestSessionsPage() {
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
               {t('guestSessions.list.createButton')}
             </Link>
@@ -200,7 +211,7 @@ export default function GuestSessionsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {guestSessions.map((session) => (
+                {guestSessions.map(session => (
                   <tr key={session.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
@@ -211,9 +222,7 @@ export default function GuestSessionsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {session.scenario?.title || '-'}
-                      </div>
+                      <div className="text-sm text-gray-900">{session.scenario?.title || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
@@ -252,7 +261,8 @@ export default function GuestSessionsPage() {
             <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
               <div className="flex justify-between items-center">
                 <div className="text-sm text-gray-700">
-                  {t('common.showing')} {pagination.offset + 1} - {pagination.offset + guestSessions.length} {t('common.of')} {pagination.total}
+                  {t('common.showing')} {pagination.offset + 1} -{' '}
+                  {pagination.offset + guestSessions.length} {t('common.of')} {pagination.total}
                 </div>
                 <button
                   onClick={() => loadGuestSessions(pagination.offset + pagination.limit)}

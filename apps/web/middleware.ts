@@ -71,7 +71,10 @@ export function middleware(request: NextRequest) {
 
     // Redirect to clean URL with locale cookie set
     const response = NextResponse.redirect(cleanUrl);
-    response.cookies.set(LOCALE_COOKIE_NAME, langParam, COOKIE_CONFIGS.locale.options);
+    const localeConfig = COOKIE_CONFIGS['locale'];
+    if (localeConfig) {
+      response.cookies.set(LOCALE_COOKIE_NAME, langParam, localeConfig.options);
+    }
 
     return response;
   }
@@ -97,7 +100,10 @@ export function middleware(request: NextRequest) {
 
   // Save locale to Cookie (for first-time visitors or cookie expired)
   if (!request.cookies.get(LOCALE_COOKIE_NAME)) {
-    response.cookies.set(LOCALE_COOKIE_NAME, locale, COOKIE_CONFIGS.locale.options);
+    const localeConfig = COOKIE_CONFIGS['locale'];
+    if (localeConfig) {
+      response.cookies.set(LOCALE_COOKIE_NAME, locale, localeConfig.options);
+    }
   }
 
   return response;

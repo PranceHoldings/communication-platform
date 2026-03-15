@@ -4,6 +4,10 @@ import { createContext, useContext, ReactNode } from 'react';
 import { fallbackLocale } from '@/lib/i18n/config';
 import { setLocaleCookie } from '@/lib/cookies';
 
+// Recursive type for nested translation messages
+type TranslationValue = string | Record<string, TranslationValue>;
+type TranslationMessages = Record<string, TranslationValue>;
+
 interface I18nContextType {
   locale: string;
   t: (key: string, params?: Record<string, string | number>) => string;
@@ -15,18 +19,19 @@ const I18nContext = createContext<I18nContextType | null>(null);
 interface I18nProviderProps {
   children: ReactNode;
   locale: string;
-  messages: Record<string, any>;
+  messages: TranslationMessages;
 }
 
 export function I18nProvider({ children, locale, messages }: I18nProviderProps) {
   const t = (key: string, params?: Record<string, string | number>): string => {
     const keys = key.split('.');
-    let value: any = messages;
+    let value: TranslationValue = messages;
 
     // Navigate through nested object
     for (const k of keys) {
-      value = value?.[k];
-      if (value === undefined) {
+      if (typeof value === 'object' && !Array.isArray(value) && value !== null && k in value) {
+        value = value[k];
+      } else {
         // Translation key not found - this is expected for incomplete translations
         if (locale !== fallbackLocale) {
           console.warn(
@@ -41,7 +46,7 @@ export function I18nProvider({ children, locale, messages }: I18nProviderProps) 
 
     // Handle parameter interpolation
     if (params && typeof value === 'string') {
-      return value.replace(/\{(\w+)\}/g, (_, param) => {
+      return value.replace(/\{(\w+)\}/g, (_match: string, param: string) => {
         const replacement = params[param];
         return replacement !== undefined ? String(replacement) : `{${param}}`;
       });
@@ -55,7 +60,9 @@ export function I18nProvider({ children, locale, messages }: I18nProviderProps) 
     setLocaleCookie(newLocale);
 
     // Reload page to apply new locale
-    window.location.reload();
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
   };
 
   return <I18nContext.Provider value={{ locale, t, setLocale }}>{children}</I18nContext.Provider>;

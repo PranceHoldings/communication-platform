@@ -48,6 +48,7 @@ interface UseWebSocketOptions {
   onProcessingUpdate?: (message: ProcessingUpdateMessage) => void;
   onSessionComplete?: (message: SessionCompleteMessage) => void;
   onError?: (message: ErrorMessage) => void;
+  onNoSpeechDetected?: (message: { message: string; timestamp: number }) => void; // New: No speech detected guidance
   onAuthenticated?: (sessionId: string, initialGreeting?: string) => void;
   autoConnect?: boolean;
 }
@@ -86,6 +87,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onProcessingUpdate,
     onSessionComplete,
     onError,
+    onNoSpeechDetected,
     onAuthenticated,
     autoConnect = false,
   } = options;
@@ -127,6 +129,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const onProcessingUpdateRef = useRef(onProcessingUpdate);
   const onSessionCompleteRef = useRef(onSessionComplete);
   const onErrorRef = useRef(onError);
+  const onNoSpeechDetectedRef = useRef(onNoSpeechDetected);
   const onAuthenticatedRef = useRef(onAuthenticated);
 
   // Update refs on every render so they always point to the latest callbacks
@@ -137,6 +140,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onAudioChunkRef.current = onAudioChunk;
     onProcessingUpdateRef.current = onProcessingUpdate;
     onSessionCompleteRef.current = onSessionComplete;
+    onNoSpeechDetectedRef.current = onNoSpeechDetected;
     onErrorRef.current = onError;
     onAuthenticatedRef.current = onAuthenticated;
   });
@@ -217,6 +221,16 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             setError((message as unknown as ErrorMessage).message);
             break;
 
+          case 'no_speech_detected':
+            // Not an error - just guidance for user (audio too quiet or no speech)
+            console.log('[WebSocket] No speech detected - providing user guidance');
+            const noSpeechMessage = message as any;
+            onNoSpeechDetectedRef.current?.({
+              message: noSpeechMessage.message || 'No speech detected',
+              timestamp: noSpeechMessage.timestamp || Date.now(),
+            });
+            break;
+
           case 'pong':
             // Heartbeat response
             console.log('Pong received');
@@ -234,7 +248,12 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
           case 'audio_part_ack':
             // Audio part acknowledgment
-            console.log('[WebSocket] Audio part acknowledged:', (message as any).partsReceived, '/', (message as any).totalParts);
+            console.log(
+              '[WebSocket] Audio part acknowledged:',
+              (message as any).partsReceived,
+              '/',
+              (message as any).totalParts
+            );
             break;
 
           case 'video_chunk_ack':
@@ -250,7 +269,9 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
                   clearTimeout(pending.timeoutHandle);
                 }
                 pendingChunksRef.current.delete(chunkId);
-                console.log(`[WebSocket] Video chunk ${chunkId} (seq ${sequenceNumber}) acknowledged`);
+                console.log(
+                  `[WebSocket] Video chunk ${chunkId} (seq ${sequenceNumber}) acknowledged`
+                );
               } else {
                 console.warn(`[WebSocket] Received ACK for unknown chunk ${chunkId}`);
               }
@@ -261,7 +282,10 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             // Missing chunks notification (Phase 1.6: Gap detection)
             {
               const missingMessage = message as any;
-              console.warn('[WebSocket] Missing video chunks detected:', missingMessage.missingSequences);
+              console.warn(
+                '[WebSocket] Missing video chunks detected:',
+                missingMessage.missingSequences
+              );
               // TODO: Implement retransmission for missing sequences
             }
             break;
@@ -285,14 +309,18 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
                 // Retry if not exceeded max retries
                 if (pending.retryCount < MAX_RETRY) {
-                  console.warn(`[WebSocket] Retrying chunk ${errorMessage.chunkId} due to error (${pending.retryCount + 1}/${MAX_RETRY})`);
+                  console.warn(
+                    `[WebSocket] Retrying chunk ${errorMessage.chunkId} due to error (${pending.retryCount + 1}/${MAX_RETRY})`
+                  );
                   // Re-send chunk after backoff
                   const backoff = RETRY_BACKOFF_BASE * Math.pow(2, pending.retryCount);
                   setTimeout(() => {
                     // Will be implemented in sendVideoChunk
                   }, backoff);
                 } else {
-                  console.error(`[WebSocket] Chunk ${errorMessage.chunkId} failed after ${MAX_RETRY} retries`);
+                  console.error(
+                    `[WebSocket] Chunk ${errorMessage.chunkId} failed after ${MAX_RETRY} retries`
+                  );
                   setError(`Video chunk transmission failed: ${errorMessage.message}`);
                 }
               }
@@ -426,7 +454,6 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       setError(err instanceof Error ? err.message : 'Failed to connect');
       setIsConnecting(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wsEndpoint, token, sessionId, handleMessage]);
 
   const disconnect = useCallback(() => {
@@ -539,7 +566,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         // Calculate SHA-256 hash for integrity validation
         const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+        const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
         // AWS API Gateway WebSocket limit: 32KB per message
         // We need to split large chunks into smaller sub-chunks
@@ -678,7 +705,6 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     return () => {
       disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Heartbeat to keep connection alive

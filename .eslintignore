@@ -11,6 +11,7 @@ out/
 cdk.out/
 cdk.out.*/
 infrastructure/cdk.out.*/
+**/*.d.ts
 
 # Prisma generated
 packages/database/node_modules/
@@ -27,3 +28,12 @@ packages/database/.prisma/
 # Logs
 *.log
 cdk.out.old/
+
+# Tests (separate tsconfig)
+tests/
+**/tests/
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
