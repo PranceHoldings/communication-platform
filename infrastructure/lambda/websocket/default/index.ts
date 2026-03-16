@@ -588,6 +588,52 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           });
 
           console.log('[speech_end] Real-time audio processing complete');
+
+          // Check if session_end was received while we were processing
+          const updatedConnectionData = await getConnectionData(connectionId);
+          if (updatedConnectionData?.sessionEndReceived) {
+            console.log('[speech_end] session_end was received during processing, sending session_complete now');
+
+            // Update session status to COMPLETED in database
+            try {
+              const sessionId = updatedConnectionData?.sessionId;
+              if (sessionId) {
+                const session = await prisma.session.findUnique({
+                  where: { id: sessionId },
+                  select: { startedAt: true },
+                });
+
+                if (session) {
+                  const endedAt = new Date();
+                  const durationSec = Math.floor((endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000);
+
+                  await prisma.session.update({
+                    where: { id: sessionId },
+                    data: {
+                      status: 'COMPLETED',
+                      endedAt,
+                      durationSec,
+                    },
+                  });
+
+                  console.log('[speech_end] Session status updated to COMPLETED:', {
+                    sessionId,
+                    durationSec,
+                  });
+                }
+              }
+            } catch (dbError) {
+              console.error('[speech_end] Failed to update session status:', dbError);
+              // Continue even if DB update fails
+            }
+
+            // Send session_complete message
+            await sendToConnection(connectionId, {
+              type: 'session_complete',
+              sessionId: updatedConnectionData?.sessionId,
+              message: 'Session ended successfully',
+            });
+          }
         } catch (error) {
           console.error('[speech_end] Failed to process real-time audio:', error);
 
@@ -1193,13 +1239,46 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         } else {
           // Audio processing is complete (or was never started), send session_complete now
           console.log('[session_end] Audio processing complete or not started, sending session_complete');
-          
+
+          // Update session status to COMPLETED in database
+          try {
+            const sessionId = connectionData?.sessionId;
+            if (sessionId) {
+              const session = await prisma.session.findUnique({
+                where: { id: sessionId },
+                select: { startedAt: true },
+              });
+
+              if (session) {
+                const endedAt = new Date();
+                const durationSec = Math.floor((endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000);
+
+                await prisma.session.update({
+                  where: { id: sessionId },
+                  data: {
+                    status: 'COMPLETED',
+                    endedAt,
+                    durationSec,
+                  },
+                });
+
+                console.log('[session_end] Session status updated to COMPLETED:', {
+                  sessionId,
+                  durationSec,
+                });
+              }
+            }
+          } catch (dbError) {
+            console.error('[session_end] Failed to update session status:', dbError);
+            // Continue even if DB update fails
+          }
+
           // 🆕 Trigger automatic analysis (if enabled)
           if (process.env.ENABLE_AUTO_ANALYSIS === 'true' && connectionData?.sessionId) {
             console.log('[session_end] Triggering automatic analysis', {
               sessionId: connectionData.sessionId,
             });
-            
+
             try {
               // Invoke analysis Lambda function asynchronously
               await lambdaClient.send(
@@ -1209,14 +1288,14 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                   Payload: JSON.stringify({ sessionId: connectionData.sessionId }),
                 })
               );
-              
+
               console.log('[session_end] Analysis triggered successfully');
             } catch (analysisError) {
               console.error('[session_end] Failed to trigger analysis:', analysisError);
               // Non-critical error - continue to send session_complete
             }
           }
-          
+
           await sendToConnection(connectionId, {
             type: 'session_complete',
             sessionId: connectionData?.sessionId,
@@ -1424,11 +1503,30 @@ async function handleAudioProcessingStreaming(
         // Callback: Transcript complete
         onTranscriptComplete: async (transcript: string) => {
           console.log('[Streaming] Transcript complete:', transcript);
+          const timestamp = Date.now();
+
+          // Save transcript to database
+          try {
+            await prisma.transcript.create({
+              data: {
+                sessionId,
+                speaker: 'USER',
+                text: transcript,
+                timestampStart: timestamp,
+                timestampEnd: timestamp,
+                confidence: 0.95,
+              },
+            });
+            console.log('[Streaming] Transcript saved to database');
+          } catch (dbError) {
+            console.error('[Streaming] Failed to save transcript to database:', dbError);
+          }
+
           await sendToConnection(connectionId, {
             type: 'transcript_final',
             speaker: 'USER',
             text: transcript,
-            timestamp_start: Date.now(),
+            timestamp_start: timestamp,
             confidence: 0.95,
           });
         },
@@ -1448,11 +1546,30 @@ async function handleAudioProcessingStreaming(
         // Callback: AI complete
         onAIComplete: async (fullText: string) => {
           console.log('[Streaming] AI complete:', fullText.length, 'chars');
+          const timestamp = Date.now();
+
+          // Save AI response transcript to database
+          try {
+            await prisma.transcript.create({
+              data: {
+                sessionId,
+                speaker: 'AI',
+                text: fullText,
+                timestampStart: timestamp,
+                timestampEnd: timestamp,
+                confidence: 1.0,
+              },
+            });
+            console.log('[Streaming] AI transcript saved to database');
+          } catch (dbError) {
+            console.error('[Streaming] Failed to save AI transcript to database:', dbError);
+          }
+
           await sendToConnection(connectionId, {
             type: 'avatar_response_final',
             speaker: 'AI',
             text: fullText,
-            timestamp: Date.now(),
+            timestamp: timestamp,
           });
         },
 
