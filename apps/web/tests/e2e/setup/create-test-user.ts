@@ -39,7 +39,6 @@ async function main() {
       org = await prisma.organization.create({
         data: {
           name: 'Test Organization',
-          slug: 'test-org',
         },
       });
       console.log('✅ Created test organization');
@@ -56,7 +55,6 @@ async function main() {
         passwordHash,
         orgId: org.id,
         role: 'CLIENT_ADMIN',
-        emailVerified: new Date(), // Auto-verify for testing
       },
     });
 
