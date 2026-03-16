@@ -114,7 +114,10 @@ export default function SessionsPage() {
       </div>
 
       {/* Sessions Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div
+        className="bg-white rounded-lg border border-gray-200 overflow-hidden"
+        data-testid="session-list"
+      >
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>

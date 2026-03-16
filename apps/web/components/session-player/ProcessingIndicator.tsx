@@ -68,6 +68,7 @@ export function ProcessingIndicator({ stage, message, className = '' }: Processi
   return (
     <div
       className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3 ${className}`}
+      data-testid="processing-stage"
       role="status"
       aria-live="polite"
       aria-label={config.label}

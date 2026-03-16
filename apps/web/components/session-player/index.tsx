@@ -1567,6 +1567,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   return (
     <div
       className="space-y-6"
+      data-testid="session-player"
       role="main"
       aria-label={t('sessions.player.info.scenario') + ': ' + scenario.title}
     >
@@ -1595,7 +1596,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
             {/* Silence Timer Display (if enabled) */}
             {effectiveShowSilenceTimer && status === 'ACTIVE' && initialGreetingCompleted && (
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2 min-w-[120px]">
+              <div
+                className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2 min-w-[120px]"
+                data-testid="silence-timer"
+              >
                 <div className="text-xs text-indigo-600 font-medium uppercase tracking-wide">
                   {t('sessions.player.silenceTimer.label')}
                 </div>
@@ -1606,11 +1610,17 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             )}
 
             <div className="text-right">
-              <div className={`text-lg font-semibold ${getStatusColor(status)}`}>
+              <div
+                className={`text-lg font-semibold ${getStatusColor(status)}`}
+                data-testid="status-badge"
+              >
                 {getStatusText(status)}
                 {isMuted && status === 'ACTIVE' && <span className="ml-2 text-red-600">🔇</span>}
               </div>
-              <div className="text-2xl font-mono font-bold text-gray-900 mt-1">
+              <div
+                className="text-2xl font-mono font-bold text-gray-900 mt-1"
+                data-testid="session-duration"
+              >
                 {formatTime(currentTime)}
               </div>
             </div>
@@ -1650,7 +1660,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           {/* マイク・カメラステータス + 音声レベルインジケーター */}
           <div className="mt-4 space-y-3">
             {/* マイクステータス */}
-            <div className="flex items-center justify-between text-sm">
+            <div
+              className="flex items-center justify-between text-sm"
+              data-testid="microphone-indicator"
+            >
               <div className="flex items-center text-gray-600">
                 <svg
                   className={`w-4 h-4 mr-2 ${
@@ -1727,7 +1740,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             )}
 
             {/* カメラステータス */}
-            <div className="flex items-center justify-between text-sm text-gray-600">
+            <div
+              className="flex items-center justify-between text-sm text-gray-600"
+              data-testid="camera-indicator"
+            >
               <div className="flex items-center">
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
@@ -1740,7 +1756,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             </div>
 
             {/* 音声再生ステータス */}
-            <div className="flex items-center justify-between text-sm">
+            <div
+              className="flex items-center justify-between text-sm"
+              data-testid="speaker-indicator"
+            >
               <div className="flex items-center text-gray-600">
                 <svg
                   className={`w-4 h-4 mr-2 ${isPlayingAudio ? 'text-blue-500' : ''}`}
@@ -1821,6 +1840,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           </h3>
           <div
             className="h-[400px] overflow-y-auto space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50"
+            data-testid="transcript"
             role="log"
             aria-live="polite"
             aria-atomic="false"
@@ -1840,6 +1860,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                       ? 'bg-indigo-50 border border-indigo-200'
                       : 'bg-green-50 border border-green-200'
                   }`}
+                  data-testid="transcript-message"
+                  data-speaker={item.speaker}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-semibold text-sm">
@@ -1934,6 +1956,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           {status === 'IDLE' && (
             <button
               onClick={handleStart}
+              data-testid="start-button"
               className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 flex items-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               aria-label={t('sessions.player.actions.start') + ' (Space)'}
             >
@@ -1965,6 +1988,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               </span>
               <button
                 onClick={handleStop}
+                data-testid="stop-button"
                 className="px-6 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 flex items-center focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 aria-label={t('sessions.player.actions.cancel') + ' (Escape)'}
               >
@@ -2020,6 +2044,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             <>
               <button
                 onClick={handlePause}
+                data-testid="pause-button"
                 className="px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 flex items-center focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
                 aria-label={t('sessions.player.actions.pause') + ' (P)'}
               >
