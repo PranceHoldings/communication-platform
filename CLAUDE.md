@@ -742,6 +742,60 @@ Runtime.ImportModuleError: Error: Cannot find module 'index'
 
 > 詳細: memory/deployment-rules.md
 
+#### Rule 8: NULL vs UNDEFINED使い分け原則（CRITICAL - 2026-03-16追加）🆕
+
+**🔴 最重要: null と undefined を各レイヤーで一貫して使い分けること**
+
+**基本原則:**
+
+| レイヤー | 使用する値 | 理由 |
+|---------|-----------|------|
+| Database | `NULL` | SQL標準 |
+| Backend Lambda | `null` | JSON標準 |
+| API (Request/Response) | `null` | JSON.stringify()で保持 |
+| Frontend API Types | `Type \| null` | APIレスポンスと一致 |
+| Frontend UI State | `undefined` | TypeScript optional型 |
+
+**変換ルール:**
+
+```typescript
+// ✅ API取得時（Backend → Frontend）
+setField(apiResponse.field === null ? undefined : apiResponse.field);
+
+// ✅ API送信時（Frontend → Backend）
+const updateData = {
+  field: stateField === undefined ? null : stateField,
+};
+```
+
+**❌ よくある間違い:**
+
+```typescript
+// ❌ API型でnullを許容していない
+export interface Scenario {
+  showSilenceTimer?: boolean;  // null が型エラー
+}
+
+// ❌ undefinedをJSON送信（消える）
+const updateData = {
+  showSilenceTimer: showSilenceTimer,  // undefined → 削除される
+};
+
+// ❌ nullをUI状態で使用
+const [field, setField] = useState<boolean | null>(null);  // undefinedを使うべき
+```
+
+**チェックリスト:**
+
+- [ ] Prisma Schema: `Type?` で nullable
+- [ ] Backend API: `'field' in body` で null 検出
+- [ ] Frontend API Types: `Type | null`
+- [ ] Frontend UI State: `Type | undefined`
+- [ ] API取得時: `null → undefined` 変換
+- [ ] API送信時: `undefined → null` 変換
+
+> 詳細: docs/07-development/NULL_UNDEFINED_GUIDELINES.md
+
 ---
 
 ### 重要な設計原則
