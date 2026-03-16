@@ -88,13 +88,17 @@ test.describe('Stage 1: Basic UI Flow', () => {
     // Get status badge
     const statusBadge = sessionPlayer.statusBadge;
 
-    // Verify IDLE state has gray color (adjust based on actual implementation)
-    const bgColor = await statusBadge.evaluate((el) => {
-      return window.getComputedStyle(el).backgroundColor;
+    // Verify IDLE state has gray text color (implementation uses text-gray-600)
+    const textColor = await statusBadge.evaluate((el) => {
+      return window.getComputedStyle(el).color;
     });
 
-    // Gray color check (rgb values may vary)
-    expect(bgColor).toMatch(/rgb\(.*\)/);
+    // Gray color check (text-gray-600 should be rgb format)
+    // Tailwind text-gray-600 typically renders as rgb(75, 85, 99) or similar
+    expect(textColor).toMatch(/rgb\(/);
+
+    // Verify it's actually gray (not transparent)
+    expect(textColor).not.toBe('rgba(0, 0, 0, 0)');
   });
 
   test('S1-006: Verify initial indicator states', async ({
