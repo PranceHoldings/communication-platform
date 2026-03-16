@@ -96,6 +96,7 @@
     "configHelp": "Enter scenario configuration as valid JSON. Example: { \"duration\": 30, \"difficulty\": \"beginner\" }",
     "submit": "Update Scenario",
     "updating": "Updating...",
+    "waitingForQuestionChange": "Please wait after reordering questions...",
     "success": "Scenario updated successfully",
     "error": "Failed to update scenario"
   },

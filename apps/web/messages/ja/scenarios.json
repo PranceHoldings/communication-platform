@@ -96,6 +96,7 @@
     "configHelp": "有効なJSON形式でシナリオ設定を入力してください。例: { \"duration\": 30, \"difficulty\": \"beginner\" }",
     "submit": "シナリオを更新",
     "updating": "更新中...",
+    "waitingForQuestionChange": "質問の並び替え後、しばらくお待ちください...",
     "success": "シナリオが正常に更新されました",
     "error": "シナリオの更新に失敗しました"
   },
