@@ -172,7 +172,17 @@
       "audioPlaybackError": "Failed to play audio response. Please check your browser settings.",
       "authenticated": "WebSocket authenticated successfully",
       "authenticationTimeout": "Authentication timeout. Please try again.",
-      "processingComplete": "Processing Complete"
+      "processingComplete": "Processing Complete",
+      "lowVolumeWarning": "⚠️ Il volume del microfono è molto basso. Si prega di parlare più forte o controllare le impostazioni del microfono.",
+      "audioTooQuiet": "Il livello audio è troppo basso. Si prega di parlare più vicino al microfono."
+    },
+    "noSpeech": {
+      "guidance": "Nessun parlato rilevato. Si prega di parlare più forte o avvicinarsi al microfono.",
+      "showTips": "Mostra Suggerimenti",
+      "tip1": "• Parlare più forte e più chiaramente",
+      "tip2": "• Avvicinarsi al microfono (10-20cm)",
+      "tip3": "• Controllare le impostazioni del volume del microfono",
+      "tip4": "• Assicurarsi che il microfono non sia disattivato"
     },
     "processing": {
       "stt": "Transcribing speech...",

@@ -172,7 +172,9 @@
       "audioSendError": "音声の送信に失敗しました。もう一度お試しください。",
       "authenticated": "WebSocket認証が完了しました",
       "authenticationTimeout": "認証タイムアウト。再度お試しください。",
-      "processingComplete": "Processing complete"
+      "processingComplete": "処理完了",
+      "lowVolumeWarning": "⚠️ マイクの音量が非常に低いです。もっと大きな声で話すか、マイクの設定を確認してください。",
+      "audioTooQuiet": "音声レベルが低すぎます。マイクに近づいて話してください。"
     },
     "noSpeech": {
       "guidance": "音声が検出されませんでした。もっと大きな声で話すか、マイクに近づいてください。",

@@ -172,7 +172,17 @@
       "audioPlaybackError": "Failed to play audio response. Please check your browser settings.",
       "authenticated": "WebSocket authenticated successfully",
       "authenticationTimeout": "Authentication timeout. Please try again.",
-      "processingComplete": "Processing Complete"
+      "processingComplete": "Processing Complete",
+      "lowVolumeWarning": "⚠️ 마이크 볼륨이 매우 낮습니다. 더 크게 말하거나 마이크 설정을 확인하세요.",
+      "audioTooQuiet": "오디오 레벨이 너무 낮습니다. 마이크에 더 가까이 말하세요."
+    },
+    "noSpeech": {
+      "guidance": "음성이 감지되지 않았습니다. 더 크게 말하거나 마이크에 가까이 가세요.",
+      "showTips": "팁 표시",
+      "tip1": "• 더 크고 명확하게 말하기",
+      "tip2": "• 마이크에 가까이 가기 (10-20cm)",
+      "tip3": "• 마이크 볼륨 설정 확인",
+      "tip4": "• 마이크가 음소거되지 않았는지 확인"
     },
     "processing": {
       "stt": "Transcribing speech...",

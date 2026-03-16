@@ -172,7 +172,9 @@
       "audioPlaybackError": "Failed to play audio response. Please check your browser settings.",
       "authenticated": "WebSocket authenticated successfully",
       "authenticationTimeout": "Authentication timeout. Please try again.",
-      "processingComplete": "Processing Complete"
+      "processingComplete": "Processing Complete",
+      "lowVolumeWarning": "⚠️ Microphone volume is very low. Please speak louder or check your microphone settings.",
+      "audioTooQuiet": "Audio level is too low. Please speak closer to your microphone."
     },
     "noSpeech": {
       "guidance": "No speech detected. Please speak louder or move closer to your microphone.",

@@ -822,12 +822,20 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     (error: Error) => {
       console.error('[SessionPlayer] Recording error:', error);
 
-      // Filter LOW_VOLUME errors (user silence during AI response is normal)
+      // Handle LOW_VOLUME warning (show as warning, not critical error)
       if ((error as any).code === 'LOW_VOLUME') {
-        console.warn(
-          '[SessionPlayer] Low volume detected (user silence is normal during AI response)'
-        );
-        return; // Don't show toast for LOW_VOLUME
+        console.warn('[SessionPlayer] Low volume detected - showing user guidance');
+        toast.warning(t('sessions.player.messages.lowVolumeWarning'), {
+          duration: 8000,
+          action: {
+            label: t('sessions.player.noSpeech.showTips'),
+            onClick: () => {
+              const instructions = getMicrophoneInstructions();
+              toast.info(instructions, { duration: 15000 });
+            },
+          },
+        });
+        return; // Don't show as error
       }
 
       // Get user-friendly error message
@@ -1132,12 +1140,22 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         setIsCameraActive(false);
       }
 
-      // 5. If audio was recording, wait for transcript before sending session_end
+      // 5. If audio was recording, send speech_end and wait for transcript before sending session_end
       if (wasRecording) {
         console.log(
-          '[SessionPlayer] Audio was recording, will wait for audio processing before session_end'
+          '[SessionPlayer] Audio was recording, sending speech_end and waiting for audio processing before session_end'
         );
+
+        // Send speech_end to trigger backend STT processing
+        if (isConnectedRef.current && sendSpeechEndRef.current) {
+          sendSpeechEndRef.current();
+          console.log('[SessionPlayer] speech_end signal sent (session stop)');
+        }
+
         setPendingSessionEnd(true);
+        setIsProcessing(true);
+        setProcessingStage('stt');
+        setProcessingMessage(t('sessions.player.processing.stt'));
         // session_end will be sent after transcript_final is received
       } else {
         // 5. Send session end notification immediately if no audio to process

@@ -172,7 +172,17 @@
       "audioPlaybackError": "Failed to play audio response. Please check your browser settings.",
       "authenticated": "WebSocket authenticated successfully",
       "authenticationTimeout": "Authentication timeout. Please try again.",
-      "processingComplete": "Processing Complete"
+      "processingComplete": "Processing Complete",
+      "lowVolumeWarning": "⚠️ 麥克風音量過低。請大聲說話或檢查麥克風設定。",
+      "audioTooQuiet": "音訊電平過低。請靠近麥克風說話。"
+    },
+    "noSpeech": {
+      "guidance": "未偵測到語音。請大聲說話或靠近麥克風。",
+      "showTips": "顯示提示",
+      "tip1": "• 大聲清晰地說話",
+      "tip2": "• 靠近麥克風（10-20公分）",
+      "tip3": "• 檢查麥克風音量設定",
+      "tip4": "• 確保麥克風未靜音"
     },
     "processing": {
       "stt": "Transcribing speech...",
