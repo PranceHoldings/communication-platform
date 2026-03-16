@@ -16,7 +16,7 @@
  * - Session completion
  */
 
-import { test, expect } from './fixtures/auth.fixture';
+import { test, expect } from './fixtures/session.fixture';
 import { SessionPlayerPage } from './page-objects/session-player.page';
 
 test.describe('Stage 3: Full E2E Tests', () => {
@@ -32,9 +32,9 @@ test.describe('Stage 3: Full E2E Tests', () => {
 
   test('S3-001: Real WebSocket connection and authentication', async ({
     authenticatedPage,
+    testSessionId,
   }) => {
-    // Create a real session (or use test session)
-    const testSessionId = 'real-session-id';
+    // Use real session ID from fixture
     await sessionPlayer.goto(testSessionId);
 
     // Start session
@@ -49,8 +49,7 @@ test.describe('Stage 3: Full E2E Tests', () => {
     expect(isMicRecording).toBe(true);
   });
 
-  test('S3-002: Initial greeting from backend', async ({ authenticatedPage }) => {
-    const testSessionId = 'real-session-id';
+  test('S3-002: Initial greeting from backend', async ({ authenticatedPage, testSessionId }) => {
     await sessionPlayer.goto(testSessionId);
 
     // Start session
@@ -74,8 +73,7 @@ test.describe('Stage 3: Full E2E Tests', () => {
     expect(isTimerVisible).toBe(true);
   });
 
-  test('S3-003: Full conversation cycle with real audio', async ({ authenticatedPage }) => {
-    const testSessionId = 'real-session-id';
+  test('S3-003: Full conversation cycle with real audio', async ({ authenticatedPage, testSessionId }) => {
     await sessionPlayer.goto(testSessionId);
 
     // Start session and wait for greeting
@@ -111,8 +109,7 @@ test.describe('Stage 3: Full E2E Tests', () => {
     await sessionPlayer.waitForProcessingStage('idle', 30000);
   });
 
-  test('S3-004: Silence timer increments in real-time', async ({ authenticatedPage }) => {
-    const testSessionId = 'real-session-id';
+  test('S3-004: Silence timer increments in real-time', async ({ authenticatedPage, testSessionId }) => {
     await sessionPlayer.goto(testSessionId);
 
     // Start session and wait for active state
@@ -136,8 +133,7 @@ test.describe('Stage 3: Full E2E Tests', () => {
     expect(currentTime).toBeGreaterThanOrEqual(initialTime + 2); // At least 2 seconds
   });
 
-  test('S3-005: Manual stop during active session', async ({ authenticatedPage: _authenticatedPage }) => {
-    const testSessionId = 'real-session-id';
+  test('S3-005: Manual stop during active session', async ({ authenticatedPage: _authenticatedPage, testSessionId }) => {
     await sessionPlayer.goto(testSessionId);
 
     // Start session
@@ -157,8 +153,7 @@ test.describe('Stage 3: Full E2E Tests', () => {
     await expect(sessionPlayer.stopButton).toBeDisabled();
   });
 
-  test('S3-006: Session completion and cleanup', async ({ authenticatedPage }) => {
-    const testSessionId = 'real-session-id';
+  test('S3-006: Session completion and cleanup', async ({ authenticatedPage, testSessionId }) => {
     await sessionPlayer.goto(testSessionId);
 
     // Start session
@@ -187,8 +182,7 @@ test.describe('Stage 3: Full E2E Tests', () => {
     expect(duration).not.toBe('0:00');
   });
 
-  test('S3-007: Multiple speech cycles in one session', async ({ authenticatedPage }) => {
-    const testSessionId = 'real-session-id';
+  test('S3-007: Multiple speech cycles in one session', async ({ authenticatedPage, testSessionId }) => {
     await sessionPlayer.goto(testSessionId);
 
     // Start session
@@ -218,8 +212,7 @@ test.describe('Stage 3: Full E2E Tests', () => {
     expect(messageCount).toBeGreaterThanOrEqual(5);
   });
 
-  test('S3-008: Error recovery - continue after error', async ({ authenticatedPage }) => {
-    const testSessionId = 'real-session-id';
+  test('S3-008: Error recovery - continue after error', async ({ authenticatedPage, testSessionId }) => {
     await sessionPlayer.goto(testSessionId);
 
     // Start session
@@ -254,8 +247,7 @@ test.describe('Stage 3: Full E2E Tests', () => {
     await authenticatedPage.waitForTimeout(3000);
   });
 
-  test('S3-009: Silence timer resets after AI response', async ({ authenticatedPage }) => {
-    const testSessionId = 'real-session-id';
+  test('S3-009: Silence timer resets after AI response', async ({ authenticatedPage, testSessionId }) => {
     await sessionPlayer.goto(testSessionId);
 
     // Start session
@@ -282,10 +274,10 @@ test.describe('Stage 3: Full E2E Tests', () => {
 
   test('S3-010: Long session with multiple exchanges (stress test)', async ({
     authenticatedPage,
+    testSessionId,
   }) => {
     test.slow(); // Mark as slow test (3x timeout)
 
-    const testSessionId = 'real-session-id';
     await sessionPlayer.goto(testSessionId);
 
     // Start session

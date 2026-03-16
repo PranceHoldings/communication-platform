@@ -13,7 +13,7 @@
  * - Manual stop during recording
  */
 
-import { test, expect } from './fixtures/auth.fixture';
+import { test, expect } from './fixtures/session.fixture';
 import { SessionPlayerPage } from './page-objects/session-player.page';
 import { WebSocketMock } from './helpers/websocket-mock';
 
@@ -21,14 +21,13 @@ test.describe('Stage 2: Mocked Integration Tests', () => {
   let wsMock: WebSocketMock;
   let sessionPlayer: SessionPlayerPage;
 
-  test.beforeEach(async ({ authenticatedPage }) => {
+  test.beforeEach(async ({ authenticatedPage, testSessionId }) => {
     // Setup WebSocket mock
     wsMock = new WebSocketMock(authenticatedPage);
     await wsMock.setup();
 
-    // Navigate to session player
+    // Navigate to session player with real session ID
     sessionPlayer = new SessionPlayerPage(authenticatedPage);
-    const testSessionId = 'test-session-id';
     await sessionPlayer.goto(testSessionId);
   });
 
