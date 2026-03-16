@@ -193,8 +193,23 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           ];
         });
 
-        // STT complete, move to AI processing stage
+        // STT complete, check if session was stopped by user
         if (message.speaker === 'USER') {
+          if (pendingSessionEnd) {
+            // セッション停止後の文字起こし - AI処理はスキップ
+            console.log('[SessionPlayer] Transcript received after session stop, sending session_end');
+            setIsProcessing(false);
+            setProcessingStage('idle');
+            setProcessingMessage('');
+
+            // Send session_end immediately
+            if (isConnectedRef.current && endSessionRef.current) {
+              endSessionRef.current();
+            }
+            return;
+          }
+
+          // 通常のフロー: AI処理に進む
           setProcessingStage('ai');
           setProcessingMessage('');
           // Reset isProcessing flag - speech_end processing is complete
@@ -345,6 +360,16 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleAudioResponse = useCallback(
     (message: AudioResponseMessage) => {
+      // セッション停止後は音声再生をスキップ（UX改善）
+      if (pendingSessionEnd) {
+        console.log('[SessionPlayer] Session stopped by user, skipping AI audio response');
+        // セッション終了処理を続行
+        if (isConnectedRef.current && endSessionRef.current) {
+          endSessionRef.current();
+        }
+        return;
+      }
+
       // AI音声レスポンスを再生
       try {
         let audioUrl: string;
@@ -937,8 +962,24 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     scenario.silencePromptTimeout ?? orgSettings?.silencePromptTimeout ?? DEFAULT_ORG_SETTINGS.silencePromptTimeout;
 
   // Silence Timer統合
+  const silenceTimerEnabled = status === 'ACTIVE' && initialGreetingCompleted && effectiveEnableSilencePrompt;
+
+  // Debug log for silence timer conditions
+  useEffect(() => {
+    console.log('[SessionPlayer] Silence Timer Conditions:', {
+      status,
+      initialGreetingCompleted,
+      effectiveEnableSilencePrompt,
+      enabled: silenceTimerEnabled,
+      isPlayingAudio,
+      isMicRecording,
+      isProcessing,
+      effectiveSilencePromptTimeout,
+    });
+  }, [status, initialGreetingCompleted, effectiveEnableSilencePrompt, silenceTimerEnabled, isPlayingAudio, isMicRecording, isProcessing, effectiveSilencePromptTimeout]);
+
   const { elapsedTime: silenceElapsedTime, resetTimer: _resetSilenceTimer } = useSilenceTimer({
-    enabled: status === 'ACTIVE' && initialGreetingCompleted && effectiveEnableSilencePrompt,
+    enabled: silenceTimerEnabled,
     timeoutSeconds: effectiveSilencePromptTimeout,
     isAIPlaying: isPlayingAudio,
     isUserSpeaking: isMicRecording,
