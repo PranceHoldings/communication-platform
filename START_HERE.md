@@ -6,10 +6,10 @@
 **Phase 1.6進捗:** 100%完了（i18n修正・Prisma Client完全解決）✅
 **Phase 2進捗:** 100%完了（録画・解析・レポート）✅
 **Phase 2.5進捗:** 100%完了（ゲストユーザー機能）✅
-**Phase 3.1進捗:** 75%完了（カスタムドメイン実装 - CDKコード完成、デプロイ待ち）🟡
+**Phase 3.1進捗:** 80%完了（カスタムドメイン実装完了 - デプロイ待ち）🟡
 **E2Eテスト (Playwright):** Stage 0: 5/5 (100%), Stage 1: 10/10 (100%) ✅
-**最新コミット:** (未コミット - Phase 3.1実装中)
-**ステータス:** 🚀 Phase 3.1 カスタムドメイン実装完了（デプロイ前確認中）
+**最新コミット:** f3490d6 - feat(phase3.1): implement custom domains (Amplify + API Gateway) ✅
+**ステータス:** 🚀 Phase 3.1 実装完了（デプロイ前準備中）
 
 ---
 
@@ -209,10 +209,17 @@ npm run deploy:stack Prance-dev-Database
 
 ### 主要URL
 
+**現在（AWS直接URL）:**
 - **開発サーバー:** http://localhost:3000
 - **REST API:** https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1
 - **WebSocket API:** wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
-- **AWS Region:** us-east-1
+
+**Phase 3.1デプロイ後（カスタムドメイン）:**
+- **Frontend:** https://dev.app.prance.jp (AWS Amplify Hosting)
+- **REST API:** https://api.dev.app.prance.jp
+- **WebSocket API:** wss://ws.dev.app.prance.jp/dev
+
+**AWS Region:** us-east-1
 
 ### 認証情報
 
@@ -224,7 +231,230 @@ Role: SUPER_ADMIN
 
 ---
 
-## 🎯 今回のセッションで完了した作業 (Day 20 - 2026-03-15)
+## 🎯 次回セッションの優先タスク（Phase 3.1デプロイ）
+
+**優先度:** 🔴 最高
+**推定時間:** 30-60分（初回セットアップ + デプロイ）
+
+### **必須: Phase 3.1 カスタムドメイン デプロイ**
+
+**目標:** Vercelから AWS Amplify Hostingへ移行、カスタムドメイン設定
+
+#### Step 1: GitHub Personal Access Token作成（5分）
+
+```bash
+# GitHub Settings → Developer settings → Personal access tokens
+# "Generate new token (classic)"をクリック
+# 権限:
+#   - repo (Full control of private repositories)
+#   - admin:repo_hook (Full control of repository hooks)
+# トークンをコピー（一度しか表示されない）
+```
+
+#### Step 2: 環境変数設定（2分）
+
+```bash
+# infrastructure/.env に追加
+cd infrastructure
+cat >> .env <<EOF
+# GitHub Configuration (for Amplify Hosting)
+GITHUB_REPO_URL=https://github.com/YOUR_ORG/prance-communication-platform
+GITHUB_ACCESS_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+EOF
+```
+
+**⚠️ 注意:** `.env` ファイルは `.gitignore` で除外されています。絶対にコミットしないでください。
+
+#### Step 3: Vercel DNSレコード削除（5分）
+
+```bash
+# Route 53 → Hosted zones → prance.jp → dev.app.prance.jp
+# 現在: CNAME → vercel-dns-016.com（手動設定）
+# 削除する（AmplifyがAレコードを管理）
+
+# または、CLIで:
+cat > /tmp/delete-vercel-record.json <<EOF
+{
+  "Changes": [
+    {
+      "Action": "DELETE",
+      "ResourceRecordSet": {
+        "Name": "dev.app.prance.jp",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [{"Value": "1154c65973607637.vercel-dns-016.com"}]
+      }
+    }
+  ]
+}
+EOF
+
+aws route53 change-resource-record-sets \
+  --hosted-zone-id Z061444035YYGCPJ5IJT0 \
+  --change-batch file:///tmp/delete-vercel-record.json
+```
+
+#### Step 4: Infrastructure デプロイ（20分）
+
+```bash
+cd infrastructure
+
+# 1. API Gateway Domain Stack（5-10分）
+npm run cdk -- deploy Prance-dev-ApiDomains --require-approval never
+
+# 2. Amplify Stack（10-15分）
+npm run cdk -- deploy Prance-dev-Amplify --require-approval never
+
+# 3. Storage Stack再デプロイ（5分）
+npm run cdk -- deploy Prance-dev-Storage --require-approval never
+```
+
+#### Step 5: Amplify初回ビルドトリガー（10-15分）
+
+```bash
+# AWS Console → Amplify → prance-web-dev → "Redeploy this version"
+# または、CLIで:
+
+APP_ID=$(aws cloudformation describe-stacks \
+  --stack-name Prance-dev-Amplify \
+  --query 'Stacks[0].Outputs[?OutputKey==`AppId`].OutputValue' \
+  --output text)
+
+aws amplify start-job \
+  --app-id $APP_ID \
+  --branch-name dev \
+  --job-type RELEASE
+```
+
+#### Step 6: DNS伝播確認（5-30分）
+
+```bash
+# Frontend
+dig dev.app.prance.jp +short
+curl -I https://dev.app.prance.jp
+
+# API
+dig api.dev.app.prance.jp +short
+curl https://api.dev.app.prance.jp/health
+
+# WebSocket
+dig ws.dev.app.prance.jp +short
+```
+
+#### Step 7: Frontend環境変数更新
+
+```bash
+# apps/web/.env.local
+cat > apps/web/.env.local <<EOF
+NEXT_PUBLIC_API_URL=https://api.dev.app.prance.jp/api/v1
+NEXT_PUBLIC_WS_URL=wss://ws.dev.app.prance.jp/dev
+NEXT_PUBLIC_CLOUDFRONT_DOMAIN=d3mx0sug5s3a6x.cloudfront.net
+EOF
+```
+
+#### Step 8: E2Eテスト実行
+
+```bash
+# Stage 1テスト（Basic UI）
+cd apps/web
+npx playwright test stage1-basic-ui.spec.ts
+```
+
+### 📚 詳細ドキュメント
+
+**完全な手順書:** `docs/09-progress/PHASE_3_1_DEPLOYMENT_GUIDE.md`
+**実装サマリー:** `docs/09-progress/PHASE_3_1_IMPLEMENTATION_SUMMARY.md`
+**インフラ状況:** `docs/09-progress/PRODUCTION_READINESS_STATUS.md`
+
+---
+
+## 🎯 今回のセッションで完了した作業 (Day 22 - 2026-03-16)
+
+### **Day 22: Phase 3.1 カスタムドメイン実装** ✅
+
+**セッション時刻:** 2026-03-16 23:30 - 2026-03-17 00:30 JST（60分）
+**Phase:** Phase 3.1 - Production Environment Preparation
+**進捗:** 80%完了（実装完了、デプロイ待ち）
+
+#### 背景
+
+**発見された問題:**
+- フロントエンド（Next.js）が Vercelにホストされている（Route 53の手動CNAME設定）
+- API GatewayがAWS直接URL（醜いURL）
+- CloudFrontが `dev.app.prance.jp` にマッピングされているが未使用
+
+**ユーザー指示:**
+「Vercelが使われている設定があったら誤りです。修正してAWSのサービスを使うようにして」
+
+#### 実装内容 ✅
+
+**1. 新規CDKスタック（2つ）**
+
+**AmplifyStack** (`infrastructure/lib/amplify-stack.ts` - 221行)
+- AWS Amplify HostingでNext.js SSRアプリをホスト
+- カスタムドメイン: `dev.app.prance.jp`
+- Monorepo対応（`appRoot: apps/web`）
+- GitHub連携（自動ビルド・デプロイ）
+- 環境変数統合（API/WS URL）
+
+**ApiGatewayDomainStack** (`infrastructure/lib/api-gateway-domain-stack.ts` - 120行)
+- REST API: `api.dev.app.prance.jp`
+- WebSocket API: `ws.dev.app.prance.jp`
+- Route 53 Aレコード自動作成
+- ACM証明書統合
+
+**2. 既存スタック修正（3つ）**
+
+- **ApiLambdaStack**: WebSocket Stageをexport（domain mappingに必要）
+- **StorageStack**: CloudFrontカスタムドメイン削除（S3アセット配信専用に変更）
+- **app.ts**: 新スタック統合、依存関係設定
+
+**3. ドキュメント作成（3つ）**
+
+- `PHASE_3_1_DEPLOYMENT_GUIDE.md` (485行) - 完全デプロイ手順書
+- `PHASE_3_1_IMPLEMENTATION_SUMMARY.md` (370行) - 実装サマリー
+- `PRODUCTION_READINESS_STATUS.md` (280行) - インフラ状況分析
+
+#### URL構造変更
+
+| Component | Before | After |
+|-----------|--------|-------|
+| Frontend | Vercel (手動) | **AWS Amplify** (`dev.app.prance.jp`) |
+| REST API | `ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev` | **`api.dev.app.prance.jp`** |
+| WebSocket | `bu179h4agh.execute-api.us-east-1.amazonaws.com/dev` | **`ws.dev.app.prance.jp`** |
+| CloudFront | dev.app.prance.jp（未使用） | S3アセット配信専用 |
+
+#### コミット ✅
+
+**Commit:** `f3490d6` - feat(phase3.1): implement custom domains (Amplify + API Gateway)
+
+**変更ファイル:**
+- 新規: 2 CDKスタック、3ドキュメント
+- 変更: 3 CDKスタック、START_HERE.md
+- 合計: +1000行
+
+**TypeScript:** ✅ コンパイルエラーなし
+**Pre-commit hooks:** ✅ 全チェック通過
+
+#### 次のステップ
+
+**Phase 3.1 デプロイ（次回セッション）:**
+1. GitHub Personal Access Token作成
+2. 環境変数設定（infrastructure/.env）
+3. Vercel DNSレコード削除
+4. CDKデプロイ（3スタック）
+5. DNS伝播確認
+6. E2Eテスト実行
+
+**推定時間:** 30-60分（初回セットアップ + デプロイ）
+
+---
+
+## 🎯 過去のセッション記録
+
+### **Day 21: Playwright E2Eテスト実装** ✅
+
+(前回のセッション内容 - 省略)
 
 ### **Day 20: 音声無音トリミング実装（根本解決）** ✅
 
