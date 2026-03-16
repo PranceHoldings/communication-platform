@@ -78,19 +78,32 @@ export function useSilenceTimer(options: UseSilenceTimerOptions): UseSilenceTime
    * - 停止条件（AI再生中/ユーザー発話中/処理中）の場合は開始しない
    */
   const startTimer = useCallback(() => {
+    console.log('[useSilenceTimer] startTimer() called:', {
+      enabled,
+      isAIPlaying,
+      isUserSpeaking,
+      isProcessing,
+      graceCompleted,
+      hasTimerRef: !!timerRef.current,
+    });
+
     // 停止条件をチェック
     if (!enabled || isAIPlaying || isUserSpeaking || isProcessing) {
+      console.log('[useSilenceTimer] ❌ Cannot start: blocking conditions present');
       return;
     }
 
     // 既にタイマーが動作中の場合は何もしない
     if (timerRef.current) {
+      console.log('[useSilenceTimer] ⚠️ Timer already running');
       return;
     }
 
     // 猶予期間が完了していない場合は猶予期間を開始
     if (!graceCompleted) {
+      console.log('[useSilenceTimer] ⏳ Starting grace period (1 second)');
       graceTimerRef.current = setTimeout(() => {
+        console.log('[useSilenceTimer] ✅ Grace period completed');
         setGraceCompleted(true);
       }, GRACE_PERIOD_MS);
       return;
@@ -105,13 +118,13 @@ export function useSilenceTimer(options: UseSilenceTimerOptions): UseSilenceTime
 
       // タイムアウト到達
       if (elapsed >= timeoutSeconds) {
-        console.log('[useSilenceTimer] Timeout reached:', elapsed, 'seconds');
+        console.log('[useSilenceTimer] ⏰ Timeout reached:', elapsed, 'seconds');
         onTimeout();
         resetTimer();
       }
     }, 1000);
 
-    console.log('[useSilenceTimer] Timer started');
+    console.log('[useSilenceTimer] ✅ Timer started successfully');
   }, [
     enabled,
     isAIPlaying,
@@ -135,7 +148,7 @@ export function useSilenceTimer(options: UseSilenceTimerOptions): UseSilenceTime
     // 停止条件に該当する場合はリセット
     if (!enabled || isAIPlaying || isUserSpeaking || isProcessing) {
       if (timerRef.current || graceTimerRef.current) {
-        console.log('[useSilenceTimer] Stopping timer:', {
+        console.log('[useSilenceTimer] 🛑 Stopping timer:', {
           enabled,
           isAIPlaying,
           isUserSpeaking,
@@ -148,7 +161,13 @@ export function useSilenceTimer(options: UseSilenceTimerOptions): UseSilenceTime
 
     // 停止条件に該当せず、タイマー未開始の場合は開始
     if (!timerRef.current && !graceTimerRef.current) {
-      console.log('[useSilenceTimer] Starting timer');
+      console.log('[useSilenceTimer] ▶️ Attempting to start timer (checking grace period):', {
+        graceCompleted,
+        enabled,
+        isAIPlaying,
+        isUserSpeaking,
+        isProcessing,
+      });
       startTimer();
     }
   }, [enabled, isAIPlaying, isUserSpeaking, isProcessing, startTimer, resetTimer]);

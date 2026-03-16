@@ -218,7 +218,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             break;
 
           case 'error':
-            console.error('WebSocket error message:', message);
+            // Error handling is done in SessionPlayer handleError callback
             onErrorRef.current?.(message as unknown as ErrorMessage);
             setError((message as unknown as ErrorMessage).message);
             break;

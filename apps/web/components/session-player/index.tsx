@@ -521,9 +521,6 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleError = useCallback(
     (message: ErrorMessage) => {
-      // エラー処理
-      console.error('WebSocket error:', message);
-
       // Filter non-critical errors (user silence is normal during AI responses)
       const isNonCritical =
         message.code === 'NO_AUDIO_DATA' ||
@@ -540,6 +537,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         console.log('[SessionPlayer] Processing flags reset, silence timer can resume');
         return; // Don't show toast for expected silence
       }
+
+      // Critical error - log and show to user
+      console.error('[SessionPlayer] WebSocket critical error:', message);
 
       // Clear processing timeout
       if (processingTimeoutRef.current) {
@@ -911,7 +911,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onRecordingComplete: handleRecordingComplete, // Still keep for complete recording
     onError: handleRecordingError,
     silenceThreshold: scenario.silenceThreshold ?? 0.12, // Use scenario setting or default 0.12 (raised to avoid ambient noise ~10%)
-    silenceDuration: scenario.minSilenceDuration ?? 500, // Use scenario setting or default 500ms
+    silenceDuration: scenario.minSilenceDuration ?? 1000, // Use scenario setting or default 1000ms (increased from 500ms to avoid cutting off mid-speech)
     isAiRespondingRef: isPlayingAudioRef, // Ref for real-time AI audio state (fixes closure issue)
   });
 
@@ -935,7 +935,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     silenceTimeout: 10,
     enableSilencePrompt: true,
     silenceThreshold: 0.12,
-    minSilenceDuration: 500,
+    minSilenceDuration: 1200, // ✅ FIXED: 500ms → 1200ms to avoid cutting off mid-speech (words have 200-500ms gaps)
     silencePromptTimeout: 15,
   };
 
@@ -964,17 +964,20 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   // Silence Timer統合
   const silenceTimerEnabled = status === 'ACTIVE' && initialGreetingCompleted && effectiveEnableSilencePrompt;
 
-  // Debug log for silence timer conditions
+  // Debug log for silence timer conditions (DETAILED)
   useEffect(() => {
-    console.log('[SessionPlayer] Silence Timer Conditions:', {
+    console.log('[SessionPlayer] 🔍 Silence Timer Conditions (DETAILED):', {
       status,
       initialGreetingCompleted,
       effectiveEnableSilencePrompt,
       enabled: silenceTimerEnabled,
-      isPlayingAudio,
-      isMicRecording,
-      isProcessing,
+      'BLOCKING CONDITIONS': {
+        isPlayingAudio,
+        isMicRecording, // ← このフラグが true のままだとタイマーが動かない
+        isProcessing,
+      },
       effectiveSilencePromptTimeout,
+      'TIMER SHOULD START': silenceTimerEnabled && !isPlayingAudio && !isMicRecording && !isProcessing,
     });
   }, [status, initialGreetingCompleted, effectiveEnableSilencePrompt, silenceTimerEnabled, isPlayingAudio, isMicRecording, isProcessing, effectiveSilencePromptTimeout]);
 
@@ -982,7 +985,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     enabled: silenceTimerEnabled,
     timeoutSeconds: effectiveSilencePromptTimeout,
     isAIPlaying: isPlayingAudio,
-    isUserSpeaking: isMicRecording,
+    isUserSpeaking: false, // ❌ FIXED: isMicRecording は常に true（マイクは常に録音中）
+                            // ユーザーが話しているかは useAudioRecorder が自動検出して speech_end 送信
+                            // 沈黙タイマーは AI再生中と処理中のみ停止すればよい
     isProcessing: isProcessing,
     onTimeout: handleSilenceTimeout,
   });
