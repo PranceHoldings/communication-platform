@@ -140,6 +140,7 @@ function SortableQuestionItem({
         {/* Actions */}
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => onEdit(question.id)}
             disabled={disabled}
             className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
@@ -155,6 +156,7 @@ function SortableQuestionItem({
             </svg>
           </button>
           <button
+            type="button"
             onClick={() => onDelete(question.id)}
             disabled={disabled}
             className="p-1.5 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
