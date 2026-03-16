@@ -47,7 +47,7 @@ export default function LanguageSwitcher() {
   const languages = locales.map(code => ({
     code,
     flag: languageFlags[code] || '🌐',
-    nativeName: t(`languagesNative.${code}`),
+    nativeName: t(`common.languagesNative.${code}`),
   }));
 
   return (
