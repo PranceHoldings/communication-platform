@@ -13,6 +13,8 @@ import { ApiLambdaStack } from '../lib/api-lambda-stack';
 import { DnsStack } from '../lib/dns-stack';
 import { CertificateStack } from '../lib/certificate-stack';
 import { MonitoringStack } from '../lib/monitoring-stack';
+import { AmplifyStack } from '../lib/amplify-stack';
+import { ApiGatewayDomainStack } from '../lib/api-gateway-domain-stack';
 import { getConfig } from '../lib/config';
 
 // Load environment variables from .env file
@@ -130,6 +132,29 @@ const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   description: 'Prance Platform - CloudWatch Monitoring and Alarms (Phase 1.5)',
 });
 
+// API Gateway Custom Domains Stack (Phase 3.1)
+const apiGatewayDomainStack = new ApiGatewayDomainStack(app, `${stackPrefix}-ApiDomains`, {
+  env,
+  config,
+  certificate: certificateStack.certificate,
+  hostedZone: dnsStack.hostedZone,
+  restApi: apiLambdaStack.restApi,
+  webSocketApi: apiLambdaStack.webSocketApi,
+  webSocketStage: apiLambdaStack.webSocketStage,
+  description: 'Prance Platform - API Gateway Custom Domains',
+  crossRegionReferences: true,
+});
+
+// Amplify Hosting Stack (Phase 3.1)
+const amplifyStack = new AmplifyStack(app, `${stackPrefix}-Amplify`, {
+  env,
+  config,
+  certificate: certificateStack.certificate,
+  hostedZone: dnsStack.hostedZone,
+  description: 'Prance Platform - Amplify Hosting (Next.js SSR)',
+  crossRegionReferences: true,
+});
+
 // スタック依存関係の設定（デプロイ順序を保証）
 certificateStack.addDependency(dnsStack);
 storageStack.addDependency(certificateStack);
@@ -140,6 +165,10 @@ apiLambdaStack.addDependency(databaseStack);
 apiLambdaStack.addDependency(dynamoDBStack);
 apiLambdaStack.addDependency(storageStack);
 monitoringStack.addDependency(apiLambdaStack);
+apiGatewayDomainStack.addDependency(apiLambdaStack);
+apiGatewayDomainStack.addDependency(certificateStack);
+amplifyStack.addDependency(certificateStack);
+amplifyStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要
 
 // タグ付け
 cdk.Tags.of(app).add('Project', 'Prance');

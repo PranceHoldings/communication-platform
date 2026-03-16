@@ -28,6 +28,7 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
 export class ApiLambdaStack extends cdk.Stack {
   public readonly restApi: apigateway.RestApi;
   public readonly webSocketApi: apigatewayv2.CfnApi;
+  public readonly webSocketStage: apigatewayv2.CfnStage;
   public readonly healthCheckFunction: nodejs.NodejsFunction;
   public readonly registerFunction: nodejs.NodejsFunction;
   public readonly loginFunction: nodejs.NodejsFunction;
@@ -2023,7 +2024,7 @@ export class ApiLambdaStack extends cdk.Stack {
     wsDeployment.addDependency(defaultRoute);
 
     // WebSocket Stage
-    const _wsStage = new apigatewayv2.CfnStage(this, 'WebSocketStage', {
+    this.webSocketStage = new apigatewayv2.CfnStage(this, 'WebSocketStage', {
       apiId: this.webSocketApi.ref,
       stageName: props.environment,
       deploymentId: wsDeployment.ref,

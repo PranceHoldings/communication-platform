@@ -143,23 +143,12 @@ export class StorageStack extends cdk.Stack {
           }),
         },
       },
-      // カスタムドメインとSSL証明書の設定
-      domainNames: certificate && hostedZone ? [config.domain.fullDomain] : undefined,
-      certificate: certificate,
+      // Note: カスタムドメインは設定しない（S3アセット配信専用）
+      // フロントエンドは Amplify Hosting で dev.app.prance.jp を使用
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100, // 北米・ヨーロッパのみ (コスト削減)
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
-      comment: `Prance Platform CDN - ${config.environment}`,
+      comment: `Prance Platform CDN - ${config.environment} (S3 Assets Only)`,
     });
-
-    // Route 53 Alias レコード作成（証明書とホストゾーンがある場合）
-    if (certificate && hostedZone) {
-      new route53.ARecord(this, 'CDNAliasRecord', {
-        zone: hostedZone,
-        recordName: config.domain.fullDomain,
-        target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(this.distribution)),
-        comment: `CloudFront alias for ${config.environment} environment`,
-      });
-    }
 
     // Outputs
     new cdk.CfnOutput(this, 'RecordingsBucketName', {
@@ -185,18 +174,9 @@ export class StorageStack extends cdk.Stack {
       description: 'CloudFront Distribution ID',
     });
 
-    // カスタムドメインの出力
-    if (certificate && hostedZone) {
-      new cdk.CfnOutput(this, 'CustomDomainName', {
-        value: config.domain.fullDomain,
-        description: 'Custom Domain Name (カスタムドメイン)',
-        exportName: `${config.environment}-CustomDomainName`,
-      });
-
-      new cdk.CfnOutput(this, 'ApplicationURL', {
-        value: `https://${config.domain.fullDomain}`,
-        description: 'Application URL',
-      });
-    }
+    new cdk.CfnOutput(this, 'CDNUsageNote', {
+      value: 'CloudFront CDN is used for S3 assets only. Frontend is hosted on Amplify.',
+      description: 'CloudFront Usage Note',
+    });
   }
 }
