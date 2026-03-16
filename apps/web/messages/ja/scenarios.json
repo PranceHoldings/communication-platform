@@ -125,6 +125,10 @@
     "required": "必須",
     "hints": "ヒント",
     "confirmDelete": "この質問を削除してもよろしいですか？",
+    "deleteDialog": {
+      "title": "質問を削除",
+      "description": "この質問を削除してもよろしいですか？この操作は取り消すことができません。"
+    },
     "types": {
       "open": "オープン質問",
       "follow_up": "フォローアップ質問",

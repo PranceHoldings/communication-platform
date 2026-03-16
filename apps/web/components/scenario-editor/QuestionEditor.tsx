@@ -19,6 +19,16 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export interface Question {
   id: string;
@@ -329,6 +339,7 @@ export function QuestionEditor({ questions, onChange, disabled = false }: Questi
   const { t } = useI18n();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -378,8 +389,13 @@ export function QuestionEditor({ questions, onChange, disabled = false }: Questi
   };
 
   const handleDelete = (id: string) => {
-    if (confirm(t('scenarios.questions.confirmDelete'))) {
-      onChange(questions.filter(q => q.id !== id).map((q, index) => ({ ...q, order: index })));
+    setDeletingId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deletingId) {
+      onChange(questions.filter(q => q.id !== deletingId).map((q, index) => ({ ...q, order: index })));
+      setDeletingId(null);
     }
   };
 
@@ -477,6 +493,27 @@ export function QuestionEditor({ questions, onChange, disabled = false }: Questi
           {t('scenarios.questions.dragInfo')}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('scenarios.questions.deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('scenarios.questions.deleteDialog.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
