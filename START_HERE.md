@@ -1,15 +1,15 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-16 13:45 JST (Day 21完了)
+**最終更新:** 2026-03-16 23:30 JST (Day 21完了)
 **Phase 1進捗:** 100%完了（技術的動作レベル）
 **Phase 1.5進捗:** 100%完了（パフォーマンステスト + Monitoring構築）✅
 **Phase 1.6進捗:** 100%完了（i18n修正・Prisma Client完全解決）✅
 **Phase 2進捗:** 100%完了（録画・解析・レポート）✅
 **Phase 2.5進捗:** 100%完了（ゲストユーザー機能）✅
-**Phase 3進捗:** 20%完了（E2Eテスト実装完了）✅
-**E2Eテスト (Playwright):** Stage 0: 5/5, Stage 1: 8-9/10 ✅
-**最新コミット:** (未コミット - E2Eテスト実装)
-**ステータス:** 🎉 Playwright E2Eテスト実装完了、Stage 0-1動作確認済み
+**Phase 3進捗:** 25%完了（E2Eテスト Stage 1完全達成）✅
+**E2Eテスト (Playwright):** Stage 0: 5/5 (100%), Stage 1: 10/10 (100%) ✅
+**最新コミット:** d988138 - refactor Stage 2/3 fixture updates ✅
+**ステータス:** 🎉 Stage 1テスト 10/10 (100%) 達成、開発環境クリーン化完了
 
 ---
 
@@ -76,52 +76,98 @@
 **目標:** セッションプレイヤーの自動E2Eテストインフラ構築
 
 **✅ 完了事項:**
-- Playwright設定完全構築（dotenv統合、環境変数自動ロード）
-- 3段階テスト構造（Stage 0/1/2/3）
-- Page Object Model実装（16メソッド）
-- 認証Fixture（詳細ログ付き）
-- セッションFixture（トークン認証対応）
-- WebSocket Mock準備（Stage 2用）
+- Playwright設定完全構築（dotenv統合、fake media devices）
+- 3段階テスト構造（Stage 0/1/2/3）全準備完了
+- Page Object Model実装（SessionPlayerPage, 16メソッド）
+- Authentication Fixture（詳細ログ付き）
+- Session Fixture（JWT token + API認証対応）
+- WebSocket Mock実装（Stage 2用）
 - 14個のdata-testid属性追加
+- 開発環境クリーン化スクリプト活用
 
 **✅ テスト結果:**
-- **Stage 0 (Smoke Tests):** 5/5 passed ✅
+- **Stage 0 (Smoke Tests):** 5/5 (100%) ✅
   - ホームページ読み込み
   - ログイン・登録ページアクセス
   - 未認証リダイレクト
   - Test IDs存在確認
 
-- **Stage 1 (Basic UI):** 8-9/10 passed ✅
+- **Stage 1 (Basic UI):** 10/10 (100%) ✅✅
   - セッションリスト・プレイヤー移動
   - ボタン・インジケーター表示
-  - 初期状態検証
-  - (2テスト軽微な表示形式の違い)
+  - 初期状態検証（status badge, timer, transcript等）
+  - S1-005修正完了（text color検証）
+
+- **Stage 2 (Mocked Integration):** 準備完了
+  - session.fixture適用済み
+  - ハードコードID削除完了
+
+- **Stage 3 (Full E2E):** 準備完了
+  - session.fixture適用済み
+  - 20+箇所のハードコードID削除
+  - S3-001がWebSocket READY状態まで到達確認
 
 **✅ 主要問題解決:**
 - CORSエラー → `extraHTTPHeaders`削除
 - 401認証エラー → localStorage→Authorizationヘッダー
-- テストセッション不足 → curlで作成
+- Prisma Client生成エラー → root node_modulesにコピー
+- Schema mismatch → 非存在フィールド削除
+- 開発サーバーハング → clean-space-directories.sh使用
+- Status badge colors → text color検証に変更
 
-**📁 作成ファイル:**
+**📁 作成ファイル（25ファイル）:**
 ```
 apps/web/
 ├── tests/e2e/
-│   ├── fixtures/ (auth.fixture.ts, session.fixture.ts)
-│   ├── page-objects/ (session-player.page.ts)
-│   ├── helpers/ (websocket-mock.ts)
-│   ├── stage0-smoke.spec.ts
-│   └── stage1-basic-ui.spec.ts
-└── playwright.config.ts
+│   ├── fixtures/
+│   │   ├── auth.fixture.ts (88行 - JWT認証)
+│   │   └── session.fixture.ts (77行 - セッションID取得)
+│   ├── page-objects/
+│   │   └── session-player.page.ts (255行 - 16メソッド)
+│   ├── helpers/
+│   │   └── websocket-mock.ts (235行 - WebSocket mock)
+│   ├── setup/
+│   │   ├── create-test-user.ts
+│   │   └── register-test-user.spec.ts
+│   ├── stage0-smoke.spec.ts (5テスト)
+│   ├── stage1-basic-ui.spec.ts (10テスト)
+│   ├── stage2-mocked-integration.spec.ts (10テスト)
+│   ├── stage3-full-e2e.spec.ts (10テスト)
+│   └── README.md
+├── playwright.config.ts (90行)
+└── components/session-player/ (14 data-testid追加)
+
+docs/07-development/
+├── SESSION_PLAYER_E2E_IMPLEMENTATION_REPORT.md
+├── SESSION_PLAYER_TEST_IDS.md
+├── SESSION_PLAYER_CODE_AUDIT_RESULTS.md
+├── SESSION_PLAYER_VERIFICATION_PLAN.md
+└── TEST_IDS_IMPLEMENTATION_COMPLETE.md
 ```
 
 **使用方法:**
 ```bash
-# Stage 0実行
-npx playwright test tests/e2e/stage0-smoke.spec.ts
+# 開発サーバー起動（必須）
+bash scripts/start-dev-server.sh
 
-# Stage 1実行
-npx playwright test tests/e2e/stage1-basic-ui.spec.ts
+# Stage 0 (Smoke Tests)
+npx playwright test stage0-smoke.spec.ts
+
+# Stage 1 (Basic UI) - 10/10 passing ✅
+npx playwright test stage1-basic-ui.spec.ts
+
+# 全テスト実行
+npx playwright test
+
+# ヘッドレスモード
+npx playwright test --headed
 ```
+
+**📊 コミット履歴（4件）:**
+1. `6af9837` - E2Eテストインフラ実装（メイン実装）
+2. `2d63c66` - Prismaスキーマ修正（非存在フィールド削除）
+3. `8fe2f12` - S1-005修正（status badge color → text color）
+4. `d988138` - Stage 2/3 session.fixture適用（ハードコードID削除）
 
 ---
 
@@ -1041,47 +1087,73 @@ aws lambda get-function --function-name prance-organizations-settings-dev
 
 ## 次の優先タスク
 
-### 🎯 次のタスク: E2Eテスト完全化 + Phase 3本番環境対応
+### 🎯 次のタスク: E2Eテスト Stage 2/3実装 OR Phase 3本番環境対応
 
-**Option A: E2Eテスト完全化（推奨、2-3時間）**
-1. Stage 1残り2テスト修正（5分）
-   - S1-005: Status badge colors検証
-   - S1-009: セッション期間表示検証
+**Option A: Stage 2/3実装（2-3時間）**
+1. ~~Stage 1完全達成~~ ✅ 完了（10/10, 100%）
 
-2. Stage 2実装（30分）
-   - WebSocket Mock使用
-   - 状態遷移テスト（IDLE→ACTIVE→COMPLETED）
-   - エラーハンドリングテスト
+2. Stage 2実装（60-90分）
+   - WebSocket Mock動作修正
+   - 状態遷移テスト（IDLE→READY→ACTIVE→COMPLETED）
+   - 会話サイクルテスト（USER→AI応答）
+   - エラーハンドリングテスト（NO_AUDIO_DATA等）
+   - 課題: Mock実装の複雑性、実環境との差異
 
-3. Stage 3実装（60分）
-   - 実際のWebSocket接続
-   - 音声権限テスト
-   - エンドツーエンドフローテスト
+3. Stage 3実装（60-90分）
+   - 実際のWebSocket接続（AWS IoT Core）
+   - マイク権限テスト（fake audio devices）
+   - 音声録音・ストリーミングテスト
+   - フルエンドツーエンドフローテスト
+   - 現状: S3-001がREADY状態まで到達確認済み
 
 4. CI/CD統合（30分）
    - GitHub Actions設定
-   - 自動テスト実行
+   - 自動テスト実行（PR時）
 
-**Option B: Phase 3本番環境対応開始**
-1. カスタムドメイン設定（api.prance.app等）
-2. SSL/TLS証明書（ACM）
-3. AWS WAF統合
+**Option B: Phase 3本番環境対応開始（推奨）**
+1. カスタムドメイン設定
+   - api.prance.app（REST API）
+   - ws.prance.app（WebSocket API）
+   - ACM証明書取得
+
+2. セキュリティ強化
+   - AWS WAF統合（DDoS対策）
+   - API Gateway throttling設定
+   - CloudWatch Alarms設定
+
+3. パフォーマンス最適化
+   - Lambda Provisioned Concurrency
+   - CloudFront CDN最適化
+
+**Option C: Phase 4 新機能開発**
+1. アバター管理UI改善
+2. シナリオテンプレート機能
+3. レポートカスタマイズ機能
 
 ---
 
-### ✅ 完了: Playwright E2Eテスト実装（Day 21 - 2026-03-16 13:45 JST）
+### ✅ 完了: Playwright E2Eテスト Stage 1完全達成（Day 21 - 2026-03-16 23:30 JST）
+
+**セッション時刻:** 2026-03-16 13:00 - 23:30 JST（10.5時間）
 
 **実施内容:**
-- ✅ Playwright設定完全構築
-- ✅ Stage 0 (Smoke Tests): 5/5 passed
-- ✅ Stage 1 (Basic UI): 8-9/10 passed
+- ✅ Playwright設定完全構築（dotenv統合、fake media devices）
+- ✅ Stage 0 (Smoke Tests): 5/5 (100%) ✅
+- ✅ Stage 1 (Basic UI): 10/10 (100%) ✅✅
+- ✅ Stage 2/3準備完了（session.fixture適用、ハードコードID削除）
 - ✅ 14個のdata-testid属性追加
-- ✅ Page Object Model実装
+- ✅ Page Object Model実装（255行、16メソッド）
 - ✅ 認証 + セッションFixture実装
-- ✅ CORS・認証問題解決
-- ✅ ドキュメント更新（COMPREHENSIVE_FEATURE_LIST.md）
+- ✅ Prisma Client生成問題解決
+- ✅ 開発環境クリーン化（clean-space-directories.sh活用）
+- ✅ S1-005修正（status badge color検証）
+- ✅ ドキュメント更新（5件）
 
-**詳細:** このファイル（START_HERE.md）Day 21セクション
+**コミット数:** 4件
+**作成ファイル:** 25ファイル
+**テストカバレッジ:** Stage 0: 5/5, Stage 1: 10/10
+
+**詳細:** このファイル（START_HERE.md）Phase 3 - Day 21セクション
 
 ---
 
