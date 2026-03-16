@@ -635,12 +635,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     token: token || '',
     scenarioPrompt: (scenario.configJson as any)?.systemPrompt, // Extract system prompt from scenario config
     scenarioLanguage: scenario.language,
-    initialGreeting: scenario.initialGreeting, // Initial AI greeting from scenario
-    silenceTimeout: scenario.silenceTimeout, // Silence timeout in seconds (Azure STT)
+    initialGreeting: scenario.initialGreeting ?? undefined, // Initial AI greeting from scenario (null → undefined)
+    silenceTimeout: scenario.silenceTimeout ?? undefined, // Silence timeout in seconds (Azure STT)
     silencePromptTimeout: scenario.silencePromptTimeout ?? 15, // AI silence prompt timeout (frontend timer)
-    enableSilencePrompt: scenario.enableSilencePrompt, // Enable silence prompt flag
-    silenceThreshold: scenario.silenceThreshold, // Audio level threshold to detect speech vs silence
-    minSilenceDuration: scenario.minSilenceDuration, // Minimum silence duration to trigger speech_end
+    enableSilencePrompt: scenario.enableSilencePrompt ?? undefined, // Enable silence prompt flag (null → undefined)
+    silenceThreshold: scenario.silenceThreshold ?? undefined, // Audio level threshold to detect speech vs silence
+    minSilenceDuration: scenario.minSilenceDuration ?? undefined, // Minimum silence duration to trigger speech_end
     autoConnect: false,
     onTranscript: handleTranscript,
     onAvatarResponse: handleAvatarResponse,

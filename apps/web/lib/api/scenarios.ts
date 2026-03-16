@@ -13,13 +13,13 @@ export interface Scenario {
   userId: string | null;
   orgId: string;
   // Silence management fields
-  initialGreeting?: string;
-  silenceTimeout?: number;
-  silencePromptTimeout?: number;
-  enableSilencePrompt?: boolean;
-  showSilenceTimer?: boolean;
-  silenceThreshold?: number;
-  minSilenceDuration?: number;
+  initialGreeting?: string | null;
+  silenceTimeout?: number | null;
+  silencePromptTimeout?: number | null;
+  enableSilencePrompt?: boolean | null;
+  showSilenceTimer?: boolean | null;  // null = use organization default
+  silenceThreshold?: number | null;
+  minSilenceDuration?: number | null;
 }
 
 export interface ScenarioListResponse {
@@ -34,13 +34,13 @@ export interface CreateScenarioRequest {
   language?: string;
   visibility?: Visibility;
   // Silence management fields
-  initialGreeting?: string;
-  silenceTimeout?: number;
-  silencePromptTimeout?: number;
-  enableSilencePrompt?: boolean;
-  showSilenceTimer?: boolean;
-  silenceThreshold?: number;
-  minSilenceDuration?: number;
+  initialGreeting?: string | null;
+  silenceTimeout?: number | null;
+  silencePromptTimeout?: number | null;
+  enableSilencePrompt?: boolean | null;
+  showSilenceTimer?: boolean | null;  // null = use organization default
+  silenceThreshold?: number | null;
+  minSilenceDuration?: number | null;
 }
 
 export interface UpdateScenarioRequest {
@@ -50,13 +50,13 @@ export interface UpdateScenarioRequest {
   language?: string;
   visibility?: Visibility;
   // Silence management fields
-  initialGreeting?: string;
-  silenceTimeout?: number;
-  silencePromptTimeout?: number;
-  enableSilencePrompt?: boolean;
-  showSilenceTimer?: boolean;
-  silenceThreshold?: number;
-  minSilenceDuration?: number;
+  initialGreeting?: string | null;
+  silenceTimeout?: number | null;
+  silencePromptTimeout?: number | null;
+  enableSilencePrompt?: boolean | null;
+  showSilenceTimer?: boolean | null;  // null = use organization default, true/false = explicit
+  silenceThreshold?: number | null;
+  minSilenceDuration?: number | null;
 }
 
 /**

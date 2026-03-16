@@ -96,12 +96,15 @@ export default function EditScenarioPage() {
         setInitialGreeting(scenario.initialGreeting || '');
 
         // Load silence timer display setting
+        // Note: null from DB means "use default", convert to undefined for UI
         console.log('[ScenarioEdit] Loaded scenario from DB:', {
           showSilenceTimer: scenario.showSilenceTimer,
           enableSilencePrompt: scenario.enableSilencePrompt,
           silenceTimeout: scenario.silenceTimeout,
         });
-        setShowSilenceTimer(scenario.showSilenceTimer);
+        setShowSilenceTimer(
+          scenario.showSilenceTimer === null ? undefined : scenario.showSilenceTimer
+        );
 
         setIsLoading(false);
       } catch (err) {
@@ -185,8 +188,11 @@ export default function EditScenarioPage() {
       configJson: parsedConfig,
       // Initial greeting
       initialGreeting: initialGreeting.trim() || undefined,
-      // Silence timer display (undefined = use organization default, true/false = explicit setting)
-      showSilenceTimer: showSilenceTimer,
+      // Silence timer display
+      // undefined → null (use organization default)
+      // true/false → explicit setting
+      // Note: undefined is dropped by JSON.stringify, so we use null instead
+      showSilenceTimer: showSilenceTimer === undefined ? null : showSilenceTimer,
     };
     console.log('[ScenarioEdit] Updating scenario with data:', updateData);
     console.log(
