@@ -3,7 +3,6 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from './config';
 
@@ -46,9 +45,12 @@ export class ApiGatewayDomainStack extends cdk.Stack {
     new route53.ARecord(this, 'RestApiAliasRecord', {
       zone: hostedZone,
       recordName: apiDomainName,
-      target: route53.RecordTarget.fromAlias(
-        new targets.ApiGateway(restApi)
-      ),
+      target: route53.RecordTarget.fromAlias({
+        bind: () => ({
+          dnsName: this.restApiDomain.domainNameAliasDomainName,
+          hostedZoneId: this.restApiDomain.domainNameAliasHostedZoneId,
+        }),
+      }),
       comment: `API Gateway REST API domain for ${config.environment} environment`,
     });
 
