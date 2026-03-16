@@ -1,15 +1,15 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-17 00:00 JST (Day 22 - Phase 3.1実装中)
+**最終更新:** 2026-03-17 00:40 JST (Day 22終了 - Phase 3.1デプロイ開始)
 **Phase 1進捗:** 100%完了（技術的動作レベル）
 **Phase 1.5進捗:** 100%完了（パフォーマンステスト + Monitoring構築）✅
 **Phase 1.6進捗:** 100%完了（i18n修正・Prisma Client完全解決）✅
 **Phase 2進捗:** 100%完了（録画・解析・レポート）✅
 **Phase 2.5進捗:** 100%完了（ゲストユーザー機能）✅
-**Phase 3.1進捗:** 80%完了（カスタムドメイン実装完了 - デプロイ待ち）🟡
+**Phase 3.1進捗:** 85%完了（実装完了・デプロイ開始・進行中）🟡
 **E2Eテスト (Playwright):** Stage 0: 5/5 (100%), Stage 1: 10/10 (100%) ✅
-**最新コミット:** f3490d6 - feat(phase3.1): implement custom domains (Amplify + API Gateway) ✅
-**ステータス:** 🚀 Phase 3.1 実装完了（デプロイ前準備中）
+**最新コミット:** a1f085d - fix: correct Route 53 alias target for API Gateway domain ✅
+**ステータス:** 🚧 Phase 3.1 デプロイ進行中（API Gateway Domain Stack - バックグラウンド実行）
 
 ---
 
@@ -231,14 +231,34 @@ Role: SUPER_ADMIN
 
 ---
 
-## 🎯 次回セッションの優先タスク（Phase 3.1デプロイ）
+## 🎯 次回セッションの優先タスク（Phase 3.1デプロイ継続）
 
 **優先度:** 🔴 最高
-**推定時間:** 30-60分（初回セットアップ + デプロイ）
+**推定時間:** 30-40分（デプロイ継続）
 
-### **必須: Phase 3.1 カスタムドメイン デプロイ**
+### **進行中: Phase 3.1 カスタムドメイン デプロイ**
 
-**目標:** Vercelから AWS Amplify Hostingへ移行、カスタムドメイン設定
+**目標:** AWS Amplify Hostingデプロイ完了、カスタムドメイン動作確認
+
+**✅ 完了済み（Day 22）:**
+- Step 1 & 2: GitHub Personal Access Token作成・環境変数設定
+- Step 3: Vercel DNSレコード削除
+- Step 4-1: API Gateway Domain Stack デプロイ（進行中... 🚧）
+
+**🟡 次回セッション開始時の確認:**
+```bash
+# 1. API Gateway Domain Stack デプロイ状況確認
+aws cloudformation describe-stacks \
+  --stack-name Prance-dev-ApiDomains \
+  --query 'Stacks[0].StackStatus' \
+  --output text
+
+# 期待: CREATE_COMPLETE
+# もしCREATE_IN_PROGRESSなら完了を待つ（残り数分）
+# もしROLLBACK_COMPLETEならエラー確認が必要
+```
+
+**📋 残りのステップ:**
 
 #### Step 1: GitHub Personal Access Token作成（5分）
 
@@ -368,13 +388,13 @@ npx playwright test stage1-basic-ui.spec.ts
 
 ---
 
-## 🎯 今回のセッションで完了した作業 (Day 22 - 2026-03-16)
+## 🎯 今回のセッションで完了した作業 (Day 22 - 2026-03-16～17)
 
-### **Day 22: Phase 3.1 カスタムドメイン実装** ✅
+### **Day 22: Phase 3.1 カスタムドメイン実装＋デプロイ開始** ✅ 🚧
 
-**セッション時刻:** 2026-03-16 23:30 - 2026-03-17 00:30 JST（60分）
+**セッション時刻:** 2026-03-16 23:30 - 2026-03-17 00:40 JST（70分）
 **Phase:** Phase 3.1 - Production Environment Preparation
-**進捗:** 80%完了（実装完了、デプロイ待ち）
+**進捗:** 85%完了（実装完了、デプロイ開始、進行中）
 
 #### 背景
 
@@ -436,17 +456,29 @@ npx playwright test stage1-basic-ui.spec.ts
 **TypeScript:** ✅ コンパイルエラーなし
 **Pre-commit hooks:** ✅ 全チェック通過
 
-#### 次のステップ
+#### デプロイ開始 🚧
 
-**Phase 3.1 デプロイ（次回セッション）:**
-1. GitHub Personal Access Token作成
-2. 環境変数設定（infrastructure/.env）
-3. Vercel DNSレコード削除
-4. CDKデプロイ（3スタック）
-5. DNS伝播確認
-6. E2Eテスト実行
+**Phase 3.1 デプロイ（Day 22実施分）:**
+1. ✅ GitHub Personal Access Token作成
+2. ✅ 環境変数設定（infrastructure/.env + .env.local）
+3. ✅ Vercel DNSレコード削除（Route 53から手動CNAME削除）
+4. 🚧 API Gateway Domain Stack デプロイ（進行中...）
+   - CDKバックグラウンド実行中（推定残り5-10分）
+   - REST API: api.dev.app.prance.jp
+   - WebSocket: ws.dev.app.prance.jp
 
-**推定時間:** 30-60分（初回セットアップ + デプロイ）
+**修正コミット:**
+- `a1f085d` - fix: correct Route 53 alias target for API Gateway domain
+  - ValidationError修正（DomainName alias properties使用）
+
+**次回セッション（残りのタスク）:**
+5. Amplify Stack デプロイ（10-15分）
+6. Storage Stack 再デプロイ（5分）
+7. Amplify 初回ビルドトリガー（10-15分）
+8. DNS伝播確認（5-30分）
+9. 動作確認・E2Eテスト
+
+**推定残り時間:** 30-40分
 
 ---
 
