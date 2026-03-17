@@ -52,39 +52,8 @@ export class AmplifyStack extends cdk.Stack {
           name: 'NEXT_PUBLIC_CLOUDFRONT_DOMAIN',
           value: cdk.Fn.importValue(`${config.environment}-CDNDomainName`),
         },
-        {
-          name: 'NODE_ENV',
-          value: 'production',  // Always use 'production' for next build
-        },
-        {
-          name: 'AMPLIFY_MONOREPO_APP_ROOT',
-          value: 'apps/web',
-        },
       ],
-      buildSpec: `version: 1
-applications:
-  - appRoot: apps/web
-    frontend:
-      phases:
-        preBuild:
-          commands:
-            - echo "Installing dependencies from monorepo root..."
-            - cd ../.. && npm ci && cd apps/web
-            - echo "Cleaning Next.js cache..."
-            - rm -rf .next
-        build:
-          commands:
-            - echo "Building Next.js app..."
-            - npm run build
-      artifacts:
-        baseDirectory: .next
-        files:
-          - '**/*'
-      cache:
-        paths:
-          - node_modules/**/*
-          - .next/cache/**/*
-`,
+      // buildSpec is now managed by amplify.yml in repository root
       customRules: [
         // SPA Fallback (Client-side routing)
         {
