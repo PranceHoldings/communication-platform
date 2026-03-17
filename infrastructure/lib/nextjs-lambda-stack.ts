@@ -27,8 +27,8 @@ export class NextJsLambdaStack extends cdk.Stack {
 
     const { config } = props;
 
-    // Next.js Standalone Build Path
-    const standaloneDir = path.join(__dirname, '../../apps/web/.next/standalone');
+    // Next.js Source Path
+    const webAppDir = path.join(__dirname, '../../apps/web');
 
     // Next.js Lambda Function (SSR)
     this.lambdaFunction = new lambda.Function(this, 'NextJsFunction', {
@@ -37,19 +37,24 @@ export class NextJsLambdaStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64, // Graviton2 for better performance
       handler: 'apps/web/lambda.handler',
-      code: lambda.Code.fromAsset(standaloneDir, {
+      code: lambda.Code.fromAsset(path.join(__dirname, '../..'), {
         bundling: {
           image: lambda.Runtime.NODEJS_22_X.bundlingImage,
           command: [
             'bash',
             '-c',
             [
-              'cp -r /asset-input/* /asset-output/',
-              // Copy lambda adapter
-              'cp /asset-input/../../lambda.js /asset-output/apps/web/',
-              // Copy static assets
-              'cp -r /asset-input/../../.next/static /asset-output/apps/web/.next/',
-              'cp -r /asset-input/../../public /asset-output/apps/web/',
+              'echo "Installing dependencies..."',
+              'cd /asset-input && npm ci --only=production',
+              'echo "Building Next.js standalone..."',
+              'cd apps/web && npm run build',
+              'echo "Copying build artifacts..."',
+              'mkdir -p /asset-output',
+              'cp -r /asset-input/apps/web/.next/standalone/* /asset-output/',
+              'cp /asset-input/apps/web/lambda.js /asset-output/apps/web/',
+              'cp -r /asset-input/apps/web/.next/static /asset-output/apps/web/.next/',
+              'cp -r /asset-input/apps/web/public /asset-output/apps/web/',
+              'echo "Lambda bundle created successfully"',
             ].join(' && '),
           ],
         },
