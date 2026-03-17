@@ -69,9 +69,9 @@ applications:
         preBuild:
           commands:
             - echo "Installing root dependencies..."
-            - npm ci
+            - cd ../.. && npm ci
             - echo "Installing web app dependencies..."
-            - cd apps/web && npm ci
+            - npm ci
         build:
           commands:
             - echo "Building Next.js app..."

@@ -899,6 +899,8 @@ export class ApiLambdaStack extends cdk.Stack {
         minify: props.environment === 'production',
         sourceMap: true,
         target: 'es2020',
+        // 🔧 FIX: Use Docker bundling to avoid ENOTEMPTY errors with deep node_modules
+        forceDockerBundling: true,
         externalModules: ['aws-sdk', '@aws-sdk/*'],
         nodeModules: [
           '@prisma/client',
