@@ -11,14 +11,12 @@ applications:
           commands:
             - echo "Installing monorepo dependencies from root..."
             - cd ../.. && npm ci
-            - echo "Returning to app directory..."
-            - cd apps/web
             - echo "Cleaning Next.js cache..."
-            - rm -rf .next
+            - cd apps/web && rm -rf .next
         build:
           commands:
-            - echo "Building Next.js app..."
-            - npm run build
+            - echo "Building Next.js app from monorepo root..."
+            - cd ../.. && npm run build --workspace=apps/web
       artifacts:
         baseDirectory: .next
         files:
