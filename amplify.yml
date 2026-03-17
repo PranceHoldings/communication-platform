@@ -9,22 +9,21 @@ applications:
       phases:
         preBuild:
           commands:
-            - echo "Installing monorepo dependencies from root..."
-            - cd ../..
+            - echo "Installing monorepo dependencies from project root..."
+            - cd $CODEBUILD_SRC_DIR
             - npm ci
-            - echo "Cleaning Next.js cache..."
-            - rm -rf apps/web/.next
+            - echo "Dependencies installed. Total packages:"
+            - npm list --depth=0 | wc -l
         build:
           commands:
-            - echo "Building Next.js app..."
-            - cd ../..
-            - cd apps/web
-            - npx next build
+            - echo "Building Next.js app from apps/web..."
+            - cd $CODEBUILD_SRC_DIR/apps/web
+            - npm run build
       artifacts:
-        baseDirectory: .next
+        baseDirectory: apps/web/.next
         files:
           - '**/*'
       cache:
         paths:
           - node_modules/**/*
-          - .next/cache/**/*
+          - apps/web/.next/cache/**/*
