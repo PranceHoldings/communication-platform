@@ -15,8 +15,8 @@ applications:
             - cd ../..
             - pwd
             - ls -la | grep package-lock.json
-            - npm ci
-            - echo "Dependencies installed successfully"
+            - npm install
+            - echo "Dependencies installed successfully with workspace links"
         build:
           commands:
             - echo "Building Next.js app from apps/web..."
