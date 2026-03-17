@@ -9,8 +9,10 @@ applications:
       phases:
         preBuild:
           commands:
-            - echo "Installing monorepo dependencies..."
-            - npm ci
+            - echo "Installing monorepo dependencies from root..."
+            - cd ../.. && npm ci
+            - echo "Returning to app directory..."
+            - cd apps/web
             - echo "Cleaning Next.js cache..."
             - rm -rf .next
         build:
