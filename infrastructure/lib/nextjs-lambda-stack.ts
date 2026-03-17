@@ -38,6 +38,7 @@ export class NextJsLambdaStack extends cdk.Stack {
       architecture: lambda.Architecture.ARM_64, // Graviton2 for better performance
       handler: 'apps/web/lambda.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../..'), {
+        exclude: ['apps/web/.next', 'node_modules', '.git', 'infrastructure/cdk.out'],
         bundling: {
           image: lambda.Runtime.NODEJS_22_X.bundlingImage,
           command: [
