@@ -41,10 +41,6 @@ export class AmplifyStack extends cdk.Stack {
       platform: 'WEB_COMPUTE', // Next.js SSR対応
       environmentVariables: [
         {
-          name: 'AMPLIFY_MONOREPO_APP_ROOT',
-          value: 'apps/web',
-        },
-        {
           name: 'NEXT_PUBLIC_API_URL',
           value: `https://api.${config.domain.fullDomain}`,
         },
