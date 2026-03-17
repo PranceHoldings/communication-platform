@@ -54,7 +54,7 @@ export class AmplifyStack extends cdk.Stack {
         },
         {
           name: 'NODE_ENV',
-          value: config.environment === 'production' ? 'production' : 'development',
+          value: 'production',  // Always use 'production' for next build
         },
         {
           name: 'AMPLIFY_MONOREPO_APP_ROOT',
