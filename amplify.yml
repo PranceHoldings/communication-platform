@@ -20,8 +20,8 @@ applications:
         build:
           commands:
             - echo "Building Next.js app from apps/web..."
-            - cd ../..
-            - cd apps/web
+            - echo "Current directory:"
+            - pwd
             - npm run build
       artifacts:
         baseDirectory: apps/web/.next
