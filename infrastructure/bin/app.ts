@@ -15,6 +15,7 @@ import { CertificateStack } from '../lib/certificate-stack';
 import { MonitoringStack } from '../lib/monitoring-stack';
 import { AmplifyStack } from '../lib/amplify-stack';
 import { ApiGatewayDomainStack } from '../lib/api-gateway-domain-stack';
+import { NextJsLambdaStack } from '../lib/nextjs-lambda-stack';
 import { getConfig } from '../lib/config';
 
 // Load environment variables from .env file
@@ -145,13 +146,24 @@ const apiGatewayDomainStack = new ApiGatewayDomainStack(app, `${stackPrefix}-Api
   crossRegionReferences: true,
 });
 
-// Amplify Hosting Stack (Phase 3.1)
-const amplifyStack = new AmplifyStack(app, `${stackPrefix}-Amplify`, {
+// Amplify Hosting Stack (Phase 3.1) - DEPRECATED
+// Replaced with Lambda-based Next.js deployment for better monorepo support
+// const amplifyStack = new AmplifyStack(app, `${stackPrefix}-Amplify`, {
+//   env,
+//   config,
+//   certificate: certificateStack.certificate,
+//   hostedZone: dnsStack.hostedZone,
+//   description: 'Prance Platform - Amplify Hosting (Next.js SSR)',
+//   crossRegionReferences: true,
+// });
+
+// Next.js Lambda Stack (Phase 3.2) - Replaces Amplify
+const nextJsLambdaStack = new NextJsLambdaStack(app, `${stackPrefix}-NextJs`, {
   env,
   config,
   certificate: certificateStack.certificate,
   hostedZone: dnsStack.hostedZone,
-  description: 'Prance Platform - Amplify Hosting (Next.js SSR)',
+  description: 'Prance Platform - Next.js SSR on Lambda (Standalone Build)',
   crossRegionReferences: true,
 });
 
@@ -167,8 +179,10 @@ apiLambdaStack.addDependency(storageStack);
 monitoringStack.addDependency(apiLambdaStack);
 apiGatewayDomainStack.addDependency(apiLambdaStack);
 apiGatewayDomainStack.addDependency(certificateStack);
-amplifyStack.addDependency(certificateStack);
-amplifyStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要
+// amplifyStack.addDependency(certificateStack);
+// amplifyStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要
+nextJsLambdaStack.addDependency(certificateStack);
+nextJsLambdaStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要
 
 // タグ付け
 cdk.Tags.of(app).add('Project', 'Prance');

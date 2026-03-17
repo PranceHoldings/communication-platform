@@ -12,6 +12,8 @@
     "predeploy": "npm run clean && npm run validate:bundling && node scripts/sync-env.js",
     "deploy": "bash scripts/cdk-wrapper.sh deploy --all",
     "deploy:lambda": "bash scripts/cdk-wrapper.sh deploy Prance-dev-ApiLambda --require-approval never",
+    "build:nextjs": "bash ../scripts/build-nextjs-standalone.sh",
+    "deploy:nextjs": "npm run build:nextjs && bash scripts/cdk-wrapper.sh deploy Prance-dev-NextJs --require-approval never",
     "deploy:dev": "./deploy.sh dev",
     "deploy:staging": "./deploy.sh staging",
     "deploy:production": "./deploy.sh production",
