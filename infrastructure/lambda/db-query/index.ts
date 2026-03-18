@@ -25,6 +25,12 @@ const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' })
 const S3_BUCKET = process.env.DB_QUERIES_BUCKET || 'prance-db-queries-dev';
 const MAX_RESULTS = 1000; // Maximum rows to return
 
+// Fix: Enable BigInt serialization to JSON
+// BigInt.prototype.toJSON を定義して、JSON.stringify() で自動的に文字列に変換
+(BigInt.prototype as any).toJSON = function() {
+  return this.toString();
+};
+
 interface QueryEvent {
   queryId?: string; // S3 key for SQL file
   sql?: string; // Direct SQL query

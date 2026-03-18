@@ -14,7 +14,7 @@
 # Usage: Run before CDK deployment
 #   bash infrastructure/scripts/pre-deploy-clean.sh
 
-set -e
+# Note: set -e is NOT used to allow cleanup to continue even if some files cannot be removed
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -39,10 +39,10 @@ file_count=0
 while IFS= read -r file; do
   if [ -f "$file" ]; then
     echo "  Removing: $file"
-    rm "$file"
+    rm -f "$file" 2>/dev/null || true
     ((file_count++))
   fi
-done < <(find "$LAMBDA_DIR" -type f \( -name "*.js" -o -name "*.js.map" -o -name "*.d.ts" \) ! -path "*/node_modules/*")
+done < <(find "$LAMBDA_DIR" -type f \( -name "*.js" -o -name "*.js.map" -o -name "*.d.ts" \) ! -path "*/node_modules/*" 2>/dev/null || true)
 
 echo ""
 echo "  ✅ Removed $file_count auto-generated files"

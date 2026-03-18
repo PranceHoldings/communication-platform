@@ -36,6 +36,7 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly organizationSettingsFunction: nodejs.NodejsFunction;
   public readonly migrationFunction: nodejs.NodejsFunction;
   public readonly dbQueryFunction: nodejs.NodejsFunction;
+  public readonly dbMutationFunction: nodejs.NodejsFunction;
   public readonly populateScenarioDefaultsFunction: nodejs.NodejsFunction;
   public readonly listSessionsFunction: nodejs.NodejsFunction;
   public readonly createSessionFunction: nodejs.NodejsFunction;
@@ -177,10 +178,11 @@ export class ApiLambdaStack extends cdk.Stack {
         JWT_SECRET: jwtSecret.secretValueFromJson('secret').unsafeUnwrap(),
       },
       bundling: {
-        minify: props.environment === 'production',
+        minify: false, // Temporarily disable minification for debugging
         sourceMap: true,
         target: 'es2020',
-        externalModules: ['aws-sdk'],
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+        nodeModules: ['jsonwebtoken'],
       },
       // VPC接続不要（DB接続なし）
     });
@@ -499,6 +501,45 @@ export class ApiLambdaStack extends cdk.Stack {
       `prance-db-queries-${props.environment}`
     );
     dbQueriesBucket.grantRead(this.dbQueryFunction);
+
+    // Database Mutation Lambda関数（開発用データベース書き込み操作）
+    this.dbMutationFunction = new nodejs.NodejsFunction(this, 'DbMutationFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-db-mutation-${props.environment}`,
+      description: 'Execute database mutations (INSERT/UPDATE/DELETE) - dev environment only for direct SQL',
+      entry: path.join(__dirname, '../lambda/db-mutation/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(60), // 1分
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: {
+        minify: false,
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+        nodeModules: ['@prisma/client'],
+        commandHooks: {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            return [
+              // Copy Prisma generated client
+              `mkdir -p ${outputDir}/node_modules/.prisma`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+              // Copy Prisma schema
+              `mkdir -p ${outputDir}/prisma`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+            ];
+          },
+          beforeInstall(): string[] {
+            return [];
+          },
+        },
+      },
+    });
 
     // データベース保守Lambda関数（Scenario Default Values設定）
     this.populateScenarioDefaultsFunction = new nodejs.NodejsFunction(

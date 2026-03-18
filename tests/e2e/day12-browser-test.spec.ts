@@ -48,9 +48,20 @@ test.describe('Day 12: E2E Browser Tests', () => {
     }
 
     // Verify we're not on error page
-    const bodyText = await page.textContent('body');
-    expect(bodyText).not.toContain('Error');
-    expect(bodyText).not.toContain('404');
+    // Check only visible content (main element) to avoid false positives from Next.js dev mode internals
+    const mainContent = await page.locator('main').textContent();
+
+    // Check for actual error indicators (not just the word "error" in file names)
+    expect(mainContent).not.toMatch(/Error:/i); // Error messages typically have "Error:"
+    expect(mainContent).not.toMatch(/404.*not found/i); // 404 error pages
+    expect(mainContent).not.toMatch(/something went wrong/i); // Generic error messages
+
+    // Verify expected content is present
+    const hasExpectedContent =
+      mainContent?.includes('Prance') ||
+      mainContent?.includes('Dashboard') ||
+      mainContent?.includes('Sign In');
+    expect(hasExpectedContent).toBeTruthy();
 
     console.log('  ✅ PASS - Login flow completed\n');
   });
