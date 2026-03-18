@@ -160,11 +160,12 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
   return (
     <div className="space-y-6">
       {/* ビデオプレイヤー */}
-      <div className="bg-gray-900 rounded-lg overflow-hidden">
+      <div className="bg-gray-900 rounded-lg overflow-hidden" data-testid="recording-player">
         <video
           ref={videoRef}
           src={videoUrl}
           className="w-full"
+          data-testid="recording-player-video"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onPlay={() => setIsPlaying(true)}
@@ -175,7 +176,9 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
         <div className="bg-gray-800 p-4 space-y-3">
           {/* シークバー */}
           <div className="flex items-center gap-3">
-            <span className="text-white text-sm font-mono w-12">{formatTime(currentTime)}</span>
+            <span className="text-white text-sm font-mono w-12" data-testid="recording-current-time">
+              {formatTime(currentTime)}
+            </span>
             <input
               type="range"
               min="0"
@@ -183,9 +186,12 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
               step="0.1"
               value={currentTime}
               onChange={handleSeek}
+              data-testid="recording-timeline"
               className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
             />
-            <span className="text-white text-sm font-mono w-12">{formatTime(duration)}</span>
+            <span className="text-white text-sm font-mono w-12" data-testid="recording-duration">
+              {formatTime(duration)}
+            </span>
           </div>
 
           {/* コントロールボタン */}
@@ -194,6 +200,7 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
               {/* 再生/一時停止 */}
               <button
                 onClick={togglePlay}
+                data-testid="recording-play-pause-button"
                 className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg transition-colors"
               >
                 {isPlaying ? (
@@ -216,12 +223,13 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
               </button>
 
               {/* 再生速度 */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" data-testid="recording-playback-rate-controls">
                 <span className="text-white text-sm">{t('sessions.player.recording.speed')}:</span>
                 {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(rate => (
                   <button
                     key={rate}
                     onClick={() => handlePlaybackRateChange(rate)}
+                    data-testid={`recording-playback-rate-${rate}`}
                     className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                       playbackRate === rate
                         ? 'bg-indigo-600 text-white'
@@ -250,6 +258,7 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
                 step="0.1"
                 value={volume}
                 onChange={handleVolumeChange}
+                data-testid="recording-volume-slider"
                 className="w-24 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
               />
             </div>
@@ -259,13 +268,15 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
 
       {/* トランスクリプト */}
       {transcripts.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6" data-testid="recording-transcript-section">
           <h3 className="text-lg font-semibold mb-4">{t('sessions.player.transcript.title')}</h3>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {transcripts.map(transcript => (
               <button
                 key={transcript.id}
                 onClick={() => handleTranscriptClick(transcript.timestampStart)}
+                data-testid={`transcript-item-${transcript.id}`}
+                data-active={activeTranscriptId === transcript.id}
                 className={`w-full text-left p-3 rounded-lg transition-colors ${
                   activeTranscriptId === transcript.id
                     ? 'bg-indigo-50 border-2 border-indigo-500'
@@ -301,22 +312,22 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
       )}
 
       {/* 録画情報 */}
-      <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
+      <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600" data-testid="recording-info">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
+          <div data-testid="recording-format">
             <span className="font-medium">{t('sessions.player.recording.format')}:</span>{' '}
             {recording.format || DEFAULT_VIDEO_FORMAT}
           </div>
-          <div>
+          <div data-testid="recording-resolution">
             <span className="font-medium">{t('sessions.player.recording.resolution')}:</span>{' '}
             {recording.resolution || DEFAULT_VIDEO_RESOLUTION}
           </div>
-          <div>
+          <div data-testid="recording-file-size">
             <span className="font-medium">{t('sessions.player.recording.size')}:</span>{' '}
             {(recording.fileSizeBytes / 1024 / 1024).toFixed(2)} MB
           </div>
           {recording.durationSec && (
-            <div>
+            <div data-testid="recording-duration-info">
               <span className="font-medium">{t('sessions.player.recording.duration')}:</span>{' '}
               {formatTime(recording.durationSec)}
             </div>
