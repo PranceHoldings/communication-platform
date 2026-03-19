@@ -3,7 +3,7 @@
  */
 
 import jwt from 'jsonwebtoken';
-import { JWTPayload, AuthenticationError } from '../types';
+import { JWTPayload, AuthenticationError, UserRole } from '../types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
 const JWT_EXPIRES_IN = '24h';
@@ -88,7 +88,7 @@ export const getUserFromEvent = (event: {
         const payload: JWTPayload = {
           userId: auth.userId,
           email: auth.email,
-          role: auth.role as 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST',
+          role: auth.role as UserRole,
           orgId: auth.orgId, // Prisma: User.orgId
         };
 

@@ -11,7 +11,7 @@
 // Enums（Prismaスキーマと完全一致）
 // ============================================================
 
-export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER';
+export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';
 
 export type AvatarType = 'TWO_D' | 'THREE_D';
 
@@ -24,6 +24,8 @@ export type Visibility = 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
 export type SessionStatus = 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
 
 export type RecordingType = 'USER' | 'AVATAR' | 'COMBINED';
+
+export type ProcessingStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
 
 export type Speaker = 'AI' | 'USER';
 
@@ -140,10 +142,18 @@ export interface Recording {
   id: string;
   sessionId: string;
   type: RecordingType;
+  s3Key: string;
   s3Url: string;
   cdnUrl?: string;
   thumbnailUrl?: string;
-  fileSizeBytes: bigint;
+  fileSizeBytes: number; // Changed from bigint to number for JSON serialization
+  durationSec?: number;
+  format?: string;
+  resolution?: string;
+  videoChunksCount?: number;
+  processingStatus: ProcessingStatus;
+  processedAt?: Date;
+  errorMessage?: string;
   createdAt: Date;
 }
 
@@ -160,6 +170,7 @@ export interface Transcript {
   timestampEnd: number;
   confidence?: number;
   highlight?: Highlight;
+  createdAt?: Date;
 }
 
 // ============================================================

@@ -11,7 +11,22 @@
 
 import { apiClient } from './client';
 import { buildQueryString } from './utils';
-import type { SessionStatus, PaginationMeta, Speaker, Highlight } from '@prance/shared';
+import type {
+  SessionStatus,
+  PaginationMeta,
+  Recording as SharedRecording,
+  Transcript as SharedTranscript,
+} from '@prance/shared';
+
+// API response types (Date -> string conversion for JSON)
+export type RecordingResponse = Omit<SharedRecording, 'createdAt' | 'processedAt'> & {
+  createdAt: string;
+  processedAt?: string;
+};
+
+export type TranscriptResponse = Omit<SharedTranscript, 'createdAt'> & {
+  createdAt?: string;
+};
 
 export interface Session {
   id: string;
@@ -36,24 +51,8 @@ export interface Session {
     thumbnailUrl?: string;
     modelUrl?: string;
   };
-  recordings?: Array<{
-    id: string;
-    type: string;
-    s3Url: string;
-    cdnUrl: string | null;
-    thumbnailUrl: string | null;
-    fileSizeBytes: number;
-    createdAt: string;
-  }>;
-  transcripts?: Array<{
-    id: string;
-    speaker: Speaker;
-    text: string;
-    timestampStart: number;
-    timestampEnd: number;
-    confidence: number | null;
-    highlight: Highlight | null;
-  }>;
+  recordings?: RecordingResponse[];
+  transcripts?: TranscriptResponse[];
 }
 
 export interface CreateSessionRequest {

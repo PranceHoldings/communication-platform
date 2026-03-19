@@ -1,6 +1,6 @@
 # 不整合検出レポート
 
-**生成日時:** 2026-03-16 09:43:47
+**生成日時:** 2026-03-19 03:18:13
 
 ---
 
@@ -16,6 +16,22 @@
 
 ```
 infrastructure/lambda/auth/authorizer/index.ts:93:    // IMPORTANT: Context field names should match Prisma schema (orgId, not organizationId)
+```
+
+### ❌ snake_case フィールド名の使用
+
+**検出数:** 9 件
+
+```
+infrastructure/lambda/db-mutation/index.ts:85:      id, session_id, type, s3_key, s3_url, cdn_url,
+infrastructure/lambda/db-mutation/index.ts:102:    INSERT INTO transcripts (id, session_id, speaker, text, timestamp_start, timestamp_end, confidence) VALUES
+infrastructure/lambda/db-mutation/index.ts:113:      id, session_id, overall_score, emotion_score, audio_score, content_score, delivery_score,
+infrastructure/lambda/db-mutation/index.ts:125:    ) ON CONFLICT (session_id) DO NOTHING;
+infrastructure/lambda/db-mutation/index.ts:137:    DELETE FROM emotion_analyses WHERE session_id = $1;
+infrastructure/lambda/db-mutation/index.ts:138:    DELETE FROM audio_analyses WHERE session_id = $1;
+infrastructure/lambda/db-mutation/index.ts:139:    DELETE FROM session_scores WHERE session_id = $1;
+infrastructure/lambda/db-mutation/index.ts:140:    DELETE FROM transcripts WHERE session_id = $1;
+infrastructure/lambda/db-mutation/index.ts:141:    DELETE FROM recordings WHERE session_id = $1;
 ```
 
 ## 3. ハードコードされた設定値
@@ -43,7 +59,7 @@ apps/web/lib/i18n/config.ts:41:  'zh-TW', // Chinese (Traditional)
 
 ### ❌ ハードコードされたメディアフォーマット
 
-**検出数:** 13 件
+**検出数:** 18 件
 
 **除外対象:** *.d.ts, defaults.ts, language-config.ts, node_modules/, 環境変数・定数参照
 
@@ -59,13 +75,24 @@ infrastructure/lambda/websocket/default/audio-processor.ts:668:      const ttsCo
 infrastructure/lambda/websocket/default/index.ts:1600:          const extension = contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm';
 infrastructure/lambda/websocket/default/index.ts:1728:    let audioContentType = 'audio/mpeg';
 infrastructure/lambda/websocket/default/index.ts:1782:    const extensionLegacy = audioContentType.includes('mpeg') || audioContentType.includes('mp3') ? 'mp3' : 'webm';
+infrastructure/lambda/test/seed-recording-data.ts:120:          format: 'webm',
+infrastructure/lambda/test/seed-recording-data.ts:121:          resolution: '1280x720',
 infrastructure/lambda/shared/audio/tts-elevenlabs.ts:123:      const contentType = response.headers.get('content-type') || 'audio/mpeg';
-apps/web/components/session-player/recording-player.tsx:9:const DEFAULT_VIDEO_RESOLUTION = '1280x720';
+infrastructure/lambda/db-mutation/index.ts:95:      5242880, 120, 'webm', '1280x720', 24,
+apps/web/tests/e2e/stage4-recording.spec.ts:243:    expect(format).toContain('webm'); // or 'mp4'
+apps/web/tests/e2e/helpers/websocket-mock.ts:175:      contentType: 'audio/mpeg',
+apps/web/components/session-player/recording-player.tsx:10:const DEFAULT_VIDEO_RESOLUTION = '1280x720';
 ```
 
 ## 4. 型定義の重複
 
-✅ 型定義の重複は検出されませんでした
+### ❌ インラインEnum定義（共有型を使うべき）
+
+**検出数:** 1 件
+
+```
+infrastructure/lambda/shared/types/index.ts:30:export type Visibility = 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+```
 
 ## 5. 多言語対応の不整合
 
@@ -79,9 +106,10 @@ apps/web/components/session-player/recording-player.tsx:9:const DEFAULT_VIDEO_RE
 
 ### ⚠️ API型定義の命名パターンを確認
 
-**検出数:** 20 件
+**検出数:** 21 件
 
 ```
+infrastructure/lambda/db-mutation/index.ts:53:interface MutationResponse {
 apps/web/lib/api/guest-sessions.ts:59:export interface GuestSessionListResponse {
 apps/web/lib/api/guest-sessions.ts:64:export interface CreateGuestSessionRequest {
 apps/web/lib/api/guest-sessions.ts:75:export interface CreateGuestSessionResponse {
@@ -94,14 +122,13 @@ apps/web/lib/api/avatars.ts:20:export interface CreateAvatarRequest {
 apps/web/lib/api/avatars.ts:33:export interface UpdateAvatarRequest {
 apps/web/lib/api/reports.ts:9:export interface ReportResponse {
 apps/web/lib/api/client.ts:10:export interface ApiResponse<T> {
-apps/web/lib/api/sessions.ts:59:export interface CreateSessionRequest {
-apps/web/lib/api/sessions.ts:65:export interface ListSessionsRequest {
-apps/web/lib/api/sessions.ts:71:export interface ListSessionsResponse {
+apps/web/lib/api/sessions.ts:58:export interface CreateSessionRequest {
+apps/web/lib/api/sessions.ts:64:export interface ListSessionsRequest {
+apps/web/lib/api/sessions.ts:70:export interface ListSessionsResponse {
 apps/web/lib/api/auth.ts:17:export interface LoginRequest {
 apps/web/lib/api/auth.ts:22:export interface RegisterRequest {
 apps/web/lib/api/auth.ts:28:export interface AuthResponse {
 apps/web/lib/api/scenarios.ts:25:export interface ScenarioListResponse {
-apps/web/lib/api/scenarios.ts:30:export interface CreateScenarioRequest {
 ```
 
 ## 8. Import文の不整合
@@ -115,7 +142,7 @@ apps/web/lib/api/scenarios.ts:30:export interface CreateScenarioRequest {
 ```
 apps/web/lib/api/avatars.ts:15:export interface AvatarListResponse {
 apps/web/lib/api/analysis.ts:26:export interface SessionScore {
-apps/web/lib/api/sessions.ts:16:export interface Session {
+apps/web/lib/api/sessions.ts:31:export interface Session {
 ```
 
 
@@ -123,9 +150,9 @@ apps/web/lib/api/sessions.ts:16:export interface Session {
 
 ## 📊 サマリー
 
-**検出された不整合の総数:** 29 件
+**検出された不整合の総数:** 44 件
 
-⚠️ **29 件の不整合が検出されました。修正が必要です。**
+⚠️ **44 件の不整合が検出されました。修正が必要です。**
 
 ### 次のアクション
 

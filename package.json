@@ -35,6 +35,7 @@
     "setup:dev": "npm install && npm run db:generate",
     "db:generate": "cd packages/database && npx prisma generate",
     "db:populate-defaults": "npx tsx scripts/populate-scenario-defaults.ts",
+    "seed:recording": "npx tsx scripts/seed-test-recording.ts",
     "cdk:bootstrap": "cd infrastructure && npx cdk bootstrap",
     "cdk:deploy": "echo '❌ Use npm run deploy:stack <name> or npm run deploy:websocket instead' && exit 1",
     "cdk:deploy:unsafe": "cd infrastructure && npx cdk deploy --all",

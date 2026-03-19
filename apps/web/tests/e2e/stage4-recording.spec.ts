@@ -24,10 +24,10 @@ test.describe('Stage 4: Recording Function Tests', () => {
     recordingPlayer = new RecordingPlayerPage(authenticatedPage);
   });
 
-  test('S4-001: Recording player loads and displays video', async ({ testSessionId }) => {
+  test('S4-001: Recording player loads and displays video', async ({ testSessionWithRecordingId }) => {
     console.log('\n=== Test 1: Recording player loads ===');
 
-    await recordingPlayer.goto(testSessionId);
+    await recordingPlayer.goto(testSessionWithRecordingId);
 
     // Wait for recording player
     await recordingPlayer.waitForRecordingPlayer();
@@ -46,10 +46,10 @@ test.describe('Stage 4: Recording Function Tests', () => {
     console.log('  ✅ PASS - Recording player loaded\n');
   });
 
-  test('S4-002: Play/pause functionality', async ({ testSessionId }) => {
+  test('S4-002: Play/pause functionality', async ({ testSessionWithRecordingId }) => {
     console.log('\n=== Test 2: Play/Pause functionality ===');
 
-    await recordingPlayer.goto(testSessionId);
+    await recordingPlayer.goto(testSessionWithRecordingId);
     await recordingPlayer.waitForRecordingPlayer();
 
     // Check initial state (paused)
@@ -71,10 +71,10 @@ test.describe('Stage 4: Recording Function Tests', () => {
     console.log('  ✅ PASS - Play/pause functionality working\n');
   });
 
-  test('S4-003: Timeline seeking', async ({ testSessionId }) => {
+  test('S4-003: Timeline seeking', async ({ testSessionWithRecordingId }) => {
     console.log('\n=== Test 3: Timeline seeking ===');
 
-    await recordingPlayer.goto(testSessionId);
+    await recordingPlayer.goto(testSessionWithRecordingId);
     await recordingPlayer.waitForRecordingPlayer();
 
     // Get duration
@@ -101,10 +101,10 @@ test.describe('Stage 4: Recording Function Tests', () => {
     console.log('  ✅ PASS - Timeline seeking working\n');
   });
 
-  test('S4-004: Playback speed control (0.5x - 2.0x)', async ({ testSessionId }) => {
+  test('S4-004: Playback speed control (0.5x - 2.0x)', async ({ testSessionWithRecordingId }) => {
     console.log('\n=== Test 4: Playback speed control ===');
 
-    await recordingPlayer.goto(testSessionId);
+    await recordingPlayer.goto(testSessionWithRecordingId);
     await recordingPlayer.waitForRecordingPlayer();
 
     const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
@@ -120,10 +120,10 @@ test.describe('Stage 4: Recording Function Tests', () => {
     console.log('  ✅ PASS - Playback speed control working\n');
   });
 
-  test('S4-005: Volume control', async ({ testSessionId }) => {
+  test('S4-005: Volume control', async ({ testSessionWithRecordingId }) => {
     console.log('\n=== Test 5: Volume control ===');
 
-    await recordingPlayer.goto(testSessionId);
+    await recordingPlayer.goto(testSessionWithRecordingId);
     await recordingPlayer.waitForRecordingPlayer();
 
     // Test different volume levels
@@ -140,10 +140,10 @@ test.describe('Stage 4: Recording Function Tests', () => {
     console.log('  ✅ PASS - Volume control working\n');
   });
 
-  test('S4-006: Transcript display and synchronization', async ({ testSessionId }) => {
+  test('S4-006: Transcript display and synchronization', async ({ testSessionWithRecordingId }) => {
     console.log('\n=== Test 6: Transcript display ===');
 
-    await recordingPlayer.goto(testSessionId);
+    await recordingPlayer.goto(testSessionWithRecordingId);
     await recordingPlayer.waitForRecordingPlayer();
 
     // Check transcript section visibility
@@ -169,10 +169,10 @@ test.describe('Stage 4: Recording Function Tests', () => {
     console.log('  ✅ PASS - Transcript display checked\n');
   });
 
-  test('S4-007: Transcript click navigation', async ({ testSessionId }) => {
+  test('S4-007: Transcript click navigation', async ({ testSessionWithRecordingId }) => {
     console.log('\n=== Test 7: Transcript click navigation ===');
 
-    await recordingPlayer.goto(testSessionId);
+    await recordingPlayer.goto(testSessionWithRecordingId);
     await recordingPlayer.waitForRecordingPlayer();
 
     const transcriptVisible = await recordingPlayer.transcriptSection.isVisible();
@@ -204,10 +204,10 @@ test.describe('Stage 4: Recording Function Tests', () => {
     console.log('  ✅ PASS - Transcript navigation checked\n');
   });
 
-  test('S4-008: Recording info display', async ({ testSessionId }) => {
+  test('S4-008: Recording info display', async ({ testSessionWithRecordingId }) => {
     console.log('\n=== Test 8: Recording info display ===');
 
-    await recordingPlayer.goto(testSessionId);
+    await recordingPlayer.goto(testSessionWithRecordingId);
     await recordingPlayer.waitForRecordingPlayer();
 
     // Check recording info visibility
@@ -231,10 +231,10 @@ test.describe('Stage 4: Recording Function Tests', () => {
     console.log('  ✅ PASS - Recording info displayed\n');
   });
 
-  test('S4-009: Video format and resolution display', async ({ testSessionId }) => {
+  test('S4-009: Video format and resolution display', async ({ testSessionWithRecordingId }) => {
     console.log('\n=== Test 9: Format and resolution display ===');
 
-    await recordingPlayer.goto(testSessionId);
+    await recordingPlayer.goto(testSessionWithRecordingId);
     await recordingPlayer.waitForRecordingPlayer();
 
     // Get format
@@ -255,10 +255,10 @@ test.describe('Stage 4: Recording Function Tests', () => {
     console.log('  ✅ PASS - Format and resolution displayed correctly\n');
   });
 
-  test('S4-010: Recording duration info', async ({ testSessionId }) => {
+  test('S4-010: Recording duration info', async ({ testSessionWithRecordingId }) => {
     console.log('\n=== Test 10: Recording duration info ===');
 
-    await recordingPlayer.goto(testSessionId);
+    await recordingPlayer.goto(testSessionWithRecordingId);
     await recordingPlayer.waitForRecordingPlayer();
 
     // Check duration display in recording info

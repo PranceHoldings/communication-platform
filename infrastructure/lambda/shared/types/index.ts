@@ -20,6 +20,21 @@
 export * from './organization';
 
 // ========================================
+// Enum Types (Prisma Schema aligned)
+// ========================================
+
+export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';
+export type AvatarType = 'TWO_D' | 'THREE_D';
+export type AvatarStyle = 'ANIME' | 'REALISTIC';
+export type AvatarSource = 'PRESET' | 'GENERATED' | 'ORG_CUSTOM';
+export type Visibility = 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+export type SessionStatus = 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
+export type RecordingType = 'USER' | 'AVATAR' | 'COMBINED';
+export type ProcessingStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
+export type Speaker = 'AI' | 'USER';
+export type Highlight = 'POSITIVE' | 'NEGATIVE' | 'IMPORTANT';
+
+// ========================================
 // Error Types (copied from @prance/shared)
 // ========================================
 
@@ -79,7 +94,7 @@ export class InternalServerError extends AppError {
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';  // ✅ GUEST追加
+  role: UserRole;  // Enum type from Prisma schema
   orgId: string; // Aligned with Prisma schema
 
   // ✅ ゲストユーザー対応フィールド（オプション）

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
 import { sessionsApi, Session } from '@/lib/api/sessions';
+import type { SessionStatus } from '@prance/shared';
 import Link from 'next/link';
 
 export default function SessionsPage() {
@@ -10,9 +11,7 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR'>(
-    'all'
-  );
+  const [filter, setFilter] = useState<'all' | SessionStatus>('all');
   const [pagination, setPagination] = useState({
     total: 0,
     limit: 20,

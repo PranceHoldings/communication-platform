@@ -116,7 +116,10 @@ export const handler: APIGatewayProxyHandler = async event => {
       startedAt: session.startedAt,
       endedAt: session.endedAt,
       duration: session.durationSec,
-      recordings: session.recordings,
+      recordings: (session.recordings || []).map((recording: any) => ({
+        ...recording,
+        fileSizeBytes: Number(recording.fileSizeBytes), // Convert BigInt to Number for JSON serialization
+      })),
       transcripts: session.transcripts,
       metadata: session.metadataJson,
       createdAt: session.startedAt, // Use startedAt as createdAt for frontend compatibility

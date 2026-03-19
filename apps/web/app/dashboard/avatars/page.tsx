@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
-import type { Avatar } from '@prance/shared';
+import type { Avatar, AvatarType, AvatarStyle, AvatarSource } from '@prance/shared';
 import { listAvatars } from '@/lib/api/avatars';
 import { authApi } from '@/lib/api/auth';
 import Link from 'next/link';
@@ -13,9 +13,9 @@ export default function AvatarsPage() {
   const [avatars, setAvatars] = useState<Avatar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState<'TWO_D' | 'THREE_D' | ''>('');
-  const [styleFilter, setStyleFilter] = useState<'ANIME' | 'REALISTIC' | ''>('');
-  const [sourceFilter, setSourceFilter] = useState<'PRESET' | 'GENERATED' | 'ORG_CUSTOM' | ''>('');
+  const [typeFilter, setTypeFilter] = useState<AvatarType | ''>('');
+  const [styleFilter, setStyleFilter] = useState<AvatarStyle | ''>('');
+  const [sourceFilter, setSourceFilter] = useState<AvatarSource | ''>('');
   const [pagination, setPagination] = useState({
     total: 0,
     limit: 20,

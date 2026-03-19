@@ -3,38 +3,14 @@
 import { useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
+import type { RecordingResponse, TranscriptResponse } from '@/lib/api/sessions';
 
 // Default media format constants for display
 const DEFAULT_VIDEO_FORMAT = 'webm';
 const DEFAULT_VIDEO_RESOLUTION = '1280x720';
 
-export interface Recording {
-  id: string;
-  type: 'USER' | 'AVATAR' | 'COMBINED';
-  s3Key: string;
-  s3Url: string;
-  cdnUrl?: string;
-  thumbnailUrl?: string;
-  fileSizeBytes: number;
-  durationSec?: number;
-  format?: string;
-  resolution?: string;
-  videoChunksCount?: number;
-  processingStatus: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
-  processedAt?: string;
-  errorMessage?: string;
-  createdAt: string;
-}
-
-export interface Transcript {
-  id: string;
-  speaker: 'AI' | 'USER';
-  text: string;
-  timestampStart: number;
-  timestampEnd: number;
-  confidence?: number;
-  highlight?: 'POSITIVE' | 'NEGATIVE' | 'IMPORTANT';
-}
+export type Recording = RecordingResponse;
+export type Transcript = TranscriptResponse;
 
 interface RecordingPlayerProps {
   recording: Recording;

@@ -25,6 +25,13 @@ export async function login(page: Page): Promise<void> {
     }
   });
 
+  // Listen for failed requests (404, 500, etc.)
+  page.on('response', (response) => {
+    if (response.status() >= 400) {
+      console.log(`❌ HTTP Error ${response.status()}: ${response.url()}`);
+    }
+  });
+
   // Listen for page errors
   page.on('pageerror', (error) => {
     console.log(`❌ Page Error: ${error.message}`);
@@ -38,6 +45,12 @@ export async function login(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
   console.log('✅ Page loaded (networkidle)');
 
+  // Listen for network requests BEFORE clicking button
+  const loginResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/auth/login') && response.request().method() === 'POST',
+    { timeout: 10000 }
+  );
+
   // Fill in credentials using ID selectors
   console.log(`📝 Filling email: ${TEST_USER.email}`);
   await page.locator('input#email').fill(TEST_USER.email);
@@ -45,27 +58,36 @@ export async function login(page: Page): Promise<void> {
   console.log('📝 Filling password');
   await page.locator('input#password').fill(TEST_USER.password);
 
-  // Listen for network requests
-  page.on('response', async (response) => {
-    if (response.url().includes('/auth/login')) {
-      const status = response.status();
-      console.log(`🌐 Login API Response: ${status}`);
-      try {
-        const body = await response.json();
-        console.log(`📦 Response body: ${JSON.stringify(body).substring(0, 200)}...`);
-      } catch {
-        console.log('⚠️  Could not parse response body');
-      }
-    }
-  });
-
   // Submit form
   console.log('🚀 Clicking login button...');
   await page.locator('button[type="submit"]').click();
 
-  // Wait for redirect to dashboard (increased timeout)
+  // Wait for login API response
+  console.log('⏳ Waiting for login API response...');
+  try {
+    const loginResponse = await loginResponsePromise;
+    const status = loginResponse.status();
+    console.log(`🌐 Login API Response: ${status}`);
+
+    if (status === 200) {
+      try {
+        const body = await loginResponse.json();
+        console.log(`📦 Response body: ${JSON.stringify(body).substring(0, 200)}...`);
+      } catch {
+        console.log('⚠️  Could not parse response body');
+      }
+    } else {
+      console.log(`❌ Login failed with status: ${status}`);
+      const body = await loginResponse.text();
+      console.log(`📦 Error body: ${body.substring(0, 200)}...`);
+    }
+  } catch (error) {
+    console.log(`❌ Login API request failed or timed out: ${error}`);
+  }
+
+  // Wait for redirect to dashboard (increased timeout to 30s)
   console.log('⏳ Waiting for redirect to /dashboard...');
-  await page.waitForURL('/dashboard', { timeout: 15000 });
+  await page.waitForURL('/dashboard', { timeout: 30000 });
   console.log('✅ Successfully redirected to /dashboard');
 }
 

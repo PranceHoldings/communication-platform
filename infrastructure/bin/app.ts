@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { config as dotenvConfig } from 'dotenv';
 import { resolve } from 'path';
 import { NetworkStack } from '../lib/network-stack';
@@ -56,13 +57,28 @@ const dnsStack = new DnsStack(app, `${stackPrefix}-DNS`, {
 });
 
 // SSL/TLS 証明書スタック（us-east-1に作成 - CloudFront用）
-const certificateStack = new CertificateStack(app, `${stackPrefix}-Certificate`, {
-  env: envUsEast1, // CloudFrontで使用するためus-east-1に作成
-  config,
-  hostedZone: dnsStack.hostedZone,
-  description: 'Prance Platform - ACM SSL/TLS Certificate',
-  crossRegionReferences: true, // クロスリージョン参照を有効化
-});
+// Production環境では手動取得済み証明書を使用
+let certificate: acm.ICertificate;
+let certificateStack: CertificateStack | undefined;
+
+if (environment === 'production') {
+  // Production: 手動取得済み証明書をインポート
+  certificate = acm.Certificate.fromCertificateArn(
+    app,
+    `${stackPrefix}-ImportedCertificate`,
+    'arn:aws:acm:us-east-1:010438500933:certificate/782586aa-201a-429f-8207-f49c9ebcaf41'
+  );
+} else {
+  // Dev/Staging: CDKで証明書を自動作成
+  certificateStack = new CertificateStack(app, `${stackPrefix}-Certificate`, {
+    env: envUsEast1, // CloudFrontで使用するためus-east-1に作成
+    config,
+    hostedZone: dnsStack.hostedZone,
+    description: 'Prance Platform - ACM SSL/TLS Certificate',
+    crossRegionReferences: true, // クロスリージョン参照を有効化
+  });
+  certificate = certificateStack.certificate;
+}
 
 // ネットワークスタック
 const networkStack = new NetworkStack(app, `${stackPrefix}-Network`, {
@@ -90,7 +106,7 @@ const databaseStack = new DatabaseStack(app, `${stackPrefix}-Database`, {
 const storageStack = new StorageStack(app, `${stackPrefix}-Storage`, {
   env,
   config,
-  certificate: certificateStack.certificate,
+  certificate: certificate,
   hostedZone: dnsStack.hostedZone,
   description: 'Prance Platform - S3 Storage and CloudFront CDN',
   crossRegionReferences: true, // クロスリージョン参照を有効化
@@ -137,7 +153,7 @@ const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
 const apiGatewayDomainStack = new ApiGatewayDomainStack(app, `${stackPrefix}-ApiDomains`, {
   env,
   config,
-  certificate: certificateStack.certificate,
+  certificate: certificate,
   hostedZone: dnsStack.hostedZone,
   restApi: apiLambdaStack.restApi,
   webSocketApi: apiLambdaStack.webSocketApi,
@@ -151,7 +167,7 @@ const apiGatewayDomainStack = new ApiGatewayDomainStack(app, `${stackPrefix}-Api
 // const amplifyStack = new AmplifyStack(app, `${stackPrefix}-Amplify`, {
 //   env,
 //   config,
-//   certificate: certificateStack.certificate,
+//   certificate: certificate,
 //   hostedZone: dnsStack.hostedZone,
 //   description: 'Prance Platform - Amplify Hosting (Next.js SSR)',
 //   crossRegionReferences: true,
@@ -161,15 +177,24 @@ const apiGatewayDomainStack = new ApiGatewayDomainStack(app, `${stackPrefix}-Api
 const nextJsLambdaStack = new NextJsLambdaStack(app, `${stackPrefix}-NextJs`, {
   env,
   config,
-  certificate: certificateStack.certificate,
+  certificate: certificate,
   hostedZone: dnsStack.hostedZone,
   description: 'Prance Platform - Next.js SSR on Lambda (Standalone Build)',
   crossRegionReferences: true,
 });
 
 // スタック依存関係の設定（デプロイ順序を保証）
-certificateStack.addDependency(dnsStack);
-storageStack.addDependency(certificateStack);
+if (certificateStack) {
+  certificateStack.addDependency(dnsStack);
+  storageStack.addDependency(certificateStack);
+  apiGatewayDomainStack.addDependency(certificateStack);
+  nextJsLambdaStack.addDependency(certificateStack);
+} else {
+  // Production環境: 手動証明書使用時はDNSに依存
+  storageStack.addDependency(dnsStack);
+  apiGatewayDomainStack.addDependency(dnsStack);
+  nextJsLambdaStack.addDependency(dnsStack);
+}
 databaseStack.addDependency(networkStack);
 cognitoStack.addDependency(networkStack);
 apiLambdaStack.addDependency(networkStack);
@@ -178,10 +203,8 @@ apiLambdaStack.addDependency(dynamoDBStack);
 apiLambdaStack.addDependency(storageStack);
 monitoringStack.addDependency(apiLambdaStack);
 apiGatewayDomainStack.addDependency(apiLambdaStack);
-apiGatewayDomainStack.addDependency(certificateStack);
 // amplifyStack.addDependency(certificateStack);
 // amplifyStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要
-nextJsLambdaStack.addDependency(certificateStack);
 nextJsLambdaStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要
 
 // タグ付け

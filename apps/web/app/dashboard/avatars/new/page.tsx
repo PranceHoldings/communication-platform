@@ -6,6 +6,7 @@ import { useI18n } from '@/lib/i18n/provider';
 import { createAvatar } from '@/lib/api/avatars';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import type { AvatarType, AvatarStyle, AvatarSource } from '@prance/shared';
 
 export default function CreateAvatarPage() {
   const router = useRouter();
@@ -13,9 +14,9 @@ export default function CreateAvatarPage() {
 
   const [formData, setFormData] = useState({
     name: '',
-    type: '' as 'TWO_D' | 'THREE_D' | '',
-    style: '' as 'ANIME' | 'REALISTIC' | '',
-    source: '' as 'PRESET' | 'GENERATED' | 'ORG_CUSTOM' | '',
+    type: '' as AvatarType | '',
+    style: '' as AvatarStyle | '',
+    source: '' as AvatarSource | '',
     modelUrl: '',
     thumbnailUrl: '',
     tags: '',
@@ -67,9 +68,9 @@ export default function CreateAvatarPage() {
 
       const avatar = await createAvatar({
         name: formData.name.trim(),
-        type: formData.type as 'TWO_D' | 'THREE_D',
-        style: formData.style as 'ANIME' | 'REALISTIC',
-        source: formData.source as 'PRESET' | 'GENERATED' | 'ORG_CUSTOM',
+        type: formData.type as AvatarType,
+        style: formData.style as AvatarStyle,
+        source: formData.source as AvatarSource,
         modelUrl: formData.modelUrl.trim(),
         thumbnailUrl: formData.thumbnailUrl.trim() || undefined,
         tags: tagsArray,

@@ -27,39 +27,26 @@ export class NextJsLambdaStack extends cdk.Stack {
 
     const { config } = props;
 
-    // Next.js Source Path
-    const webAppDir = path.join(__dirname, '../../apps/web');
+    // Next.js Lambda deployment package (pre-built)
+    const lambdaPackageDir = '/tmp/nextjs-lambda-package';
 
-    // Next.js Lambda Function (SSR)
+    // Verify pre-built Lambda package exists
+    const fs = require('fs');
+    if (!fs.existsSync(lambdaPackageDir)) {
+      throw new Error(
+        'Next.js Lambda package not found. Run: bash scripts/build-nextjs-standalone.sh && ' +
+          'bash scripts/package-nextjs-lambda.sh'
+      );
+    }
+
+    // Next.js Lambda Function (SSR) - Using pre-packaged deployment artifact
     this.lambdaFunction = new lambda.Function(this, 'NextJsFunction', {
       functionName: `prance-nextjs-${config.environment}`,
       description: 'Next.js SSR Lambda Function with Standalone Build',
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64, // Graviton2 for better performance
       handler: 'apps/web/lambda.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../..'), {
-        exclude: ['apps/web/.next', 'node_modules', '.git', 'infrastructure/cdk.out'],
-        bundling: {
-          image: lambda.Runtime.NODEJS_22_X.bundlingImage,
-          command: [
-            'bash',
-            '-c',
-            [
-              'echo "Installing dependencies..."',
-              'cd /asset-input && npm ci --only=production',
-              'echo "Building Next.js standalone..."',
-              'cd apps/web && npm run build',
-              'echo "Copying build artifacts..."',
-              'mkdir -p /asset-output',
-              'cp -r /asset-input/apps/web/.next/standalone/* /asset-output/',
-              'cp /asset-input/apps/web/lambda.js /asset-output/apps/web/',
-              'cp -r /asset-input/apps/web/.next/static /asset-output/apps/web/.next/',
-              'cp -r /asset-input/apps/web/public /asset-output/apps/web/',
-              'echo "Lambda bundle created successfully"',
-            ].join(' && '),
-          ],
-        },
-      }),
+      code: lambda.Code.fromAsset(lambdaPackageDir),
       memorySize: 1024,
       timeout: cdk.Duration.seconds(30),
       environment: {
@@ -118,32 +105,56 @@ export class NextJsLambdaStack extends cdk.Stack {
       ),
     });
 
-    // CloudFront Distribution (Optional - for static asset caching)
+    // CloudFront Distribution for static asset caching
     this.distribution = new cloudfront.Distribution(this, 'NextJsDistribution', {
       comment: `Next.js Distribution - ${config.environment}`,
       defaultBehavior: {
-        origin: new origins.HttpOrigin(this.httpApi.apiEndpoint.replace('https://', '')),
+        origin: new origins.HttpOrigin(config.domain.fullDomain, {
+          protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+          httpsPort: 443,
+        }),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED, // SSR - no cache for HTML
-        originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
+        cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
+        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED, // SSR pages - no cache
+        originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        compress: true,
       },
-      // Cache static assets
       additionalBehaviors: {
+        // Cache static assets (Next.js static files)
         '/_next/static/*': {
-          origin: new origins.HttpOrigin(this.httpApi.apiEndpoint.replace('https://', '')),
+          origin: new origins.HttpOrigin(config.domain.fullDomain, {
+            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+            httpsPort: 443,
+          }),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED, // Max cache for static assets
           compress: true,
         },
-        '/static/*': {
-          origin: new origins.HttpOrigin(this.httpApi.apiEndpoint.replace('https://', '')),
+        // Cache public assets
+        '/images/*': {
+          origin: new origins.HttpOrigin(config.domain.fullDomain, {
+            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+            httpsPort: 443,
+          }),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
           compress: true,
         },
       },
-      enableIpv6: true,
+      certificate: props.certificate,
+      domainNames: [`cdn.${config.domain.fullDomain}`], // cdn.dev.app.prance.jp
+      enableLogging: true,
+      priceClass: cloudfront.PriceClass.PRICE_CLASS_100, // US, Canada, Europe
+    });
+
+    // Route 53 Record for CloudFront CDN
+    new route53.ARecord(this, 'NextJsCdnAliasRecord', {
+      zone: props.hostedZone,
+      recordName: `cdn.${config.domain.fullDomain}`,
+      target: route53.RecordTarget.fromAlias(
+        new route53targets.CloudFrontTarget(this.distribution)
+      ),
     });
 
     // Outputs
@@ -164,9 +175,15 @@ export class NextJsLambdaStack extends cdk.Stack {
       description: 'Next.js Custom Domain URL',
     });
 
+    new cdk.CfnOutput(this, 'NextJsCdnDomain', {
+      value: `https://cdn.${config.domain.fullDomain}`,
+      description: 'Next.js CDN Domain URL',
+    });
+
     new cdk.CfnOutput(this, 'NextJsCloudFrontDomain', {
       value: this.distribution.distributionDomainName,
       description: 'CloudFront Distribution Domain',
+      exportName: `${config.environment}-NextJsCDNDomain`,
     });
   }
 }
