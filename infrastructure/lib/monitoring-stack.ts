@@ -175,6 +175,126 @@ export class MonitoringStack extends cdk.Stack {
         height: 6,
       })
     );
+
+    // Row 4: Custom Metrics (Phase 1.6)
+    this.dashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'WebSocket Connection Duration',
+        left: [
+          new cloudwatch.Metric({
+            namespace: 'Prance/WebSocket',
+            metricName: 'ConnectionDuration',
+            statistic: 'Average',
+            period: cdk.Duration.minutes(5),
+            dimensionsMap: {
+              Environment: environment,
+            },
+            label: 'Avg Connection Duration (s)',
+            color: cloudwatch.Color.BLUE,
+          }),
+          new cloudwatch.Metric({
+            namespace: 'Prance/WebSocket',
+            metricName: 'ConnectionDuration',
+            statistic: 'p95',
+            period: cdk.Duration.minutes(5),
+            dimensionsMap: {
+              Environment: environment,
+            },
+            label: 'P95 Connection Duration (s)',
+            color: cloudwatch.Color.ORANGE,
+          }),
+        ],
+        width: 12,
+        height: 6,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'Audio Processing Success Rate',
+        left: [
+          new cloudwatch.MathExpression({
+            expression: '(success / total) * 100',
+            usingMetrics: {
+              success: new cloudwatch.Metric({
+                namespace: 'Prance/Audio',
+                metricName: 'AudioProcessingSuccess',
+                statistic: 'Sum',
+                period: cdk.Duration.minutes(5),
+                dimensionsMap: {
+                  Environment: environment,
+                },
+              }),
+              total: new cloudwatch.Metric({
+                namespace: 'Prance/Audio',
+                metricName: 'AudioProcessingTotal',
+                statistic: 'Sum',
+                period: cdk.Duration.minutes(5),
+                dimensionsMap: {
+                  Environment: environment,
+                },
+              }),
+            },
+            label: 'Success Rate %',
+            color: cloudwatch.Color.GREEN,
+          }),
+        ],
+        width: 12,
+        height: 6,
+      })
+    );
+
+    // Row 5: Audio Chunk Processing Latency
+    this.dashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'Audio Chunk Processing Latency (Phase 1.5 Target: < 100ms avg)',
+        left: [
+          new cloudwatch.Metric({
+            namespace: 'Prance/Audio',
+            metricName: 'ChunkProcessingLatency',
+            statistic: 'Average',
+            period: cdk.Duration.minutes(5),
+            dimensionsMap: {
+              Environment: environment,
+            },
+            label: 'Avg Latency (ms)',
+            color: cloudwatch.Color.BLUE,
+          }),
+          new cloudwatch.Metric({
+            namespace: 'Prance/Audio',
+            metricName: 'ChunkProcessingLatency',
+            statistic: 'p95',
+            period: cdk.Duration.minutes(5),
+            dimensionsMap: {
+              Environment: environment,
+            },
+            label: 'P95 Latency (ms)',
+            color: cloudwatch.Color.ORANGE,
+          }),
+          new cloudwatch.Metric({
+            namespace: 'Prance/Audio',
+            metricName: 'ChunkProcessingLatency',
+            statistic: 'Maximum',
+            period: cdk.Duration.minutes(5),
+            dimensionsMap: {
+              Environment: environment,
+            },
+            label: 'Max Latency (ms)',
+            color: cloudwatch.Color.RED,
+          }),
+        ],
+        leftYAxis: {
+          min: 0,
+          max: 500,
+        },
+        leftAnnotations: [
+          {
+            value: 100,
+            label: 'Target Average (100ms)',
+            color: cloudwatch.Color.GREEN,
+          },
+        ],
+        width: 24,
+        height: 6,
+      })
+    );
   }
 
   /**
@@ -239,5 +359,63 @@ export class MonitoringStack extends cdk.Stack {
     });
 
     throttleAlarm.addAlarmAction(new cdk.aws_cloudwatch_actions.SnsAction(this.alarmTopic));
+
+    // Alarm 4: Audio processing failure rate (> 10%)
+    const audioFailureRateAlarm = new cloudwatch.Alarm(this, 'AudioFailureRateAlarm', {
+      alarmName: `${environment}-audio-processing-failure-rate`,
+      alarmDescription: 'Audio processing failure rate exceeds 10%',
+      metric: new cloudwatch.MathExpression({
+        expression: '100 - (success / total) * 100',
+        usingMetrics: {
+          success: new cloudwatch.Metric({
+            namespace: 'Prance/Audio',
+            metricName: 'AudioProcessingSuccess',
+            statistic: 'Sum',
+            period: cdk.Duration.minutes(5),
+            dimensionsMap: {
+              Environment: environment,
+            },
+          }),
+          total: new cloudwatch.Metric({
+            namespace: 'Prance/Audio',
+            metricName: 'AudioProcessingTotal',
+            statistic: 'Sum',
+            period: cdk.Duration.minutes(5),
+            dimensionsMap: {
+              Environment: environment,
+            },
+          }),
+        },
+      }),
+      threshold: 10, // 10%
+      evaluationPeriods: 2,
+      datapointsToAlarm: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    audioFailureRateAlarm.addAlarmAction(new cdk.aws_cloudwatch_actions.SnsAction(this.alarmTopic));
+
+    // Alarm 5: High audio chunk latency (p95 > 200ms)
+    const highAudioLatencyAlarm = new cloudwatch.Alarm(this, 'HighAudioLatencyAlarm', {
+      alarmName: `${environment}-audio-high-latency`,
+      alarmDescription: 'Audio chunk processing p95 latency exceeds 200ms',
+      metric: new cloudwatch.Metric({
+        namespace: 'Prance/Audio',
+        metricName: 'ChunkProcessingLatency',
+        statistic: 'p95',
+        period: cdk.Duration.minutes(5),
+        dimensionsMap: {
+          Environment: environment,
+        },
+      }),
+      threshold: 200, // 200ms
+      evaluationPeriods: 3,
+      datapointsToAlarm: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    highAudioLatencyAlarm.addAlarmAction(new cdk.aws_cloudwatch_actions.SnsAction(this.alarmTopic));
   }
 }

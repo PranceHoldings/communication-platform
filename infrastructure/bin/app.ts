@@ -14,7 +14,6 @@ import { ApiLambdaStack } from '../lib/api-lambda-stack';
 import { DnsStack } from '../lib/dns-stack';
 import { CertificateStack } from '../lib/certificate-stack';
 import { MonitoringStack } from '../lib/monitoring-stack';
-import { AmplifyStack } from '../lib/amplify-stack';
 import { ApiGatewayDomainStack } from '../lib/api-gateway-domain-stack';
 import { NextJsLambdaStack } from '../lib/nextjs-lambda-stack';
 import { getConfig } from '../lib/config';
@@ -28,9 +27,10 @@ const app = new cdk.App();
 const DEFAULT_AWS_REGION = 'us-east-1';
 
 // 環境変数から設定を取得
-const environment = app.node.tryGetContext('environment') || 'dev';
-const account = process.env.AWS_ACCOUNT_ID || process.env.CDK_DEFAULT_ACCOUNT;
-const region = process.env.AWS_REGION || process.env.CDK_DEFAULT_REGION || DEFAULT_AWS_REGION;
+const environment: string = (app.node.tryGetContext('environment') as string | undefined) || 'dev';
+const account: string = process.env.AWS_ACCOUNT_ID || process.env.CDK_DEFAULT_ACCOUNT || '';
+const region: string =
+  process.env.AWS_REGION || process.env.CDK_DEFAULT_REGION || DEFAULT_AWS_REGION;
 
 // 環境設定を取得
 const config = getConfig(environment);
@@ -140,13 +140,13 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   description: 'Prance Platform - API Gateway, Lambda Functions, and Authorizer',
 });
 
-// Monitoring Stack (Phase 1.5 Performance Monitoring)
+// Monitoring Stack (Phase 1.6 Performance Monitoring)
 const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   env,
   environment,
-  // websocketLambdaFunction: apiLambdaStack.websocketDefaultFunction, // TODO: Export from ApiLambdaStack
+  websocketLambdaFunction: apiLambdaStack.websocketDefaultFunction,
   alertEmail: process.env.ALERT_EMAIL, // Optional: Set in .env for email alerts
-  description: 'Prance Platform - CloudWatch Monitoring and Alarms (Phase 1.5)',
+  description: 'Prance Platform - CloudWatch Monitoring and Alarms (Phase 1.6)',
 });
 
 // API Gateway Custom Domains Stack (Phase 3.1)
@@ -162,18 +162,7 @@ const apiGatewayDomainStack = new ApiGatewayDomainStack(app, `${stackPrefix}-Api
   crossRegionReferences: true,
 });
 
-// Amplify Hosting Stack (Phase 3.1) - DEPRECATED
-// Replaced with Lambda-based Next.js deployment for better monorepo support
-// const amplifyStack = new AmplifyStack(app, `${stackPrefix}-Amplify`, {
-//   env,
-//   config,
-//   certificate: certificate,
-//   hostedZone: dnsStack.hostedZone,
-//   description: 'Prance Platform - Amplify Hosting (Next.js SSR)',
-//   crossRegionReferences: true,
-// });
-
-// Next.js Lambda Stack (Phase 3.2) - Replaces Amplify
+// Next.js Lambda Stack
 const nextJsLambdaStack = new NextJsLambdaStack(app, `${stackPrefix}-NextJs`, {
   env,
   config,
@@ -203,8 +192,6 @@ apiLambdaStack.addDependency(dynamoDBStack);
 apiLambdaStack.addDependency(storageStack);
 monitoringStack.addDependency(apiLambdaStack);
 apiGatewayDomainStack.addDependency(apiLambdaStack);
-// amplifyStack.addDependency(certificateStack);
-// amplifyStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要
 nextJsLambdaStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要
 
 // タグ付け

@@ -3,7 +3,7 @@
  * Common functions for sorting and processing audio/video chunks
  */
 
-import { getVideoChunkBatchSize, getAnalysisBatchSize } from '../../../shared/utils/env-validator';
+import { getVideoChunkBatchSize, getAnalysisBatchSize } from '../../shared/utils/env-validator';
 
 /**
  * S3 Object interface (minimal subset for chunk operations)

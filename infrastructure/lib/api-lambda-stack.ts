@@ -70,6 +70,8 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly authGuestFunction: nodejs.NodejsFunction;
   public readonly getGuestSessionDataFunction: nodejs.NodejsFunction;
   public readonly authorizer: apigateway.TokenAuthorizer;
+  // WebSocket Functions
+  public readonly websocketDefaultFunction: nodejs.NodejsFunction;
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
     super(scope, id, props);
@@ -1278,7 +1280,7 @@ export class ApiLambdaStack extends cdk.Stack {
     // Note: We now use ffmpeg-static npm package instead of Lambda Layer
     // This provides better compatibility with ARM64 architecture and simplifies deployment
 
-    const websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefaultFunction', {
+    this.websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefaultFunction', {
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64, // Using ARM64 for Graviton2 cost savings + dev env compatibility
       timeout: cdk.Duration.seconds(300), // Increased for video processing (5 minutes)
@@ -1418,7 +1420,7 @@ export class ApiLambdaStack extends cdk.Stack {
     // DynamoDB permissions for WebSocket handlers
     props.websocketConnectionsTable.grantReadWriteData(websocketConnectFunction);
     props.websocketConnectionsTable.grantReadWriteData(websocketDisconnectFunction);
-    props.websocketConnectionsTable.grantReadWriteData(websocketDefaultFunction);
+    props.websocketConnectionsTable.grantReadWriteData(this.websocketDefaultFunction);
 
     // DynamoDB permissions for Guest User functions
     // Auth function needs read/write for rate limiting
@@ -1427,15 +1429,15 @@ export class ApiLambdaStack extends cdk.Stack {
     props.guestRateLimitTable.grantReadData(this.verifyGuestTokenFunction);
 
     // S3 permissions for default handler (audio/video storage)
-    props.recordingsBucket.grantReadWrite(websocketDefaultFunction);
+    props.recordingsBucket.grantReadWrite(this.websocketDefaultFunction);
 
     // Secrets Manager permissions for WebSocket handlers
     // Connect handler needs JWT secret for authentication
     jwtSecret.grantRead(websocketConnectFunction);
     // Default handler needs all secrets for AI/Audio/Video processing
-    elevenLabsSecret.grantRead(websocketDefaultFunction);
-    azureSpeechSecret.grantRead(websocketDefaultFunction);
-    props.databaseSecret.grantRead(websocketDefaultFunction);
+    elevenLabsSecret.grantRead(this.websocketDefaultFunction);
+    azureSpeechSecret.grantRead(this.websocketDefaultFunction);
+    props.databaseSecret.grantRead(this.websocketDefaultFunction);
 
     // Secrets Manager permissions for Authorizer
     jwtSecret.grantRead(authorizerFunction);
@@ -1449,7 +1451,7 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseSecret.grantRead(this.getCurrentUserFunction);
 
     // PostToConnection permission for default handler
-    websocketDefaultFunction.addToRolePolicy(
+    this.websocketDefaultFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['execute-api:ManageConnections'],
@@ -1461,7 +1463,7 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // AWS Bedrock permissions for AI responses
     // Note: Bedrock cross-region inference profiles may redirect to different regions
-    websocketDefaultFunction.addToRolePolicy(
+    this.websocketDefaultFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: [
@@ -1476,7 +1478,7 @@ export class ApiLambdaStack extends cdk.Stack {
     );
 
     // Lambda invoke permission for session analysis (auto-trigger on session_end)
-    this.sessionAnalysisFunction.grantInvoke(websocketDefaultFunction);
+    this.sessionAnalysisFunction.grantInvoke(this.websocketDefaultFunction);
 
     // ==================== API Gateway統合 ====================
 
@@ -2034,7 +2036,7 @@ export class ApiLambdaStack extends cdk.Stack {
     const defaultIntegration = new apigatewayv2.CfnIntegration(this, 'DefaultIntegration', {
       apiId: this.webSocketApi.ref,
       integrationType: 'AWS_PROXY',
-      integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${websocketDefaultFunction.functionArn}/invocations`,
+      integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${this.websocketDefaultFunction.functionArn}/invocations`,
     });
 
     // WebSocket Routes
@@ -2095,7 +2097,7 @@ export class ApiLambdaStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`,
     });
 
-    websocketDefaultFunction.addPermission('WebSocketDefaultPermission', {
+    this.websocketDefaultFunction.addPermission('WebSocketDefaultPermission', {
       principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
       action: 'lambda:InvokeFunction',
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`,
