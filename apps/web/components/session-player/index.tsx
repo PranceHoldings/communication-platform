@@ -915,6 +915,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     silenceThreshold: scenario.silenceThreshold ?? 0.12, // Use scenario setting or default 0.12 (raised to avoid ambient noise ~10%)
     silenceDuration: scenario.minSilenceDuration ?? 1000, // Use scenario setting or default 1000ms (increased from 500ms to avoid cutting off mid-speech)
     isAiRespondingRef: isPlayingAudioRef, // Ref for real-time AI audio state (fixes closure issue)
+    bypassSpeechDetection: process.env.NEXT_PUBLIC_BYPASS_SPEECH_DETECTION === 'true', // Bypass for E2E tests
   });
 
   // Audio Visualizer統合

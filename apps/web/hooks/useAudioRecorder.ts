@@ -30,6 +30,7 @@ interface UseAudioRecorderOptions {
   silenceThreshold?: number; // Silence detection threshold (0-1, default: 0.05)
   silenceDuration?: number; // Silence duration in ms to trigger speech_end (default: 500)
   isAiRespondingRef?: React.RefObject<boolean>; // Ref to check if AI is speaking (always latest value)
+  bypassSpeechDetection?: boolean; // Bypass speech detection for testing (default: false)
 }
 
 interface UseAudioRecorderReturn {
@@ -56,6 +57,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     silenceThreshold = 0.15, // Raised from 0.05 to avoid false positives from ambient noise
     silenceDuration = 500,
     isAiRespondingRef,
+    bypassSpeechDetection = false, // Default: false (normal speech detection)
   } = options;
 
   const [isRecording, setIsRecording] = useState(false);
@@ -174,9 +176,10 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
         // Real-time chunk sending (if enabled)
         // IMPORTANT: Only send chunks after speech is detected (speechEndSentRef === false)
+        // OR if speech detection is bypassed (for testing environments)
         if (enableRealtime && onAudioChunk) {
-          if (!speechEndSentRef.current) {
-            // Send chunks only after speech detection (includes sequence 0 with EBML header)
+          if (!speechEndSentRef.current || bypassSpeechDetection) {
+            // Send chunks after speech detection OR if bypassed for testing
             onAudioChunk(event.data, timestamp, sequence);
           } else {
             logger.debug(
@@ -472,9 +475,10 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
 
           // Real-time chunk sending (if enabled)
           // IMPORTANT: Only send chunks after speech is detected (speechEndSentRef === false)
+          // OR if speech detection is bypassed (for testing environments)
           if (enableRealtime && onAudioChunk) {
-            if (!speechEndSentRef.current) {
-              // Send chunks only after speech detection (includes sequence 0 with EBML header)
+            if (!speechEndSentRef.current || bypassSpeechDetection) {
+              // Send chunks after speech detection OR if bypassed for testing
               onAudioChunk(event.data, timestamp, sequence);
             } else {
               logger.debug(
