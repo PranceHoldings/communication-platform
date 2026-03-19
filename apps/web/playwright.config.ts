@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-// Load environment variables from .env.local
-dotenv.config({ path: path.resolve(__dirname, '.env.local') });
+// Load environment variables from .env.local (root directory)
+dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
 /**
  * Playwright Configuration for Prance Session Player E2E Tests
