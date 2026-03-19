@@ -66,11 +66,14 @@ cat docs/07-development/KNOWN_ISSUES.md
 - E2Eテスト実装完了（Stage 1-3: 97.1%成功率）
 - Enum統一化完了（17箇所の重複定義削除）
 
-**✅ ドキュメント整理完了（2026-03-19）:**
+**✅ ドキュメント整理完了（2026-03-19 - Day 26）:**
 - 一時ファイルをアーカイブに移動（8ファイル）
 - 誤配置ファイルを削除（infrastructure/apps/CLAUDE.md）
 - セッション再開プロトコル確立
 - 既知の問題リスト作成
+- START_HERE.md簡素化（237行 → 148行、37.6%削減）
+- CLAUDE.md環境URLセクション追加
+- DOCUMENTATION_INDEX.md完成（全体ナビゲーション）
 
 ### 最新デプロイ
 
@@ -88,148 +91,59 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 ## 🎯 次のアクション
 
-### Option A: E2Eテスト Stage 4-5 実行（推奨・短期）
-
-**目的:** API Gateway 403エラーを調査し、Stage 4-5テスト完走
-
-**手順:**
-1. Day 21（E2Eテスト97.1%成功時）の環境設定を確認
-   ```bash
-   git log --grep="e2e" --oneline -10
-   git show d436baf:.env.local
-   ```
-
-2. Lambda Authorizerのログ確認
-   ```bash
-   aws logs tail /aws/lambda/prance-api-authorizer-dev --follow
-   ```
-
-3. 差分を特定し、修正
-
-4. Stage 4-5テスト実行
-   ```bash
-   npm run test:e2e -- stage4-recording.spec.ts
-   ```
-
-**期待結果:** E2Eテスト 100%達成 🎯
-
-**所要時間:** 1-2時間（調査含む）
-
+### Option A: E2Eテスト Stage 4-5 実行（推奨・短期 - 1-2時間）
+**目的:** API Gateway 403エラー調査、E2Eテスト100%達成
 **詳細:** `docs/07-development/KNOWN_ISSUES.md` - Issue #2
 
-### Option B: Phase 4移行（ベンチマークシステム）
+### Option B: Phase 4移行（ベンチマークシステム - 2-3日）
+**目的:** ベンチマークシステム実装開始
+**詳細:** `docs/05-modules/BENCHMARK_SYSTEM.md`
 
-**理由:**
-- Phase 3完了
-- E2Eテストは一時保留可能
-- Phase 4は独立した機能追加
+### Option C: ドキュメント詳細整理（1-2時間）
+**目的:** CLAUDE.md簡素化、サブディレクトリ統合
 
-**開始:** `docs/05-modules/BENCHMARK_SYSTEM.md` 参照
-
-**所要時間:** 2-3日（設計 + 実装 + テスト）
-
-### Option C: ドキュメント詳細整理
-
-**目的:** CLAUDE.mdの簡素化、各サブディレクトリのドキュメント統合
-
-**所要時間:** 1-2時間
-
-**推奨:** Option A（E2Eテスト完走）→ Option B（Phase 4移行）
+**推奨順:** Option A → Option B
 
 ---
 
-## 🌐 環境URL
+## 📚 主要ドキュメント
 
-### Development環境
+**全ドキュメント索引:** [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) 参照
 
-- **Frontend (Local):** http://localhost:3000
-- **REST API:** https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1
-- **WebSocket:** wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
-- **CDN:** https://d3mx0sug5s3a6x.cloudfront.net
+**必須:**
+- [CLAUDE.md](CLAUDE.md) - プロジェクト概要・開発ガイドライン
+- [CODING_RULES.md](CODING_RULES.md) - コミット前チェックリスト
+- [docs/07-development/SESSION_RESTART_PROTOCOL.md](docs/07-development/SESSION_RESTART_PROTOCOL.md) - セッション再開手順
+- [docs/07-development/KNOWN_ISSUES.md](docs/07-development/KNOWN_ISSUES.md) - 既知の問題
 
-### Production環境
+**サブシステム別:**
+- [apps/CLAUDE.md](apps/CLAUDE.md) - フロントエンド
+- [infrastructure/CLAUDE.md](infrastructure/CLAUDE.md) - インフラ・Lambda
+- [scripts/CLAUDE.md](scripts/CLAUDE.md) - スクリプト
 
-- **Frontend:** https://app.prance.jp
-- **REST API:** https://api.app.prance.jp
-- **WebSocket:** wss://ws.app.prance.jp
-- **CDN:** https://cdn.app.prance.jp
-
----
-
-## 📚 参照ドキュメント
-
-### プロジェクト全体
-
-- **[CLAUDE.md](CLAUDE.md)** - プロジェクト概要・重要方針（2000行）
-- **[CODING_RULES.md](CODING_RULES.md)** - コミット前チェックリスト（888行）
-- **[README.md](README.md)** - プロジェクト説明
-
-### セッション再開
-
-- **[docs/07-development/SESSION_RESTART_PROTOCOL.md](docs/07-development/SESSION_RESTART_PROTOCOL.md)** - セッション再開の標準手順
-- **[docs/07-development/KNOWN_ISSUES.md](docs/07-development/KNOWN_ISSUES.md)** - 既知の問題と回避策
-
-### サブシステム別ガイド
-
-- **[apps/CLAUDE.md](apps/CLAUDE.md)** - フロントエンド開発ガイド（Next.js 15、多言語対応）
-- **[infrastructure/CLAUDE.md](infrastructure/CLAUDE.md)** - インフラ・Lambda開発ガイド（AWS CDK、サーバーレス）
-- **[scripts/CLAUDE.md](scripts/CLAUDE.md)** - スクリプト使用ガイド（検証、デプロイ）
-- **[docs/CLAUDE.md](docs/CLAUDE.md)** - ドキュメント管理ガイド
-
-### 詳細設計
-
-- **[docs/02-architecture/](docs/02-architecture/)** - アーキテクチャ設計
-- **[docs/04-design/](docs/04-design/)** - 技術設計
-- **[docs/05-modules/](docs/05-modules/)** - 機能モジュール（17モジュール）
-- **[docs/07-development/](docs/07-development/)** - 開発ガイド
-
-### 進捗記録
-
-- **[docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md)** - 全セッション履歴
-- **[docs/09-progress/archives/](docs/09-progress/archives/)** - 個別セッション記録
+**環境URL:** `CLAUDE.md` の「2. 基本アーキテクチャ」参照
 
 ---
 
-## 🔴 重要原則（必ず遵守）
+## 🔴 重要原則（クイックリマインダー）
 
-### セッション再開時
+**セッション再開:** 推測禁止・最小変更・記録必須
+**コーディング:** 環境変数はルート`.env.local`のみ・型定義は`@prance/shared`・`useI18n()`のみ使用
+**デプロイ:** Lambda=CDK経由のみ・Prisma変更=マイグレーション必須・環境変数検証必須
 
-1. **推測禁止** - 過去に動いていた設定を確認してから変更
-2. **最小変更** - 必要最小限の変更のみ実施
-3. **記録** - 変更内容を必ず記録
-
-### コーディング時
-
-1. **環境変数は `.env.local`（ルート）で一元管理** - 個別ファイル作成禁止
-2. **型定義は `@prance/shared` から import** - 重複定義禁止
-3. **Prismaスキーマ準拠** - `orgId`、`userId`等のcamelCase使用
-4. **多言語対応** - `useI18n()` のみ使用、next-intl禁止
-
-### デプロイ時
-
-1. **Lambda デプロイは CDK 経由のみ** - 手動zip禁止
-2. **Prismaスキーマ変更時はマイグレーション必須** - 統合スクリプト使用
-3. **デプロイ後は環境変数検証必須**
-
-**詳細:** [CLAUDE.md](CLAUDE.md) の「4. 開発ガイドライン」参照
+**詳細:** [CLAUDE.md](CLAUDE.md) - 「4. 開発ガイドライン」、[CODING_RULES.md](CODING_RULES.md)
 
 ---
 
-## 💡 困ったときは
+## 💡 トラブルシューティング
 
-### エラーが発生したら
+**エラー発生時:**
+1. `docs/07-development/KNOWN_ISSUES.md` - 既知の問題確認
+2. `docs/09-progress/SESSION_HISTORY.md` - 過去の解決例
+3. `bash scripts/verify-environment.sh` - 環境検証
+4. `aws logs tail /aws/lambda/prance-*-dev --follow` - Lambdaログ
 
-1. **既知の問題を確認**: `docs/07-development/KNOWN_ISSUES.md`
-2. **過去の解決例を検索**: `docs/09-progress/SESSION_HISTORY.md`
-3. **Lambda ログ確認**: `aws logs tail /aws/lambda/prance-*-dev --follow`
-4. **環境変数検証**: `bash scripts/verify-environment.sh`
-
-### ドキュメントを探す
-
-- **プロジェクト構造**: `CLAUDE.md` の「1. プロジェクト概要」
-- **コミット前チェック**: `CODING_RULES.md`
-- **セッション再開**: `docs/07-development/SESSION_RESTART_PROTOCOL.md`
-- **特定機能**: `docs/05-modules/` 配下の該当モジュール
+**ドキュメント検索:** [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) - 目的別ナビゲーション
 
 ---
 

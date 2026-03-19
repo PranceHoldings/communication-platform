@@ -1,9 +1,9 @@
 # Prance Communication Platform - プロジェクト概要
 
-**バージョン:** 2.9
+**バージョン:** 3.0
 **作成日:** 2026-02-26
-**最終更新:** 2026-03-15
-**ステータス:** 🔴 Phase 1完了（100%）・ Phase 2完了（100%）・ Phase 2.5完了（100%）・ Prisma Client問題解決 ✅ ・ コードベース統一化完了 ✅ ・ 10言語対応完了 ・ ゲストユーザー機能完了 ・ **CLAUDE.md階層化完了 ✅**
+**最終更新:** 2026-03-19
+**ステータス:** 🔴 Phase 3完了（100%）・ドキュメント整理完了 ✅ ・START_HERE.md簡素化（237→148行）✅
 
 ---
 
@@ -258,6 +258,22 @@ docs/01-getting-started/             ← 初心者向けガイド
 - **自動削除** - 設定期間経過後、ゲストセッションデータを自動削除（オプション）
 
 > 詳細: [docs/02-architecture/MULTITENANCY.md](docs/02-architecture/MULTITENANCY.md)
+
+### 環境URL
+
+#### Development環境
+- **Frontend (Local):** http://localhost:3000
+- **REST API:** https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1
+- **WebSocket:** wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
+- **CDN:** https://d3mx0sug5s3a6x.cloudfront.net
+
+#### Production環境
+- **Frontend:** https://app.prance.jp
+- **REST API:** https://api.app.prance.jp
+- **WebSocket:** wss://ws.app.prance.jp
+- **CDN:** https://cdn.app.prance.jp
+
+> 詳細: [docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md](docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md)
 
 ---
 
