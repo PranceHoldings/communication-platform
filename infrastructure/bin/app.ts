@@ -15,7 +15,7 @@ import { DnsStack } from '../lib/dns-stack';
 import { CertificateStack } from '../lib/certificate-stack';
 import { MonitoringStack } from '../lib/monitoring-stack';
 import { ApiGatewayDomainStack } from '../lib/api-gateway-domain-stack';
-import { NextJsLambdaStack } from '../lib/nextjs-lambda-stack';
+// import { NextJsLambdaStack } from '../lib/nextjs-lambda-stack'; // Temporarily disabled for Phase 1.6
 import { getConfig } from '../lib/config';
 
 // Load environment variables from .env file
@@ -163,6 +163,9 @@ const apiGatewayDomainStack = new ApiGatewayDomainStack(app, `${stackPrefix}-Api
 });
 
 // Next.js Lambda Stack
+// TODO: Temporarily disabled for Phase 1.6 monitoring deployment
+// Requires: bash scripts/build-nextjs-standalone.sh && bash scripts/package-nextjs-lambda.sh
+/*
 const nextJsLambdaStack = new NextJsLambdaStack(app, `${stackPrefix}-NextJs`, {
   env,
   config,
@@ -171,18 +174,19 @@ const nextJsLambdaStack = new NextJsLambdaStack(app, `${stackPrefix}-NextJs`, {
   description: 'Prance Platform - Next.js SSR on Lambda (Standalone Build)',
   crossRegionReferences: true,
 });
+*/
 
 // スタック依存関係の設定（デプロイ順序を保証）
 if (certificateStack) {
   certificateStack.addDependency(dnsStack);
   storageStack.addDependency(certificateStack);
   apiGatewayDomainStack.addDependency(certificateStack);
-  nextJsLambdaStack.addDependency(certificateStack);
+  // nextJsLambdaStack.addDependency(certificateStack); // Disabled for Phase 1.6
 } else {
   // Production環境: 手動証明書使用時はDNSに依存
   storageStack.addDependency(dnsStack);
   apiGatewayDomainStack.addDependency(dnsStack);
-  nextJsLambdaStack.addDependency(dnsStack);
+  // nextJsLambdaStack.addDependency(dnsStack); // Disabled for Phase 1.6
 }
 databaseStack.addDependency(networkStack);
 cognitoStack.addDependency(networkStack);
@@ -192,7 +196,7 @@ apiLambdaStack.addDependency(dynamoDBStack);
 apiLambdaStack.addDependency(storageStack);
 monitoringStack.addDependency(apiLambdaStack);
 apiGatewayDomainStack.addDependency(apiLambdaStack);
-nextJsLambdaStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要
+// nextJsLambdaStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要 // Disabled for Phase 1.6
 
 // タグ付け
 cdk.Tags.of(app).add('Project', 'Prance');
