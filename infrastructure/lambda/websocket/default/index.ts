@@ -1,7 +1,7 @@
 /**
  * WebSocket $default Handler
  * Handles all WebSocket messages with STT/AI/TTS integration
- * Last updated: 2026-03-15 07:50:43 UTC (added no_speech_detected feature)
+ * Last updated: 2026-03-20 15:00:00 UTC (Phase 1.6: added Token Bucket rate limiting)
  */
 
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
@@ -37,6 +37,7 @@ import {
   getCloudFrontDomain,
   getAwsEndpointSuffix,
 } from '../../shared/utils/env-validator';
+import { checkRateLimit, RateLimitProfiles } from '../../shared/utils/rate-limiter';
 
 // Lambda function version
 const LAMBDA_VERSION = '1.1.0';
@@ -426,6 +427,35 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           sessionId: rtSessionId,
         });
 
+        // Phase 1.6: Rate limiting (20 chunks/sec, 100 chunks burst)
+        const audioRateLimit = RateLimitProfiles.audioChunk(rtSessionId);
+        const rateLimitResult = await checkRateLimit(audioRateLimit, 1);
+
+        if (!rateLimitResult.allowed) {
+          console.warn('[audio_chunk_realtime] Rate limit exceeded:', {
+            sessionId: rtSessionId,
+            sequenceNumber: rtSequenceNumber,
+            remainingTokens: rateLimitResult.remainingTokens,
+            retryAfter: rateLimitResult.retryAfter,
+          });
+
+          // Send rate limit error to client
+          await sendToConnection(connectionId, {
+            type: 'error',
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Audio chunk rate limit exceeded',
+            details: {
+              retryAfter: rateLimitResult.retryAfter,
+              remainingTokens: rateLimitResult.remainingTokens,
+            },
+          });
+          break;
+        }
+
+        console.log('[audio_chunk_realtime] Rate limit check passed:', {
+          remainingTokens: rateLimitResult.remainingTokens,
+        });
+
         try {
           // Save this chunk to S3 for later processing (on speech_end)
           const { getRealtimeChunkKey } = await import('../../shared/config/s3-paths');
@@ -479,6 +509,29 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           lastSequenceNumber,
           totalChunks: totalRealtimeChunks,
         });
+
+        // Phase 1.6: Rate limiting for speech recognition (5 requests/sec)
+        const speechRateLimit = RateLimitProfiles.speechRecognition(speechEndSessionId);
+        const speechRateLimitResult = await checkRateLimit(speechRateLimit, 1);
+
+        if (!speechRateLimitResult.allowed) {
+          console.warn('[speech_end] Rate limit exceeded:', {
+            sessionId: speechEndSessionId,
+            remainingTokens: speechRateLimitResult.remainingTokens,
+            retryAfter: speechRateLimitResult.retryAfter,
+          });
+
+          await sendToConnection(connectionId, {
+            type: 'error',
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Speech recognition rate limit exceeded',
+            details: {
+              retryAfter: speechRateLimitResult.retryAfter,
+              remainingTokens: speechRateLimitResult.remainingTokens,
+            },
+          });
+          break;
+        }
 
         // Check if audio processing is already in progress (prevent duplicate processing)
         if (connectionData?.realtimeAudioProcessing) {

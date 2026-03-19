@@ -11,6 +11,7 @@ export class DynamoDBStack extends cdk.Stack {
   public readonly websocketConnectionsTable: dynamodb.Table;
   public readonly benchmarkCacheTable: dynamodb.Table;
   public readonly apiRateLimitTable: dynamodb.Table;
+  public readonly sessionRateLimitTable: dynamodb.Table; // Phase 1.6: Token Bucket rate limiting
 
   constructor(scope: Construct, id: string, props: DynamoDBStackProps) {
     super(scope, id, props);
@@ -91,6 +92,18 @@ export class DynamoDBStack extends cdk.Stack {
 
     // 録画メタデータテーブル - Removed: Now using PostgreSQL (Prisma Recording model)
 
+    // セッション内レート制限テーブル (Phase 1.6: Token Bucket algorithm)
+    this.sessionRateLimitTable = new dynamodb.Table(this, 'SessionRateLimitTable', {
+      tableName: `prance-session-rate-limit-${props.environment}`,
+      partitionKey: {
+        name: 'limitKey', // Unique key (e.g., audio:sessionId, video:sessionId)
+        type: dynamodb.AttributeType.STRING,
+      },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      timeToLiveAttribute: 'ttl',
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // Rate limit data is temporary
+    });
+
     // Outputs
     new cdk.CfnOutput(this, 'SessionsStateTableName', {
       value: this.sessionsStateTable.tableName,
@@ -114,6 +127,12 @@ export class DynamoDBStack extends cdk.Stack {
       value: this.apiRateLimitTable.tableName,
       description: 'API Rate Limit DynamoDB Table Name',
       exportName: `${props.environment}-ApiRateLimitTableName`,
+    });
+
+    new cdk.CfnOutput(this, 'SessionRateLimitTableName', {
+      value: this.sessionRateLimitTable.tableName,
+      description: 'Session Rate Limit DynamoDB Table Name (Token Bucket)',
+      exportName: `${props.environment}-SessionRateLimitTableName`,
     });
   }
 }

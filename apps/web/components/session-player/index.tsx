@@ -20,7 +20,7 @@ import {
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useVideoRecorder } from '@/hooks/useVideoRecorder';
 import { useAudioVisualizer } from '@/hooks/useAudioVisualizer';
-import { useErrorMessage } from '@/hooks/useErrorMessage';
+import { useErrorMessage, type ErrorDetails } from '@/hooks/useErrorMessage';
 import { useSilenceTimer } from '@/hooks/useSilenceTimer';
 import { checkBrowserCapabilities, getRecommendedBrowserMessage } from '@/lib/browser-check';
 import { VideoComposer } from './video-composer';
@@ -29,6 +29,11 @@ import { ProcessingIndicator, ProcessingStage } from './ProcessingIndicator';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { toast } from 'sonner';
+import {
+  ConnectionStatus,
+  ErrorGuidance,
+  useConnectionState,
+} from '@/components/error-handling';
 
 type SessionPlayerStatus = 'IDLE' | 'READY' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
 
@@ -63,6 +68,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [isMuted, setIsMuted] = useState(false);
   const [ariaLiveMessage, setAriaLiveMessage] = useState<string>('');
   const [isCameraActive, setIsCameraActive] = useState(false);
+
+  // Error handling state (Phase 1.6)
+  const [currentError, setCurrentError] = useState<ErrorDetails | null>(null);
 
   // Silence management state
   const [initialGreetingCompleted, setInitialGreetingCompleted] = useState(false);
@@ -550,13 +558,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       }
       processingStartTimeRef.current = null;
 
-      // Get user-friendly error message
-      const errorMessage = getErrorMessage({
+      // Set error for ErrorGuidance component (Phase 1.6)
+      const errorDetails: ErrorDetails = {
         code: message.code || 'UNKNOWN_ERROR',
-        message: message.message,
-        originalError: message.details as string,
-      });
+        message: message.message || 'An unknown error occurred',
+        originalError: message.details ? JSON.stringify(message.details, null, 2) : undefined,
+      };
+      setCurrentError(errorDetails);
 
+      // Get user-friendly error message
+      const errorMessage = getErrorMessage(errorDetails);
+
+      // Show toast notification as well
       toast.error(errorMessage, {
         duration: 8000,
         action: message.code?.includes('MICROPHONE')
@@ -678,6 +691,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onError: handleError,
     onNoSpeechDetected: handleNoSpeechDetected, // New: No speech detected guidance
     onAuthenticated: handleAuthenticated,
+  });
+
+  // Connection state for ConnectionStatus component (Phase 1.6)
+  const { connectionState, reconnectAttempt, maxReconnectAttempts } = useConnectionState({
+    isConnected,
+    isConnecting,
+    error: wsError,
   });
 
   // Sync WebSocket values to refs (to break circular dependencies)
@@ -1582,11 +1602,36 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   return (
     <div
-      className="space-y-6"
+      className="relative space-y-6"
       data-testid="session-player"
       role="main"
       aria-label={t('sessions.player.info.scenario') + ': ' + scenario.title}
     >
+      {/* Connection Status (Phase 1.6) */}
+      <ConnectionStatus
+        state={connectionState}
+        error={wsError}
+        reconnectAttempt={reconnectAttempt}
+        maxReconnectAttempts={maxReconnectAttempts}
+      />
+
+      {/* Error Guidance (Phase 1.6) */}
+      {currentError && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md px-4">
+          <ErrorGuidance
+            error={currentError}
+            onRetry={() => {
+              setCurrentError(null);
+              if (!isConnected) {
+                connect();
+              }
+            }}
+            onDismiss={() => setCurrentError(null)}
+            showDetails={true}
+          />
+        </div>
+      )}
+
       {/* Screen reader announcements */}
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {ariaLiveMessage}

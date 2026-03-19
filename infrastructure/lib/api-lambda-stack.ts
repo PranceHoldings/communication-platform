@@ -23,6 +23,7 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   websocketConnectionsTable: dynamodb.Table;
   recordingsBucket: s3.Bucket;
   guestRateLimitTable: dynamodb.Table;
+  sessionRateLimitTable: dynamodb.Table; // Phase 1.6: Token Bucket rate limiting
 }
 
 export class ApiLambdaStack extends cdk.Stack {
@@ -1304,6 +1305,7 @@ export class ApiLambdaStack extends cdk.Stack {
         // AWS_REGION is automatically set by Lambda runtime - do not override
         WEBSOCKET_ENDPOINT: `https://${this.webSocketApi.ref}.execute-api.${this.region}.amazonaws.com/${props.environment}`,
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
+        DYNAMODB_RATE_LIMIT_TABLE: props.sessionRateLimitTable.tableName, // Phase 1.6: Token Bucket rate limiting
         S3_BUCKET: props.recordingsBucket.bucketName,
         DATABASE_URL,
         // JWT Secret for authentication
@@ -1421,6 +1423,9 @@ export class ApiLambdaStack extends cdk.Stack {
     props.websocketConnectionsTable.grantReadWriteData(websocketConnectFunction);
     props.websocketConnectionsTable.grantReadWriteData(websocketDisconnectFunction);
     props.websocketConnectionsTable.grantReadWriteData(this.websocketDefaultFunction);
+
+    // Phase 1.6: Token Bucket rate limiting table permissions
+    props.sessionRateLimitTable.grantReadWriteData(this.websocketDefaultFunction);
 
     // DynamoDB permissions for Guest User functions
     // Auth function needs read/write for rate limiting

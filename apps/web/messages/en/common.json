@@ -56,5 +56,12 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "connectionStatus": {
+    "disconnected": "Disconnected",
+    "connecting": "Connecting...",
+    "connected": "Connected",
+    "reconnecting": "Reconnecting... ({attempt}/{maxAttempts})",
+    "error": "Connection Error"
   }
 }

@@ -137,6 +137,7 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   websocketConnectionsTable: dynamoDBStack.websocketConnectionsTable,
   recordingsBucket: storageStack.recordingsBucket,
   guestRateLimitTable: guestRateLimitStack.table,
+  sessionRateLimitTable: dynamoDBStack.sessionRateLimitTable, // Phase 1.6: Token Bucket rate limiting
   description: 'Prance Platform - API Gateway, Lambda Functions, and Authorizer',
 });
 
