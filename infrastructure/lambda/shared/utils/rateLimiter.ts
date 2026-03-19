@@ -20,17 +20,19 @@ import {
   DeleteCommand,
   BatchWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
+import { AWS_DEFAULTS } from '../config/defaults';
+import { getOptionalEnv, getOptionalEnvAsNumber, getEnvironmentName } from './env-validator';
 
 // DynamoDB Client
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const client = new DynamoDBClient({ region: process.env.AWS_REGION || AWS_DEFAULTS.REGION });
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 // Configuration helpers (dynamic to support test environment variable changes)
 const getTableName = () =>
-  process.env.GUEST_RATE_LIMIT_TABLE || `prance-guest-rate-limits-${process.env.ENVIRONMENT || 'dev'}`;
-const getMaxAttempts = () => parseInt(process.env.RATE_LIMIT_MAX_ATTEMPTS || '5', 10);
-const getLockoutDuration = () => parseInt(process.env.RATE_LIMIT_LOCKOUT_DURATION || '600000', 10); // 10 minutes default
-const getAttemptWindow = () => parseInt(process.env.RATE_LIMIT_ATTEMPT_WINDOW || '600000', 10); // 10 minutes default
+  getOptionalEnv('GUEST_RATE_LIMIT_TABLE', `prance-guest-rate-limits-${getEnvironmentName()}`);
+const getMaxAttempts = () => getOptionalEnvAsNumber('RATE_LIMIT_MAX_ATTEMPTS', 5);
+const getLockoutDuration = () => getOptionalEnvAsNumber('RATE_LIMIT_LOCKOUT_DURATION', 600000); // 10 minutes default
+const getAttemptWindow = () => getOptionalEnvAsNumber('RATE_LIMIT_ATTEMPT_WINDOW', 600000); // 10 minutes default
 
 /**
  * Rate limit check result

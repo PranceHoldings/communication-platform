@@ -78,7 +78,7 @@ async function main() {
       console.log('\n📹 Creating recording...');
 
       const mockS3Key = `recordings/${session.id}/combined-${Date.now()}.webm`;
-      const mockS3Url = `https://prance-dev-recordings.s3.us-east-1.amazonaws.com/${mockS3Key}`;
+      const mockS3Url = `https://${CLOUDFRONT_DOMAIN}/${mockS3Key}`;  // Use CDN URL
       const mockCdnUrl = `https://${CLOUDFRONT_DOMAIN}/${mockS3Key}`;
 
       const recording = await prisma.recording.create({

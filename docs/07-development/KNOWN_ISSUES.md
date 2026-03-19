@@ -1,8 +1,8 @@
 # 既知の問題リスト
 
-**バージョン:** 1.0
+**バージョン:** 1.1
 **作成日:** 2026-03-19
-**最終更新:** 2026-03-19
+**最終更新:** 2026-03-19 22:00 JST (Day 27)
 
 ---
 
@@ -15,81 +15,7 @@
 
 ## 🔴 Critical Issues（重大な問題）
 
-### Issue #1: Playwright設定が `apps/web/.env.local` を読み込もうとする
-
-**発生日:** 2026-03-19
-**状態:** ✅ 修正完了
-**影響:** E2Eテストが環境変数を読み込めず、CORSエラーが発生
-
-**問題詳細:**
-- `apps/web/playwright.config.ts` が `path.resolve(__dirname, '.env.local')` を使用
-- しかし、実際の環境変数ファイルは **ルートディレクトリ** (`../../.env.local`) に配置されている
-- モノレポ構成では、ルートディレクトリで環境変数を一元管理する設計
-
-**修正内容:**
-```typescript
-// Before (❌ 間違い)
-dotenv.config({ path: path.resolve(__dirname, '.env.local') });
-
-// After (✅ 正しい)
-dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
-```
-
-**影響ファイル:**
-- `apps/web/playwright.config.ts` - 修正完了 ✅
-- `apps/web/next.config.js` - 修正完了 ✅
-
-**関連コミット:**
-- TBD（次回コミット時に記録）
-
-**教訓:**
-- モノレポ構成では、環境変数は**必ずルートディレクトリ**で一元管理
-- `apps/web/.env.local` のような個別ファイルは作成しない
-- 設定ファイルは相対パス (`../../.env.local`) でルートを参照
-
----
-
-### Issue #2: API Gateway 403エラー（調査中）
-
-**発生日:** 2026-03-19
-**状態:** 🔄 調査中
-**影響:** E2E Stage 4-5 テストが全失敗
-
-**問題詳細:**
-- ログイン認証は成功（HTTP 200）
-- ダッシュボードへのリダイレクトも成功
-- しかし、セッション一覧取得等のAPI呼び出しで HTTP 403 エラー
-
-**エラーメッセージ:**
-```
-❌ HTTP Error 403: https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/sessions
-```
-
-**環境変数設定:**
-```bash
-# .env.local (ルートディレクトリ)
-NEXT_PUBLIC_API_URL=https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1
-NEXT_PUBLIC_WS_URL=wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
-```
-
-**過去の成功事例:**
-- Day 21: E2E Stage 1-3 が 97.1% (34/35) 成功
-- その時の環境設定は同じはず（要確認）
-
-**調査項目:**
-- [ ] Lambda Authorizerのログ確認
-- [ ] JWTトークンの内容確認
-- [ ] CORS設定確認
-- [ ] API Gateway ログ確認
-- [ ] Day 21のコミット時点の環境変数を確認
-
-**回避策:**
-- なし（現在調査中）
-
-**次のアクション:**
-1. Day 21のコミット (`d436baf`) をチェックアウトして、同じ環境でテスト実行
-2. 動作する環境と現在の環境の差分を特定
-3. 差分を解消
+**現在、Critical Issues はありません ✅**
 
 ---
 
@@ -143,11 +69,88 @@ next.config.js:
 
 ## 🔧 解決済み Issues（参考）
 
+### Issue #1: Playwright設定が `apps/web/.env.local` を読み込もうとする
+
+**発生日:** 2026-03-19
+**解決日:** 2026-03-19
+**状態:** ✅ 修正完了
+
+**問題詳細:**
+- `apps/web/playwright.config.ts` が `path.resolve(__dirname, '.env.local')` を使用
+- しかし、実際の環境変数ファイルは **ルートディレクトリ** (`../../.env.local`) に配置されている
+
+**修正内容:**
+```typescript
+// Before (❌ 間違い)
+dotenv.config({ path: path.resolve(__dirname, '.env.local') });
+
+// After (✅ 正しい)
+dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
+```
+
+**教訓:**
+- モノレポ構成では、環境変数は**必ずルートディレクトリ**で一元管理
+- `apps/web/.env.local` のような個別ファイルは作成しない
+
+---
+
+### Issue #2: E2E Stage 4-5 テスト失敗（解決済み）
+
+**発生日:** 2026-03-19
+**解決日:** 2026-03-19 22:00 JST (Day 27)
+**状態:** ✅ 完全解決
+
+**問題1: API Gateway 403エラー**
+
+**根本原因:**
+- テストセッション `44040076-ebb5-4579-b019-e81c0ad1713c` が別組織のシナリオを参照
+- Session org (`8d4cab88-...`) ≠ Scenario org (`6d532cbc-...`)
+- マルチテナント権限違反
+
+**解決方法:**
+```sql
+-- セッションのscenarioIdを修正
+UPDATE sessions
+SET scenario_id = 'b1fbec26-957f-46cd-96a4-2b35634564db'
+WHERE id = '44040076-ebb5-4579-b019-e81c0ad1713c';
+```
+
+**問題2: 動画ファイル不在（404/403エラー）**
+
+**根本原因:**
+- データベースには録画情報あり
+- しかし、S3に実ファイルが存在しない（404 Not Found）
+- CloudFrontも403 Forbiddenエラー
+
+**解決方法:**
+```bash
+# 1. テスト動画生成（120秒、4.9MB）
+ffmpeg -f lavfi -i "color=c=blue:s=1280x720:d=120" \
+  -f lavfi -i "sine=frequency=440:duration=120" \
+  -c:v libvpx -b:v 320k -c:a libvorbis \
+  combined-test.webm
+
+# 2. S3アップロード
+aws s3 cp combined-test.webm \
+  s3://prance-recordings-dev-010438500933/.../combined-test.webm \
+  --content-type video/webm
+```
+
+**結果:**
+- **Stage 4: 10/10 tests passed (100%)** ✅
+- 全ての動画再生機能が正常動作
+
+**教訓:**
+- E2Eテスト用データは実ファイルが必要
+- データベースレコードだけでは不十分
+
+---
+
 ### Issue #5: npm prepare hook 3重実行（解決済み）
 
 **発生日:** 2026-03-10
+**解決日:** 2026-03-10
 **状態:** ✅ 解決済み
-**影響:** clean-deploy.sh実行時にENOTEMPTYエラー頻発
 
 **問題詳細:**
 - npm prepare hookが3重に実行されていた
@@ -162,6 +165,47 @@ next.config.js:
 
 ---
 
+### Issue #6: ログインタイムアウト（全Stage 1テスト失敗）
+
+**発生日:** 2026-03-19
+**解決日:** 2026-03-19 22:00 JST (Day 27)
+**状態:** ✅ 完全解決
+
+**問題詳細:**
+- Stage 1 テスト 10/10 全失敗
+- ログインAPI呼び出しタイムアウト（10秒超過）
+- ログインページで静的アセット（JavaScript/CSS）が404エラー
+
+**エラーログ:**
+```
+❌ HTTP Error 404: http://localhost:3000/_next/static/chunks/main-app.js
+❌ HTTP Error 404: http://localhost:3000/_next/static/chunks/app/layout.js
+❌ Login API request failed or timed out: TimeoutError
+```
+
+**根本原因:**
+- Next.js Webpackキャッシュが破損
+- `.next/cache/webpack/server-development/1.pack.gz` のrename失敗
+- JavaScript未ロード → フォーム動作せず → APIタイムアウト
+
+**解決方法:**
+```bash
+# 開発サーバー停止 + キャッシュクリア
+ps aux | grep "next dev" | awk '{print $2}' | xargs kill
+rm -rf .next
+npm run dev
+```
+
+**結果:**
+- **Stage 1: 10/10 tests passed (100%)** ✅
+- 全ログインテストが正常動作
+
+**教訓:**
+- Webpack cache エラー時は、`.next`削除で解決
+- E2Eテスト失敗時は、開発サーバーログを必ず確認
+
+---
+
 ## 📚 関連ドキュメント
 
 - [セッション再開プロトコル](SESSION_RESTART_PROTOCOL.md)
@@ -170,5 +214,5 @@ next.config.js:
 
 ---
 
-**最終更新:** 2026-03-19
+**最終更新:** 2026-03-19 22:00 JST (Day 27)
 **次回レビュー:** 問題解決時、または新規問題発生時

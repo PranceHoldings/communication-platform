@@ -14,10 +14,11 @@ import { PrismaClient } from '@prisma/client';
 import { generateToken, generatePin, validateCustomPin } from '../../shared/utils/tokenGenerator';
 import { hashPin } from '../../shared/utils/pinHash';
 import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
+import { getFrontendUrl } from '../../shared/utils/env-validator';
 
 const prisma = new PrismaClient();
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = getFrontendUrl();
 
 interface BatchGuestSessionItem {
   scenarioId: string;

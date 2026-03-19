@@ -10,7 +10,7 @@
 // ============================================================
 
 export const AWS_DEFAULTS = {
-  REGION: 'us-east-1',
+  REGION: process.env.AWS_REGION || 'us-east-1',
   ACCOUNT_ID: '',
 } as const;
 
@@ -19,7 +19,7 @@ export const AWS_DEFAULTS = {
 // ============================================================
 
 export const BEDROCK_DEFAULTS = {
-  REGION: 'us-east-1',
+  REGION: process.env.BEDROCK_REGION || process.env.AWS_REGION || 'us-east-1',
   MODEL_ID: 'us.anthropic.claude-sonnet-4-6',
 } as const;
 
@@ -28,7 +28,7 @@ export const BEDROCK_DEFAULTS = {
 // ============================================================
 
 export const REKOGNITION_DEFAULTS = {
-  REGION: 'us-east-1',
+  REGION: process.env.REKOGNITION_REGION || process.env.AWS_REGION || 'us-east-1',
 } as const;
 
 // ============================================================
@@ -36,7 +36,7 @@ export const REKOGNITION_DEFAULTS = {
 // ============================================================
 
 export const POLLY_DEFAULTS = {
-  REGION: 'us-east-1',
+  REGION: process.env.POLLY_REGION || process.env.AWS_REGION || 'us-east-1',
   VOICE_ID: 'Mizuki',
   ENGINE: 'neural',
 } as const;

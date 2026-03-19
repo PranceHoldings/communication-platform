@@ -19,6 +19,7 @@
 
 import { Handler } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
+import { getEnvironmentName } from '../shared/utils/env-validator';
 
 const prisma = new PrismaClient();
 
@@ -90,7 +91,7 @@ const PRESET_QUERIES: Record<string, string> = {
       $1,  -- sessionId
       'COMBINED',
       'recordings/' || $1 || '/combined-test.webm',
-      'https://prance-dev-recordings.s3.us-east-1.amazonaws.com/recordings/' || $1 || '/combined-test.webm',
+      'https://' || $2 || '/recordings/' || $1 || '/combined-test.webm',  -- cdnDomain (s3_url now uses CDN)
       'https://' || $2 || '/recordings/' || $1 || '/combined-test.webm',  -- cdnDomain
       5242880, 120, 'webm', '1280x720', 24,
       'COMPLETED', NOW(), NOW()
@@ -148,7 +149,7 @@ const PRESET_QUERIES: Record<string, string> = {
 
 export const handler: Handler<MutationPayload, MutationResponse> = async (event) => {
   const startTime = Date.now();
-  const environment = process.env.NODE_ENV || 'dev';
+  const environment = getEnvironmentName();
   const executionMode = event.executionMode || 'execute';
 
   console.log('DB Mutation Request:', {

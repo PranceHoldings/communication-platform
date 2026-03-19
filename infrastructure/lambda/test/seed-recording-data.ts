@@ -7,10 +7,12 @@
 
 import { Handler } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
+import { generateCdnUrl } from '../../shared/utils/url-generator';
+import { getCloudFrontDomain } from '../../shared/utils/env-validator';
 
 const prisma = new PrismaClient();
 
-const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || 'd3mx0sug5s3a6x.cloudfront.net';
+const CLOUDFRONT_DOMAIN = getCloudFrontDomain();
 
 interface SeedEvent {
   sessionId?: string; // Optional: specific session to seed
@@ -104,8 +106,8 @@ export const handler: Handler<SeedEvent, SeedResponse> = async (event) => {
       console.log('Creating recording...');
 
       const mockS3Key = `recordings/${session.id}/combined-${Date.now()}.webm`;
-      const mockS3Url = `https://prance-dev-recordings.s3.us-east-1.amazonaws.com/${mockS3Key}`;
-      const mockCdnUrl = `https://${CLOUDFRONT_DOMAIN}/${mockS3Key}`;
+      const mockS3Url = generateCdnUrl(mockS3Key);
+      const mockCdnUrl = generateCdnUrl(mockS3Key);
 
       await prisma.recording.create({
         data: {

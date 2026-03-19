@@ -7,6 +7,7 @@ import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3
 import { RekognitionAnalyzer, EmotionAnalysisResult } from '../../shared/analysis/rekognition';
 import { AWS_DEFAULTS } from '../../shared/config/defaults';
 import { getFFmpegPath, getFFprobePath } from '../../shared/utils/ffmpeg-helper';
+import { generateCdnUrl } from '../../shared/utils/url-generator';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -143,7 +144,7 @@ export class FrameAnalyzer {
             })
           );
 
-          const frameUrl = `https://${this.bucket}.s3.amazonaws.com/${frameKey}`;
+          const frameUrl = generateCdnUrl(frameKey);
 
           analyzedFrames.push({
             timestamp: frame.timestamp,

@@ -20,9 +20,11 @@
 
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { prisma } from '../shared/database/prisma';
+import { AWS_DEFAULTS } from '../shared/config/defaults';
+import { getRequiredEnv } from '../shared/utils/env-validator';
 
-const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
-const S3_BUCKET = process.env.DB_QUERIES_BUCKET || 'prance-db-queries-dev';
+const s3Client = new S3Client({ region: process.env.AWS_REGION || AWS_DEFAULTS.REGION });
+const S3_BUCKET = getRequiredEnv('DB_QUERIES_BUCKET');
 const MAX_RESULTS = 1000; // Maximum rows to return
 
 // Fix: Enable BigInt serialization to JSON

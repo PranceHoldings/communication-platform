@@ -4,8 +4,9 @@
 
 import jwt from 'jsonwebtoken';
 import { JWTPayload, AuthenticationError, UserRole } from '../types';
+import { getRequiredEnv } from '../utils/env-validator';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+const JWT_SECRET = getRequiredEnv('JWT_SECRET');
 const JWT_EXPIRES_IN = '24h';
 const REFRESH_TOKEN_EXPIRES_IN = '7d';
 

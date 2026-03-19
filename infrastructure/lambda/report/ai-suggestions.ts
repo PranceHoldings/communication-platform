@@ -10,9 +10,10 @@ import {
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime';
 import { ReportData } from './types';
+import { BEDROCK_DEFAULTS } from '../shared/config/defaults';
 
 const bedrockClient = new BedrockRuntimeClient({
-  region: process.env.BEDROCK_REGION || 'us-east-1',
+  region: process.env.BEDROCK_REGION || BEDROCK_DEFAULTS.REGION,
 });
 
 const BEDROCK_MODEL_ID = 'us.anthropic.claude-sonnet-4-20250514-v1:0';

@@ -4,11 +4,11 @@ import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
 import { AWS_DEFAULTS } from '../../shared/config/defaults';
+import { getAnalysisLambdaFunctionName } from '../../shared/utils/env-validator';
 
 // Environment variables
 const AWS_REGION = process.env.AWS_REGION || AWS_DEFAULTS.REGION;
-const ANALYSIS_LAMBDA_FUNCTION_NAME =
-  process.env.ANALYSIS_LAMBDA_FUNCTION_NAME || 'prance-session-analysis-dev';
+const ANALYSIS_LAMBDA_FUNCTION_NAME = getAnalysisLambdaFunctionName();
 
 // Initialize Lambda client
 const lambdaClient = new LambdaClient({ region: AWS_REGION });

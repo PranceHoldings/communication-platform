@@ -5,6 +5,7 @@
  */
 
 import { randomUUID, randomInt } from 'crypto';
+import { getFrontendUrl } from './env-validator';
 
 /**
  * 招待URL用トークンを生成（UUID v4、ハイフンなし）
@@ -95,6 +96,6 @@ export function generateTokenAndPin(pinLength: number = 4): { token: string; pin
  * // url: "https://prance.app/guest/a1b2c3d4..."
  */
 export function generateInviteUrl(token: string, baseUrl?: string): string {
-  const base = baseUrl || process.env.FRONTEND_URL || 'http://localhost:3000';
+  const base = baseUrl || getFrontendUrl();
   return `${base}/guest/${token}`;
 }

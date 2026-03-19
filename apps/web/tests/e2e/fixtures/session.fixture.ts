@@ -30,9 +30,14 @@ export const test = base.extend<SessionFixture>({
         throw new Error('No access token found in localStorage');
       }
 
-      const apiUrl =
-        process.env.NEXT_PUBLIC_API_URL ||
-        'https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      if (!apiUrl) {
+        throw new Error(
+          'NEXT_PUBLIC_API_URL environment variable is required for E2E tests. ' +
+            'Please set it in .env.local or configure it in your environment.'
+        );
+      }
 
       console.log(`🔑 Access Token: ${accessToken.substring(0, 20)}...`);
       console.log(`🌐 API URL: ${apiUrl}/sessions?limit=1`);
@@ -87,9 +92,14 @@ export const test = base.extend<SessionFixture>({
         throw new Error('No access token found in localStorage');
       }
 
-      const apiUrl =
-        process.env.NEXT_PUBLIC_API_URL ||
-        'https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      if (!apiUrl) {
+        throw new Error(
+          'NEXT_PUBLIC_API_URL environment variable is required for E2E tests. ' +
+            'Please set it in .env.local or configure it in your environment.'
+        );
+      }
 
       console.log(`🔑 Access Token (Recording): ${accessToken.substring(0, 20)}...`);
 

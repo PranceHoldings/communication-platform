@@ -1,4 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { getEnvironmentName } from '../shared/utils/env-validator';
 
 /**
  * ヘルスチェックLambda関数
@@ -15,7 +16,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     },
     body: JSON.stringify({
       status: 'healthy',
-      environment: process.env.ENVIRONMENT || 'unknown',
+      environment: getEnvironmentName(),
       timestamp: new Date().toISOString(),
       version: '0.1.0-alpha',
     }),

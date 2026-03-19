@@ -38,6 +38,7 @@ import {
   MEDIA_DEFAULTS,
   DYNAMODB_DEFAULTS,
 } from '../../shared/config/defaults';
+import { getAnalysisLambdaFunctionName, getRequiredEnv, getS3Bucket, getCloudFrontDomain } from '../../shared/utils/env-validator';
 
 // Lambda function version
 const LAMBDA_VERSION = '1.1.0';
@@ -61,25 +62,25 @@ const DEFAULT_VIDEO_RESOLUTION = MEDIA_DEFAULTS.VIDEO_RESOLUTION;
 const DEFAULT_AUDIO_CONTENT_TYPE = MEDIA_DEFAULTS.AUDIO_CONTENT_TYPE;
 const DEFAULT_VIDEO_CONTENT_TYPE = MEDIA_DEFAULTS.VIDEO_CONTENT_TYPE;
 
-// Environment variables (読み取り優先順位: 環境変数 → デフォルト値)
-const ENDPOINT = process.env.WEBSOCKET_ENDPOINT || '';
-const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE_NAME || '';
-const S3_BUCKET = process.env.S3_BUCKET || '';
+// Environment variables (required - fail fast if not set)
+const ENDPOINT = getRequiredEnv('WEBSOCKET_ENDPOINT');
+const CONNECTIONS_TABLE = getRequiredEnv('CONNECTIONS_TABLE_NAME');
+const S3_BUCKET = getS3Bucket();
 const AWS_REGION = process.env.AWS_REGION || DEFAULT_AWS_REGION;
 
 // AI/Audio services configuration
-const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY || '';
-const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION || '';
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || '';
-const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '';
+const AZURE_SPEECH_KEY = getRequiredEnv('AZURE_SPEECH_KEY');
+const AZURE_SPEECH_REGION = getRequiredEnv('AZURE_SPEECH_REGION');
+const ELEVENLABS_API_KEY = getRequiredEnv('ELEVENLABS_API_KEY');
+const ELEVENLABS_VOICE_ID = getRequiredEnv('ELEVENLABS_VOICE_ID');
 const ELEVENLABS_MODEL_ID = process.env.ELEVENLABS_MODEL_ID || DEFAULT_ELEVENLABS_MODEL_ID;
 const BEDROCK_REGION = process.env.BEDROCK_REGION || DEFAULT_BEDROCK_REGION;
 const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || DEFAULT_BEDROCK_MODEL_ID;
 
 // CloudFront configuration
-const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || '';
-const CLOUDFRONT_KEY_PAIR_ID = process.env.CLOUDFRONT_KEY_PAIR_ID || '';
-const CLOUDFRONT_PRIVATE_KEY = process.env.CLOUDFRONT_PRIVATE_KEY || '';
+const CLOUDFRONT_DOMAIN = getCloudFrontDomain();
+const CLOUDFRONT_KEY_PAIR_ID = getRequiredEnv('CLOUDFRONT_KEY_PAIR_ID');
+const CLOUDFRONT_PRIVATE_KEY = getRequiredEnv('CLOUDFRONT_PRIVATE_KEY');
 
 // Language and Media configuration
 const STT_LANGUAGE = process.env.STT_LANGUAGE || DEFAULT_STT_LANGUAGE;
@@ -1283,7 +1284,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               // Invoke analysis Lambda function asynchronously
               await lambdaClient.send(
                 new InvokeCommand({
-                  FunctionName: process.env.ANALYSIS_LAMBDA_FUNCTION_NAME || 'prance-session-analysis-dev',
+                  FunctionName: getAnalysisLambdaFunctionName(),
                   InvocationType: 'Event', // Asynchronous invocation
                   Payload: JSON.stringify({ sessionId: connectionData.sessionId }),
                 })

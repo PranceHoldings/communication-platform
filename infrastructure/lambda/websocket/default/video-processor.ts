@@ -12,6 +12,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { MEDIA_DEFAULTS } from '../../shared/config/defaults';
 import { getFFmpegPath } from '../../shared/utils/ffmpeg-helper';
+import { generateCdnUrl } from '../../shared/utils/url-generator';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -255,7 +256,7 @@ export class VideoProcessor {
     // If CloudFront is not configured, return S3 URL
     if (!this.cloudFrontDomain || !this.cloudFrontKeyPairId || !this.cloudFrontPrivateKey) {
       console.warn('[VideoProcessor] CloudFront not configured, returning S3 URL');
-      return `https://${this.bucket}.s3.amazonaws.com/${videoKey}`;
+      return generateCdnUrl(videoKey);
     }
 
     const url = `https://${this.cloudFrontDomain}/${videoKey}`;
@@ -278,7 +279,7 @@ export class VideoProcessor {
     } catch (error) {
       console.error('[VideoProcessor] Failed to generate CloudFront signed URL:', error);
       // Fallback to S3 URL
-      return `https://${this.bucket}.s3.amazonaws.com/${videoKey}`;
+      return generateCdnUrl(videoKey);
     }
   }
 
