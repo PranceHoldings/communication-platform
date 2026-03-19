@@ -117,6 +117,10 @@ if [ -n "$DEFAULT_ENV_MATCHES" ]; then
     if echo "$line" | grep -q "^\./infrastructure/lib/"; then
       continue
     fi
+    # Exclude CDK bin directory (app entry point)
+    if echo "$line" | grep -q "^\./infrastructure/bin/"; then
+      continue
+    fi
     # Exclude CDK build artifacts
     if echo "$line" | grep -q "^\./infrastructure/cdk.out/"; then
       continue
