@@ -12,7 +12,7 @@ import { ReportData, ReportGenerationOptions } from './types';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
-const BUCKET_NAME = process.env.STORAGE_BUCKET_NAME || 'prance-storage-dev';
+const BUCKET_NAME = process.env.S3_BUCKET || 'prance-storage-dev';
 
 /**
  * Generate charts and prepare report data

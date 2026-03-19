@@ -210,7 +210,7 @@ export class ApiLambdaStack extends cdk.Stack {
       FRONTEND_URL: `https://${config.domain.fullDomain}`,
       GUEST_RATE_LIMIT_TABLE_NAME: props.guestRateLimitTable.tableName,
       BEDROCK_REGION: this.region,
-      STORAGE_BUCKET_NAME: props.recordingsBucket.bucketName,
+      S3_BUCKET: props.recordingsBucket.bucketName,
     };
 
     // Lambda共通設定
