@@ -309,1305 +309,299 @@ docs/01-getting-started/             ← 初心者向けガイド
 **条件:** `packages/database/prisma/schema.prisma` を変更した場合
 
 **❌ 禁止事項:**
+- マイグレーション実行せずにLambda関数デプロイ
+- マイグレーション実行の延期
+- Prisma Client再生成のスキップ
 
-- Prismaスキーマ変更後、マイグレーション実行せずにLambda関数をデプロイすること
-- マイグレーション実行を「後で」に延期すること
-- 「ローカルで動くから大丈夫」という理由でスキップすること
-
-**✅ 必須実行手順（この順序で実行）:**
-
+**✅ 推奨方法:**
 ```bash
-# Step 1: マイグレーションファイル生成
-cd packages/database
-npx prisma migrate dev --name <変更内容の説明>
-
-# Step 2: Prisma Client再生成
-npx prisma generate
-
-# Step 3: Lambda関数デプロイ（マイグレーション適用）
-cd ../../infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
-
-# Step 4: データベースマイグレーション実行
-aws lambda invoke --function-name prance-db-migration-dev \
-  --payload '{}' /tmp/migration-result.json
-cat /tmp/migration-result.json
-
-# Step 5: マイグレーション成功確認
-aws lambda invoke --function-name prance-sessions-get-dev \
-  --payload '{"pathParameters":{"id":"test"}}' /tmp/test-result.json
-# エラーがなければ成功
-```
-
-**チェックリスト:**
-
-- [ ] `prisma migrate dev` 実行済み？
-- [ ] `prisma generate` 実行済み？
-- [ ] Lambda関数デプロイ済み？
-- [ ] データベースマイグレーション実行済み？
-- [ ] 動作確認済み？
-
-#### Rule 1-B: Prismaスキーマ変更の自動化・強制実行（2026-03-18追加）🆕
-
-**🔴 最重要: Rule 1の手順を自動実行する統合スクリプトを使用すること**
-
-**過去の問題:**
-- Rule 1の手順を手動で実行すると、ステップを忘れる
-- データベースマイグレーション実行を忘れて500エラー
-- Prisma Client再生成を忘れてスキーマ不整合
-
-**✅ 推奨方法（統合デプロイスクリプト使用）:**
-
-```bash
-# Dev環境へのデプロイ（マイグレーション統合）
+# 統合デプロイスクリプト使用（自動化）
 cd infrastructure
 npm run deploy:dev-migration
-
-# Production環境へのデプロイ（マイグレーション統合）
-npm run deploy:production-migration
 ```
 
-**このスクリプトが自動実行する内容:**
-1. ✅ Prismaスキーマ変更検出
-2. ✅ Prisma Client再生成 (`npx prisma generate`)
-3. ✅ Lambda関数デプロイ (CDK deploy)
-4. ✅ データベースマイグレーション実行 (Lambda invoke)
-5. ✅ デプロイ検証 (Health check)
+> 詳細手順: [infrastructure/CLAUDE.md - Rule 1](infrastructure/CLAUDE.md)
 
-**Git pre-commit hookでの自動検証（推奨）:**
+#### Rule 1-B: 統合デプロイスクリプト使用の徹底（2026-03-18追加）🆕
 
+**🔴 最重要: 手動実行ではなく統合スクリプトを使用すること**
+
+**自動化されるプロセス:**
+1. Prismaスキーマ変更検出 → 2. Prisma Client再生成 → 3. Lambda関数デプロイ → 4. DBマイグレーション実行 → 5. デプロイ検証
+
+**Git pre-commit hook設定:**
 ```bash
-# 一度だけ実行（プロジェクト設定）
 ln -s ../../scripts/prisma-schema-guard.sh .git/hooks/pre-commit
 ```
 
-**pre-commit hookの動作:**
-- Prismaスキーマ変更を検出
-- コミット時に必須手順の実行を促す
-- 自動実行モード: マイグレーション生成 + Prisma Client再生成
-- 手動実行モード: コミットをブロック、手動実行を要求
-- スキップモード: 警告表示（非推奨）
-
-**スクリプト詳細:**
-- `scripts/prisma-schema-guard.sh` - Git pre-commit hook
-- `infrastructure/scripts/deploy-with-migration.sh` - 統合デプロイスクリプト
-
-> 詳細: [infrastructure/CLAUDE.md](infrastructure/CLAUDE.md)
+> 詳細: [infrastructure/CLAUDE.md - Rule 1-B](infrastructure/CLAUDE.md)
 
 #### Rule 2: 環境変数変更時の必須確認
 
 **条件:** `.env.local` または `infrastructure/.env` を変更した場合
 
-**必須実行手順:**
-
+**必須実行:**
 ```bash
-# Step 1: 検証スクリプト実行
-./scripts/validate-env.sh
-
-# Step 2: Next.js再起動
-pkill -f "next dev"
-npm run dev
-
-# Step 3: Lambda関数への反映
-cd infrastructure
-./deploy.sh dev
+./scripts/validate-env.sh          # 検証
+pkill -f "next dev" && npm run dev  # Next.js再起動
+cd infrastructure && ./deploy.sh dev # Lambda反映
 ```
+
+> 詳細: [docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md](docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md)
 
 #### Rule 3: 根本原因分析の原則（CRITICAL - 2026-03-10追加）
 
-**🔴 最重要: 問題解決時は必ず根本原因を調査・対応すること**
+**🔴 最重要: 対症療法ではなく根本原因を修正すること**
 
-**❌ 禁止事項:**
+**❌ 禁止:** エラーの症状だけに対応、「動けばいい」で終わる、同じエラーの繰り返しを放置
 
-- エラーメッセージの**症状だけ**に対応すること
-- 「動けばいい」という対症療法で終わること
-- 同じエラーが繰り返し発生することを放置すること
-- 「一時的な回避策」で満足すること
-
-**✅ 必須実行手順:**
-
-```
+**✅ 必須プロセス:**
 1. エラーの再現性を確認
-   - 一度だけ？ 常に発生？ 特定条件で発生？
-
-2. エラーの全体像を把握
-   - ログファイル全体を確認（最後のエラーだけ見ない）
-   - 複数回実行されている兆候がないか確認
-   - スタックトレース・呼び出しチェーンを追跡
-
-3. 根本原因の特定
-   - 「なぜ？」を5回繰り返す（5 Whys分析）
-   - 設計上の問題がないか確認
-   - ドキュメント・仕様を再確認
-
+2. ログ全体・スタックトレースを追跡
+3. 「なぜ？」を5回繰り返す（5 Whys分析）
 4. 根本的な解決策を実装
-   - 症状ではなく原因を修正
-   - 同様の問題が再発しない設計に変更
-   - テストで再発防止を確認
-
 5. ドキュメント・メモリに記録
-   - 問題の原因と解決策を記録
-   - 同様の問題が発生した際の参考資料とする
-```
 
-**過去の失敗例（2026-03-10）:**
+**教訓:** 繰り返し発生するエラーは設計上の問題を疑う。
 
-**問題:** clean-deploy.sh実行時にENOTEMPTYエラーが頻発
-
-❌ **対症療法（誤り）:**
-- 4段階リトライロジックでnode_modules削除を強化
-- 「削除できないなら別の方法で」という表面的対応
-
-✅ **根本原因分析（正解）:**
-- npm prepare hookが3重に実行されていた
-- clean-deploy.sh → npm install → prepare hook → prepare.sh → npm ci → prepare hook（無限ループ）
-- 根本解決: prepare hookを廃止、`--ignore-scripts`で明示的制御
-
-**教訓:**
-- 繰り返し発生するエラーは設計上の問題を疑う
-- 「なぜ3回もログが出ているのか？」という疑問を持つ
-- npm lifecycle scriptsの動作を深く理解する
-
-**チェックリスト:**
-
-- [ ] エラーの再現条件を特定した？
-- [ ] ログ全体を確認した？（一部だけでなく）
-- [ ] 呼び出しスタックを追跡した？
-- [ ] 「なぜ？」を5回繰り返した？
-- [ ] 根本原因を特定した？
-- [ ] 対症療法ではなく根本解決を実装した？
-- [ ] 再発防止をテストで確認した？
-- [ ] ドキュメント・メモリに記録した？
+> 詳細・過去の失敗例: [memory/root-cause-analysis.md](memory/root-cause-analysis.md)
 
 #### Rule 4: テスト・実装確認の原則（CRITICAL - 2026-03-11追加）
 
 **🔴 最重要: 推測でテストを書かず、必ず実装を確認してから作成すること**
 
-**❌ 禁止事項:**
+**❌ 禁止:** URLパス・ルート構造の推測、「一般的な慣習」だけでコード作成、ドキュメントへの曖昧な記載
 
-- URLパス・ルート構造を**推測**でテスト作成すること
-- 「一般的な慣習」だけでコード作成すること
-- 実装を読まずにAPIエンドポイントを決定すること
-- ドキュメントに具体的パスを明記せず「Scenariosに移動」等の曖昧表現を使うこと
-
-**✅ 必須実行手順:**
-
+**✅ 必須プロセス:**
 ```bash
-# 1. 実装を確認 - find/grep でコードベースを検索
-
-# Next.jsルート確認
+# 実装確認（例：Next.jsルート）
 find apps/web/app -name "page.tsx" | grep -v node_modules
 
 # APIエンドポイント確認
 grep -r "router\\.get\|router\\.post" infrastructure/lambda --include="*.ts"
-
-# コンポーネント確認
-find apps/web/components -name "*.tsx" | grep -i "indicator\|waveform\|keyboard"
 ```
 
-**必須手順:**
+**教訓:** 推測は必ず失敗する。コードが唯一の真実の源。
 
-1. **実装を確認** - コードベースを検索して実際の構造を把握
-2. **構造を理解** - Next.js App Router等のフレームワーク構造を理解
-3. **検証してから作成** - 推測ではなく事実に基づいてテスト/コード作成
-4. **ドキュメントに明記** - 具体的なパス・URLをドキュメントに記載
-
-**過去の失敗例（2026-03-11 Day 12）:**
-
-**問題:** E2Eテストで `/scenarios`, `/avatars`, `/sessions` を404エラー
-
-❌ **推測による失敗:**
-- RESTful APIの一般的慣習から `/resources` パスを推測
-- DAY_12_E2E_TEST_REPORT.md に「Scenariosに移動」と曖昧に記載
-- 実装を確認せずにテストパス決定
-
-✅ **正しいアプローチ:**
-- `find apps/web/app -name "page.tsx"` で実装確認
-- 正解: `/dashboard/scenarios`, `/dashboard/avatars`, `/dashboard/sessions`
-- Next.js App Routerでは認証必要ページは `/dashboard/` 配下にグループ化される
-
-**教訓:**
-- テストパスは必ず実装から確認
-- ドキュメントに具体的なURLパスを明記（「Scenariosページ」ではなく「/dashboard/scenarios」）
-- 推測は必ず失敗する - コードが唯一の真実の源
-- フレームワークの慣習・パターンを理解する
-
-**チェックリスト:**
-
-- [ ] 実装を検索・確認した？
-- [ ] ルート/エンドポイント構造を理解した？
-- [ ] テストパスを実装から取得した？
-- [ ] ドキュメントに具体的なURLパスを記載した？
-- [ ] 推測ではなく事実に基づいて作成した？
+> 詳細・過去の失敗例: [CODING_RULES.md - Rule 4](CODING_RULES.md)
 
 #### Rule 5: 多言語対応システムの統一（CRITICAL - 2026-03-11追加）
 
 **🔴 最重要: 独自I18nProviderのみ使用、next-intlは使用禁止**
 
-**❌ 禁止事項:**
+**❌ 禁止:** next-intl の `useTranslations`/`getTranslations` 使用
 
-- next-intl の `useTranslations` を使用すること
-- next-intl の `getTranslations` を使用すること
-- 複数のi18nシステムを混在させること
-
-**✅ 必須実行:**
-
+**✅ 正しい方法:**
 ```typescript
-// ✅ 正しい - 独自I18nProvider使用
 import { useI18n } from '@/lib/i18n/provider';
-
 export function MyComponent() {
   const { t } = useI18n();
   return <div>{t('common.welcome')}</div>;
 }
-
-// ❌ 間違い - next-intl使用禁止
-import { useTranslations } from 'next-intl';           // ❌
-import { getTranslations } from 'next-intl/server';    // ❌
 ```
 
-**チェック方法:**
-
+**検証:**
 ```bash
-# コミット前に必ず実行
 grep -r "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" | grep -v node_modules
-
-# 期待結果: 何も表示されない（0件）
+# 期待結果: 0件
 ```
 
-**過去の失敗例（2026-03-11）:**
-
-**問題:** `useErrorMessage` フックで next-intl を使用 → Runtime Error
-
-❌ **不完全な移行による混在:**
-- next-intl から独自システムへ移行途中
-- 設定ファイル残骸: i18n/request.ts, withNextIntl()
-- 一部ファイルで next-intl 残存
-
-✅ **根本解決:**
-- next-intl 完全削除（パッケージ・設定・ファイル）
-- 全ファイルを useI18n に統一
-- ガイドライン作成（I18N_SYSTEM_GUIDELINES.md）
-
-**教訓:**
-- 移行は完全に行う（中途半端は必ず再発）
-- 古いシステムの残骸を全て削除
-- チェックリストでコミット前確認
-
-**チェックリスト:**
-
-- [ ] next-intl のインポートがない？
-- [ ] useI18n フックを使用している？
-- [ ] messages.ts に翻訳ファイルをインポート済み？
-- [ ] 翻訳キーは `category.key` 形式？
-
-> 詳細: docs/07-development/I18N_SYSTEM_GUIDELINES.md
+> 詳細: [docs/07-development/I18N_SYSTEM_GUIDELINES.md](docs/07-development/I18N_SYSTEM_GUIDELINES.md)
 
 #### Rule 6: UI設定項目のデータベース同期原則（CRITICAL - 2026-03-15追加）
 
 **🔴 最重要: UI上で設定可能にした項目は、必ずデータベースに正しく保存・取得されることを保証すること**
 
-**❌ 禁止事項:**
+**❌ 禁止:** GET APIの select 漏れ、UPDATE APIの updateData 漏れ、不適切なデフォルト値
 
-- UI設定項目を追加したのに、GET APIの select に含めないこと
-- UPDATE/CREATE APIの updateData に含めないこと
-- 組織設定のデフォルト値を不適切な値（機能を無効化する値）にすること
-- データフロー全体（Scenario > Organization > System Default）の検証を怠ること
+**✅ 必須プロセス（5 Phase）:**
+1. データモデル設計（Prismaスキーマ + マイグレーション）
+2. 型定義（packages/shared）
+3. バックエンド実装（GET/UPDATE API + DEFAULT_SETTINGS）
+4. フロントエンド実装（型定義 + フォーム）
+5. 検証（`npm run validate:ui-settings`）
 
-**✅ 必須実行手順（5 Phase）:**
+**教訓:** デフォルト値は「最も便利な値」に設定（有効化 > 無効化）。
 
-**Phase 1: データモデル設計**
-```bash
-# Prismaスキーマにフィールド追加
-# packages/database/prisma/schema.prisma
-showSilenceTimer Boolean? @map("show_silence_timer")
-
-# マイグレーション作成
-cd packages/database
-npx prisma migrate dev --name add_<feature>_settings
-npx prisma generate
-```
-
-**Phase 2: 型定義**
-```typescript
-// packages/shared/src/types/index.ts に追加
-export interface Scenario {
-  showSilenceTimer?: boolean;
-}
-```
-
-**Phase 3: バックエンド実装**
-```typescript
-// GET API: select に含める
-const scenario = await prisma.scenario.findUnique({
-  select: {
-    showSilenceTimer: true,  // ✅ 必須
-  },
-});
-
-// UPDATE API: body抽出 → updateData → select（レスポンス）
-const { showSilenceTimer } = body;
-if (showSilenceTimer !== undefined) updateData.showSilenceTimer = showSilenceTimer;
-
-// 組織設定: DEFAULT_SETTINGS に追加
-const DEFAULT_SETTINGS = {
-  showSilenceTimer: true,  // ✅ 適切なデフォルト値
-};
-```
-
-**Phase 4: フロントエンド実装**
-```typescript
-// API型定義に追加
-export interface Scenario {
-  showSilenceTimer?: boolean;
-}
-
-// フォーム実装
-const [showSilenceTimer, setShowSilenceTimer] = useState<boolean | undefined>(undefined);
-
-// API送信
-await updateScenario(id, { showSilenceTimer });
-```
-
-**Phase 5: 検証**
-```bash
-# コミット前に必ず実行
-npm run validate:ui-settings
-
-# 特定フィールドのみ検証
-npm run validate:ui-settings -- --field showSilenceTimer
-```
-
-**過去の失敗例（2026-03-15）:**
-
-**問題:** 沈黙タイマー設定 - UI上で設定可能だが、組織設定デフォルト値が `false` でハードコード
-
-**影響:**
-- シナリオ設定を「デフォルト使用」にすると、タイマーが表示されない
-- ユーザーが有効化したつもりでも動作しない
-- データフロー全体の検証が不十分だった
-
-**根本原因:**
-```typescript
-// ❌ 間違い - infrastructure/lambda/organizations/settings/index.ts
-const DEFAULT_SETTINGS = {
-  showSilenceTimer: false,  // 機能を無効化するデフォルト値
-};
-```
-
-**教訓:**
-- デフォルト値は「最も便利な値」にする（有効化 > 無効化）
-- 階層的設定の全レイヤーを検証する（Scenario > Organization > System Default）
-- UI設定項目追加時は必ず検証スクリプトを実行する
-
-**チェックリスト:**
-
-- [ ] Prismaスキーマにフィールド追加？
-- [ ] GET APIの select に含まれている？
-- [ ] UPDATE/CREATE APIの updateData に含まれている？
-- [ ] 組織設定 DEFAULT_SETTINGS に適切なデフォルト値？
-- [ ] フロントエンド型定義に追加？
-- [ ] フォーム実装完了？
-- [ ] `npm run validate:ui-settings` 実行して合格？
-
-> 詳細: docs/07-development/UI_SETTINGS_DATABASE_SYNC_RULES.md
+> 詳細: [docs/07-development/UI_SETTINGS_DATABASE_SYNC_RULES.md](docs/07-development/UI_SETTINGS_DATABASE_SYNC_RULES.md)
 
 #### Rule 7: Lambda関数デプロイメント原則（CRITICAL - 2026-03-15追加）🆕
 
 **🔴 最重要: Lambda関数デプロイはCDK経由のみ。手動zipアップロード絶対禁止**
 
-**❌ 絶対禁止事項:**
+**❌ 禁止:** 手動zipアップロード（TypeScriptがそのままzip → Runtime Error）
 
+**✅ 正しい方法:**
 ```bash
-# 手動zipアップロード（絶対に実行してはいけない）
-cd infrastructure/lambda/websocket/default
-zip -r lambda-deployment.zip .
-aws lambda update-function-code --function-name prance-websocket-default-dev --zip-file fileb://lambda-deployment.zip
+cd infrastructure && npm run deploy:lambda
+# CDKが自動実行: esbuildトランスパイル → bundling → 最適化zip → Lambda更新
 ```
 
-**理由:**
-- TypeScriptファイル（.ts）がそのままzipされる
-- esbuildによるトランスパイル（TypeScript → JavaScript）がスキップされる
-- Lambda Runtimeは`.js`ファイルを期待するが、`.ts`ファイルしかない
-- 結果: `Runtime.ImportModuleError: Cannot find module 'index'`
-
-**✅ 正しいデプロイ方法（唯一の方法）:**
-
+**CDKが「no changes」と判断した場合:**
 ```bash
-# WebSocket Lambda関数のデプロイ
-cd infrastructure
-npm run deploy:lambda
-
-# CDKが自動的に実行する処理:
-# 1. esbuildでトランスパイル (index.ts → index.js)
-# 2. 依存関係のbundling
-# 3. 共有モジュール・ネイティブ依存関係のコピー
-# 4. 最適化されたzipファイル生成
-# 5. Lambda関数への自動アップロード
-```
-
-**CDKが「no changes」と判断した場合の対処:**
-
-```bash
-# Option 1: ソースコードに小さな変更を加える（推奨）
-# index.ts のコメントに現在時刻（秒まで）を追加
-# Last updated: 2026-03-15 07:50:43 UTC
+# Option 1: ソースコードに小さな変更（推奨）
+# index.ts のコメントに現在時刻追加
 
 # Option 2: CDKキャッシュクリア
 rm -rf infrastructure/cdk.out/
-
-# 再デプロイ
-cd infrastructure && npm run deploy:lambda
 ```
 
-**デプロイ前の検証:**
+**教訓:** 焦って設計を無視した対処（手動zip）をしない。
 
-```bash
-# 手動zipファイルが存在しないか確認
-bash scripts/validate-deployment-method.sh
-
-# 期待される結果:
-# ✅ All validations passed
-# ❌ Manual zip files detected → 削除してからデプロイ
-```
-
-**過去の失敗例（2026-03-15）:**
-
-**問題:** WebSocket接続が全て失敗、Internal server error
-
-**エラーログ:**
-```
-Runtime.ImportModuleError: Error: Cannot find module 'index'
-```
-
-**発生プロセス:**
-1. CDKデプロイ → "no changes"
-2. 焦って手動zipアップロードを試みる
-3. TypeScriptファイルをそのままzip
-4. Lambda関数起動失敗
-
-**教訓:**
-- **手動zipアップロードは絶対に使用しない**
-- CDKの自動ビルドプロセス（esbuild）を信頼する
-- 焦って設計を無視した対処をしない
-- ソースコードに小さな変更を加えてハッシュを更新
-
-**チェックリスト:**
-
-- [ ] CDK経由でデプロイしている？（`npm run deploy:lambda`）
-- [ ] 手動zipファイルが存在しない？（`validate-deployment-method.sh`実行）
-- [ ] デプロイ後、Lambda関数のLastModifiedタイムスタンプを確認？
-- [ ] CloudWatch Logsでエラーがないか確認？
-
-> 詳細: memory/deployment-rules.md
+> 詳細: [memory/deployment-rules.md](memory/deployment-rules.md)
 
 #### Rule 8: NULL vs UNDEFINED使い分け原則（CRITICAL - 2026-03-16追加）🆕
 
 **🔴 最重要: null と undefined を各レイヤーで一貫して使い分けること**
 
 **基本原則:**
+- Database/Backend Lambda/API: `null`（SQL/JSON標準）
+- Frontend API Types: `Type | null`（APIレスポンスと一致）
+- Frontend UI State: `undefined`（TypeScript optional型）
 
-| レイヤー | 使用する値 | 理由 |
-|---------|-----------|------|
-| Database | `NULL` | SQL標準 |
-| Backend Lambda | `null` | JSON標準 |
-| API (Request/Response) | `null` | JSON.stringify()で保持 |
-| Frontend API Types | `Type \| null` | APIレスポンスと一致 |
-| Frontend UI State | `undefined` | TypeScript optional型 |
-
-**変換ルール:**
-
+**変換:**
 ```typescript
-// ✅ API取得時（Backend → Frontend）
+// API取得時: null → undefined
 setField(apiResponse.field === null ? undefined : apiResponse.field);
 
-// ✅ API送信時（Frontend → Backend）
-const updateData = {
-  field: stateField === undefined ? null : stateField,
-};
+// API送信時: undefined → null
+const updateData = { field: stateField === undefined ? null : stateField };
 ```
 
-**❌ よくある間違い:**
-
-```typescript
-// ❌ API型でnullを許容していない
-export interface Scenario {
-  showSilenceTimer?: boolean;  // null が型エラー
-}
-
-// ❌ undefinedをJSON送信（消える）
-const updateData = {
-  showSilenceTimer: showSilenceTimer,  // undefined → 削除される
-};
-
-// ❌ nullをUI状態で使用
-const [field, setField] = useState<boolean | null>(null);  // undefinedを使うべき
-```
-
-**チェックリスト:**
-
-- [ ] Prisma Schema: `Type?` で nullable
-- [ ] Backend API: `'field' in body` で null 検出
-- [ ] Frontend API Types: `Type | null`
-- [ ] Frontend UI State: `Type | undefined`
-- [ ] API取得時: `null → undefined` 変換
-- [ ] API送信時: `undefined → null` 変換
-
-> 詳細: docs/07-development/NULL_UNDEFINED_GUIDELINES.md
+> 詳細: [docs/07-development/NULL_UNDEFINED_GUIDELINES.md](docs/07-development/NULL_UNDEFINED_GUIDELINES.md)
 
 #### Rule 9: Enum統一化原則（CRITICAL - 2026-03-18追加）🆕
 
 **🔴 最重要: Enumのインライン定義禁止、共有型のみ使用すること**
 
-**✅ 2026-03-18完了: Enum統一化実施済み**
-- 17箇所のインライン定義を削除
-- UserRoleに'GUEST'を追加（Prismaスキーマと一致）
-- packages/shared + infrastructure/lambda/shared/types で一元管理
+**✅ 2026-03-18完了:** 17箇所のインライン定義削除、packages/shared + infrastructure/lambda/shared/types で一元管理
 
-**基本原則:**
-
-| レイヤー | Enum定義場所 | 使用方法 |
-|---------|------------|---------|
-| Prisma Schema | `packages/database/prisma/schema.prisma` | Single Source of Truth |
-| Shared Types | `packages/shared/src/types/index.ts` | TypeScript type export |
-| Lambda Types | `infrastructure/lambda/shared/types/index.ts` | Re-export shared types |
-| Frontend | Import from `@prance/shared` | 直接使用 |
-
-**❌ 禁止事項:**
-
-```typescript
-// ❌ インライン定義（重複定義）
-const [filter, setFilter] = useState<'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR'>('all');
-
-// ❌ 型キャストでインライン定義
-role: user.role as 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER',
-
-// ❌ Lambda関数で独自定義
-type AvatarType = 'TWO_D' | 'THREE_D';  // 共有型があるのに再定義
-```
+**❌ 禁止:** インライン定義（`'ACTIVE' | 'PROCESSING'`）、独自Enum定義
 
 **✅ 正しい方法:**
-
 ```typescript
-// ✅ Frontend - 共有型からimport
+// Frontend
 import type { SessionStatus, AvatarType, UserRole } from '@prance/shared';
-
 const [filter, setFilter] = useState<SessionStatus | 'all'>('all');
-const [type, setType] = useState<AvatarType>('THREE_D');
 
-// ✅ Lambda - 共有型からimport
+// Lambda
 import type { UserRole, AvatarType } from '../../shared/types';
-
-const payload: JWTPayload = {
-  role: user.role as UserRole,  // 共有型を使用
-};
-
-const type = queryParams.type as AvatarType | undefined;
+const payload: JWTPayload = { role: user.role as UserRole };
 ```
 
-**検証方法:**
+**効果:** 型安全性向上、保守性向上、DRY原則遵守（17箇所 → 0箇所）
 
-```bash
-# UserRole inline definitions検出（0件が正常）
-grep -rn "'SUPER_ADMIN'\s*|\s*'CLIENT_ADMIN'" apps/web infrastructure/lambda --include="*.ts" | grep -v "packages/shared" | grep -v "node_modules"
-
-# AvatarType inline definitions検出（0件が正常）
-grep -rn "'TWO_D'\s*|\s*'THREE_D'" apps/web infrastructure/lambda --include="*.ts" | grep -v "packages/shared" | grep -v "node_modules"
-
-# SessionStatus inline definitions検出（0件が正常）
-grep -rn "'ACTIVE'\s*|\s*'PROCESSING'" apps/web infrastructure/lambda --include="*.ts" | grep -v "packages/shared" | grep -v "node_modules"
-```
-
-**効果:**
-
-1. **型安全性の向上** - Enum値の変更時に全箇所で型エラーが検出される
-2. **保守性の向上** - Enum定義の変更が2箇所で完結（packages/shared + infrastructure/lambda/shared/types）
-3. **一貫性の確保** - 全レイヤーで同じ定義を使用
-4. **DRY原則の遵守** - 重複定義の排除（17箇所 → 0箇所）
-
-**チェックリスト:**
-
-- [ ] Enum使用時は必ず共有型からimport
-- [ ] インライン定義（`'VALUE1' | 'VALUE2'`）を使用しない
-- [ ] コミット前に検証スクリプト実行（`npm run validate:enums` - 将来実装予定）
-- [ ] 新しいEnum追加時は packages/shared と infrastructure/lambda/shared/types の両方を更新
-
-**ドキュメント:**
-
-- `ENUM_CONSISTENCY_REPORT.md` - 監査レポート（問題検出）
-- `ENUM_UNIFICATION_COMPLETE.md` - 完了レポート（修正内容）
-
-> 詳細: 上記ドキュメント参照
+> 詳細: [docs/09-progress/archives/2026-03-18-temporary-reports/ENUM_UNIFICATION_COMPLETE.md](docs/09-progress/archives/2026-03-18-temporary-reports/ENUM_UNIFICATION_COMPLETE.md)
 
 ---
 
 ### 重要な設計原則
 
 #### 1. コード品質
-
-- **型安全性**: TypeScript厳密モード使用
-- **テスト**: 単体テスト（Jest）、E2Eテスト（Playwright）
-- **Linting**: ESLint + Prettier、一貫したコードスタイル
-- **セキュリティ**: OWASP Top 10対策、入力バリデーション必須
+TypeScript厳密モード、Jest/Playwright、ESLint/Prettier、OWASP Top 10対策
 
 #### 2. サーバーレス最適化
-
-- **コールドスタート対策**: Provisioned Concurrency（重要API）
-- **Lambda最適化**: メモリ適正化、ARM64 (Graviton2) 使用
-- **非同期処理**: Step Functionsで長時間処理を分割
-- **コスト最適化**: 使用量ベース課金、アイドル時コスト最小化
+Provisioned Concurrency、ARM64 (Graviton2)、Step Functions、コスト最適化
 
 #### 3. セキュリティ
+Cognito + Lambda Authorizer (RBAC)、SSE-KMS/暗号化DB、IAM最小権限、CloudTrail監査
 
-- **認証・認可**: Cognito + Lambda Authorizer、RBAC
-- **データ暗号化**: S3 (SSE-KMS), Aurora (暗号化DB)
-- **最小権限の原則**: IAMロール、Secrets Manager
-- **監査ログ**: CloudTrail、アクセスログ保持
+#### 4. 環境変数管理
+**🔴 最重要:** AWS RDS Aurora Serverless v2専用。ローカルPostgreSQL使用禁止。
 
-#### 4. 環境変数管理（絶対原則）
+**検証:** `./scripts/validate-env.sh`（コミット前必須）
 
-**🔴 最重要: このプロジェクトはAWS RDS Aurora Serverless v2専用です**
-
-ローカルPostgreSQLは一切使用しません。全てのデータベース操作はAWS RDS経由で行います。
-
-**❌ 絶対にやってはいけないこと:**
-
-```bash
-# ローカルPostgreSQLへの接続文字列
-DATABASE_URL="postgresql://postgres:password@localhost:5432/prance_dev"
-DATABASE_URL="postgresql://*@localhost/*"
-```
-
-**✅ 正しい設定:**
-
-```bash
-# AWS RDS Aurora Serverless v2への接続
-DATABASE_URL="postgresql://pranceadmin:PASSWORD@*.cluster-*.us-east-1.rds.amazonaws.com:5432/prance"
-```
-
-**必須検証手順:**
-
-```bash
-# 環境変数が正しく設定されているか検証
-./scripts/validate-env.sh
-
-# コミット前に必ず実行
-git add . && ./scripts/validate-env.sh && git commit -m "..."
-```
-
-**更新が必要なファイル:**
-
-1. `.env.local` - プロジェクトルート
-2. `infrastructure/.env` - インフラディレクトリ
-
-**これらのファイルは`.gitignore`で除外されているため、手動で正しい値に更新する必要があります。**
-
-**接続情報の取得方法:**
-
-```bash
-# RDS接続情報を取得
-aws cloudformation describe-stacks --stack-name Prance-dev-Database \
-  --query 'Stacks[0].Outputs'
-
-# Secrets Managerから認証情報を取得
-aws secretsmanager get-secret-value --secret-id <SecretArn>
-```
+**更新ファイル:** `.env.local`（ルート）、`infrastructure/.env`
 
 > 詳細: [docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md](docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md)
 
 #### 5. 多言語対応
+**🌍 対応言語:** 10言語（日英中韓西葡仏独伊）、24リージョナルバリアント
 
-**🌍 対応言語（10言語、24リージョナルバリアント）**
+**言語コード:** ISO 639-1（UI）、BCP-47（STT）
 
-| 言語     | ISO 639-1 | STTコード | リージョナルバリアント数 |
-| -------- | --------- | --------- | ------------------------ |
-| 日本語   | ja        | ja-JP     | 1                        |
-| 英語     | en        | en-US     | 4 (US, GB, AU, CA)       |
-| 中国語簡体 | zh-CN     | zh-CN     | 1                        |
-| 中国語繁体 | zh-TW     | zh-TW     | 2 (TW, HK)               |
-| 韓国語   | ko        | ko-KR     | 1                        |
-| スペイン語 | es        | es-ES     | 3 (ES, MX, AR)           |
-| ポルトガル語 | pt        | pt-BR     | 2 (BR, PT)               |
-| フランス語 | fr        | fr-FR     | 2 (FR, CA)               |
-| ドイツ語 | de        | de-DE     | 1                        |
-| イタリア語 | it        | it-IT     | 1                        |
+**🔴 重要:** zh-CN/zh-TW は完全に異なる言語として扱う（'zh'に削減禁止）
 
-**言語コード体系:**
+**リソース管理:**
+- `language-config.ts` - 言語メタデータ（単一の真実の源）
+- `apps/web/messages/{languageCode}.json` - UI翻訳
+- 文字列ハードコード禁止、Middlewareで一元管理
 
-- **ISO 639-1** (`'ja'`, `'en'`, `'zh-CN'`, `'zh-TW'`) - UI言語、シナリオ言語
-- **BCP-47** (`'ja-JP'`, `'en-US'`, `'zh-CN'`, `'zh-TW'`) - Azure STT、リージョナルバリアント
+**URL設計:** 全言語で共通URL（ロケールプレフィックスなし）
 
-**🔴 重要: 中国語の特別扱い**
-
-```typescript
-// zh-CN（簡体字）と zh-TW（繁体字）は完全に異なる言語として扱う
-// 'zh' に削減してはいけない
-getBaseLanguageCode('zh-CN') // → 'zh-CN' (NOT 'zh')
-getBaseLanguageCode('zh-TW') // → 'zh-TW' (NOT 'zh')
-getBaseLanguageCode('ja-JP') // → 'ja' (OK to reduce)
-```
-
-**リソースファイルベース言語管理:**
-
-```
-infrastructure/lambda/shared/config/language-config.ts  # 言語メタデータ定義（単一の真実の源）
-apps/web/messages/{languageCode}.json                   # UI翻訳リソース
-```
-
-**新言語追加フロー（コード変更不要）:**
-
-1. `language-config.ts` の `LANGUAGES` 配列に追加（1エントリー）
-2. `apps/web/messages/{languageCode}.json` を作成（UI翻訳用）
-3. デプロイ → 完了！
-
-**URL設計**: 全言語で共通URL（ロケールプレフィックスなし）
-
-- ✅ 正しい: `/dashboard`, `/sessions`
-- ❌ 使用しない: `/en/dashboard`, `/ja/dashboard`
-
-**言語検出（優先順位）**:
-
-1. **Cookie** (`NEXT_LOCALE`)
-2. **Accept-Language** ヘッダー（ブラウザ設定）
-3. **デフォルト言語**（英語: en）
-
-**言語切り替え**:
-
-- ユーザーがUI上で言語を選択 → Cookieに保存
-- 次回アクセス時に自動的に選択した言語で表示
-- 明示的にUI上で変更するまでCookieを保持
-
-**リソース管理**:
-
-- **文字列ハードコード禁止**: 全ての表示テキストは言語リソースファイルから読み込み
-- **集中管理**: 言語取得はMiddlewareで一元管理（分散させない）
-- **コード変更不要**: 新言語追加時はリソースファイルのみ変更
-- **ホットデプロイ**: スーパー管理者がUIからアップロード → 1-5分で反映（リビルド不要）
-- **フォールバック**: リソースがない場合は英語にフォールバック
-
-**言語優先度リスト（Azure STT自動検出用）:**
-
-```typescript
-// シナリオ言語に基づいて自動的に優先度リストを生成
-getLanguagePriority('en')    // → ['en-US', 'en-GB', 'en-AU', 'en-CA']
-getLanguagePriority('zh-TW') // → ['zh-TW', 'zh-HK', 'en-US', 'ja-JP']
-getLanguagePriority('zh-CN') // → ['zh-CN', 'en-US', 'ja-JP'] (zh-TWは含まない！)
-```
-
-> 詳細実装: [infrastructure/lambda/shared/config/language-config.ts](infrastructure/lambda/shared/config/language-config.ts)
 > 詳細: [docs/05-modules/MULTILINGUAL_SYSTEM.md](docs/05-modules/MULTILINGUAL_SYSTEM.md)
 
-#### 6. 設定値の一元管理（必須）
-
-**🔴 重要原則: ハードコード禁止**
-
-言語、リージョン、メディアフォーマット、その他すべての設定値はハードコードせず、
-リソースファイルで一元管理し、統一的なアクセスパターンで取得すること。
-
-**対象となる設定値:**
-
-- 🌍 **言語設定**: STT言語（'en-US', 'ja-JP'）、シナリオ言語（'ja', 'en'）、サポート言語リスト
-- 📍 **リージョン設定**: AWS_REGION, BEDROCK_REGION, AZURE_SPEECH_REGION等
-- 🎬 **メディアフォーマット**: video/audio形式（'webm', 'mp4'）、解像度（'1280x720'）、ContentType
-- ⚙️ **その他定数**: タイムアウト値、リトライ回数、チャンクサイズ、バッファサイズ等
+#### 6. 設定値の一元管理
+**🔴 重要原則:** ハードコード禁止。言語、リージョン、メディアフォーマット、その他定数はリソースファイルで一元管理。
 
 **一元管理ファイル:**
+- `infrastructure/lambda/shared/config/defaults.ts` - 全デフォルト値
+- `infrastructure/lambda/shared/config/language-config.ts` - 言語メタデータ
+- `infrastructure/lambda/shared/config/index.ts` - 環境変数ヘルパー
 
-```
-infrastructure/lambda/shared/config/defaults.ts        # すべてのデフォルト値を定義
-infrastructure/lambda/shared/config/language-config.ts # 言語メタデータ（単一の真実の源）
-infrastructure/lambda/shared/config/index.ts           # 環境変数アクセスヘルパー
-```
+> 詳細: [infrastructure/lambda/shared/config/defaults.ts](infrastructure/lambda/shared/config/defaults.ts)
 
-**使用パターン（Lambda関数）:**
-
-```typescript
-// ❌ ハードコード（禁止）
-const language = 'en-US';
-const languages = ['ja', 'en'];
-const format = 'webm';
-const resolution = '1280x720';
-
-// ✅ 正しい方法
-import { LANGUAGE_DEFAULTS, MEDIA_DEFAULTS } from '../../shared/config/defaults';
-import { getLanguagePriority, normalizeLanguageCode } from '../../shared/config/language-config';
-
-// 固定値の場合
-const language = process.env.STT_LANGUAGE || LANGUAGE_DEFAULTS.STT_LANGUAGE;
-const format = process.env.VIDEO_FORMAT || MEDIA_DEFAULTS.VIDEO_FORMAT;
-const resolution = process.env.VIDEO_RESOLUTION || MEDIA_DEFAULTS.VIDEO_RESOLUTION;
-
-// 動的に優先度リストを生成する場合（シナリオ言語ベース）
-const scenarioLanguage = 'ja'; // DBから取得
-const autoDetectLanguages = getLanguagePriority(scenarioLanguage);
-// → ['ja-JP', 'en-US']
-```
-
-**検証方法:**
-
+#### 7. コミット前チェック
+**UI文字列追加・変更時の必須検証:**
 ```bash
-# ハードコード検出（言語・リージョン）
-grep -rn "'en-US'\|'ja-JP'\|'us-east-1'\|'webm'\|'1280x720'" infrastructure/lambda --include="*.ts" --exclude="defaults.ts" --exclude="language-config.ts"
-
-# 言語設定の配列リテラル検出
-grep -rn "\['ja', 'en'\]" infrastructure/lambda --include="*.ts" --exclude="defaults.ts" --exclude="language-config.ts"
-
-# 言語マッピングオブジェクト検出（廃止されたパターン）
-grep -rn "LANGUAGE_MAP\|REGIONAL_PRIORITY" infrastructure/lambda --include="*.ts"
+grep -rn "[>][\s]*[A-Z][a-zA-Z\s]{5,}[\s]*[<]" apps/web/app apps/web/components  # ハードコード検出
+grep -rn 'placeholder=["'"'"'][A-Z]' apps/web  # placeholder属性
+grep -r "import.*useI18n.*from.*@/lib/i18n" apps/web --count  # useI18n使用確認
 ```
 
-**将来の拡張性:**
+> 詳細: [CODING_RULES.md](CODING_RULES.md)
 
-- スーパー管理者UIから設定値を動的変更可能
-- 新言語・新フォーマット追加時にコード変更不要
-- 環境ごとの設定切り替えが容易
+#### 8. Cookie処理の統一化
+**重要:** Cookie設定は統一ユーティリティ（`apps/web/lib/cookies.ts`）を使用。直接`document.cookie`操作禁止。
 
-> 詳細実装: [infrastructure/lambda/shared/config/defaults.ts](infrastructure/lambda/shared/config/defaults.ts)
+**効果:** DRY原則、一貫性保持、セキュリティ設定統一管理
 
-#### 6. コミット前チェック（必須）
+> 詳細: [apps/CLAUDE.md - Cookie処理](apps/CLAUDE.md)
 
-**UI文字列を追加・変更した場合の必須検証:**
+#### 9. 言語リスト同期検証
+**必須同期:** Frontend config/Lambda config/Message directories の3箇所
 
+**検証:** `npm run validate:languages`
+
+> 詳細: [scripts/validate-language-sync.sh](scripts/validate-language-sync.sh)
+
+#### 10. コード整合性管理
+**根本問題:** AI生成コード間での不整合（型不整合、スキーマ不整合、名称不整合）
+
+**対策:** 3層防御システム（予防・検出・修正）
+
+**コミット前必須:**
 ```bash
-# 1. ハードコード文字列検出（最も重要）
-grep -rn "[>][\s]*[A-Z][a-zA-Z\s]{5,}[\s]*[<]" apps/web/app apps/web/components
-
-# 2. placeholder属性チェック
-grep -rn 'placeholder=["'"'"'][A-Z]' apps/web
-
-# 3. title属性チェック
-grep -rn 'title=["'"'"'][A-Z]' apps/web
-
-# 4. useI18n使用状況確認
-grep -r "import.*useI18n.*from.*@/lib/i18n" apps/web --count
+npm run consistency:check    # 不整合検出
+npm run consistency:fix      # 自動修正
+npm run pre-commit           # 全チェック
 ```
 
-**検証基準:**
+> 詳細: [docs/04-design/CONSISTENCY_GUIDELINES.md](docs/04-design/CONSISTENCY_GUIDELINES.md)
 
-- ✅ 全てのマッチが `{t('...')}` で囲まれている
-- ✅ 新しい言語キーが `messages/en/` と `messages/ja/` 両方に追加されている
-- ✅ `useI18n` フックがコンポーネントでインポート・使用されている
+#### 11. Prismaスキーマ準拠
+**必須:** Prisma Clientのフィールド名と完全一致（camelCase）
 
-**コミットメッセージに「完全除去」「完全対応」等の絶対的表現を使う前に:**
+**重要フィールド:** `orgId`（organizationId禁止）、`userId`、`scenarioId`、`avatarId`、`startedAt`、`endedAt`
 
-- 上記の全コマンドを再実行
-- 結果を目視確認
-- 疑わしい箇所は必ず確認
+**Enum:** UserRole（SUPER_ADMIN/CLIENT_ADMIN/CLIENT_USER/GUEST）、SessionStatus、AvatarType（TWO_D/THREE_D）
 
-#### 7. Cookie処理の統一化（2026-03-14追加）
+> 詳細: [CODING_RULES.md - Prismaスキーマ準拠](CODING_RULES.md)
 
-**🔴 重要: Cookie設定を複数箇所で重複管理しない**
+#### 12. 型定義の一元管理
+**DRY原則:** すべての共有型は `packages/shared/src/types/index.ts` で一元管理。重複定義絶対禁止。
 
-Cookie処理は統一的なユーティリティを使用すること。直接 `document.cookie` を操作したり、個別にオプションをハードコードしてはいけません。
+**一元管理型:** Entity（User/Avatar/Session等）、Enum（UserRole/SessionStatus等）、Pagination、Error
 
-**❌ 禁止事項:**
+**Lambda関数:** `infrastructure/lambda/shared/types/index.ts` が共有型を re-export
 
-```typescript
-// ❌ 直接document.cookie操作
-document.cookie = `${LOCALE_COOKIE_NAME}=${locale}; path=/; max-age=31536000; SameSite=Lax`;
-
-// ❌ ハードコードされたCookieオプション
-response.cookies.set(LOCALE_COOKIE_NAME, locale, {
-  path: '/',
-  maxAge: 31536000,
-  sameSite: 'lax',
-  httpOnly: false,
-});
-```
-
-**✅ 正しい方法:**
-
-```typescript
-// apps/web/lib/cookies.ts - 統一ユーティリティ
-import { COOKIE_CONFIGS, setLocaleCookie } from '@/lib/cookies';
-
-// クライアントサイド
-setLocaleCookie(locale);
-
-// サーバーサイド (middleware)
-response.cookies.set(LOCALE_COOKIE_NAME, locale, COOKIE_CONFIGS.locale.options);
-```
-
-**Cookie utility構造:**
-
-```typescript
-// apps/web/lib/cookies.ts
-export const DEFAULT_COOKIE_OPTIONS: CookieOptions = {
-  path: '/',
-  maxAge: 31536000, // 1 year
-  sameSite: 'lax',
-  httpOnly: false,
-  secure: process.env.NODE_ENV === 'production',
-};
-
-export const COOKIE_CONFIGS = {
-  locale: {
-    name: LOCALE_COOKIE_NAME,
-    options: {
-      ...DEFAULT_COOKIE_OPTIONS,
-      httpOnly: false, // クライアントからアクセス可能
-    },
-  },
-  // 将来的に他のCookie追加時もここに定義
-};
-
-export function setCookie(name: string, value: string, options: CookieOptions = {}): void {
-  // 統一的なCookie設定実装
-}
-
-export function setLocaleCookie(locale: string): void {
-  setCookie(COOKIE_CONFIGS.locale.name, locale, COOKIE_CONFIGS.locale.options);
-}
-```
-
-**効果:**
-
-- ✅ Cookie設定が1箇所で管理される（DRY原則）
-- ✅ オプション変更時に全箇所で一貫性が保たれる
-- ✅ セキュリティ設定（secure, httpOnly等）の統一管理
-- ✅ 新しいCookie追加時の一貫したパターン
-
-**実施例（2026-03-14）:**
-
-- Before: Cookie設定が3箇所で重複（middleware.ts, provider.tsx, 直接document.cookie）
-- After: `apps/web/lib/cookies.ts` で統一管理
-- 削減: 10箇所のオプション設定 → 5箇所（50%削減）
-
-> 詳細実装: [apps/web/lib/cookies.ts](apps/web/lib/cookies.ts)
-
-#### 8. 言語リスト同期検証（2026-03-14追加）
-
-**🔴 重要: Frontend/Lambda/Message directories の言語リストを同期させる**
-
-言語リストは3箇所で定義されており、**必ず同期**させる必要があります。
-
-**同期必須の3箇所:**
-
-1. **Frontend config**: `apps/web/lib/i18n/config.ts` - `locales` 配列
-2. **Lambda config**: `infrastructure/lambda/shared/config/language-config.ts` - `LANGUAGES` 配列
-3. **Message directories**: `apps/web/messages/{languageCode}/` ディレクトリ構造
-
-**新言語追加時の必須手順:**
-
+**検証:**
 ```bash
-# 1. Frontend config更新
-# apps/web/lib/i18n/config.ts の locales 配列に追加
-
-# 2. Lambda config更新
-# infrastructure/lambda/shared/config/language-config.ts の LANGUAGES 配列に追加
-
-# 3. Message directory作成
-mkdir -p apps/web/messages/{languageCode}
-# 必要なJSONファイルをコピー
-
-# 4. 同期検証
-npm run validate:languages
-
-# 期待結果: "All language lists are synchronized"
+# 重複定義検出
+grep -rn "^export interface \(User\|Avatar\)" apps/web infrastructure/lambda --include="*.ts" | grep -v node_modules | grep -v "packages/shared"
 ```
 
-**自動検証スクリプト:**
-
-```bash
-# scripts/validate-language-sync.sh
-# - Frontend config から言語コード抽出
-# - Lambda config から言語コード抽出
-# - Message directories をリスト
-# - 3箇所のリストを比較・検証
-```
-
-**package.json統合:**
-
-```json
-{
-  "scripts": {
-    "validate:languages": "bash scripts/validate-language-sync.sh"
-  }
-}
-```
-
-**効果:**
-
-- ✅ 言語追加時の同期漏れを防止
-- ✅ デプロイ前に自動検証
-- ✅ Frontend/Lambdaの言語不整合エラーを予防
-
-**実施例（2026-03-14）:**
-
-- 検証スクリプト作成
-- 全10言語で同期確認（en, ja, zh-CN, zh-TW, ko, es, pt, fr, de, it）
-- `npm run validate:languages` で自動検証可能
-
-> 詳細実装: [scripts/validate-language-sync.sh](scripts/validate-language-sync.sh)
-
-#### 9. コード整合性管理（最重要）
-
-**🔴 根本問題: Claude Code自身が生成したコード間での不整合**
-
-Claude Code（AI）は複数セッションにまたがると、以下の不整合を起こしやすい：
-
-1. **出力の型と入力の型の不整合**  
-   例: ElevenLabs API が `audio/mpeg` を返すのに、S3に `.webm` 拡張子で保存
-
-2. **スキーマ定義と実装の不整合**  
-   例: Prismaスキーマで `sessionId` なのに、実装で `session_id` を使用
-
-3. **作成した名称と利用する名称の不整合**  
-   例: 型を `UserRole` で定義したのに、別ファイルで `'admin' | 'user'` と再定義
-
-**対策: 3層の防御システム**
-
-```
-┌─────────────────────────────────────────────────────┐
-│ Layer 1: 予防（設計時）                               │
-│ - 単一の真実の源（Single Source of Truth）            │
-│ - 共有型パッケージの使用                               │
-│ - ハードコード禁止                                    │
-└─────────────────────────────────────────────────────┘
-         ↓
-┌─────────────────────────────────────────────────────┐
-│ Layer 2: 検出（開発時）                               │
-│ - npm run consistency:check（不整合検出）             │
-│ - npm run consistency:validate（型整合性検証）        │
-│ - TypeScriptコンパイルチェック                        │
-└─────────────────────────────────────────────────────┘
-         ↓
-┌─────────────────────────────────────────────────────┐
-│ Layer 3: 修正（コミット前）                           │
-│ - npm run consistency:fix（自動修正）                 │
-│ - npm run pre-commit（全チェック）                    │
-│ - CI/CDパイプライン統合                               │
-└─────────────────────────────────────────────────────┘
-```
-
-**必須コマンド（コミット前）:**
-
-```bash
-# 1. 不整合検出
-npm run consistency:check
-
-# 2. 自動修正
-npm run consistency:fix
-
-# 3. 型整合性検証
-npm run consistency:validate
-
-# 4. 全チェック（lint + typecheck + 整合性）
-npm run pre-commit
-```
-
-**検出される不整合の例:**
-
-| 不整合タイプ         | 検出例                        | 影響               |
-| -------------------- | ----------------------------- | ------------------ |
-| ContentType不整合    | `audio/mpeg` + `.webm`        | ブラウザ再生エラー |
-| Prismaスキーマ不整合 | `session_id` vs `sessionId`   | 500エラー          |
-| 型定義重複           | `User`インターフェースが3箇所 | 型不整合バグ       |
-| ハードコード         | `'en-US'`, `'webm'` 直接記述  | 変更時の修正漏れ   |
-
-**詳細ドキュメント:**
-
-- [docs/04-design/CONSISTENCY_GUIDELINES.md](docs/04-design/CONSISTENCY_GUIDELINES.md) - 包括的ガイドライン
-- [docs/03-planning/analysis/INCONSISTENCY_REPORT.md](docs/03-planning/analysis/INCONSISTENCY_REPORT.md) - 最新の検出レポート
-
-**効果:**
-
-- ✅ 型の不整合を予防・検出・自動修正
-- ✅ 500エラーの根本原因を排除
-- ✅ 開発速度の向上（バグ修正時間の削減）
-- ✅ コードの保守性向上
-
-#### 7. Prismaスキーマ準拠（必須）
-
-**データベース関連コード作成時の必須確認:**
-
-```bash
-# 1. Prismaスキーマファイルを開いて該当モデルを確認
-cat packages/database/prisma/schema.prisma | grep -A 15 "model User\|model Session\|model Avatar\|model Scenario"
-
-# 2. フィールド名の確認（よくある間違いを検出）
-grep -rn "organizationId\|organization_id" infrastructure/lambda apps/web/lib --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v ".prisma"
-
-# 3. Enum値の確認
-grep -rn "ACTIVE\|PROCESSING\|COMPLETED\|ERROR" infrastructure/lambda apps/web/lib --include="*.ts" --include="*.tsx" | grep -v node_modules | head -20
-```
-
-**命名規則（厳守）:**
-
-| Prismaフィールド名 | 使用箇所                        | ❌ 間違いやすい例               |
-| ------------------ | ------------------------------- | ------------------------------- |
-| `orgId`            | User, Session, Avatar, Scenario | organizationId, organization_id |
-| `userId`           | Session, Avatar                 | user_id, creator_id             |
-| `scenarioId`       | Session                         | scenario_id                     |
-| `avatarId`         | Session                         | avatar_id                       |
-| `startedAt`        | Session                         | started_at, startTime           |
-| `endedAt`          | Session                         | ended_at, endTime               |
-| `durationSec`      | Session                         | duration_sec, duration          |
-| `passwordHash`     | User                            | password_hash                   |
-| `cognitoSub`       | User                            | cognito_sub                     |
-
-**Enum値（完全一致必須）:**
-
-- UserRole: `SUPER_ADMIN`, `CLIENT_ADMIN`, `CLIENT_USER`, `GUEST` 🆕
-- SessionStatus: `ACTIVE`, `PROCESSING`, `COMPLETED`, `ERROR`
-- AvatarType: `TWO_D`, `THREE_D` (アンダースコアあり)
-- AvatarStyle: `ANIME`, `REALISTIC`
-- Visibility: `PRIVATE`, `ORGANIZATION`, `PUBLIC`
-
-**型定義の例:**
-
-```typescript
-// ✅ 正しい - Prismaと完全一致
-interface CreateSessionRequest {
-  scenarioId: string; // Prisma: scenarioId
-  avatarId?: string; // Prisma: avatarId
-}
-
-// ❌ 間違い
-interface CreateSessionRequest {
-  scenario_id: string; // snake_caseは使わない
-  organizationId: string; // Prismaでは orgId
-}
-```
-
-**検証基準:**
-
-- ✅ Prisma Clientで定義されたフィールド名と完全一致（camelCase）
-- ✅ API型定義もPrismaフィールド名と一致
-- ✅ Enum値が大文字・アンダースコアを含め完全一致
-- ✅ `@map()` で定義されたDB名（snake_case）は使用しない
-
-#### 7. 型定義の一元管理（必須）
-
-**重要原則: Don't Repeat Yourself (DRY)**
-
-すべての共有型定義は `packages/shared/src/types/index.ts` に一元管理されています。
-**絶対に他の場所で重複定義してはいけません。**
-
-**型定義が必要な場合の必須確認:**
-
-```bash
-# 1. 共有パッケージに既に存在するか確認
-grep -n "^export.*User\|^export.*Avatar\|^export.*Session\|^export.*Scenario" packages/shared/src/types/index.ts
-
-# 2. 重複定義がないか検出
-grep -rn "^export interface User {" infrastructure/lambda apps/web --include="*.ts" --include="*.tsx" | grep -v node_modules
-
-# 3. インライン型定義（'PRIVATE' | 'ORGANIZATION' | 'PUBLIC'）を検出
-grep -rn "'PRIVATE'.*|.*'ORGANIZATION'.*|.*'PUBLIC'" apps/web/lib infrastructure/lambda --include="*.ts" | grep -v node_modules | grep -v "from '@prance/shared'"
-```
-
-**一元管理されている型（packages/shared/src/types/index.ts）:**
-
-| カテゴリ       | 型名                                                                                                                  | 用途             |
-| -------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| **Entity**     | User, Avatar, Scenario, Session, Recording, Transcript, Organization                                                  | データモデル     |
-| **Enum**       | UserRole, AvatarType, AvatarStyle, AvatarSource, Visibility, SessionStatus, RecordingType, Speaker, Highlight         | 列挙型           |
-| **Pagination** | PaginationParams, PaginationMeta, PaginatedResponse                                                                   | ページネーション |
-| **Error**      | AppError, AuthenticationError, AuthorizationError, NotFoundError, ValidationError, ConflictError, InternalServerError | エラー処理       |
-
-**正しい使用方法:**
-
-```typescript
-// ✅ 正しい - 共有パッケージからimport
-import type { User, Avatar, Visibility, PaginationMeta } from '@prance/shared';
-
-export interface AvatarListResponse {
-  avatars: Avatar[]; // 共有型を使用
-  pagination: PaginationMeta; // 共有型を使用
-}
-
-export interface CreateAvatarRequest {
-  name: string;
-  visibility?: Visibility; // 共有Enumを使用
-}
-```
-
-```typescript
-// ❌ 間違い - 重複定義
-export interface Avatar {
-  id: string;
-  name: string;
-  type: 'TWO_D' | 'THREE_D'; // 共有型があるのに再定義
-  // ...
-}
-
-export interface AvatarListResponse {
-  avatars: Avatar[];
-  pagination: {
-    // PaginationMetaがあるのに再定義
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
-}
-```
-
-**Lambda関数での使用:**
-
-Lambda関数の `infrastructure/lambda/shared/types/index.ts` は共有型を **re-export** しています：
-
-```typescript
-// infrastructure/lambda/shared/types/index.ts
-export * from '@prance/shared';  // 全共有型を再エクスポート
-
-// Lambda固有型のみここに定義
-export interface JWTPayload { ... }
-export interface APIResponse { ... }
-```
-
-Lambda関数では通常通り `'../shared/types'` からimportできます：
-
-```typescript
-// ✅ Lambda関数内
-import { User, Avatar, ValidationError } from '../shared/types';
-```
-
-**コミット前の必須チェック:**
-
-1. **重複定義がないか確認:**
-
-   ```bash
-   # Entity型の重複
-   grep -rn "^export interface \(User\|Avatar\|Scenario\|Session\)" apps/web infrastructure/lambda --include="*.ts" | grep -v node_modules | grep -v "packages/shared"
-
-   # Enum型の重複（インライン定義）
-   grep -rn "'TWO_D'.*|.*'THREE_D'" apps/web infrastructure/lambda --include="*.ts" | grep -v node_modules | grep -v "from '@prance/shared'"
-   ```
-
-2. **共有型を使用しているか確認:**
-
-   ```bash
-   # 新しく追加したファイルで共有型をimportしているか
-   git diff --cached --name-only | grep "\.ts$" | xargs grep -l "interface.*Request\|interface.*Response"
-   ```
-
-3. **結果が空ならOK、何か検出されたら共有型に移行すること**
-
-**新しい共有型を追加する場合:**
-
-1. `packages/shared/src/types/index.ts` に追加
-2. `npm run build` で shared パッケージをビルド
-3. 他の場所から import して使用
-4. 既存の重複定義があれば削除
-
-**よくある間違いと教訓:**
-
-| 間違いパターン                           | 発生理由                           | 修正方法               |
-| ---------------------------------------- | ---------------------------------- | ---------------------- |
-| 同じ型を3箇所で定義                      | 共有パッケージの存在を知らなかった | 共有型を使用、重複削除 |
-| インライン型定義 `'PRIVATE' \| 'PUBLIC'` | 面倒だから直接書いた               | 共有Enum型をimport     |
-| Pagination構造を各ファイルで定義         | コピペで対応                       | PaginationMetaを使用   |
-
-**効果:**
-
-- ✅ 型変更時に1箇所修正するだけで全体に反映
-- ✅ 型の不整合によるバグを防止
-- ✅ コードの保守性・再利用性が向上
-- ✅ TypeScript型推論が正確になる
-
-**監査レポート:** [CODE_DUPLICATION_AUDIT.md](docs/03-planning/analysis/CODE_DUPLICATION_AUDIT.md)
+> 詳細: [CODING_RULES.md - 型定義一元管理](CODING_RULES.md)
 
 ### 開発ワークフロー
 
