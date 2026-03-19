@@ -1,4 +1,4 @@
-import { LANGUAGE_DEFAULTS } from '../config/defaults';
+import { getDefaultSttConfidence } from '../utils/env-validator';
 import { getSupportedSTTCodes } from '../config/language-config';
 import { retryWithBackoff } from '../utils/retry';
 /**
@@ -63,7 +63,9 @@ export class AzureSpeechToText {
       sdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs,
       String(initialSilenceTimeout)
     );
-    console.log('[AzureSTT] InitialSilenceTimeout (fallback) set to ' + initialSilenceTimeout + 'ms');
+    console.log(
+      '[AzureSTT] InitialSilenceTimeout (fallback) set to ' + initialSilenceTimeout + 'ms'
+    );
 
     // 🔧 エンドサイレンスタイムアウトを延長（デフォルト → 2秒）
     // 理由: ユーザーの発話終了を正確に検出
@@ -110,7 +112,7 @@ export class AzureSpeechToText {
             sdk.PropertyId.SpeechServiceResponse_JsonResult
           );
 
-          let confidence = 0.95; // Default
+          let confidence = getDefaultSttConfidence();
 
           if (details) {
             try {
@@ -192,29 +194,20 @@ export class AzureSpeechToText {
    */
   async recognizeFromFile(audioFilePath: string): Promise<TranscriptResult> {
     // Wrap in retry logic
-    const result = await retryWithBackoff(
-      () => this._recognizeFromFileInternal(audioFilePath),
-      {
-        maxAttempts: 3,
-        initialDelay: 1000,
-        maxDelay: 5000,
-        backoffFactor: 2,
-        retryableErrors: [
-          'timeout',
-          'connection',
-          'throttl',
-          'rate limit',
-          'service unavailable',
-        ],
-        onRetry: (error, attempt, delay) => {
-          console.warn('[AzureSTT] Retrying STT request:', {
-            error: error.message,
-            attempt,
-            nextRetryIn: delay,
-          });
-        },
-      }
-    );
+    const result = await retryWithBackoff(() => this._recognizeFromFileInternal(audioFilePath), {
+      maxAttempts: 3,
+      initialDelay: 1000,
+      maxDelay: 5000,
+      backoffFactor: 2,
+      retryableErrors: ['timeout', 'connection', 'throttl', 'rate limit', 'service unavailable'],
+      onRetry: (error, attempt, delay) => {
+        console.warn('[AzureSTT] Retrying STT request:', {
+          error: error.message,
+          attempt,
+          nextRetryIn: delay,
+        });
+      },
+    });
 
     console.log('[AzureSTT] Recognition completed:', {
       attempts: result.attempts,

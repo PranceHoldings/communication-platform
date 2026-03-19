@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-19 (Day 26 - ドキュメント整理完了)
-**現在の Phase:** Phase 3完了 (100%) - Phase 4移行準備完了
-**E2Eテスト:** Stage 1-3: 97.1% (34/35) | Stage 4-5: 調査中
-**ステータス:** ✅ ドキュメント整理完了、セッション再開プロセス確立
+**最終更新:** 2026-03-19 23:30 JST (Day 28 - E2E全Stage完走)
+**現在の Phase:** Phase 1.5-1.6 再検証が必要 ⚠️
+**E2Eテスト:** 総合 21/50 (42%) - Stage 1: 100% ✅ | Stage 2: 0% ❌ | Stage 3: 0% ❌ | Stage 4: 100% ✅ | Stage 5: 10% ⚠️
+**ステータス:** ⚠️ セッション実行機能が未実装、Phase 4移行は延期
 
 ---
 
@@ -39,8 +39,8 @@ cat docs/07-development/KNOWN_ISSUES.md
 ```
 
 **現在の既知の問題:**
-- ✅ Issue #1: Playwright/Next.js設定（修正完了）
-- 🔄 Issue #2: API Gateway 403エラー（調査中）
+- ✅ **全Critical Issues解決済み**
+- Issue #3: Next.js初回起動が遅い（既知の動作）
 
 ### Step 3: タスク実行
 
@@ -54,17 +54,54 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 | Phase | 内容 | 進捗 | ステータス |
 |-------|------|------|-----------|
-| Phase 1-1.6 | MVP・実用レベル化 | 100% | ✅ 完了 |
+| Phase 1-1.5 | MVP・リアルタイム会話 | 98% | ⚠️ 検証必要 |
+| Phase 1.6 | 実用レベル化 | 0% | ❌ 未着手 |
 | Phase 2-2.5 | 録画・解析・ゲストユーザー | 100% | ✅ 完了 |
 | Phase 3.1-3.3 | Dev/Production環境・E2Eテスト | 100% | ✅ 完了 |
-| **Phase 4** | **ベンチマークシステム** | 0% | ⏳ 次Phase |
+| **Phase 4** | **ベンチマークシステム** | 0% | ⏸️ 延期 |
 
 ### 最新達成
+
+**⚠️ E2E全Stage完走 - 重大な問題発見（2026-03-19 23:30 JST - Day 28）:**
+
+**テスト結果:**
+- ✅ **Stage 1: 10/10 passed (100%)** - 基本UIナビゲーション
+- ❌ **Stage 2: 0/10 passed (0%)** - モッキング統合（全失敗）
+- ❌ **Stage 3: 0/10 passed (0%)** - Full E2E（全失敗）
+- ✅ **Stage 4: 10/10 passed (100%)** - 録画再生機能
+- ⚠️ **Stage 5: 1/10 passed, 9/10 skipped (10%)** - 解析・レポート
+- **総合:** 21/50 (42%)
+
+**失敗原因:**
+- セッションが "Ready" から "In Progress" に遷移しない
+- WebSocket接続が確立されていない
+- **Phase 1.5-1.6 (リアルタイム会話) が実際には完成していない**
+
+**重大な発見:**
+- セッション実行機能（WebSocket + AI会話 + 録画）が動作していない
+- Phase 1の完了状態が誤りだった可能性
+- E2Eテストで初めて実態が判明
+
+**作成ファイル（Day 27）:**
+- `/tmp/test-video/combined-test.webm` - テスト動画（4.9MB、120秒）
+- `s3://prance-recordings-dev-010438500933/.../combined-test.webm`
 
 **✅ Phase 3完了（2026-03-18）:**
 - Production環境デプロイ完了
 - E2Eテスト実装完了（Stage 1-3: 97.1%成功率）
 - Enum統一化完了（17箇所の重複定義削除）
+
+**✅ ハードコード値削除完了（2026-03-19 - Day 28）:**
+- .env.local を単一の真実の源として確立
+- defaults.ts の60+定数を環境変数に移行
+- env-validator.ts に20個の getter 関数追加
+- 全フォールバック値削除（`process.env.XXX || 'default'` 形式）
+- AWS domain hardcoding 削除（`AWS_ENDPOINT_SUFFIX` 追加）
+- 変更: 20+ Lambda関数ファイル
+- 検証: ハードコード値 0件、環境変数整合性エラー 0件
+- ドキュメント: `docs/07-development/HARDCODE_ELIMINATION_REPORT.md`
+- スクリプト: `validate-env-consistency.sh` 追加
+- 将来機能: `docs/05-modules/RUNTIME_CONFIGURATION.md` 作成（Phase 5計画）
 
 **✅ ドキュメント整理完了（2026-03-19 - Day 26）:**
 - 一時ファイルをアーカイブに移動（8ファイル）
@@ -79,73 +116,120 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 **Dev環境:**
 - Lambda関数: 2026-03-18 18:00 JST
-- Frontend: 起動待機
+- Frontend: 稼働中 ✅
+- データベース: 最新（テストセッション修正済み）
 
 **Production環境:**
 - 全スタック: 2026-03-17 22:30 JST
 - Frontend: https://app.prance.jp ✅
-- REST API: https://api.prance.jp ✅
+- REST API: https://api.app.prance.jp ✅
 - WebSocket: wss://ws.app.prance.jp ✅
 
 ---
 
 ## 🎯 次のアクション
 
-### Option A: E2Eテスト Stage 4-5 実行（推奨・短期 - 1-2時間）
-**目的:** API Gateway 403エラー調査、E2Eテスト100%達成
-**詳細:** `docs/07-development/KNOWN_ISSUES.md` - Issue #2
+### Option A: Phase 1.5-1.6 再検証（セッション実行機能 - 1-2日）🔴最優先
 
-### Option B: Phase 4移行（ベンチマークシステム - 2-3日）
-**目的:** ベンチマークシステム実装開始
-**詳細:** `docs/05-modules/BENCHMARK_SYSTEM.md`
+**目的:** セッション実行機能の動作確認と修正
+**理由:** E2Eテストで判明した重大な問題
 
-### Option C: ドキュメント詳細整理（1-2時間）
-**目的:** CLAUDE.md簡素化、サブディレクトリ統合
+**調査項目:**
+1. **WebSocket接続確認**
+   - Frontend → AWS IoT Core の接続状態
+   - 認証・認可が正しく動作しているか
 
-**推奨順:** Option A → Option B
+2. **セッション状態管理確認**
+   - "Start Session" ボタンクリック時の処理
+   - セッションステータス遷移ロジック
+   - DynamoDBへの状態保存
 
----
+3. **AI会話パイプライン確認**
+   - STT → AI → TTS の統合動作
+   - リアルタイムストリーミングの実装状態
 
-## 📚 主要ドキュメント
+**手順:**
+```bash
+# 1. 手動テスト（ブラウザで確認）
+npm run dev
+# http://localhost:3000 でセッション開始を試行
 
-**全ドキュメント索引:** [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) 参照
+# 2. WebSocketログ確認
+# ブラウザDevToolsのNetworkタブでWebSocket通信を監視
 
-**必須:**
-- [CLAUDE.md](CLAUDE.md) - プロジェクト概要・開発ガイドライン
-- [CODING_RULES.md](CODING_RULES.md) - コミット前チェックリスト
-- [docs/07-development/SESSION_RESTART_PROTOCOL.md](docs/07-development/SESSION_RESTART_PROTOCOL.md) - セッション再開手順
-- [docs/07-development/KNOWN_ISSUES.md](docs/07-development/KNOWN_ISSUES.md) - 既知の問題
+# 3. Lambda関数ログ確認
+aws logs tail /aws/lambda/prance-websocket-default-dev --follow
+```
 
-**サブシステム別:**
-- [apps/CLAUDE.md](apps/CLAUDE.md) - フロントエンド
-- [infrastructure/CLAUDE.md](infrastructure/CLAUDE.md) - インフラ・Lambda
-- [scripts/CLAUDE.md](scripts/CLAUDE.md) - スクリプト
+**推定期間:** 1-2日（調査 + 修正 + 検証）
 
-**環境URL:** `CLAUDE.md` の「2. 基本アーキテクチャ」参照
+### Option B: Phase 4移行延期 ⏸️
 
----
+**理由:** Phase 1が完了していないことが判明
+**次回検討:** Phase 1.5-1.6 完了後
 
-## 🔴 重要原則（クイックリマインダー）
+### Option C: E2Eテストのスキップ
 
-**セッション再開:** 推測禁止・最小変更・記録必須
-**コーディング:** 環境変数はルート`.env.local`のみ・型定義は`@prance/shared`・`useI18n()`のみ使用
-**デプロイ:** Lambda=CDK経由のみ・Prisma変更=マイグレーション必須・環境変数検証必須
-
-**詳細:** [CLAUDE.md](CLAUDE.md) - 「4. 開発ガイドライン」、[CODING_RULES.md](CODING_RULES.md)
-
----
-
-## 💡 トラブルシューティング
-
-**エラー発生時:**
-1. `docs/07-development/KNOWN_ISSUES.md` - 既知の問題確認
-2. `docs/09-progress/SESSION_HISTORY.md` - 過去の解決例
-3. `bash scripts/verify-environment.sh` - 環境検証
-4. `aws logs tail /aws/lambda/prance-*-dev --follow` - Lambdaログ
-
-**ドキュメント検索:** [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) - 目的別ナビゲーション
+**非推奨:** 根本問題を解決せずに進めることはできない
 
 ---
 
-**最終更新:** 2026-03-19
-**次回レビュー:** Option A完了時、またはPhase 4開始時
+## 📚 重要なリファレンス
+
+### 🔴 必読ドキュメント
+
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - 全ドキュメントの索引・ナビゲーション
+- **[CODING_RULES.md](CODING_RULES.md)** - コミット前チェックリスト
+- **[docs/07-development/KNOWN_ISSUES.md](docs/07-development/KNOWN_ISSUES.md)** - 既知の問題と解決策
+- **[docs/07-development/SESSION_RESTART_PROTOCOL.md](docs/07-development/SESSION_RESTART_PROTOCOL.md)** - セッション再開プロトコル
+
+### 環境URL
+
+**Dev環境:**
+- Frontend: http://localhost:3000
+- REST API: https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1
+- WebSocket: wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
+- CDN: https://d3mx0sug5s3a6x.cloudfront.net
+
+**Production環境:**
+- Frontend: https://app.prance.jp
+- REST API: https://api.app.prance.jp
+- WebSocket: wss://ws.app.prance.jp
+- CDN: https://cdn.app.prance.jp
+
+詳細: `CLAUDE.md` - 環境アーキテクチャセクション
+
+---
+
+## 🔧 トラブルシューティング
+
+### Webpackキャッシュエラー
+
+**症状:** 静的アセット404エラー、JavaScript未ロード
+
+**解決:**
+```bash
+ps aux | grep "next dev" | awk '{print $2}' | xargs kill
+rm -rf .next
+npm run dev
+```
+
+### E2Eテストタイムアウト
+
+**症状:** ログイン処理が10秒以上かかる
+
+**確認:**
+```bash
+# 開発サーバーログ確認
+tail -50 /tmp/dev-server.log
+```
+
+**解決:**
+1. Webpackキャッシュクリア（上記参照）
+2. 開発サーバー再起動
+3. 20秒待機後にテスト実行
+
+---
+
+**最終更新:** 2026-03-19 23:30 JST (Day 28)
+**次回レビュー:** Phase 1.5-1.6 再検証完了時

@@ -6,6 +6,7 @@
 import { Readable } from 'stream';
 import WebSocket from 'ws';
 import { retryWithBackoff } from '../utils/retry';
+import { getTtsStability, getTtsSimilarityBoost } from '../utils/env-validator';
 
 export interface ElevenLabsTTSConfig {
   apiKey: string;
@@ -47,30 +48,20 @@ export class ElevenLabsTextToSpeech {
    */
   async generateSpeech(options: TTSOptions): Promise<TTSResult> {
     // Wrap in retry logic
-    const result = await retryWithBackoff(
-      () => this._generateSpeechInternal(options),
-      {
-        maxAttempts: 3,
-        initialDelay: 1000,
-        maxDelay: 5000,
-        backoffFactor: 2,
-        retryableErrors: [
-          'timeout',
-          'connection',
-          'quota',
-          'rate limit',
-          '429',
-          '503',
-        ],
-        onRetry: (error, attempt, delay) => {
-          console.warn('[ElevenLabsTTS] Retrying TTS request:', {
-            error: error.message,
-            attempt,
-            nextRetryIn: delay,
-          });
-        },
-      }
-    );
+    const result = await retryWithBackoff(() => this._generateSpeechInternal(options), {
+      maxAttempts: 3,
+      initialDelay: 1000,
+      maxDelay: 5000,
+      backoffFactor: 2,
+      retryableErrors: ['timeout', 'connection', 'quota', 'rate limit', '429', '503'],
+      onRetry: (error, attempt, delay) => {
+        console.warn('[ElevenLabsTTS] Retrying TTS request:', {
+          error: error.message,
+          attempt,
+          nextRetryIn: delay,
+        });
+      },
+    });
 
     console.log('[ElevenLabsTTS] Speech generation completed:', {
       attempts: result.attempts,
@@ -87,8 +78,8 @@ export class ElevenLabsTextToSpeech {
   private async _generateSpeechInternal(options: TTSOptions): Promise<TTSResult> {
     const {
       text,
-      stability = 0.5,
-      similarityBoost = 0.75,
+      stability = getTtsStability(),
+      similarityBoost = getTtsSimilarityBoost(),
       style = 0,
       useSpeakerBoost = true,
     } = options;
@@ -146,8 +137,8 @@ export class ElevenLabsTextToSpeech {
   async generateSpeechStream(options: TTSOptions): Promise<Readable> {
     const {
       text,
-      stability = 0.5,
-      similarityBoost = 0.75,
+      stability = getTtsStability(),
+      similarityBoost = getTtsSimilarityBoost(),
       style = 0,
       useSpeakerBoost = true,
     } = options;
@@ -294,8 +285,8 @@ export class ElevenLabsTextToSpeech {
   ): Promise<AsyncGenerator<{ audio: string; isFinal: boolean }>> {
     const {
       text,
-      stability = 0.5,
-      similarityBoost = 0.75,
+      stability = getTtsStability(),
+      similarityBoost = getTtsSimilarityBoost(),
       style = 0,
       useSpeakerBoost = true,
     } = options;
@@ -384,15 +375,17 @@ export class ElevenLabsTextToSpeech {
         console.log('[ElevenLabsTTS] WebSocket closed');
         if (!hasError) {
           // Resolve with generator that yields collected chunks
-          resolve((async function* () {
-            for (const chunk of chunks) {
-              yield chunk;
-            }
-          })());
+          resolve(
+            (async function* () {
+              for (const chunk of chunks) {
+                yield chunk;
+              }
+            })()
+          );
         }
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         console.error('[ElevenLabsTTS] WebSocket error:', error);
         hasError = true;
         reject(error);

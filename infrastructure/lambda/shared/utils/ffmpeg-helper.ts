@@ -1,7 +1,7 @@
 /**
  * FFmpeg Helper - Centralized ffmpeg/ffprobe path resolution
  * CRITICAL: Single source of truth for ffmpeg binary location
- * 
+ *
  * Path Resolution Priority:
  * 1. FFMPEG_PATH environment variable (set by Lambda function config)
  * 2. /var/task/ffmpeg (CDK copies binary here)
@@ -47,11 +47,11 @@ export function getFFmpegPath(): string {
   // All attempts failed
   throw new Error(
     'ffmpeg binary not found. Checked:\n' +
-    '  1. FFMPEG_PATH environment variable\n' +
-    '  2. /var/task/ffmpeg (CDK deployment)\n' +
-    '  3. /opt/bin/ffmpeg (Lambda Layer)\n' +
-    '  4. ffmpeg-static npm package\n' +
-    'Please ensure ffmpeg is deployed correctly.'
+      '  1. FFMPEG_PATH environment variable\n' +
+      '  2. /var/task/ffmpeg (CDK deployment)\n' +
+      '  3. /opt/bin/ffmpeg (Lambda Layer)\n' +
+      '  4. ffmpeg-static npm package\n' +
+      'Please ensure ffmpeg is deployed correctly.'
   );
 }
 
@@ -83,7 +83,7 @@ export function getFFprobePath(): string {
   try {
     const ffmpegPath = getFFmpegPath();
     const ffprobePath = ffmpegPath.replace(/ffmpeg$/, 'ffprobe');
-    
+
     if (fs.existsSync(ffprobePath)) {
       console.log('[FFmpegHelper] Derived ffprobe path from ffmpeg:', ffprobePath);
       return ffprobePath;
@@ -95,11 +95,11 @@ export function getFFprobePath(): string {
   // All attempts failed
   throw new Error(
     'ffprobe binary not found. Checked:\n' +
-    '  1. FFPROBE_PATH environment variable\n' +
-    '  2. /var/task/ffprobe (CDK deployment)\n' +
-    '  3. /opt/bin/ffprobe (Lambda Layer)\n' +
-    '  4. Derived from ffmpeg path\n' +
-    'Please ensure ffprobe is deployed correctly.'
+      '  1. FFPROBE_PATH environment variable\n' +
+      '  2. /var/task/ffprobe (CDK deployment)\n' +
+      '  3. /opt/bin/ffprobe (Lambda Layer)\n' +
+      '  4. Derived from ffmpeg path\n' +
+      'Please ensure ffprobe is deployed correctly.'
   );
 }
 

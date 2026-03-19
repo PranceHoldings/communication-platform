@@ -59,9 +59,7 @@ interface GuestSessionData {
 /**
  * Lambda handler for getting guest session data
  */
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[GetGuestSessionData] Event:', JSON.stringify(event, null, 2));
 
   try {
@@ -198,7 +196,7 @@ export const handler = async (
             wordCount: session.transcript.wordCount,
             language: session.transcript.language,
             confidence: session.transcript.confidence,
-            speakers: (session.transcript.speakers as any[]).map((s) => ({
+            speakers: (session.transcript.speakers as any[]).map(s => ({
               speaker: s.speaker,
               text: s.text,
               startTimeSec: s.startTimeSec,

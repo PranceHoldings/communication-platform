@@ -54,9 +54,7 @@ export function getRequiredEnvAsNumber(key: string): number {
   const numValue = parseInt(value, 10);
 
   if (isNaN(numValue)) {
-    throw new Error(
-      `Environment variable ${key} must be a valid number, got: ${value}`
-    );
+    throw new Error(`Environment variable ${key} must be a valid number, got: ${value}`);
   }
 
   return numValue;
@@ -119,6 +117,24 @@ export function getOptionalEnvAsBoolean(key: string, defaultValue: boolean): boo
 }
 
 /**
+ * Get required environment variable as float
+ *
+ * @param key - Environment variable name
+ * @returns Parsed float value
+ * @throws Error if variable is not set or not a valid number
+ */
+export function getRequiredEnvAsFloat(key: string): number {
+  const value = getRequiredEnv(key);
+  const floatValue = parseFloat(value);
+
+  if (isNaN(floatValue)) {
+    throw new Error(`Environment variable ${key} must be a valid number, got: ${value}`);
+  }
+
+  return floatValue;
+}
+
+/**
  * Validate all required environment variables at Lambda startup
  * Call this at the top of your handler to fail fast
  *
@@ -148,12 +164,7 @@ export function validateRequiredEnvVars(requiredVars: string[]): void {
  * Call this at Lambda initialization to ensure basic config is present
  */
 export function validateCommonEnvVars(): void {
-  const commonRequired = [
-    'AWS_REGION',
-    'DATABASE_URL',
-    'S3_BUCKET',
-    'ENVIRONMENT',
-  ];
+  const commonRequired = ['AWS_REGION', 'DATABASE_URL', 'S3_BUCKET', 'ENVIRONMENT'];
 
   validateRequiredEnvVars(commonRequired);
 }
@@ -164,6 +175,14 @@ export function validateCommonEnvVars(): void {
  */
 export function getAwsRegion(): string {
   return getRequiredEnv('AWS_REGION');
+}
+
+/**
+ * Get AWS endpoint suffix from environment or throw error
+ * Example: amazonaws.com (can be changed for AWS China, GovCloud, etc.)
+ */
+export function getAwsEndpointSuffix(): string {
+  return getRequiredEnv('AWS_ENDPOINT_SUFFIX');
 }
 
 /**
@@ -226,4 +245,136 @@ export function isDevelopment(): boolean {
  */
 export function getAnalysisLambdaFunctionName(): string {
   return getRequiredEnv('ANALYSIS_LAMBDA_FUNCTION_NAME');
+}
+
+// ============================================================
+// Query & Processing Configuration
+// ============================================================
+
+export function getMaxResults(): number {
+  return getRequiredEnvAsNumber('MAX_RESULTS');
+}
+
+export function getVideoChunkBatchSize(): number {
+  return getRequiredEnvAsNumber('VIDEO_CHUNK_BATCH_SIZE');
+}
+
+export function getAnalysisBatchSize(): number {
+  return getRequiredEnvAsNumber('ANALYSIS_BATCH_SIZE');
+}
+
+// ============================================================
+// Security Configuration
+// ============================================================
+
+export function getBcryptSaltRounds(): number {
+  return getRequiredEnvAsNumber('BCRYPT_SALT_ROUNDS');
+}
+
+export function getRateLimitMaxAttempts(): number {
+  return getRequiredEnvAsNumber('RATE_LIMIT_MAX_ATTEMPTS');
+}
+
+export function getRateLimitLockoutDurationMs(): number {
+  return getRequiredEnvAsNumber('RATE_LIMIT_LOCKOUT_DURATION_MS');
+}
+
+export function getRateLimitAttemptWindowMs(): number {
+  return getRequiredEnvAsNumber('RATE_LIMIT_ATTEMPT_WINDOW_MS');
+}
+
+// ============================================================
+// Audio Processing Configuration
+// ============================================================
+
+export function getMinPauseDurationSec(): number {
+  return getRequiredEnvAsFloat('MIN_PAUSE_DURATION_SEC');
+}
+
+export function getOptimalPauseSec(): number {
+  return getRequiredEnvAsFloat('OPTIMAL_PAUSE_SEC');
+}
+
+export function getTtsStability(): number {
+  return getRequiredEnvAsFloat('TTS_STABILITY');
+}
+
+export function getTtsSimilarityBoost(): number {
+  return getRequiredEnvAsFloat('TTS_SIMILARITY_BOOST');
+}
+
+export function getDefaultSttConfidence(): number {
+  return getRequiredEnvAsFloat('DEFAULT_STT_CONFIDENCE');
+}
+
+export function getAudioSampleRate(): number {
+  return getRequiredEnvAsNumber('AUDIO_SAMPLE_RATE');
+}
+
+export function getSilenceThreshold(): number {
+  return getRequiredEnvAsFloat('SILENCE_THRESHOLD');
+}
+
+// ============================================================
+// AI Processing Configuration
+// ============================================================
+
+export function getClaudeTemperature(): number {
+  return getRequiredEnvAsFloat('CLAUDE_TEMPERATURE');
+}
+
+export function getClaudeMaxTokens(): number {
+  return getRequiredEnvAsNumber('CLAUDE_MAX_TOKENS');
+}
+
+export function getMaxAutoDetectLanguages(): number {
+  return getRequiredEnvAsNumber('MAX_AUTO_DETECT_LANGUAGES');
+}
+
+// ============================================================
+// Score Calculation Configuration
+// ============================================================
+
+export function getEmotionWeight(): number {
+  return getRequiredEnvAsFloat('EMOTION_WEIGHT');
+}
+
+export function getAudioWeight(): number {
+  return getRequiredEnvAsFloat('AUDIO_WEIGHT');
+}
+
+export function getContentWeight(): number {
+  return getRequiredEnvAsFloat('CONTENT_WEIGHT');
+}
+
+export function getDeliveryWeight(): number {
+  return getRequiredEnvAsFloat('DELIVERY_WEIGHT');
+}
+
+export function getMinConfidenceThreshold(): number {
+  return getRequiredEnvAsNumber('MIN_CONFIDENCE_THRESHOLD');
+}
+
+export function getMinQualityThreshold(): number {
+  return getRequiredEnvAsNumber('MIN_QUALITY_THRESHOLD');
+}
+
+// ============================================================
+// DynamoDB Configuration
+// ============================================================
+
+export function getDynamoDbVideoLockTtlSeconds(): number {
+  return getRequiredEnvAsNumber('DYNAMODB_VIDEO_LOCK_TTL_SECONDS');
+}
+
+export function getDynamoDbConnectionTtlSeconds(): number {
+  return getRequiredEnvAsNumber('DYNAMODB_CONNECTION_TTL_SECONDS');
+}
+
+// ============================================================
+// Media Configuration
+// ============================================================
+
+export function getDefaultChunkDurationMs(): number {
+  return getRequiredEnvAsNumber('DEFAULT_CHUNK_DURATION_MS');
 }

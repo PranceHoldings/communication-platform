@@ -67,9 +67,7 @@ interface ListGuestSessionsResponse {
 /**
  * Lambda handler for listing guest sessions
  */
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[ListGuestSessions] Event:', JSON.stringify(event, null, 2));
 
   try {
@@ -101,7 +99,8 @@ export const handler = async (
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can list guest sessions',
+          error:
+            'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can list guest sessions',
         }),
       };
     }
@@ -137,7 +136,10 @@ export const handler = async (
     }
 
     // Validate status enum
-    if (query.status && !['PENDING', 'ACTIVE', 'COMPLETED', 'EXPIRED', 'REVOKED'].includes(query.status)) {
+    if (
+      query.status &&
+      !['PENDING', 'ACTIVE', 'COMPLETED', 'EXPIRED', 'REVOKED'].includes(query.status)
+    ) {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -212,7 +214,7 @@ export const handler = async (
     });
 
     // 6. Format response
-    const formattedSessions: GuestSessionListItem[] = guestSessions.map((gs) => ({
+    const formattedSessions: GuestSessionListItem[] = guestSessions.map(gs => ({
       id: gs.id,
       token: gs.token,
       status: gs.status,

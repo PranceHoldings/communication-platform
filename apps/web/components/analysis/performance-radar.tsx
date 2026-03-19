@@ -81,7 +81,10 @@ export function PerformanceRadar({ score }: PerformanceRadarProps) {
       </ResponsiveContainer>
 
       {/* Legend */}
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 text-sm" data-testid="radar-legend">
+      <div
+        className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 text-sm"
+        data-testid="radar-legend"
+      >
         {radarData.map((item, index) => (
           <div
             key={item.subject}

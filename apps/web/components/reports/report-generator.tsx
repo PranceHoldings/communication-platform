@@ -75,13 +75,19 @@ export function ReportGenerator({ sessionId, sessionStatus }: ReportGeneratorPro
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg" data-testid="report-error-message">
+        <div
+          className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg"
+          data-testid="report-error-message"
+        >
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
       {lastReport && !generating && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg" data-testid="report-success-message">
+        <div
+          className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg"
+          data-testid="report-success-message"
+        >
           <p className="text-sm text-green-700 mb-2">{t('reports.generator.success')}</p>
           <p className="text-xs text-gray-600">
             {t('reports.generator.generatedAt')}:{' '}
@@ -154,7 +160,10 @@ export function ReportGenerator({ sessionId, sessionStatus }: ReportGeneratorPro
         )}
       </div>
 
-      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg" data-testid="report-info">
+      <div
+        className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg"
+        data-testid="report-info"
+      >
         <div className="flex items-start">
           <svg
             className="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0"

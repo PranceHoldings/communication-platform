@@ -28,11 +28,7 @@ export interface ErrorLogEntry {
 /**
  * Log error with structured format for CloudWatch Logs
  */
-export function logError(
-  message: string,
-  error: Error | any,
-  context?: ErrorContext
-): void {
+export function logError(message: string, error: Error | any, context?: ErrorContext): void {
   const logEntry: ErrorLogEntry = {
     timestamp: new Date().toISOString(),
     level: 'ERROR',
@@ -53,11 +49,7 @@ export function logError(
 /**
  * Log warning with structured format
  */
-export function logWarning(
-  message: string,
-  details?: any,
-  context?: ErrorContext
-): void {
+export function logWarning(message: string, details?: any, context?: ErrorContext): void {
   const logEntry: ErrorLogEntry = {
     timestamp: new Date().toISOString(),
     level: 'WARN',
@@ -74,11 +66,7 @@ export function logWarning(
 /**
  * Log info with structured format
  */
-export function logInfo(
-  message: string,
-  details?: any,
-  context?: ErrorContext
-): void {
+export function logInfo(message: string, details?: any, context?: ErrorContext): void {
   const logEntry: ErrorLogEntry = {
     timestamp: new Date().toISOString(),
     level: 'INFO',

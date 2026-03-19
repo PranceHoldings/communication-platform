@@ -152,7 +152,10 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
         <div className="bg-gray-800 p-4 space-y-3">
           {/* シークバー */}
           <div className="flex items-center gap-3">
-            <span className="text-white text-sm font-mono w-12" data-testid="recording-current-time">
+            <span
+              className="text-white text-sm font-mono w-12"
+              data-testid="recording-current-time"
+            >
               {formatTime(currentTime)}
             </span>
             <input
@@ -199,7 +202,10 @@ export function RecordingPlayer({ recording, transcripts }: RecordingPlayerProps
               </button>
 
               {/* 再生速度 */}
-              <div className="flex items-center gap-2" data-testid="recording-playback-rate-controls">
+              <div
+                className="flex items-center gap-2"
+                data-testid="recording-playback-rate-controls"
+              >
                 <span className="text-white text-sm">{t('sessions.player.recording.speed')}:</span>
                 {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(rate => (
                   <button

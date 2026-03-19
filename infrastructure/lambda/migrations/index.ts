@@ -15,8 +15,10 @@ export const handler: Handler = async (event, context) => {
   try {
     // migrationsディレクトリ内の全SQLファイルを取得
     const migrationsDir = __dirname;
-    const files = readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
-    
+    const files = readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
     console.log('Found SQL files:', files);
 
     let totalExecuted = 0;
@@ -45,8 +47,17 @@ export const handler: Handler = async (event, context) => {
             totalExecuted++;
           } catch (error: any) {
             // テーブルやエンティティが既に存在する場合はスキップ
-            if (error.code === '42P07' || error.code === '42710' || error.code === '23505' || error.code === 'P2010' || error.code === '42701') {
-              console.warn(`[Migration] Statement already exists (skipping):`, error.message.substring(0, 100));
+            if (
+              error.code === '42P07' ||
+              error.code === '42710' ||
+              error.code === '23505' ||
+              error.code === 'P2010' ||
+              error.code === '42701'
+            ) {
+              console.warn(
+                `[Migration] Statement already exists (skipping):`,
+                error.message.substring(0, 100)
+              );
               totalExecuted++;
               continue;
             }
@@ -58,7 +69,9 @@ export const handler: Handler = async (event, context) => {
       console.log(`[Migration] ✅ Completed: ${sqlFile}`);
     }
 
-    console.log(`\n[Migration] All migrations completed successfully. Executed ${totalExecuted} statements.`);
+    console.log(
+      `\n[Migration] All migrations completed successfully. Executed ${totalExecuted} statements.`
+    );
 
     return {
       statusCode: 200,

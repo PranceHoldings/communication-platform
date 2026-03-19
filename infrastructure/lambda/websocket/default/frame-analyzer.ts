@@ -5,7 +5,7 @@
 
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { RekognitionAnalyzer, EmotionAnalysisResult } from '../../shared/analysis/rekognition';
-import { AWS_DEFAULTS } from '../../shared/config/defaults';
+
 import { getFFmpegPath, getFFprobePath } from '../../shared/utils/ffmpeg-helper';
 import { generateCdnUrl } from '../../shared/utils/url-generator';
 import * as fs from 'fs';
@@ -52,7 +52,7 @@ export class FrameAnalyzer {
 
     console.log('[FrameAnalyzer] Initialized', {
       bucket: this.bucket,
-      region: config.region || AWS_DEFAULTS.REGION,
+      region: config.region || 'us-east-1',
     });
   }
 
@@ -236,7 +236,9 @@ export class FrameAnalyzer {
 
     // Calculate number of frames to extract
     const totalPossibleFrames = Math.floor(duration / interval);
-    const framesToExtract = maxFrames ? Math.min(maxFrames, totalPossibleFrames) : totalPossibleFrames;
+    const framesToExtract = maxFrames
+      ? Math.min(maxFrames, totalPossibleFrames)
+      : totalPossibleFrames;
 
     // Get ffmpeg path using centralized helper
     const ffmpegPath = getFFmpegPath();

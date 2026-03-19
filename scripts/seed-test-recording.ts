@@ -16,7 +16,8 @@ dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 const prisma = new PrismaClient();
 
 // CloudFront domain from env
-const CLOUDFRONT_DOMAIN = process.env.NEXT_PUBLIC_CLOUDFRONT_DOMAIN || 'd3mx0sug5s3a6x.cloudfront.net';
+const CLOUDFRONT_DOMAIN =
+  process.env.NEXT_PUBLIC_CLOUDFRONT_DOMAIN || 'd3mx0sug5s3a6x.cloudfront.net';
 
 async function main() {
   console.log('\n=== Seed Test Recording Data ===\n');
@@ -78,7 +79,7 @@ async function main() {
       console.log('\n📹 Creating recording...');
 
       const mockS3Key = `recordings/${session.id}/combined-${Date.now()}.webm`;
-      const mockS3Url = `https://${CLOUDFRONT_DOMAIN}/${mockS3Key}`;  // Use CDN URL
+      const mockS3Url = `https://${CLOUDFRONT_DOMAIN}/${mockS3Key}`; // Use CDN URL
       const mockCdnUrl = `https://${CLOUDFRONT_DOMAIN}/${mockS3Key}`;
 
       const recording = await prisma.recording.create({
@@ -109,14 +110,62 @@ async function main() {
       console.log('\n📝 Creating transcripts...');
 
       const transcriptData = [
-        { speaker: 'AI', text: 'こんにちは。今日は面接にお越しいただき、ありがとうございます。まず自己紹介をお願いします。', timestampStart: 0.5, timestampEnd: 6.2, confidence: 0.95 },
-        { speaker: 'USER', text: 'はい、よろしくお願いします。私は5年間ソフトウェアエンジニアとして働いており、特にWebアプリケーション開発が得意です。', timestampStart: 7.0, timestampEnd: 15.5, confidence: 0.92 },
-        { speaker: 'AI', text: 'ありがとうございます。それでは、あなたの強みについて教えてください。', timestampStart: 16.0, timestampEnd: 20.8, confidence: 0.96 },
-        { speaker: 'USER', text: '私の強みは、新しい技術を素早く学習し、チームと協力して問題を解決できることです。', timestampStart: 21.5, timestampEnd: 29.2, confidence: 0.89 },
-        { speaker: 'AI', text: '素晴らしいですね。では、過去のプロジェクトで最も困難だったことは何ですか？', timestampStart: 30.0, timestampEnd: 36.5, confidence: 0.94 },
-        { speaker: 'USER', text: 'レガシーシステムの大規模なリファクタリングプロジェクトです。多くの依存関係があり、段階的なアプローチが必要でした。', timestampStart: 37.2, timestampEnd: 47.8, confidence: 0.91 },
-        { speaker: 'AI', text: 'どのようにその課題を克服しましたか？', timestampStart: 48.5, timestampEnd: 52.0, confidence: 0.97 },
-        { speaker: 'USER', text: 'チームで詳細な計画を立て、自動テストを整備し、小さな変更を積み重ねていきました。結果として、安全にシステムを刷新できました。', timestampStart: 52.8, timestampEnd: 65.5, confidence: 0.93 },
+        {
+          speaker: 'AI',
+          text: 'こんにちは。今日は面接にお越しいただき、ありがとうございます。まず自己紹介をお願いします。',
+          timestampStart: 0.5,
+          timestampEnd: 6.2,
+          confidence: 0.95,
+        },
+        {
+          speaker: 'USER',
+          text: 'はい、よろしくお願いします。私は5年間ソフトウェアエンジニアとして働いており、特にWebアプリケーション開発が得意です。',
+          timestampStart: 7.0,
+          timestampEnd: 15.5,
+          confidence: 0.92,
+        },
+        {
+          speaker: 'AI',
+          text: 'ありがとうございます。それでは、あなたの強みについて教えてください。',
+          timestampStart: 16.0,
+          timestampEnd: 20.8,
+          confidence: 0.96,
+        },
+        {
+          speaker: 'USER',
+          text: '私の強みは、新しい技術を素早く学習し、チームと協力して問題を解決できることです。',
+          timestampStart: 21.5,
+          timestampEnd: 29.2,
+          confidence: 0.89,
+        },
+        {
+          speaker: 'AI',
+          text: '素晴らしいですね。では、過去のプロジェクトで最も困難だったことは何ですか？',
+          timestampStart: 30.0,
+          timestampEnd: 36.5,
+          confidence: 0.94,
+        },
+        {
+          speaker: 'USER',
+          text: 'レガシーシステムの大規模なリファクタリングプロジェクトです。多くの依存関係があり、段階的なアプローチが必要でした。',
+          timestampStart: 37.2,
+          timestampEnd: 47.8,
+          confidence: 0.91,
+        },
+        {
+          speaker: 'AI',
+          text: 'どのようにその課題を克服しましたか？',
+          timestampStart: 48.5,
+          timestampEnd: 52.0,
+          confidence: 0.97,
+        },
+        {
+          speaker: 'USER',
+          text: 'チームで詳細な計画を立て、自動テストを整備し、小さな変更を積み重ねていきました。結果として、安全にシステムを刷新できました。',
+          timestampStart: 52.8,
+          timestampEnd: 65.5,
+          confidence: 0.93,
+        },
       ];
 
       for (const data of transcriptData) {
@@ -160,16 +209,8 @@ async function main() {
           relevance: 82.0,
           structure: 79.5,
           completeness: 78.5,
-          strengths: [
-            '良好な感情コントロール',
-            '適切な話速',
-            '明確な論理構造',
-          ],
-          improvements: [
-            'フィラー語を減らす',
-            '音量を少し上げる',
-            'より具体的な例を挙げる',
-          ],
+          strengths: ['良好な感情コントロール', '適切な話速', '明確な論理構造'],
+          improvements: ['フィラー語を減らす', '音量を少し上げる', 'より具体的な例を挙げる'],
           criteria: {
             emotion: 'AWS Rekognition による感情解析',
             audio: 'Azure Speech Services による音声解析',
@@ -178,8 +219,8 @@ async function main() {
           weights: {
             emotion: 0.25,
             audio: 0.25,
-            content: 0.30,
-            delivery: 0.20,
+            content: 0.3,
+            delivery: 0.2,
           },
           version: '1.0',
         },
@@ -195,10 +236,42 @@ async function main() {
     console.log('\n😊 Creating emotion analyses...');
 
     const emotionData = [
-      { timestamp: 5.0, dominantEmotion: 'CALM', emotions: [{ Type: 'CALM', Confidence: 85.5 }, { Type: 'HAPPY', Confidence: 12.3 }], confidence: 85.5 },
-      { timestamp: 15.0, dominantEmotion: 'HAPPY', emotions: [{ Type: 'HAPPY', Confidence: 78.2 }, { Type: 'CALM', Confidence: 19.5 }], confidence: 78.2 },
-      { timestamp: 30.0, dominantEmotion: 'CONFUSED', emotions: [{ Type: 'CONFUSED', Confidence: 42.1 }, { Type: 'CALM', Confidence: 38.9 }], confidence: 42.1 },
-      { timestamp: 50.0, dominantEmotion: 'CALM', emotions: [{ Type: 'CALM', Confidence: 88.7 }, { Type: 'HAPPY', Confidence: 9.2 }], confidence: 88.7 },
+      {
+        timestamp: 5.0,
+        dominantEmotion: 'CALM',
+        emotions: [
+          { Type: 'CALM', Confidence: 85.5 },
+          { Type: 'HAPPY', Confidence: 12.3 },
+        ],
+        confidence: 85.5,
+      },
+      {
+        timestamp: 15.0,
+        dominantEmotion: 'HAPPY',
+        emotions: [
+          { Type: 'HAPPY', Confidence: 78.2 },
+          { Type: 'CALM', Confidence: 19.5 },
+        ],
+        confidence: 78.2,
+      },
+      {
+        timestamp: 30.0,
+        dominantEmotion: 'CONFUSED',
+        emotions: [
+          { Type: 'CONFUSED', Confidence: 42.1 },
+          { Type: 'CALM', Confidence: 38.9 },
+        ],
+        confidence: 42.1,
+      },
+      {
+        timestamp: 50.0,
+        dominantEmotion: 'CALM',
+        emotions: [
+          { Type: 'CALM', Confidence: 88.7 },
+          { Type: 'HAPPY', Confidence: 9.2 },
+        ],
+        confidence: 88.7,
+      },
     ];
 
     const recordingId = session.recordings[0]?.id;
@@ -231,10 +304,42 @@ async function main() {
     console.log('\n🎤 Creating audio analyses...');
 
     const audioData = [
-      { timestamp: 10.0, pitch: 185.5, volume: -18.2, speakingRate: 145.0, pauseCount: 2, clarity: 0.85, fillerCount: 1 },
-      { timestamp: 25.0, pitch: 192.3, volume: -16.8, speakingRate: 152.0, pauseCount: 3, clarity: 0.82, fillerCount: 2 },
-      { timestamp: 40.0, pitch: 178.1, volume: -19.5, speakingRate: 138.0, pauseCount: 4, clarity: 0.79, fillerCount: 3 },
-      { timestamp: 60.0, pitch: 188.7, volume: -17.3, speakingRate: 148.0, pauseCount: 2, clarity: 0.87, fillerCount: 1 },
+      {
+        timestamp: 10.0,
+        pitch: 185.5,
+        volume: -18.2,
+        speakingRate: 145.0,
+        pauseCount: 2,
+        clarity: 0.85,
+        fillerCount: 1,
+      },
+      {
+        timestamp: 25.0,
+        pitch: 192.3,
+        volume: -16.8,
+        speakingRate: 152.0,
+        pauseCount: 3,
+        clarity: 0.82,
+        fillerCount: 2,
+      },
+      {
+        timestamp: 40.0,
+        pitch: 178.1,
+        volume: -19.5,
+        speakingRate: 138.0,
+        pauseCount: 4,
+        clarity: 0.79,
+        fillerCount: 3,
+      },
+      {
+        timestamp: 60.0,
+        pitch: 188.7,
+        volume: -17.3,
+        speakingRate: 148.0,
+        pauseCount: 2,
+        clarity: 0.87,
+        fillerCount: 1,
+      },
     ];
 
     for (const data of audioData) {
@@ -270,7 +375,6 @@ async function main() {
     console.log(`  npm run test:e2e -- stage4-recording.spec.ts`);
     console.log(`  npm run test:e2e -- stage5-analysis-report.spec.ts`);
     console.log('\n');
-
   } catch (error) {
     console.error('\n❌ Error seeding test data:', error);
     throw error;
@@ -279,8 +383,7 @@ async function main() {
   }
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch(error => {
+  console.error(error);
+  process.exit(1);
+});

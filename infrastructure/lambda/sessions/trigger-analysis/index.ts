@@ -67,7 +67,7 @@ export const handler: APIGatewayProxyHandler = async event => {
     }
 
     // Check if analysis is already in progress
-    const metadata = session.metadataJson as any;
+    const metadata = session.metadataJson;
     if (metadata?.analysisInProgress) {
       return errorResponse(
         409,
@@ -148,7 +148,7 @@ export const handler: APIGatewayProxyHandler = async event => {
           data: {
             status: 'ERROR',
             metadataJson: {
-              ...(session?.metadataJson as any),
+              ...session?.metadataJson,
               analysisInProgress: false,
               analysisError: error instanceof Error ? error.message : 'Unknown error',
               analysisErrorAt: new Date().toISOString(),

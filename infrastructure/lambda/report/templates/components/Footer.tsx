@@ -13,9 +13,7 @@ interface FooterProps {
 export function Footer({ pageNumber, totalPages }: FooterProps) {
   return (
     <View style={styles.footer} fixed>
-      <Text style={styles.footerText}>
-        Prance Communication Platform - セッションレポート
-      </Text>
+      <Text style={styles.footerText}>Prance Communication Platform - セッションレポート</Text>
       <Text style={styles.pageNumber}>
         {pageNumber} / {totalPages}
       </Text>

@@ -3,14 +3,13 @@
  */
 
 import bcrypt from 'bcryptjs';
-
-const SALT_ROUNDS = 10;
+import { getBcryptSaltRounds } from '../utils/env-validator';
 
 /**
  * パスワードをハッシュ化
  */
 export const hashPassword = async (password: string): Promise<string> => {
-  return bcrypt.hash(password, SALT_ROUNDS);
+  return bcrypt.hash(password, getBcryptSaltRounds());
 };
 
 /**

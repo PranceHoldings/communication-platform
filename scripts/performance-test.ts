@@ -92,11 +92,13 @@ class PerformanceTest {
         }
 
         // Send authentication message
-        ws.send(JSON.stringify({
-          type: 'authenticate',
-          sessionId,
-          timestamp: Date.now(),
-        }));
+        ws.send(
+          JSON.stringify({
+            type: 'authenticate',
+            sessionId,
+            timestamp: Date.now(),
+          })
+        );
 
         // Simulate audio chunk (1-second WebM chunk, ~5KB)
         // In real scenario, this would be actual audio data
@@ -105,18 +107,22 @@ class PerformanceTest {
         metrics.sttStartTime = Date.now();
 
         // Send real-time audio chunk
-        ws.send(JSON.stringify({
-          type: 'audio_chunk_realtime',
-          data: mockAudioChunk,
-          timestamp: Date.now(),
-        }));
+        ws.send(
+          JSON.stringify({
+            type: 'audio_chunk_realtime',
+            data: mockAudioChunk,
+            timestamp: Date.now(),
+          })
+        );
 
         // Send speech_end to trigger STT processing
         setTimeout(() => {
-          ws.send(JSON.stringify({
-            type: 'speech_end',
-            timestamp: Date.now(),
-          }));
+          ws.send(
+            JSON.stringify({
+              type: 'speech_end',
+              timestamp: Date.now(),
+            })
+          );
         }, 100); // Wait 100ms before ending speech
 
         if (this.verbose) {
@@ -214,7 +220,7 @@ class PerformanceTest {
         }
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         metrics.error = error.message;
         clearTimeout(timeout);
         resolve({
@@ -271,7 +277,9 @@ class PerformanceTest {
 
     // Success rate
     const successRate = (successful.length / this.results.length) * 100;
-    console.log(`Success Rate: ${successRate.toFixed(1)}% (${successful.length}/${this.results.length})`);
+    console.log(
+      `Success Rate: ${successRate.toFixed(1)}% (${successful.length}/${this.results.length})`
+    );
 
     if (successful.length === 0) {
       console.log('\n❌ No successful tests. Check errors below.\n');
@@ -307,9 +315,15 @@ class PerformanceTest {
       const p95Pass = p95 < 6000;
       const successRatePass = successRate > 95;
 
-      console.log(`  ✓ Average < 4s:     ${avgPass ? '✅ PASS' : '❌ FAIL'} (${(avg / 1000).toFixed(2)}s)`);
-      console.log(`  ✓ 95th % < 6s:      ${p95Pass ? '✅ PASS' : '❌ FAIL'} (${(p95 / 1000).toFixed(2)}s)`);
-      console.log(`  ✓ Success rate > 95%: ${successRatePass ? '✅ PASS' : '❌ FAIL'} (${successRate.toFixed(1)}%)`);
+      console.log(
+        `  ✓ Average < 4s:     ${avgPass ? '✅ PASS' : '❌ FAIL'} (${(avg / 1000).toFixed(2)}s)`
+      );
+      console.log(
+        `  ✓ 95th % < 6s:      ${p95Pass ? '✅ PASS' : '❌ FAIL'} (${(p95 / 1000).toFixed(2)}s)`
+      );
+      console.log(
+        `  ✓ Success rate > 95%: ${successRatePass ? '✅ PASS' : '❌ FAIL'} (${successRate.toFixed(1)}%)`
+      );
 
       const allPass = avgPass && p95Pass && successRatePass;
       console.log(`\n${allPass ? '✅ ALL CRITERIA MET' : '❌ CRITERIA NOT MET'}`);
@@ -317,13 +331,16 @@ class PerformanceTest {
 
     // Component breakdown
     console.log('\nComponent Breakdown (Average):');
-    const avgConnection = successful.reduce((a, r) => a + r.metrics.connectionTime, 0) / successful.length;
+    const avgConnection =
+      successful.reduce((a, r) => a + r.metrics.connectionTime, 0) / successful.length;
     console.log(`  Connection:  ${avgConnection.toFixed(0)}ms`);
 
     const sttTimes = successful
-      .map(r => r.metrics.sttEndTime && r.metrics.sttStartTime
-        ? r.metrics.sttEndTime - r.metrics.sttStartTime
-        : 0)
+      .map(r =>
+        r.metrics.sttEndTime && r.metrics.sttStartTime
+          ? r.metrics.sttEndTime - r.metrics.sttStartTime
+          : 0
+      )
       .filter(t => t > 0);
     if (sttTimes.length > 0) {
       const avgSTT = sttTimes.reduce((a, b) => a + b, 0) / sttTimes.length;
@@ -331,9 +348,11 @@ class PerformanceTest {
     }
 
     const aiTimes = successful
-      .map(r => r.metrics.aiEndTime && r.metrics.aiStartTime
-        ? r.metrics.aiEndTime - r.metrics.aiStartTime
-        : 0)
+      .map(r =>
+        r.metrics.aiEndTime && r.metrics.aiStartTime
+          ? r.metrics.aiEndTime - r.metrics.aiStartTime
+          : 0
+      )
       .filter(t => t > 0);
     if (aiTimes.length > 0) {
       const avgAI = aiTimes.reduce((a, b) => a + b, 0) / aiTimes.length;
@@ -341,9 +360,11 @@ class PerformanceTest {
     }
 
     const ttsTimes = successful
-      .map(r => r.metrics.ttsEndTime && r.metrics.ttsStartTime
-        ? r.metrics.ttsEndTime - r.metrics.ttsStartTime
-        : 0)
+      .map(r =>
+        r.metrics.ttsEndTime && r.metrics.ttsStartTime
+          ? r.metrics.ttsEndTime - r.metrics.ttsStartTime
+          : 0
+      )
       .filter(t => t > 0);
     if (ttsTimes.length > 0) {
       const avgTTS = ttsTimes.reduce((a, b) => a + b, 0) / ttsTimes.length;
@@ -389,7 +410,8 @@ async function main() {
   const verbose = args.includes('--verbose');
 
   // Configuration
-  const WS_URL = process.env.WEBSOCKET_URL || 'wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev';
+  const WS_URL =
+    process.env.WEBSOCKET_URL || 'wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev';
   const AUTH_TOKEN = process.env.AUTH_TOKEN || '';
 
   if (!AUTH_TOKEN) {
@@ -412,7 +434,9 @@ async function main() {
     console.log(`  Session ID: ${result.sessionId}`);
     console.log(`  Success: ${result.metrics.success ? '✅' : '❌'}`);
     if (result.metrics.totalResponseTime) {
-      console.log(`  Total Response Time: ${(result.metrics.totalResponseTime / 1000).toFixed(2)}s`);
+      console.log(
+        `  Total Response Time: ${(result.metrics.totalResponseTime / 1000).toFixed(2)}s`
+      );
     }
     if (result.metrics.error) {
       console.log(`  Error: ${result.metrics.error}`);

@@ -91,7 +91,11 @@ export function ScoreDashboard({ score }: ScoreDashboardProps) {
           </h3>
           <ul className="space-y-2">
             {score.strengths.map((strength, index) => (
-              <li key={index} className="text-sm text-gray-700 flex items-start" data-testid={`strength-${index}`}>
+              <li
+                key={index}
+                className="text-sm text-gray-700 flex items-start"
+                data-testid={`strength-${index}`}
+              >
                 <span className="text-green-500 mr-2">•</span>
                 {strength}
               </li>
@@ -113,7 +117,11 @@ export function ScoreDashboard({ score }: ScoreDashboardProps) {
           </h3>
           <ul className="space-y-2">
             {score.improvements.map((improvement, index) => (
-              <li key={index} className="text-sm text-gray-700 flex items-start" data-testid={`improvement-${index}`}>
+              <li
+                key={index}
+                className="text-sm text-gray-700 flex items-start"
+                data-testid={`improvement-${index}`}
+              >
                 <span className="text-orange-500 mr-2">•</span>
                 {improvement}
               </li>

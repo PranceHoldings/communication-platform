@@ -727,7 +727,12 @@ export interface ScoringWeights {
 /**
  * スコアリング基準プリセット
  */
-export type ScoringPreset = 'default' | 'interview_practice' | 'language_learning' | 'presentation' | 'custom';
+export type ScoringPreset =
+  | 'default'
+  | 'interview_practice'
+  | 'language_learning'
+  | 'presentation'
+  | 'custom';
 
 /**
  * スコアリング基準

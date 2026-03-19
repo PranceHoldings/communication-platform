@@ -65,6 +65,7 @@
     "build:deploy": "bash scripts/build-and-deploy.sh",
     "pre-commit": "npm run i18n:validate && npm run lambda:validate && npm run consistency:validate && npm run lint && npm run typecheck",
     "env:validate": "bash scripts/validate-env.sh",
+    "env:consistency": "bash scripts/validate-env-consistency.sh",
     "perf:test": "npx tsx scripts/performance-test.ts",
     "perf:load": "npx tsx scripts/performance-test.ts --load 10",
     "perf:metrics": "bash scripts/collect-metrics.sh",

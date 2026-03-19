@@ -31,14 +31,12 @@ import { VideoProcessor } from './video-processor';
 import { sortChunksByTimestampAndIndex, logSortedChunks, generateChunkKey } from './chunk-utils';
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import {
-  AWS_DEFAULTS,
-  BEDROCK_DEFAULTS,
-  ELEVENLABS_DEFAULTS,
-  LANGUAGE_DEFAULTS,
-  MEDIA_DEFAULTS,
-  DYNAMODB_DEFAULTS,
-} from '../../shared/config/defaults';
-import { getAnalysisLambdaFunctionName, getRequiredEnv, getS3Bucket, getCloudFrontDomain } from '../../shared/utils/env-validator';
+  getAnalysisLambdaFunctionName,
+  getRequiredEnv,
+  getS3Bucket,
+  getCloudFrontDomain,
+  getAwsEndpointSuffix,
+} from '../../shared/utils/env-validator';
 
 // Lambda function version
 const LAMBDA_VERSION = '1.1.0';
@@ -48,46 +46,34 @@ const LAMBDA_NAME = 'websocket-default-handler';
 // Source of truth: packages/shared/src/language/index.ts
 const SUPPORTED_LANGUAGES = ['ja', 'en', 'zh-CN', 'zh-TW', 'ko', 'es', 'pt', 'fr', 'de', 'it'];
 
-// Default values (imported from centralized configuration)
-// Using values from shared/config/defaults.ts to eliminate hardcoding
-const DEFAULT_AWS_REGION = AWS_DEFAULTS.REGION;
-const DEFAULT_BEDROCK_REGION = BEDROCK_DEFAULTS.REGION;
-const DEFAULT_BEDROCK_MODEL_ID = BEDROCK_DEFAULTS.MODEL_ID;
-const DEFAULT_ELEVENLABS_MODEL_ID = ELEVENLABS_DEFAULTS.MODEL_ID;
-const DEFAULT_STT_LANGUAGE = LANGUAGE_DEFAULTS.STT_LANGUAGE;
-const DEFAULT_STT_AUTO_DETECT_LANGUAGES = Array.from(LANGUAGE_DEFAULTS.STT_AUTO_DETECT_LANGUAGES_DEFAULT);
-const DEFAULT_SCENARIO_LANGUAGE = SUPPORTED_LANGUAGES[0]; // First supported language ('ja')
-const DEFAULT_VIDEO_FORMAT = MEDIA_DEFAULTS.VIDEO_FORMAT;
-const DEFAULT_VIDEO_RESOLUTION = MEDIA_DEFAULTS.VIDEO_RESOLUTION;
-const DEFAULT_AUDIO_CONTENT_TYPE = MEDIA_DEFAULTS.AUDIO_CONTENT_TYPE;
-const DEFAULT_VIDEO_CONTENT_TYPE = MEDIA_DEFAULTS.VIDEO_CONTENT_TYPE;
+// Environment variables (all values come from .env.local - single source of truth)
+const AWS_REGION = getRequiredEnv('AWS_REGION');
+const BEDROCK_REGION = process.env.BEDROCK_REGION || AWS_REGION;
+const BEDROCK_MODEL_ID = getRequiredEnv('BEDROCK_MODEL_ID');
+const ELEVENLABS_MODEL_ID = getRequiredEnv('ELEVENLABS_MODEL_ID');
+const STT_LANGUAGE = getRequiredEnv('STT_LANGUAGE');
+const STT_AUTO_DETECT_LANGUAGES = getRequiredEnv('STT_AUTO_DETECT_LANGUAGES').split(',');
+const SCENARIO_LANGUAGE = SUPPORTED_LANGUAGES[0]; // First supported language ('ja')
+const VIDEO_FORMAT = getRequiredEnv('VIDEO_FORMAT');
+const VIDEO_RESOLUTION = getRequiredEnv('VIDEO_RESOLUTION');
+const AUDIO_CONTENT_TYPE = getRequiredEnv('AUDIO_CONTENT_TYPE');
+const VIDEO_CONTENT_TYPE = getRequiredEnv('VIDEO_CONTENT_TYPE');
 
 // Environment variables (required - fail fast if not set)
 const ENDPOINT = getRequiredEnv('WEBSOCKET_ENDPOINT');
 const CONNECTIONS_TABLE = getRequiredEnv('CONNECTIONS_TABLE_NAME');
 const S3_BUCKET = getS3Bucket();
-const AWS_REGION = process.env.AWS_REGION || DEFAULT_AWS_REGION;
 
 // AI/Audio services configuration
 const AZURE_SPEECH_KEY = getRequiredEnv('AZURE_SPEECH_KEY');
 const AZURE_SPEECH_REGION = getRequiredEnv('AZURE_SPEECH_REGION');
 const ELEVENLABS_API_KEY = getRequiredEnv('ELEVENLABS_API_KEY');
 const ELEVENLABS_VOICE_ID = getRequiredEnv('ELEVENLABS_VOICE_ID');
-const ELEVENLABS_MODEL_ID = process.env.ELEVENLABS_MODEL_ID || DEFAULT_ELEVENLABS_MODEL_ID;
-const BEDROCK_REGION = process.env.BEDROCK_REGION || DEFAULT_BEDROCK_REGION;
-const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || DEFAULT_BEDROCK_MODEL_ID;
 
 // CloudFront configuration
 const CLOUDFRONT_DOMAIN = getCloudFrontDomain();
 const CLOUDFRONT_KEY_PAIR_ID = getRequiredEnv('CLOUDFRONT_KEY_PAIR_ID');
 const CLOUDFRONT_PRIVATE_KEY = getRequiredEnv('CLOUDFRONT_PRIVATE_KEY');
-
-// Language and Media configuration
-const STT_LANGUAGE = process.env.STT_LANGUAGE || DEFAULT_STT_LANGUAGE;
-const VIDEO_FORMAT = process.env.VIDEO_FORMAT || DEFAULT_VIDEO_FORMAT;
-const VIDEO_RESOLUTION = process.env.VIDEO_RESOLUTION || DEFAULT_VIDEO_RESOLUTION;
-const AUDIO_CONTENT_TYPE = process.env.AUDIO_CONTENT_TYPE || DEFAULT_AUDIO_CONTENT_TYPE;
-const VIDEO_CONTENT_TYPE = process.env.VIDEO_CONTENT_TYPE || DEFAULT_VIDEO_CONTENT_TYPE;
 
 const apiGateway = new ApiGatewayManagementApiClient({
   endpoint: ENDPOINT,
@@ -99,7 +85,7 @@ const ddb = DynamoDBDocumentClient.from(ddbClient);
 const s3Client = new S3Client({});
 
 const lambdaClient = new LambdaClient({
-  region: process.env.AWS_REGION || DEFAULT_AWS_REGION,
+  region: AWS_REGION,
 });
 
 const prisma = new PrismaClient();
@@ -280,7 +266,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         const sessionId = message.sessionId as string;
 
         // Get scenario data directly from authenticate message (sent from frontend)
-        const scenarioLanguage = (message as any).scenarioLanguage || DEFAULT_SCENARIO_LANGUAGE;
+        const scenarioLanguage = (message as any).scenarioLanguage || SCENARIO_LANGUAGE;
         const scenarioPrompt = (message as any).scenarioPrompt as string | undefined;
         const initialGreeting = (message as any).initialGreeting as string | undefined;
         const silenceTimeout = (message as any).silenceTimeout as number | undefined;
@@ -293,7 +279,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           promptPreview: scenarioPrompt ? scenarioPrompt.substring(0, 100) + '...' : 'none',
           language: scenarioLanguage,
           hasInitialGreeting: !!initialGreeting,
-          initialGreetingPreview: initialGreeting ? initialGreeting.substring(0, 50) + '...' : 'none',
+          initialGreetingPreview: initialGreeting
+            ? initialGreeting.substring(0, 50) + '...'
+            : 'none',
           silenceTimeout,
           silencePromptTimeout,
           enableSilencePrompt,
@@ -406,7 +394,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             volume: '10.0',
             compressor: 'enabled',
             sttAutoDetect: true,
-            languages: DEFAULT_STT_AUTO_DETECT_LANGUAGES,
+            languages: STT_AUTO_DETECT_LANGUAGES,
           },
         });
         console.log('[Version] Sent version info:', LAMBDA_VERSION);
@@ -494,12 +482,16 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
         // Check if audio processing is already in progress (prevent duplicate processing)
         if (connectionData?.realtimeAudioProcessing) {
-          const processingDuration = Date.now() - (connectionData.lastAudioProcessingStartTime || 0);
-          console.warn('[speech_end] Audio processing already in progress, skipping duplicate request:', {
-            sessionId: speechEndSessionId,
-            processingDuration: `${processingDuration}ms`,
-            startTime: connectionData.lastAudioProcessingStartTime,
-          });
+          const processingDuration =
+            Date.now() - (connectionData.lastAudioProcessingStartTime || 0);
+          console.warn(
+            '[speech_end] Audio processing already in progress, skipping duplicate request:',
+            {
+              sessionId: speechEndSessionId,
+              processingDuration: `${processingDuration}ms`,
+              startTime: connectionData.lastAudioProcessingStartTime,
+            }
+          );
 
           // Send acknowledgment but don't process again
           await sendToConnection(connectionId, {
@@ -593,7 +585,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           // Check if session_end was received while we were processing
           const updatedConnectionData = await getConnectionData(connectionId);
           if (updatedConnectionData?.sessionEndReceived) {
-            console.log('[speech_end] session_end was received during processing, sending session_complete now');
+            console.log(
+              '[speech_end] session_end was received during processing, sending session_complete now'
+            );
 
             // Update session status to COMPLETED in database
             try {
@@ -606,7 +600,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
                 if (session) {
                   const endedAt = new Date();
-                  const durationSec = Math.floor((endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000);
+                  const durationSec = Math.floor(
+                    (endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000
+                  );
 
                   await prisma.session.update({
                     where: { id: sessionId },
@@ -674,12 +670,13 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           });
 
           // Import generateSilencePrompt utility
-          const { generateSilencePrompt } = await import('../../shared/utils/generateSilencePrompt');
+          const { generateSilencePrompt } =
+            await import('../../shared/utils/generateSilencePrompt');
 
           // Extract conversation history and convert to the expected format
           const rawHistory = connectionData?.conversationHistory || [];
           const conversationHistory = rawHistory.map((msg: any) => ({
-            speaker: msg.role === 'user' ? 'USER' as const : 'AI' as const,
+            speaker: msg.role === 'user' ? ('USER' as const) : ('AI' as const),
             text: msg.content || msg.text || '',
           }));
 
@@ -890,7 +887,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               console.log(`Reassembling video chunk ${chunkId}...`);
 
               // Download all parts in order
-              const { getTempChunkPartKey: getTempPartKey } = await import('../../shared/config/s3-paths');
+              const { getTempChunkPartKey: getTempPartKey } =
+                await import('../../shared/config/s3-paths');
               const partBuffers: Buffer[] = [];
               for (let i = 0; i < totalParts; i++) {
                 const partKey = getTempPartKey(partSessionId, chunkId, i);
@@ -921,7 +919,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               // Phase 1.6: Validate hash after reassembly
               if (chunkHash) {
                 const crypto = require('crypto');
-                const calculatedHash = crypto.createHash('sha256').update(videoBuffer).digest('hex');
+                const calculatedHash = crypto
+                  .createHash('sha256')
+                  .update(videoBuffer)
+                  .digest('hex');
 
                 if (calculatedHash !== chunkHash) {
                   console.error(`[video_chunk_part] Hash mismatch for chunk ${chunkId}`);
@@ -962,7 +963,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               });
 
               // Clean up temporary parts from S3
-              const { getTempChunkPartKey: getTempPartKeyCleanup } = await import('../../shared/config/s3-paths');
+              const { getTempChunkPartKey: getTempPartKeyCleanup } =
+                await import('../../shared/config/s3-paths');
               for (let i = 0; i < totalParts; i++) {
                 const partKey = getTempPartKeyCleanup(partSessionId, chunkId, i);
                 try {
@@ -1122,7 +1124,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         // Phase B: Audio processing removed - handled by speech_end in real-time
         // Phase 1.5 uses realtime-chunks/ path processed by speech_end handler
         // Legacy audio-chunks/ path is no longer used
-        console.log('[session_end] Audio processing already completed by speech_end handler (Phase 1.5)');
+        console.log(
+          '[session_end] Audio processing already completed by speech_end handler (Phase 1.5)'
+        );
 
         // Process video chunks if any
         if (connectionData?.videoChunksCount && connectionData.videoChunksCount > 0) {
@@ -1156,7 +1160,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                   sessionId: sessionId,
                   type: 'COMBINED',
                   s3Key: result.finalVideoKey,
-                  s3Url: `https://${S3_BUCKET}.s3.${process.env.AWS_REGION || DEFAULT_AWS_REGION}.amazonaws.com/${result.finalVideoKey}`,
+                  s3Url: `https://${S3_BUCKET}.s3.${AWS_REGION}.${getAwsEndpointSuffix()}/${result.finalVideoKey}`,
                   cdnUrl: result.cloudFrontUrl,
                   fileSizeBytes: BigInt(result.finalVideoSize),
                   durationSec: Math.floor(result.duration / 1000), // Convert ms to seconds
@@ -1167,7 +1171,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                   processedAt: new Date(),
                 },
               });
-              console.log('Recording metadata saved to PostgreSQL:', { recordingId: recording.id, sessionId });
+              console.log('Recording metadata saved to PostgreSQL:', {
+                recordingId: recording.id,
+                sessionId,
+              });
             } catch (dbError) {
               console.error('Failed to save recording metadata to PostgreSQL:', dbError);
               // Continue even if DB save fails - video is already in S3
@@ -1228,7 +1235,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         const isProcessing = currentConnectionData?.realtimeAudioProcessing;
 
         if (isProcessing) {
-          console.log('[session_end] Audio processing in progress, marking session_end_received flag');
+          console.log(
+            '[session_end] Audio processing in progress, marking session_end_received flag'
+          );
           console.log('[session_end] Current state:', {
             realtimeAudioProcessing: isProcessing,
             lastAudioProcessingStartTime: currentConnectionData?.lastAudioProcessingStartTime,
@@ -1239,7 +1248,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           });
         } else {
           // Audio processing is complete (or was never started), send session_complete now
-          console.log('[session_end] Audio processing complete or not started, sending session_complete');
+          console.log(
+            '[session_end] Audio processing complete or not started, sending session_complete'
+          );
 
           // Update session status to COMPLETED in database
           try {
@@ -1252,7 +1263,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
               if (session) {
                 const endedAt = new Date();
-                const durationSec = Math.floor((endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000);
+                const durationSec = Math.floor(
+                  (endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000
+                );
 
                 await prisma.session.update({
                   where: { id: sessionId },
@@ -1378,7 +1391,7 @@ async function handleSilencePromptGeneration(
     // Extract conversation history and convert to the expected format
     const rawHistory = connectionData?.conversationHistory || [];
     const conversationHistory = rawHistory.map((msg: any) => ({
-      speaker: msg.role === 'user' ? 'USER' as const : 'AI' as const,
+      speaker: msg.role === 'user' ? ('USER' as const) : ('AI' as const),
       text: msg.content || msg.text || '',
     }));
 
@@ -1598,8 +1611,14 @@ async function handleAudioProcessingStreaming(
           const audioTimestamp = Date.now();
           const { getAudioKey } = await import('../../shared/config/s3-paths');
           const { AudioFileType } = await import('../../shared/config/s3-paths');
-          const extension = contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm';
-          const audioKey = getAudioKey(sessionId, AudioFileType.AI_RESPONSE, audioTimestamp, extension);
+          const extension =
+            contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm';
+          const audioKey = getAudioKey(
+            sessionId,
+            AudioFileType.AI_RESPONSE,
+            audioTimestamp,
+            extension
+          );
 
           await s3Client.send(
             new PutObjectCommand({
@@ -1780,8 +1799,14 @@ async function handleAudioData(
     const audioTimestamp = Date.now();
     const { getAudioKey: getAudioKeyLegacy } = await import('../../shared/config/s3-paths');
     const { AudioFileType: AudioFileTypeLegacy } = await import('../../shared/config/s3-paths');
-    const extensionLegacy = audioContentType.includes('mpeg') || audioContentType.includes('mp3') ? 'mp3' : 'webm';
-    const audioKey = getAudioKeyLegacy(sessionId, AudioFileTypeLegacy.AI_RESPONSE, audioTimestamp, extensionLegacy);
+    const extensionLegacy =
+      audioContentType.includes('mpeg') || audioContentType.includes('mp3') ? 'mp3' : 'webm';
+    const audioKey = getAudioKeyLegacy(
+      sessionId,
+      AudioFileTypeLegacy.AI_RESPONSE,
+      audioTimestamp,
+      extensionLegacy
+    );
 
     await s3Client.send(
       new PutObjectCommand({

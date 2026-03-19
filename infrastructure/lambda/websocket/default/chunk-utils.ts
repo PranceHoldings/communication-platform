@@ -3,6 +3,8 @@
  * Common functions for sorting and processing audio/video chunks
  */
 
+import { getVideoChunkBatchSize, getAnalysisBatchSize } from '../../../shared/utils/env-validator';
+
 /**
  * S3 Object interface (minimal subset for chunk operations)
  * Replaces deprecated _Object type from AWS SDK v3
@@ -260,10 +262,10 @@ export async function downloadAndCombineChunks(
   const buffers: Buffer[] = [];
 
   // Process in batches to avoid overwhelming S3
-  const BATCH_SIZE = 5;
+  const BATCH_SIZE = getVideoChunkBatchSize();
   for (let i = 0; i < sortedChunks.length; i += BATCH_SIZE) {
     const batch = sortedChunks.slice(i, i + BATCH_SIZE);
-    const promises = batch.map(async (chunk) => {
+    const promises = batch.map(async chunk => {
       if (!chunk.Key) return null;
 
       try {
@@ -295,7 +297,9 @@ export async function downloadAndCombineChunks(
       if (result) {
         chunkKeys.push(result.key);
         buffers.push(result.buffer);
-        console.log(`[downloadAndCombineChunks] Downloaded ${result.key}: ${result.buffer.length} bytes`);
+        console.log(
+          `[downloadAndCombineChunks] Downloaded ${result.key}: ${result.buffer.length} bytes`
+        );
       }
     }
   }
@@ -349,10 +353,10 @@ export async function cleanupChunks(
   console.log(`[cleanupChunks] Deleting ${chunkKeys.length} chunks...`);
 
   // Delete in parallel (max 10 concurrent)
-  const BATCH_SIZE = 10;
+  const BATCH_SIZE = getAnalysisBatchSize();
   for (let i = 0; i < chunkKeys.length; i += BATCH_SIZE) {
     const batch = chunkKeys.slice(i, i + BATCH_SIZE);
-    const promises = batch.map(async (key) => {
+    const promises = batch.map(async key => {
       try {
         await s3Client.send(
           new DeleteObjectCommand({

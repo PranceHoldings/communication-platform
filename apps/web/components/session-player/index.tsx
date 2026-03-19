@@ -197,7 +197,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         if (message.speaker === 'USER') {
           if (pendingSessionEnd) {
             // セッション停止後の文字起こし - AI処理はスキップ
-            console.log('[SessionPlayer] Transcript received after session stop, sending session_end');
+            console.log(
+              '[SessionPlayer] Transcript received after session stop, sending session_end'
+            );
             setIsProcessing(false);
             setProcessingStage('idle');
             setProcessingMessage('');
@@ -959,10 +961,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   // Resolve silencePromptTimeout (AI silence prompt timeout for frontend timer)
   const effectiveSilencePromptTimeout =
-    scenario.silencePromptTimeout ?? orgSettings?.silencePromptTimeout ?? DEFAULT_ORG_SETTINGS.silencePromptTimeout;
+    scenario.silencePromptTimeout ??
+    orgSettings?.silencePromptTimeout ??
+    DEFAULT_ORG_SETTINGS.silencePromptTimeout;
 
   // Silence Timer統合
-  const silenceTimerEnabled = status === 'ACTIVE' && initialGreetingCompleted && effectiveEnableSilencePrompt;
+  const silenceTimerEnabled =
+    status === 'ACTIVE' && initialGreetingCompleted && effectiveEnableSilencePrompt;
 
   // Debug log for silence timer conditions (DETAILED)
   useEffect(() => {
@@ -977,17 +982,27 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         isProcessing,
       },
       effectiveSilencePromptTimeout,
-      'TIMER SHOULD START': silenceTimerEnabled && !isPlayingAudio && !isMicRecording && !isProcessing,
+      'TIMER SHOULD START':
+        silenceTimerEnabled && !isPlayingAudio && !isMicRecording && !isProcessing,
     });
-  }, [status, initialGreetingCompleted, effectiveEnableSilencePrompt, silenceTimerEnabled, isPlayingAudio, isMicRecording, isProcessing, effectiveSilencePromptTimeout]);
+  }, [
+    status,
+    initialGreetingCompleted,
+    effectiveEnableSilencePrompt,
+    silenceTimerEnabled,
+    isPlayingAudio,
+    isMicRecording,
+    isProcessing,
+    effectiveSilencePromptTimeout,
+  ]);
 
   const { elapsedTime: silenceElapsedTime, resetTimer: _resetSilenceTimer } = useSilenceTimer({
     enabled: silenceTimerEnabled,
     timeoutSeconds: effectiveSilencePromptTimeout,
     isAIPlaying: isPlayingAudio,
     isUserSpeaking: false, // ❌ FIXED: isMicRecording は常に true（マイクは常に録音中）
-                            // ユーザーが話しているかは useAudioRecorder が自動検出して speech_end 送信
-                            // 沈黙タイマーは AI再生中と処理中のみ停止すればよい
+    // ユーザーが話しているかは useAudioRecorder が自動検出して speech_end 送信
+    // 沈黙タイマーは AI再生中と処理中のみ停止すればよい
     isProcessing: isProcessing,
     onTimeout: handleSilenceTimeout,
   });
@@ -1750,7 +1765,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 </svg>
                 <span>{t('sessions.player.avatar.camera')}:</span>
               </div>
-              <span className={`font-medium ${isCameraActive ? 'text-green-600' : 'text-gray-500'}`}>
+              <span
+                className={`font-medium ${isCameraActive ? 'text-green-600' : 'text-gray-500'}`}
+              >
                 {isCameraActive ? t('sessions.player.avatar.on') : t('sessions.player.avatar.off')}
               </span>
             </div>

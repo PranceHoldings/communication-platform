@@ -59,15 +59,15 @@ export const sampleReportData: ReportData = {
     { timestamp: 30, dominantEmotion: 'HAPPY', confidence: 0.85 },
     { timestamp: 60, dominantEmotion: 'HAPPY', confidence: 0.78 },
     { timestamp: 90, dominantEmotion: 'CALM', confidence: 0.72 },
-    { timestamp: 120, dominantEmotion: 'HAPPY', confidence: 0.80 },
+    { timestamp: 120, dominantEmotion: 'HAPPY', confidence: 0.8 },
     { timestamp: 150, dominantEmotion: 'HAPPY', confidence: 0.83 },
   ],
   audioAnalysis: [
     { timestamp: 30, pitch: 180, volume: 65, speakingRate: 140, fillerCount: 2, clarity: 0.75 },
     { timestamp: 60, pitch: 185, volume: 68, speakingRate: 145, fillerCount: 1, clarity: 0.78 },
-    { timestamp: 90, pitch: 175, volume: 70, speakingRate: 135, fillerCount: 3, clarity: 0.70 },
+    { timestamp: 90, pitch: 175, volume: 70, speakingRate: 135, fillerCount: 3, clarity: 0.7 },
     { timestamp: 120, pitch: 180, volume: 72, speakingRate: 140, fillerCount: 1, clarity: 0.76 },
-    { timestamp: 150, pitch: 188, volume: 68, speakingRate: 142, fillerCount: 0, clarity: 0.80 },
+    { timestamp: 150, pitch: 188, volume: 68, speakingRate: 142, fillerCount: 0, clarity: 0.8 },
   ],
   transcript: [
     {

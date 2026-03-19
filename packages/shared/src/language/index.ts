@@ -1,13 +1,13 @@
 /**
  * Language Configuration
- * 
+ *
  * Resource-file-based language management.
  * Adding a new language only requires adding an entry to the LANGUAGES array.
- * 
+ *
  * Language Code Formats:
  * - languageCode: ISO 639-1 ('ja', 'en', 'zh-CN', 'zh-TW')
  * - sttCode: BCP-47 for Azure STT ('ja-JP', 'en-US', 'zh-CN', 'zh-TW')
- * 
+ *
  * Chinese Language Handling:
  * - zh-CN (Simplified Chinese) and zh-TW (Traditional Chinese) are COMPLETELY DIFFERENT languages
  * - They must be treated separately, not as regional variants
@@ -41,7 +41,7 @@ export interface LanguageMetadata {
 
 /**
  * All supported languages
- * 
+ *
  * To add a new language:
  * 1. Add an entry to this array
  * 2. Create apps/web/messages/{languageCode}.json for UI translations
@@ -222,7 +222,7 @@ export const MAX_AUTO_DETECT_LANGUAGES = 4;
 
 /**
  * Get language metadata by language code
- * 
+ *
  * @param languageCode ISO 639-1 code (e.g., 'ja', 'en', 'zh-CN')
  * @returns Language metadata or undefined if not found
  */
@@ -232,10 +232,10 @@ export function getLanguageMetadata(languageCode: string): LanguageMetadata | un
 
 /**
  * Normalize language code to BCP-47 format for STT
- * 
+ *
  * @param languageCode ISO 639-1 or BCP-47 language code
  * @returns BCP-47 language code (e.g., 'ja-JP', 'en-US')
- * 
+ *
  * Examples:
  * - 'ja' → 'ja-JP'
  * - 'ja-JP' → 'ja-JP'
@@ -265,22 +265,24 @@ export function normalizeLanguageCode(languageCode: string): string {
   }
 
   // Default fallback
-  console.warn(`[normalizeLanguageCode] Unknown language code: ${languageCode}, using default 'ja-JP'`);
+  console.warn(
+    `[normalizeLanguageCode] Unknown language code: ${languageCode}, using default 'ja-JP'`
+  );
   return 'ja-JP';
 }
 
 /**
  * Get language priority list for auto-detection
- * 
+ *
  * @param primaryLanguage Primary language code (ISO 639-1 or BCP-47)
  * @returns Array of BCP-47 language codes, ordered by priority (max 4)
- * 
+ *
  * Examples:
  * - 'ja' → ['ja-JP', 'en-US']
  * - 'en' → ['en-US', 'en-GB', 'en-AU', 'en-CA']
  * - 'zh-TW' → ['zh-TW', 'zh-HK', 'en-US', 'ja-JP']
  * - 'zh-CN' → ['zh-CN', 'en-US', 'ja-JP'] (NOT including zh-TW - they're different!)
- * 
+ *
  * Logic:
  * 1. Place primary language first
  * 2. Add its regional variants
@@ -322,10 +324,10 @@ export function getLanguagePriority(primaryLanguage: string): string[] {
 
 /**
  * Get base language code (ISO 639-1) from BCP-47
- * 
+ *
  * @param languageCode BCP-47 language code
  * @returns ISO 639-1 base language code
- * 
+ *
  * Examples:
  * - 'ja-JP' → 'ja'
  * - 'en-US' → 'en'
@@ -344,7 +346,7 @@ export function getBaseLanguageCode(languageCode: string): string {
 
 /**
  * Get all supported language codes
- * 
+ *
  * @returns Array of ISO 639-1 language codes
  */
 export function getSupportedLanguages(): string[] {
@@ -353,7 +355,7 @@ export function getSupportedLanguages(): string[] {
 
 /**
  * Get all supported STT codes
- * 
+ *
  * @returns Array of BCP-47 language codes
  */
 export function getSupportedSTTCodes(): string[] {

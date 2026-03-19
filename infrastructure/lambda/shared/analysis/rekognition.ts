@@ -11,7 +11,7 @@ import {
   Emotion,
   FaceDetail,
 } from '@aws-sdk/client-rekognition';
-import { REKOGNITION_DEFAULTS } from '../config/defaults';
+import { getAwsRegion } from '../utils/env-validator';
 
 export interface EmotionScore {
   type: string; // 'HAPPY', 'SAD', 'ANGRY', 'CONFUSED', 'DISGUSTED', 'SURPRISED', 'CALM', 'FEAR'
@@ -71,7 +71,7 @@ export class RekognitionAnalyzer {
   private region: string;
 
   constructor(config: { region?: string } = {}) {
-    this.region = config.region || process.env.AWS_REGION || REKOGNITION_DEFAULTS.REGION;
+    this.region = config.region || getAwsRegion();
     this.client = new RekognitionClient({ region: this.region });
 
     console.log('[RekognitionAnalyzer] Initialized', {

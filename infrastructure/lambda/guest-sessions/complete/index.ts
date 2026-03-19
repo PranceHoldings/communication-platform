@@ -27,9 +27,7 @@ interface CompleteGuestSessionResponse {
 /**
  * Lambda handler for completing guest sessions
  */
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[CompleteGuestSession] Event:', JSON.stringify(event, null, 2));
 
   try {
@@ -87,7 +85,10 @@ export const handler = async (
     // - Guest can complete their own session (userData.guestSessionId === guestSessionId)
     // - Internal users can complete sessions in their organization
     const isGuest = userData.role === 'GUEST';
-    const isInternalUser = userData.role === 'CLIENT_ADMIN' || userData.role === 'CLIENT_USER' || userData.role === 'SUPER_ADMIN';
+    const isInternalUser =
+      userData.role === 'CLIENT_ADMIN' ||
+      userData.role === 'CLIENT_USER' ||
+      userData.role === 'SUPER_ADMIN';
 
     if (isGuest) {
       // Guest must be completing their own session

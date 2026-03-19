@@ -17,7 +17,7 @@ export interface Scenario {
   silenceTimeout?: number | null;
   silencePromptTimeout?: number | null;
   enableSilencePrompt?: boolean | null;
-  showSilenceTimer?: boolean | null;  // null = use organization default
+  showSilenceTimer?: boolean | null; // null = use organization default
   silenceThreshold?: number | null;
   minSilenceDuration?: number | null;
 }
@@ -38,7 +38,7 @@ export interface CreateScenarioRequest {
   silenceTimeout?: number | null;
   silencePromptTimeout?: number | null;
   enableSilencePrompt?: boolean | null;
-  showSilenceTimer?: boolean | null;  // null = use organization default
+  showSilenceTimer?: boolean | null; // null = use organization default
   silenceThreshold?: number | null;
   minSilenceDuration?: number | null;
 }
@@ -54,7 +54,7 @@ export interface UpdateScenarioRequest {
   silenceTimeout?: number | null;
   silencePromptTimeout?: number | null;
   enableSilencePrompt?: boolean | null;
-  showSilenceTimer?: boolean | null;  // null = use organization default, true/false = explicit
+  showSilenceTimer?: boolean | null; // null = use organization default, true/false = explicit
   silenceThreshold?: number | null;
   minSilenceDuration?: number | null;
 }

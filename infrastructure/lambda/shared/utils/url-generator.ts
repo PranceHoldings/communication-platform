@@ -13,9 +13,7 @@ export function generateCdnUrl(key: string): string {
   const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN;
 
   if (!CLOUDFRONT_DOMAIN) {
-    throw new Error(
-      'CLOUDFRONT_DOMAIN environment variable is required for URL generation'
-    );
+    throw new Error('CLOUDFRONT_DOMAIN environment variable is required for URL generation');
   }
 
   // Remove leading slash if present
@@ -31,10 +29,7 @@ export function generateCdnUrl(key: string): string {
  * @param key - S3 object key
  * @param expiresIn - Expiration time in seconds (default: 1 hour)
  */
-export async function generateProtectedUrl(
-  key: string,
-  expiresIn: number = 3600
-): Promise<string> {
+export async function generateProtectedUrl(key: string, expiresIn: number = 3600): Promise<string> {
   // TODO: Implement after cloudfront-signer.ts is created (Phase 1.1)
   // For now, return CDN URL (unsigned)
   console.warn(

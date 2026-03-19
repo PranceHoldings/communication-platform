@@ -18,12 +18,7 @@ export async function generateRadarChart(
   data: RadarChartData,
   options: Partial<ChartGenerationOptions> = {}
 ): Promise<Buffer> {
-  const {
-    width = 600,
-    height = 600,
-    backgroundColor = '#ffffff',
-    fontColor = '#374151',
-  } = options;
+  const { width = 600, height = 600, backgroundColor = '#ffffff', fontColor = '#374151' } = options;
 
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
@@ -109,12 +104,7 @@ export async function generateTimelineChart(
   data: TimelineChartData,
   options: Partial<ChartGenerationOptions> = {}
 ): Promise<Buffer> {
-  const {
-    width = 800,
-    height = 400,
-    backgroundColor = '#ffffff',
-    fontColor = '#374151',
-  } = options;
+  const { width = 800, height = 400, backgroundColor = '#ffffff', fontColor = '#374151' } = options;
 
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
@@ -126,7 +116,9 @@ export async function generateTimelineChart(
   const config: ChartConfiguration = {
     type: 'line',
     data: {
-      labels: data.timestamps.map(t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`),
+      labels: data.timestamps.map(
+        t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`
+      ),
       datasets: [
         {
           label: '感情スコア',
@@ -228,12 +220,7 @@ export async function generateDetailedScoreChart(
   scores: { label: string; value: number }[],
   options: Partial<ChartGenerationOptions> = {}
 ): Promise<Buffer> {
-  const {
-    width = 600,
-    height = 400,
-    backgroundColor = '#ffffff',
-    fontColor = '#374151',
-  } = options;
+  const { width = 600, height = 400, backgroundColor = '#ffffff', fontColor = '#374151' } = options;
 
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');

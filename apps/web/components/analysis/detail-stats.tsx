@@ -101,7 +101,10 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Dominant Emotion */}
-          <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg" data-testid="dominant-emotion">
+          <div
+            className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg"
+            data-testid="dominant-emotion"
+          >
             <div className="flex items-center mb-2">
               <svg className="w-5 h-5 text-purple-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path
@@ -118,7 +121,10 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
           </div>
 
           {/* Average Confidence */}
-          <div className="p-4 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg" data-testid="average-confidence">
+          <div
+            className="p-4 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg"
+            data-testid="average-confidence"
+          >
             <div className="flex items-center mb-2">
               <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path
@@ -145,7 +151,11 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
               {Object.entries(emotionSummary.emotionDistribution)
                 .sort(([, a], [, b]) => b - a)
                 .map(([emotion, percentage]) => (
-                  <div key={emotion} className="flex items-center" data-testid={`emotion-bar-${emotion}`}>
+                  <div
+                    key={emotion}
+                    className="flex items-center"
+                    data-testid={`emotion-bar-${emotion}`}
+                  >
                     <div className="w-24 text-sm text-gray-600 capitalize">{emotion}</div>
                     <div className="flex-1 mx-3">
                       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">

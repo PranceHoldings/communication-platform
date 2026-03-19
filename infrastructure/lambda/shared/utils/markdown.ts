@@ -73,7 +73,7 @@ export function escapeMarkdown(text: string): string {
 export function isMarkdown(text: string): boolean {
   const markdownPatterns = [
     /^#+\s/m, // Headers
-    /\*\*.*?\*\*/,         // Bold
+    /\*\*.*?\*\*/, // Bold
     /_.*?_/, // Italic
     /\[.*?\]\(.*?\)/, // Links
     /```[\s\S]*?```/, // Code blocks

@@ -143,11 +143,12 @@
 - **API_KEY_MANAGEMENT.md** - APIキー管理
 - **CONSISTENCY_GUIDELINES.md** - 整合性ガイドライン
 
-### docs/05-modules/ - 機能モジュール（17モジュール）
+### docs/05-modules/ - 機能モジュール（18モジュール）
 - **AI_MANAGEMENT.md** - AIプロンプト・プロバイダ管理
 - **ANALYSIS_MODULE.md** - 解析モジュール
 - **AVATAR_MODULE.md** - アバター管理
 - **BENCHMARK_SYSTEM.md** - ベンチマークシステム（🎯 Phase 4）
+- **RUNTIME_CONFIGURATION.md** - ランタイム設定管理（📋 Phase 5計画）🆕
 - **EXTERNAL_API.md** - 外部連携API
 - **MULTILINGUAL_SYSTEM.md** - 多言語対応
 - **その他11モジュール**
@@ -165,6 +166,7 @@
 - **LAMBDA_VERSION_MANAGEMENT.md** - Lambdaバージョン管理
 - **I18N_SYSTEM_GUIDELINES.md** - 多言語対応ガイドライン
 - **UI_SETTINGS_DATABASE_SYNC_RULES.md** - UI設定項目同期ルール
+- **HARDCODE_ELIMINATION_REPORT.md** - ハードコード値削除レポート 🆕
 
 ### docs/08-operations/ - 運用ガイド
 - **DEPLOYMENT.md** - デプロイメント

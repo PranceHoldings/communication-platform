@@ -455,7 +455,8 @@ export class ApiLambdaStack extends cdk.Stack {
     this.dbQueryFunction = new nodejs.NodejsFunction(this, 'DbQueryFunction', {
       ...commonLambdaProps,
       functionName: `prance-db-query-${props.environment}`,
-      description: 'Execute database queries from local development environment (read-only by default)',
+      description:
+        'Execute database queries from local development environment (read-only by default)',
       entry: path.join(__dirname, '../lambda/db-query/index.ts'),
       handler: 'handler',
       timeout: cdk.Duration.seconds(60), // 1分
@@ -506,7 +507,8 @@ export class ApiLambdaStack extends cdk.Stack {
     this.dbMutationFunction = new nodejs.NodejsFunction(this, 'DbMutationFunction', {
       ...commonLambdaProps,
       functionName: `prance-db-mutation-${props.environment}`,
-      description: 'Execute database mutations (INSERT/UPDATE/DELETE) - dev environment only for direct SQL',
+      description:
+        'Execute database mutations (INSERT/UPDATE/DELETE) - dev environment only for direct SQL',
       entry: path.join(__dirname, '../lambda/db-mutation/index.ts'),
       handler: 'handler',
       timeout: cdk.Duration.seconds(60), // 1分

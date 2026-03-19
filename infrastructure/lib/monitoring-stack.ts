@@ -140,13 +140,15 @@ export class MonitoringStack extends cdk.Stack {
       new cloudwatch.GraphWidget({
         title: 'Concurrent Executions',
         left: [
-          lambdaFunction.metricInvocations({
-            statistic: 'Sum',
-            period: cdk.Duration.minutes(1),
-          }).with({
-            label: 'Concurrent',
-            color: cloudwatch.Color.PURPLE,
-          }),
+          lambdaFunction
+            .metricInvocations({
+              statistic: 'Sum',
+              period: cdk.Duration.minutes(1),
+            })
+            .with({
+              label: 'Concurrent',
+              color: cloudwatch.Color.PURPLE,
+            }),
         ],
         width: 12,
         height: 6,

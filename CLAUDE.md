@@ -3,7 +3,7 @@
 **バージョン:** 3.0
 **作成日:** 2026-02-26
 **最終更新:** 2026-03-19
-**ステータス:** 🔴 Phase 3完了（100%）・ドキュメント整理完了 ✅ ・START_HERE.md簡素化（237→148行）✅
+**ステータス:** 🔴 Phase 3完了（100%）・ハードコード値削除完了 ✅ ・環境変数一元管理確立 ✅
 
 ---
 
@@ -359,11 +359,58 @@ ln -s ../../scripts/prisma-schema-guard.sh .git/hooks/pre-commit
 **必須実行:**
 ```bash
 ./scripts/validate-env.sh          # 検証
+npm run env:consistency            # 整合性チェック
 pkill -f "next dev" && npm run dev  # Next.js再起動
 cd infrastructure && ./deploy.sh dev # Lambda反映
 ```
 
 > 詳細: [docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md](docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md)
+
+#### Rule 2-B: ハードコード値の絶対禁止（2026-03-19追加）🆕
+
+**🔴 最重要: すべての設定値は .env.local で管理、コード内のハードコード禁止**
+
+**禁止事項:**
+```typescript
+// ❌ 数値定数のハードコード
+const MAX_RESULTS = 1000;
+const SALT_ROUNDS = 10;
+
+// ❌ フォールバック値の使用
+const region = process.env.AWS_REGION || 'us-east-1';
+const model = process.env.BEDROCK_MODEL_ID || 'claude-sonnet-4';
+
+// ❌ AWS ドメイン名のハードコード
+const url = `https://bucket.s3.amazonaws.com/${key}`;
+```
+
+**正しい方法:**
+```typescript
+// ✅ env-validator.ts 経由でのみアクセス
+import { getMaxResults, getAwsRegion, getRequiredEnv, getAwsEndpointSuffix } from '../shared/utils/env-validator';
+
+const maxResults = getMaxResults();
+const region = getAwsRegion();
+const model = getRequiredEnv('BEDROCK_MODEL_ID');
+const url = `https://bucket.s3.${region}.${getAwsEndpointSuffix()}/${key}`;
+```
+
+**検証方法:**
+```bash
+# ハードコード値検出（9パターン）
+bash scripts/detect-hardcoded-values.sh
+
+# 環境変数整合性チェック（8項目）
+npm run env:consistency
+```
+
+**新規環境変数追加手順:**
+1. `.env.local` に追加
+2. `env-validator.ts` に getter 関数追加
+3. コードで `getXxx()` 関数を使用
+4. 検証スクリプト実行
+
+> 詳細: [docs/07-development/HARDCODE_ELIMINATION_REPORT.md](docs/07-development/HARDCODE_ELIMINATION_REPORT.md)
 
 #### Rule 3: 根本原因分析の原則（CRITICAL - 2026-03-10追加）
 
@@ -771,6 +818,35 @@ Browser → WebSocket → Lambda → セッション終了後に一括処理
 - `ENUM_CONSISTENCY_REPORT.md` - 監査レポート
 - `ENUM_UNIFICATION_COMPLETE.md` - 完了レポート
 
+### コード品質向上: ハードコード値削除 🎉 完了 (2026-03-19)
+
+**目的:** .env.local を単一の真実の源（Single Source of Truth）として確立
+
+**実施内容:**
+
+- ✅ defaults.ts の60+定数を環境変数に移行
+- ✅ env-validator.ts に20個の getter 関数追加（型安全アクセス）
+- ✅ 全フォールバック値削除（`process.env.XXX || 'default'` 形式）
+- ✅ AWS domain hardcoding 削除（`AWS_ENDPOINT_SUFFIX` 追加）
+- ✅ 20+ Lambda関数ファイルを更新
+- ✅ 検証スクリプト拡張（9パターンのハードコード検出）
+- ✅ 環境変数整合性チェック追加（8項目検証）
+
+**検証結果:**
+- ハードコード値: 0件 ✅
+- 環境変数重複: 0件 ✅
+- 環境変数矛盾: 0件 ✅
+- スコア重み合計: 1.0 ✅
+
+**効果:**
+- **保守性向上** - 設定値変更が1箇所で完結（Before: 5-10ファイル → After: .env.local 1行）
+- **不整合リスク削減** - 同じ値が複数箇所に存在しない
+- **型安全性向上** - env-validator.ts 経由で厳密な型チェック
+- **環境差異管理** - dev/staging/production で設定値を容易に変更可能
+
+**ドキュメント:**
+- [ハードコード値削除レポート](docs/07-development/HARDCODE_ELIMINATION_REPORT.md) - 完全な実装記録
+
 ### 次のステップ: Phase 4 (ベンチマークシステム)
 
 **目標:** プロファイル比較、成長トラッキング、パーソナライズド改善提案
@@ -778,6 +854,41 @@ Browser → WebSocket → Lambda → セッション終了後に一括処理
 **推定期間:** 2-3日（設計 + 実装 + テスト）
 
 > 詳細: [docs/05-modules/BENCHMARK_SYSTEM.md](docs/05-modules/BENCHMARK_SYSTEM.md)
+
+### 将来のフェーズ: Phase 5 (ランタイム設定管理システム) 📋
+
+**目標:** スーパー管理者がUI上から設定値を変更し、サーバー再起動なしで即座に反映
+
+**現状の課題:**
+- 設定値変更には Lambda 再デプロイが必要（5-10分）
+- A/Bテスト・緊急時のパラメータ調整が困難
+- 環境ごとの最適化にデプロイが必要
+
+**提案機能:**
+```
+管理画面で設定変更 → 即座に全Lambda関数に反映
+MAX_RESULTS: 1000 → 500  (デプロイ不要)
+CLAUDE_TEMPERATURE: 0.7 → 0.5  (A/Bテスト)
+```
+
+**実装方式:**
+- Aurora RDS: 設定値の永続化
+- ElastiCache: 高速キャッシュ（TTL: 60秒）
+- Lambda メモリキャッシュ: 超高速アクセス（TTL: 10秒）
+- 3層キャッシュでパフォーマンスを維持（99%+ ヒット率）
+
+**対象設定:**
+- Query & Processing（MAX_RESULTS等）
+- AI Processing（CLAUDE_TEMPERATURE等）
+- Audio Processing（TTS_STABILITY等）
+- Score Calculation（重み設定）
+- ※ 機密情報（APIキー等）は環境変数のまま
+
+**推定工数:** 5-7日（8フェーズ）
+
+**優先度:** Medium（Phase 4完了後）
+
+> 詳細: [docs/05-modules/RUNTIME_CONFIGURATION.md](docs/05-modules/RUNTIME_CONFIGURATION.md)
 
 ---
 
@@ -854,6 +965,7 @@ Browser → WebSocket → Lambda → セッション終了後に一括処理
 - [多言語対応](docs/05-modules/MULTILINGUAL_SYSTEM.md)
 - [ATS連携](docs/05-modules/ATS_INTEGRATION.md)
 - [プラグインシステム](docs/05-modules/PLUGIN_SYSTEM.md)
+- [ランタイム設定管理](docs/05-modules/RUNTIME_CONFIGURATION.md) 📋 将来実装予定
 - その他8モジュール ([docs/05-modules/](docs/05-modules/) 参照)
 
 ### インフラ構成
@@ -867,6 +979,7 @@ Browser → WebSocket → Lambda → セッション終了後に一括処理
 - [開発ワークフロー](docs/07-development/DEVELOPMENT_WORKFLOW.md)
 - [DBマイグレーションチェックリスト](docs/07-development/DATABASE_MIGRATION_CHECKLIST.md)
 - [Lambdaバージョン管理](docs/07-development/LAMBDA_VERSION_MANAGEMENT.md)
+- [ハードコード値削除レポート](docs/07-development/HARDCODE_ELIMINATION_REPORT.md) 🆕
 
 ### 運用ガイド
 

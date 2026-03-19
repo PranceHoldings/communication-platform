@@ -26,9 +26,7 @@ export class AmplifyStack extends cdk.Stack {
     const amplifyRole = new iam.Role(this, 'AmplifyRole', {
       assumedBy: new iam.ServicePrincipal('amplify.amazonaws.com'),
       description: 'Amplify Hosting Service Role',
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess-Amplify'),
-      ],
+      managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess-Amplify')],
     });
 
     // Amplify App作成
@@ -57,7 +55,8 @@ export class AmplifyStack extends cdk.Stack {
       customRules: [
         // SPA Fallback (Client-side routing)
         {
-          source: '</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>',
+          source:
+            '</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>',
           target: '/index.html',
           status: '200',
         },

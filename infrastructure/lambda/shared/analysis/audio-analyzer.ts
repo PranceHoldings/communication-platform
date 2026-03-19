@@ -8,6 +8,7 @@ import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { AudioFeatures, PauseInfo, FillerWordsInfo } from '@prance/shared';
+import { getMinPauseDurationSec } from '../utils/env-validator';
 
 const execAsync = promisify(exec);
 
@@ -55,7 +56,7 @@ export class AudioAnalyzer {
   ): Promise<AudioAnalysisResult> {
     const startTime = Date.now();
     const {
-      minPauseDuration = 0.5,
+      minPauseDuration = getMinPauseDurationSec(),
       silenceThreshold = -30,
       detectFillerWords = true,
     } = options;
@@ -95,9 +96,8 @@ export class AudioAnalyzer {
 
       // 6. Calculate pause statistics
       const pauseCount = pauses.length;
-      const pauseDuration = pauses.length > 0
-        ? pauses.reduce((sum, p) => sum + p.duration, 0) / pauses.length
-        : 0;
+      const pauseDuration =
+        pauses.length > 0 ? pauses.reduce((sum, p) => sum + p.duration, 0) / pauses.length : 0;
 
       const processingTime = Date.now() - startTime;
 

@@ -59,7 +59,9 @@ export async function generateReport(
     return pdfBuffer;
   } catch (error) {
     console.error('[ReportGenerator] PDF generation failed:', error);
-    throw new Error(`Failed to generate PDF report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to generate PDF report: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 

@@ -79,7 +79,7 @@ export const handler: APIGatewayProxyHandler = async event => {
 
     if (!sessionScore) {
       // Check if analysis is in progress
-      const metadata = session.metadataJson as any;
+      const metadata = session.metadataJson;
       if (metadata?.analysisInProgress) {
         return errorResponse(
           202,

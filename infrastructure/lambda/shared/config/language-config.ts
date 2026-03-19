@@ -17,6 +17,8 @@
  * - Use t('languages.{code}') or t('languagesNative.{code}') in UI components
  */
 
+import { AI_DEFAULTS } from './defaults';
+
 /**
  * Regional variant definition
  */
@@ -195,8 +197,9 @@ export const DEFAULT_FALLBACK_LANGUAGES = ['ja-JP', 'en-US'];
 
 /**
  * Maximum number of languages for Azure STT auto-detection
+ * Imported from defaults.ts for centralized management
  */
-export const MAX_AUTO_DETECT_LANGUAGES = 4;
+export const MAX_AUTO_DETECT_LANGUAGES = AI_DEFAULTS.MAX_AUTO_DETECT_LANGUAGES;
 
 /**
  * Get language metadata by language code
@@ -243,7 +246,9 @@ export function normalizeLanguageCode(languageCode: string): string {
   }
 
   // Default fallback
-  console.warn(`[normalizeLanguageCode] Unknown language code: ${languageCode}, using default 'ja-JP'`);
+  console.warn(
+    `[normalizeLanguageCode] Unknown language code: ${languageCode}, using default 'ja-JP'`
+  );
   return 'ja-JP';
 }
 

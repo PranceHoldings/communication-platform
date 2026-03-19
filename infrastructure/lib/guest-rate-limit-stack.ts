@@ -40,9 +40,7 @@ export class GuestRateLimitStack extends cdk.Stack {
       },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST, // On-demand pricing
       timeToLiveAttribute: 'ttl', // Automatic cleanup after 10 minutes
-      removalPolicy: environment === 'prod'
-        ? cdk.RemovalPolicy.RETAIN
-        : cdk.RemovalPolicy.DESTROY,
+      removalPolicy: environment === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       pointInTimeRecovery: environment === 'prod', // Backup for production
     });
 

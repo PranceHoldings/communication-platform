@@ -40,9 +40,7 @@ interface AuthResponse {
 /**
  * Lambda handler for guest authentication
  */
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[GuestAuth] Event:', JSON.stringify(event, null, 2));
 
   try {

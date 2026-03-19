@@ -38,9 +38,7 @@ interface UpdateGuestSessionResponse {
 /**
  * Lambda handler for updating guest sessions
  */
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[UpdateGuestSession] Event:', JSON.stringify(event, null, 2));
 
   try {

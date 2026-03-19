@@ -37,9 +37,7 @@ interface GetGuestSessionLogsResponse {
 /**
  * Lambda handler for getting guest session logs
  */
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[GetGuestSessionLogs] Event:', JSON.stringify(event, null, 2));
 
   try {
@@ -185,7 +183,7 @@ export const handler = async (
     });
 
     // 7. Format response
-    const formattedLogs: GuestSessionLogItem[] = logs.map((log) => ({
+    const formattedLogs: GuestSessionLogItem[] = logs.map(log => ({
       id: log.id,
       eventType: log.eventType,
       ipAddress: log.ipAddress,

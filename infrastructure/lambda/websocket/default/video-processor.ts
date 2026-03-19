@@ -10,14 +10,18 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
-import { MEDIA_DEFAULTS } from '../../shared/config/defaults';
 import { getFFmpegPath } from '../../shared/utils/ffmpeg-helper';
 import { generateCdnUrl } from '../../shared/utils/url-generator';
+import { getRequiredEnv } from '../../shared/utils/env-validator';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { sortChunksByTimestampAndIndex, logSortedChunks, generateChunkKey } from './chunk-utils';
+
+// Environment variables (single source of truth: .env.local)
+const VIDEO_FORMAT = getRequiredEnv('VIDEO_FORMAT');
+const VIDEO_CONTENT_TYPE = getRequiredEnv('VIDEO_CONTENT_TYPE');
 
 const execAsync = promisify(exec);
 
@@ -67,14 +71,14 @@ export class VideoProcessor {
     chunkIndex: number,
     sequenceNumber?: number
   ): Promise<string> {
-    const chunkKey = generateChunkKey(sessionId, 'video', timestamp, chunkIndex, MEDIA_DEFAULTS.VIDEO_FORMAT);
+    const chunkKey = generateChunkKey(sessionId, 'video', timestamp, chunkIndex, VIDEO_FORMAT);
 
     await this.s3Client.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: chunkKey,
         Body: chunkData,
-        ContentType: MEDIA_DEFAULTS.VIDEO_CONTENT_TYPE,
+        ContentType: VIDEO_CONTENT_TYPE,
         Metadata: {
           sessionId,
           timestamp: timestamp.toString(),
@@ -212,7 +216,7 @@ export class VideoProcessor {
           Bucket: this.bucket,
           Key: finalVideoKey,
           Body: finalVideoBuffer,
-          ContentType: MEDIA_DEFAULTS.VIDEO_CONTENT_TYPE,
+          ContentType: VIDEO_CONTENT_TYPE,
           Metadata: {
             sessionId,
             chunksCount: chunkFiles.length.toString(),

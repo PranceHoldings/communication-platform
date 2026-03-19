@@ -94,13 +94,13 @@ export class InternalServerError extends AppError {
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: UserRole;  // Enum type from Prisma schema
+  role: UserRole; // Enum type from Prisma schema
   orgId: string; // Aligned with Prisma schema
 
   // ✅ ゲストユーザー対応フィールド（オプション）
-  type?: 'user' | 'guest';  // ユーザータイプ識別
-  guestSessionId?: string;  // ゲストセッションID
-  sessionId?: string;       // 紐づくセッションID
+  type?: 'user' | 'guest'; // ユーザータイプ識別
+  guestSessionId?: string; // ゲストセッションID
+  sessionId?: string; // 紐づくセッションID
 
   iat?: number;
   exp?: number;

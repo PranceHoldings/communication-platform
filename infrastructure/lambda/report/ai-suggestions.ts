@@ -5,15 +5,12 @@
  * based on session data, scores, and transcript analysis.
  */
 
-import {
-  BedrockRuntimeClient,
-  InvokeModelCommand,
-} from '@aws-sdk/client-bedrock-runtime';
+import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { ReportData } from './types';
-import { BEDROCK_DEFAULTS } from '../shared/config/defaults';
+import { getAwsRegion } from '../shared/utils/env-validator';
 
 const bedrockClient = new BedrockRuntimeClient({
-  region: process.env.BEDROCK_REGION || BEDROCK_DEFAULTS.REGION,
+  region: getAwsRegion(),
 });
 
 const BEDROCK_MODEL_ID = 'us.anthropic.claude-sonnet-4-20250514-v1:0';
@@ -21,9 +18,7 @@ const BEDROCK_MODEL_ID = 'us.anthropic.claude-sonnet-4-20250514-v1:0';
 /**
  * Generate AI-powered improvement suggestions
  */
-export async function generateAISuggestions(
-  data: ReportData
-): Promise<string[]> {
+export async function generateAISuggestions(data: ReportData): Promise<string[]> {
   console.log('[AIsuggestions] Generating AI improvement suggestions...');
 
   try {
@@ -82,21 +77,19 @@ ${score.strengths.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
   // Emotion analysis summary
   const emotions = emotionAnalysis
-    .map((e) => e.dominantEmotion)
+    .map(e => e.dominantEmotion)
     .filter((e, i, arr) => arr.indexOf(e) === i);
   const emotionSummary = `
 感情分析:
 - 検出された感情: ${emotions.join(', ')}
 - 平均信頼度: ${(
-    emotionAnalysis.reduce((sum, e) => sum + e.confidence, 0) /
-    emotionAnalysis.length
+    emotionAnalysis.reduce((sum, e) => sum + e.confidence, 0) / emotionAnalysis.length
   ).toFixed(2)}
 `;
 
   // Audio analysis summary
   const avgFillerCount =
-    audioAnalysis.reduce((sum, a) => sum + a.fillerCount, 0) /
-    audioAnalysis.length;
+    audioAnalysis.reduce((sum, a) => sum + a.fillerCount, 0) / audioAnalysis.length;
   const audioSummary = `
 音声分析:
 - 平均フィラー語数: ${avgFillerCount.toFixed(1)}/分
@@ -104,8 +97,7 @@ ${score.strengths.map((s, i) => `${i + 1}. ${s}`).join('\n')}
     audioAnalysis.reduce((sum, a) => sum + a.clarity, 0) / audioAnalysis.length
   ).toFixed(2)}
 - 平均話速: ${(
-    audioAnalysis.reduce((sum, a) => sum + a.speakingRate, 0) /
-    audioAnalysis.length
+    audioAnalysis.reduce((sum, a) => sum + a.speakingRate, 0) / audioAnalysis.length
   ).toFixed(0)} WPM
 `;
 
@@ -115,7 +107,7 @@ ${score.strengths.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 ${transcript
   .slice(0, 6)
   .map(
-    (t) =>
+    t =>
       `[${t.speaker === 'USER' ? 'ユーザー' : 'AI'}] ${t.text.substring(0, 100)}${t.text.length > 100 ? '...' : ''}`
   )
   .join('\n')}
@@ -203,8 +195,8 @@ function parseSuggestions(response: string): string[] {
   // Extract numbered list items
   const lines = response
     .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
 
   const suggestions: string[] = [];
 
@@ -218,16 +210,13 @@ function parseSuggestions(response: string): string[] {
 
   // If parsing failed, try to extract by splitting
   if (suggestions.length === 0) {
-    const parts = response.split(/\d+\.\s+/).filter((s) => s.trim().length > 0);
-    suggestions.push(...parts.map((s) => s.trim()));
+    const parts = response.split(/\d+\.\s+/).filter(s => s.trim().length > 0);
+    suggestions.push(...parts.map(s => s.trim()));
   }
 
   // Validate: should have 5 suggestions
   if (suggestions.length < 5) {
-    console.warn(
-      '[AISuggestions] Expected 5 suggestions, got',
-      suggestions.length
-    );
+    console.warn('[AISuggestions] Expected 5 suggestions, got', suggestions.length);
   }
 
   return suggestions.slice(0, 5); // Return max 5 suggestions

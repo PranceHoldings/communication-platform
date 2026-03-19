@@ -147,7 +147,7 @@ const PRESET_QUERIES: Record<string, string> = {
 // Main Handler
 // ============================================================
 
-export const handler: Handler<MutationPayload, MutationResponse> = async (event) => {
+export const handler: Handler<MutationPayload, MutationResponse> = async event => {
   const startTime = Date.now();
   const environment = getEnvironmentName();
   const executionMode = event.executionMode || 'execute';
@@ -329,12 +329,14 @@ async function executePreset(queryId: string, params: Record<string, any>): Prom
   };
 }
 
-async function executeTransaction(queries: Array<{ sql: string; params?: Record<string, any> }>): Promise<any> {
+async function executeTransaction(
+  queries: Array<{ sql: string; params?: Record<string, any> }>
+): Promise<any> {
   let totalRowsAffected = 0;
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async tx => {
     for (const query of queries) {
-      const result = await (tx as any).$executeRawUnsafe(query.sql);
+      const result = await tx.$executeRawUnsafe(query.sql);
       totalRowsAffected += result || 0;
     }
   });

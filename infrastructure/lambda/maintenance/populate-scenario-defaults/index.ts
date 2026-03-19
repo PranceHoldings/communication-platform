@@ -68,7 +68,9 @@ export const handler = async (): Promise<LambdaResponse> => {
       };
     }
 
-    console.log(`[populate-defaults] Found ${scenariosWithNulls.length} scenarios with NULL values`);
+    console.log(
+      `[populate-defaults] Found ${scenariosWithNulls.length} scenarios with NULL values`
+    );
     scenariosWithNulls.forEach((s, idx) => {
       console.log(`  ${idx + 1}. "${s.title}" (${s.id})`);
       console.log(`     silenceTimeout: ${s.silenceTimeout ?? 'NULL'}`);
@@ -107,7 +109,9 @@ export const handler = async (): Promise<LambdaResponse> => {
             where: { id: scenario.id },
             data: updateData,
           });
-          console.log(`  ✅ Updated "${scenario.title}" (${Object.keys(updateData).length} fields)`);
+          console.log(
+            `  ✅ Updated "${scenario.title}" (${Object.keys(updateData).length} fields)`
+          );
           updatedScenarios.push(scenario.title);
         }
       } catch (error) {
@@ -135,7 +139,9 @@ export const handler = async (): Promise<LambdaResponse> => {
     });
 
     console.log('[populate-defaults] ========================================');
-    console.log(`[populate-defaults] ✅ Successfully updated: ${updatedScenarios.length} scenarios`);
+    console.log(
+      `[populate-defaults] ✅ Successfully updated: ${updatedScenarios.length} scenarios`
+    );
     console.log(`[populate-defaults] ❌ Failed to update: ${errors.length} scenarios`);
     console.log(`[populate-defaults] ⚠️  Remaining NULL values: ${remainingNulls} scenarios`);
     console.log('[populate-defaults] ========================================');

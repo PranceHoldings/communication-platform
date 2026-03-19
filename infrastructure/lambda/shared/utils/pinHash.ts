@@ -6,12 +6,7 @@
  */
 
 import bcrypt from 'bcryptjs';
-
-/**
- * bcryptのコストファクター（推奨: 10-12）
- * 値が大きいほど安全だが処理時間が長くなる
- */
-const SALT_ROUNDS = 10;
+import { getBcryptSaltRounds } from './env-validator';
 
 /**
  * PINコードをbcryptでハッシュ化
@@ -30,7 +25,7 @@ export async function hashPin(pin: string): Promise<string> {
     throw new Error('Invalid PIN format: must be 4-8 digits');
   }
 
-  return bcrypt.hash(pin, SALT_ROUNDS);
+  return bcrypt.hash(pin, getBcryptSaltRounds());
 }
 
 /**

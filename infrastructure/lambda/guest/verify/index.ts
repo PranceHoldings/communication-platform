@@ -38,9 +38,7 @@ interface VerifyTokenResponse {
 /**
  * Lambda handler for verifying guest tokens
  */
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[VerifyGuestToken] Event:', JSON.stringify(event, null, 2));
 
   try {

@@ -396,7 +396,9 @@ export function QuestionEditor({ questions, onChange, disabled = false }: Questi
 
   const confirmDelete = () => {
     if (deletingId) {
-      onChange(questions.filter(q => q.id !== deletingId).map((q, index) => ({ ...q, order: index })));
+      onChange(
+        questions.filter(q => q.id !== deletingId).map((q, index) => ({ ...q, order: index }))
+      );
       setDeletingId(null);
     }
   };
@@ -497,7 +499,7 @@ export function QuestionEditor({ questions, onChange, disabled = false }: Questi
       )}
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
+      <AlertDialog open={!!deletingId} onOpenChange={open => !open && setDeletingId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('scenarios.questions.deleteDialog.title')}</AlertDialogTitle>
