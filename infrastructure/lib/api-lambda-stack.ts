@@ -1323,6 +1323,7 @@ export class ApiLambdaStack extends cdk.Stack {
         CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY || '',
         // Language and Media Configuration (デフォルト値はLambda内で管理)
         STT_LANGUAGE: process.env.STT_LANGUAGE || '',
+        STT_AUTO_DETECT_LANGUAGES: process.env.STT_AUTO_DETECT_LANGUAGES || '',
         VIDEO_FORMAT: process.env.VIDEO_FORMAT || '',
         VIDEO_RESOLUTION: process.env.VIDEO_RESOLUTION || '',
         AUDIO_CONTENT_TYPE: process.env.AUDIO_CONTENT_TYPE || '',
