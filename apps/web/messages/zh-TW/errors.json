@@ -59,6 +59,11 @@
     "startFailed": "Failed to start session. Please try again.",
     "endFailed": "Failed to end session. Please try again."
   },
+  "rateLimit": {
+    "title": "傳送速度限制",
+    "message": "您的音訊傳送速度過快，請等待 {seconds} 秒。",
+    "guidance": "系統需要時間處理您的音訊。這有助於確保高品質的回應。"
+  },
   "actions": {
     "retry": "Retry",
     "cancel": "Cancel",
