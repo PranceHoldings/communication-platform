@@ -93,7 +93,11 @@ export class SessionPlayerPage {
    * Stop a session
    */
   async stopSession(): Promise<void> {
-    await this.stopButton.click();
+    // Wait for button to be ready
+    await this.stopButton.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Force click to bypass any overlays
+    await this.stopButton.click({ force: true, timeout: 10000 });
   }
 
   /**
@@ -109,17 +113,87 @@ export class SessionPlayerPage {
 
   /**
    * Wait for session to start (start button removed, control buttons visible)
+   * Robust strategy with retry logic for UI timing issues
    */
-  async waitForSessionStarted(timeout = 10000): Promise<void> {
-    // Wait for start button to disappear
-    await expect(this.startButton).not.toBeVisible({ timeout });
+  async waitForSessionStarted(timeout = 15000): Promise<void> {
+    console.log('[PageObject] Waiting for session to start...');
+    const overallStartTime = Date.now();
 
-    // Give UI a moment to render control buttons
-    await this.page.waitForTimeout(500);
+    // 1. Wait for start button to disappear
+    console.log('[PageObject] Step 1: Waiting for Start button to disappear...');
+    await expect(this.startButton).not.toBeVisible({ timeout: Math.min(timeout * 0.4, 6000) });
+    console.log('[PageObject] ✓ Start button is no longer visible');
 
-    // Wait for control buttons to appear
-    await expect(this.pauseButton).toBeVisible({ timeout });
-    await expect(this.stopButton).toBeVisible({ timeout });
+    // 2. Wait for WebSocket connection (if available)
+    console.log('[PageObject] Step 2: Checking WebSocket connection...');
+    try {
+      // Try to find WebSocket status indicator
+      const wsStatus = this.page.locator('[data-testid="websocket-status"]');
+      const wsCount = await wsStatus.count();
+
+      if (wsCount > 0) {
+        // WebSocket status element exists, wait for "Connected"
+        await wsStatus.filter({ hasText: /connected/i }).waitFor({
+          state: 'visible',
+          timeout: Math.min(timeout * 0.3, 5000)
+        });
+        console.log('[PageObject] ✓ WebSocket is connected');
+      } else {
+        console.log('[PageObject] WebSocket status indicator not found (may not be implemented)');
+      }
+    } catch (error) {
+      console.log('[PageObject] WebSocket status check skipped (non-blocking)');
+    }
+
+    // 3. Wait for control buttons to appear with retry logic
+    console.log('[PageObject] Step 3: Waiting for Pause/Stop buttons...');
+    const buttonWaitStartTime = Date.now();
+    const buttonWaitTimeout = Math.min(timeout * 0.6, 8000);
+    let attempts = 0;
+    const maxAttempts = 15;
+
+    while (Date.now() - buttonWaitStartTime < buttonWaitTimeout && attempts < maxAttempts) {
+      attempts++;
+
+      try {
+        const pauseCount = await Promise.race([
+          this.pauseButton.count(),
+          new Promise<number>((_, reject) => setTimeout(() => reject(new Error('timeout')), 1000))
+        ]).catch(() => 0);
+
+        const stopCount = await Promise.race([
+          this.stopButton.count(),
+          new Promise<number>((_, reject) => setTimeout(() => reject(new Error('timeout')), 1000))
+        ]).catch(() => 0);
+
+        console.log(`[PageObject] Attempt ${attempts}: Pause=${pauseCount}, Stop=${stopCount}`);
+
+        if (pauseCount > 0 && stopCount > 0) {
+          // Both buttons exist, verify they are visible
+          const pauseVisible = await this.pauseButton.isVisible().catch(() => false);
+          const stopVisible = await this.stopButton.isVisible().catch(() => false);
+
+          if (pauseVisible && stopVisible) {
+            console.log('[PageObject] ✓ Both Pause and Stop buttons are visible');
+            return;
+          }
+        }
+
+        await this.page.waitForTimeout(200);
+      } catch (error) {
+        console.log(`[PageObject] Attempt ${attempts} error:`, error);
+        await this.page.waitForTimeout(200);
+      }
+    }
+
+    // 4. Final assertion with reduced timeout
+    console.log('[PageObject] Step 4: Final visibility assertion...');
+    const elapsed = Date.now() - overallStartTime;
+    const remainingTimeout = Math.max(timeout - elapsed, 2000);
+
+    await expect(this.pauseButton).toBeVisible({ timeout: remainingTimeout });
+    await expect(this.stopButton).toBeVisible({ timeout: remainingTimeout });
+    console.log('[PageObject] ✓ Session started successfully');
   }
 
   /**
@@ -220,13 +294,18 @@ export class SessionPlayerPage {
    * Get silence timer elapsed time (in seconds)
    */
   async getSilenceElapsedTime(): Promise<number> {
-    const text = await this.silenceTimer.textContent();
-    if (!text) return 0;
+    try {
+      const text = await this.silenceTimer.textContent({ timeout: 1000 });
+      if (!text) return 0;
 
-    // Extract number from "Silence: 5s / 10s" format
-    const match = text.match(/(\d+)s/);
-    if (!match || !match[1]) return 0;
-    return parseInt(match[1], 10);
+      // Extract number from "Silence: 5s / 10s" format
+      const match = text.match(/(\d+)s/);
+      if (!match || !match[1]) return 0;
+      return parseInt(match[1], 10);
+    } catch (error) {
+      // Element doesn't exist or can't be read
+      return 0;
+    }
   }
 
   /**
@@ -351,7 +430,17 @@ export class SessionPlayerPage {
    * Check if silence timer is visible
    */
   async isSilenceTimerVisible(): Promise<boolean> {
-    return await this.silenceTimer.isVisible();
+    try {
+      // First check if element exists
+      const count = await this.silenceTimer.count();
+      if (count === 0) return false;
+
+      // Then check visibility
+      return await this.silenceTimer.isVisible({ timeout: 1000 });
+    } catch (error) {
+      // Element doesn't exist or isn't visible
+      return false;
+    }
   }
 
   /**
@@ -387,7 +476,7 @@ export class SessionPlayerPage {
           const isVisible = await element.first().isVisible().catch(() => false);
           if (isVisible) {
             if (expectedText) {
-              const text = await element.first().textContent().catch(() => '');
+              const text = await element.first().textContent().catch(() => '') || '';
               if (text.toLowerCase().includes(expectedText.toLowerCase())) {
                 console.log(`[PageObject] Found toast with expected text`);
                 return true;

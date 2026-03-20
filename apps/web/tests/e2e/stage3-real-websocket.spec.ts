@@ -94,11 +94,8 @@ test.describe('Stage 3: Real WebSocket Integration', () => {
     // Note: Status may be READY or ACTIVE (In Progress) depending on scenario configuration
     console.log('[Test] Session is ready for user interaction');
 
-    // Wait a moment to ensure stable state
-    await authenticatedPage.waitForTimeout(1000);
-
-    // Verify stop button is available
-    await expect(sessionPlayer.stopButton).toBeVisible();
+    // Verify stop button is still available (with timeout)
+    await expect(sessionPlayer.stopButton).toBeVisible({ timeout: 5000 });
     console.log('[Test] ✓ Stop button is available');
 
     // Stop session
