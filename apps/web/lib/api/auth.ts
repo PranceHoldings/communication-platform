@@ -1,4 +1,4 @@
-import type { User } from '@prance/shared';
+import type { User, StandardAPIResponse } from '@prance/shared';
 /**
  * Authentication API
  */
@@ -7,13 +7,6 @@ import { apiClient } from './client';
 
 // Re-export User type for convenience
 export type { User };
-
-// API Response wrapper type
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  error?: string;
-}
 
 export interface AuthTokens {
   accessToken: string;
@@ -41,14 +34,14 @@ export const authApi = {
   /**
    * ユーザー登録
    */
-  async register(data: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
+  async register(data: RegisterRequest): Promise<StandardAPIResponse<AuthResponse>> {
     return apiClient.post<AuthResponse>('/auth/register', data);
   },
 
   /**
    * ログイン
    */
-  async login(data: LoginRequest): Promise<ApiResponse<AuthResponse>> {
+  async login(data: LoginRequest): Promise<StandardAPIResponse<AuthResponse>> {
     return apiClient.post<AuthResponse>('/auth/login', data);
   },
 
@@ -94,7 +87,7 @@ export const authApi = {
   /**
    * サーバーから現在のユーザー情報を取得
    */
-  async fetchCurrentUser(): Promise<ApiResponse<User>> {
+  async fetchCurrentUser(): Promise<StandardAPIResponse<User>> {
     return apiClient.get<User>('/users/me');
   },
 };
