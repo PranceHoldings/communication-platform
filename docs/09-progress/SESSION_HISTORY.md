@@ -459,7 +459,7 @@ id, guest_session_id, event_type, ip_address, user_agent, details, created_at
 
 ### 成果物
 
-- `tests/e2e/websocket-voice-conversation.spec.ts` - WebSocket音声会話E2Eテスト
+- `apps/web/tests/e2e/websocket-voice-conversation.spec.ts` - WebSocket音声会話E2Eテスト
 - `scripts/run-e2e-tests.sh` - テスト実行スクリプト
 - `playwright.config.ts` - Playwright設定（修正版）
 - HTMLテストレポート（`playwright-report/`）

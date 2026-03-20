@@ -406,7 +406,7 @@ describe('ScenarioCard', () => {
 **E2Eテスト (Playwright):**
 
 ```typescript
-// e2e/scenarios.spec.ts
+// apps/web/tests/e2e/scenarios.spec.ts
 import { test, expect } from '@playwright/test';
 
 test('scenario list page', async ({ page }) => {
@@ -489,7 +489,7 @@ export function validateScenario(data: unknown) {
 **テストファイル:**
 
 ```typescript
-// apps/web/e2e/scenarios.spec.ts
+// apps/web/tests/e2e/scenarios.spec.ts
 import { test, expect } from '@playwright/test';
 
 test('scenario list page', async ({ page }) => {

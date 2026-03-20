@@ -168,6 +168,21 @@
 - **UI_SETTINGS_DATABASE_SYNC_RULES.md** - UI設定項目同期ルール
 - **HARDCODE_ELIMINATION_REPORT.md** - ハードコード値削除レポート 🆕
 
+### apps/web/tests/e2e/ - E2Eテスト（システム全体）
+- **README.md** - E2Eテストガイド（テストレベル、実行方法、デバッグ）
+- **Stage 0-1:** UI Component Tests（フロントエンドのみ）
+- **Stage 2:** Integration Tests（フロントエンド + Mock）
+- **Stage 3-5:** System E2E Tests（全スタック: Browser → API → Lambda → DB → S3）
+- **成功率:** 35/35 (100%) ✅
+- **詳細:** `apps/web/tests/e2e/README.md` 参照
+
+### infrastructure/lambda/shared/**/__tests__/ - Lambda単体テスト
+- **auth/__tests__/** - 認証ロジックテスト（guest-token.test.ts）
+- **utils/__tests__/** - ユーティリティテスト（8ファイル、30+テスト）
+- **analysis/__tests__/** - 解析ロジックテスト（audio-analyzer.test.ts）
+- **フレームワーク:** Jest
+- **実行:** `cd infrastructure && npm test`（将来実装予定）
+
 ### docs/08-operations/ - 運用ガイド
 - **DEPLOYMENT.md** - デプロイメント
 - **CICD.md** - CI/CD
@@ -219,6 +234,12 @@
 2. **CLAUDE.md** （プロジェクト全体概要）
 3. **docs/01-getting-started/** （初心者向けガイド）
 4. **docs/02-architecture/** （アーキテクチャ設計）
+
+### テストを実行・作成したい
+1. **apps/web/tests/e2e/README.md** （E2Eテストガイド）
+2. **apps/web/playwright.config.ts** （Playwright設定）
+3. **docs/10-reference/TECH_STACK.md** （テストフレームワーク詳細）
+4. **infrastructure/lambda/shared/**/__tests__/** （Lambda単体テスト例）
 
 ---
 

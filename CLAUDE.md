@@ -112,9 +112,16 @@ docs/01-getting-started/             ← 初心者向けガイド
 │   ├── TECH_STACK.md                    - 技術スタック詳細
 │   ├── GLOSSARY.md                      - 用語集
 │   └── CLAUDE.en.md                     - CLAUDE.md英語版
-└── docs/archive/                        ← 削除・変更履歴
-    ├── DELETED_FILES_2026-03-09.md
-    └── DOCUMENTATION_CLEANUP_SUMMARY.md
+├── docs/archive/                        ← 削除・変更履歴
+│   ├── DELETED_FILES_2026-03-09.md
+│   └── DOCUMENTATION_CLEANUP_SUMMARY.md
+└── apps/web/tests/e2e/                  ← E2Eテスト（システム全体） 🆕
+    ├── README.md                        - テストガイド（レベル、実行方法）
+    ├── fixtures/                        - テストフィクスチャ
+    ├── page-objects/                    - Page Object Model
+    ├── stage0-1/                        - UI Component Tests
+    ├── stage2/                          - Integration Tests (Mock)
+    └── stage3-5/                        - System E2E Tests（全スタック）
 ```
 
 ---
