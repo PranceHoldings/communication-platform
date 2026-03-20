@@ -10,6 +10,7 @@ import { test as base } from './auth.fixture';
 interface SessionFixture {
   testSessionId: string;
   testSessionWithRecordingId: string;
+  testSessionWithTimerId: string;
 }
 
 /**
@@ -211,6 +212,60 @@ export const test = base.extend<SessionFixture>({
       throw new Error(
         'Could not fetch test session with recording. Ensure at least one completed session with recording exists.'
       );
+    }
+  },
+
+  testSessionWithTimerId: async ({ authenticatedPage }, use) => {
+    // For silence timer tests (S2-003, S2-004, S2-005)
+    // Note: In mock environment, timer visibility is controlled by scenario.showSilenceTimer
+    // Since we cannot modify the scenario from E2E tests, these tests should verify
+    // the timer behavior when it's visible, or be skipped if not visible.
+    // In Stage 3 (real integration), we can create a dedicated scenario with timer enabled.
+
+    // For now, use the same session as testSessionId
+    // Timer tests will check visibility first and skip assertions if not visible
+    try {
+      const accessToken = await authenticatedPage.evaluate(() => {
+        return localStorage.getItem('accessToken');
+      });
+
+      if (!accessToken) {
+        throw new Error('No access token found in localStorage');
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      if (!apiUrl) {
+        throw new Error(
+          'NEXT_PUBLIC_API_URL environment variable is required for E2E tests.'
+        );
+      }
+
+      const response = await authenticatedPage.request.get(`${apiUrl}/sessions?limit=1`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok()) {
+        throw new Error(`API request failed: ${response.status()}`);
+      }
+
+      const data = await response.json();
+      const sessions = data.data?.sessions || data.sessions || [];
+
+      if (sessions.length === 0) {
+        throw new Error('No sessions found for timer tests.');
+      }
+
+      const sessionId = sessions[0].id;
+      console.log(`✅ Using session for timer tests: ${sessionId} (timer visibility depends on scenario settings)`);
+
+      await use(sessionId);
+    } catch (error) {
+      console.error('Failed to fetch test session for timer:', error);
+      throw new Error('Could not fetch test session for timer tests.');
     }
   },
 });

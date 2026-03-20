@@ -118,6 +118,13 @@ export class SessionPlayerPage {
   async waitForProcessingStage(stage: ProcessingStage, timeout = 10000): Promise<void> {
     if (stage === 'idle') {
       // Processing stage should not be visible when idle
+      // Check if element exists first (it may return null in mock environment)
+      const count = await this.processingStage.count();
+      if (count === 0) {
+        // Element doesn't exist (conditional rendering) - OK for idle state
+        console.log('[PageObject] Processing stage element not in DOM (idle state) - OK');
+        return;
+      }
       await expect(this.processingStage).toBeHidden({ timeout });
     } else {
       const stageText: Record<Exclude<ProcessingStage, 'idle'>, RegExp> = {
@@ -125,6 +132,12 @@ export class SessionPlayerPage {
         ai: /generating|ai response/i,
         tts: /synthesizing|speech/i,
       };
+
+      // Check if element exists
+      const count = await this.processingStage.count();
+      if (count === 0) {
+        throw new Error(`Processing stage element not found (expected: ${stage}). Make sure to send processing_update messages in tests.`);
+      }
 
       await expect(this.processingStage).toContainText(stageText[stage], { timeout });
     }
@@ -202,14 +215,39 @@ export class SessionPlayerPage {
     const text = await lastMessage.textContent();
     if (!text) return null;
 
-    // Extract speaker (assuming format: "YOU: message" or "AI: message")
-    const match = text.match(/^(YOU|AI|USER|ASSISTANT):\s*(.+)$/i);
-    if (!match || !match[1] || !match[2]) return { speaker: 'UNKNOWN', text };
+    // Get speaker from data-speaker attribute
+    const speaker = await lastMessage.getAttribute('data-speaker');
+    if (!speaker) return { speaker: 'UNKNOWN', text };
 
     return {
-      speaker: match[1].toUpperCase(),
-      text: match[2],
+      speaker,
+      text,
     };
+  }
+
+  /**
+   * Wait for transcript message containing specific text
+   */
+  async waitForTranscriptContaining(text: string, timeout = 30000): Promise<void> {
+    console.log(`[PageObject] Waiting for transcript containing: "${text.substring(0, 50)}"`);
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+      const count = await this.getTranscriptMessageCount();
+
+      for (let i = 0; i < count; i++) {
+        const msg = this.transcriptMessages.nth(i);
+        const content = await msg.textContent();
+        if (content?.includes(text)) {
+          console.log(`[PageObject] Found transcript message containing text at index ${i}`);
+          return;
+        }
+      }
+
+      await this.page.waitForTimeout(500);
+    }
+
+    throw new Error(`No transcript message containing "${text.substring(0, 50)}" within ${timeout}ms`);
   }
 
   /**
@@ -217,17 +255,38 @@ export class SessionPlayerPage {
    */
   async waitForNewTranscriptMessage(timeout = 30000): Promise<void> {
     const initialCount = await this.getTranscriptMessageCount();
+    console.log(`[PageObject] waitForNewTranscriptMessage: initial count = ${initialCount}`);
+
+    // Debug: Log all current transcript messages
+    for (let i = 0; i < initialCount; i++) {
+      const msg = this.transcriptMessages.nth(i);
+      const text = await msg.textContent();
+      console.log(`[PageObject] Initial transcript[${i}]: ${text?.substring(0, 100)}`);
+    }
+
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeout) {
       const currentCount = await this.getTranscriptMessageCount();
+
       if (currentCount > initialCount) {
+        console.log(`[PageObject] Transcript message count increased: ${initialCount} → ${currentCount}`);
+        // Debug: Log new message
+        const newMsg = this.transcriptMessages.nth(currentCount - 1);
+        const newText = await newMsg.textContent();
+        console.log(`[PageObject] New transcript message: ${newText?.substring(0, 100)}`);
         return;
       }
+
+      // Only log every 2 seconds to reduce noise
+      if ((Date.now() - startTime) % 2000 < 500) {
+        console.log(`[PageObject] Current transcript count: ${currentCount} (waiting for > ${initialCount})`);
+      }
+
       await this.page.waitForTimeout(500);
     }
 
-    throw new Error(`No new transcript message within ${timeout}ms`);
+    throw new Error(`No new transcript message within ${timeout}ms (initial: ${initialCount})`);
   }
 
   /**

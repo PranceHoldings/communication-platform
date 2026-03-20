@@ -47,7 +47,8 @@ export class WebSocketMock {
           // Store mock instance for external control
           (window as any).__mockWebSocket = this;
 
-          // Simulate connection after short delay
+          // Immediately open connection (no delay for testing)
+          // Use setTimeout(0) to ensure event handlers are set up first
           setTimeout(() => {
             this.readyState = WebSocket.OPEN;
             const event = new Event('open');
@@ -56,7 +57,7 @@ export class WebSocketMock {
 
             // Notify test that WebSocket is ready
             (window as any).__mockWebSocketReady = true;
-          }, 100);
+          }, 0);
         }
 
         send(data: string | ArrayBuffer | Blob): void {
@@ -75,11 +76,29 @@ export class WebSocketMock {
 
         // Helper method to simulate receiving message
         __receiveMessage(data: string): void {
-          if (this.readyState !== WebSocket.OPEN) return;
+          try {
+            console.log('[MockWebSocket] __receiveMessage called:', data);
+            console.log('[MockWebSocket] readyState:', this.readyState, 'OPEN=', WebSocket.OPEN);
 
-          const event = new MessageEvent('message', { data });
-          this.onmessage?.(event);
-          this.dispatchEvent(event);
+            if (this.readyState !== WebSocket.OPEN) {
+              console.log('[MockWebSocket] Skipping message - not OPEN');
+              return;
+            }
+
+            console.log('[MockWebSocket] Creating MessageEvent');
+            const event = new MessageEvent('message', { data });
+            console.log('[MockWebSocket] Calling onmessage:', !!this.onmessage);
+            if (this.onmessage) {
+              this.onmessage(event);
+            }
+            console.log('[MockWebSocket] Dispatching event');
+            this.dispatchEvent(event);
+            console.log('[MockWebSocket] Message dispatched');
+          } catch (err: any) {
+            console.error('[MockWebSocket] Error in __receiveMessage:', err);
+            (window as any).__mockWebSocketError = err.message;
+            throw err;
+          }
         }
       }
 
@@ -98,10 +117,23 @@ export class WebSocketMock {
    * Wait for WebSocket connection
    */
   async waitForConnection(timeout = 5000): Promise<void> {
+    console.log('[WebSocketMock] waitForConnection: waiting for mock to be ready...');
     await this.page.waitForFunction(
       () => (window as any).__mockWebSocketReady === true,
       { timeout }
     );
+    console.log('[WebSocketMock] waitForConnection: mock is ready');
+
+    // Verify mock WebSocket exists
+    const mockExists = await this.page.evaluate(() => {
+      const ws = (window as any).__mockWebSocket;
+      return {
+        exists: !!ws,
+        ready: (window as any).__mockWebSocketReady,
+        readyState: ws?.readyState,
+      };
+    });
+    console.log('[WebSocketMock] waitForConnection: mock state:', mockExists);
   }
 
   /**
@@ -109,12 +141,33 @@ export class WebSocketMock {
    */
   async sendMessage(message: WebSocketMessage): Promise<void> {
     const messageStr = JSON.stringify(message);
-    await this.page.evaluate((msg) => {
-      const ws = (window as any).__mockWebSocket;
-      if (ws) {
-        ws.__receiveMessage(msg);
+    const timestamp = new Date().toISOString();
+    console.log(`[WS_SEQ ${timestamp}] >>>> SENDING: ${message.type}`);
+
+    try {
+      const result = await this.page.evaluate((msg) => {
+        try {
+          const ws = (window as any).__mockWebSocket;
+          if (ws) {
+            ws.__receiveMessage(msg);
+            return { success: true, hasWs: true };
+          } else {
+            console.error('[WebSocketMock.evaluate] No mock WebSocket found!');
+            return { success: false, hasWs: false, error: 'No mock WebSocket' };
+          }
+        } catch (err: any) {
+          console.error('[WebSocketMock.evaluate] Error in evaluate:', err);
+          return { success: false, hasWs: false, error: err.message, stack: err.stack };
+        }
+      }, messageStr);
+
+      if (!result.success) {
+        console.error(`[WS_SEQ ${timestamp}] >>>> SEND FAILED:`, result);
       }
-    }, messageStr);
+    } catch (error) {
+      console.error(`[WS_SEQ ${timestamp}] >>>> SEND ERROR:`, error);
+      throw error;
+    }
   }
 
   /**
@@ -129,11 +182,11 @@ export class WebSocketMock {
   }
 
   /**
-   * Send initial greeting
+   * Send initial greeting (avatar response)
    */
   async sendGreeting(text: string, audioUrl?: string): Promise<void> {
     await this.sendMessage({
-      type: 'greeting',
+      type: 'avatar_response_final',
       text,
       audioUrl,
       timestamp: Date.now(),
@@ -184,6 +237,18 @@ export class WebSocketMock {
     await this.sendMessage({
       type: 'error',
       code,
+      message,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Send processing update message
+   */
+  async sendProcessingUpdate(stage: 'stt' | 'ai' | 'tts', message: string): Promise<void> {
+    await this.sendMessage({
+      type: 'processing_update',
+      stage,
       message,
       timestamp: Date.now(),
     });
