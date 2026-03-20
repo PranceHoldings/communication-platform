@@ -2,9 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
-
-// Supported languages (source of truth: packages/shared/src/language/index.ts)
-const SUPPORTED_LANGUAGES = ['ja', 'en', 'zh-CN', 'zh-TW', 'ko', 'es', 'pt', 'fr', 'de', 'it'];
+import { LANGUAGE_DEFAULTS } from '../../shared/config/defaults';
 
 /**
  * POST /api/v1/scenarios
