@@ -205,6 +205,8 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // Lambda共通環境変数
     const commonEnvironment = {
+      // AWS_REGION is automatically provided by Lambda runtime - do not set manually
+      AWS_ENDPOINT_SUFFIX: process.env.AWS_ENDPOINT_SUFFIX!, // AWS endpoint suffix (can be changed for AWS China, GovCloud, etc.)
       ENVIRONMENT: props.environment,
       LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
       NODE_ENV: props.environment === 'production' ? 'production' : 'development',
@@ -470,6 +472,7 @@ export class ApiLambdaStack extends cdk.Stack {
       environment: {
         ...commonLambdaProps.environment,
         DB_QUERIES_BUCKET: `prance-db-queries-${props.environment}`,
+        MAX_RESULTS: process.env.MAX_RESULTS!, // Maximum results for queries
       },
       bundling: {
         minify: false,
@@ -858,7 +861,7 @@ export class ApiLambdaStack extends cdk.Stack {
       environment: {
         ...commonEnvironment,
         RECORDINGS_BUCKET_NAME: props.recordingsBucket.bucketName,
-        ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS || 'true',
+        ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS!,
       },
     });
 
@@ -1214,11 +1217,13 @@ export class ApiLambdaStack extends cdk.Stack {
       entry: path.join(__dirname, '../lambda/websocket/connect/index.ts'),
       handler: 'handler',
       environment: {
+        // AWS_REGION is automatically provided by Lambda runtime
         ENVIRONMENT: props.environment,
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
         NODE_ENV: props.environment === 'production' ? 'production' : 'development',
         JWT_SECRET: jwtSecret.secretValueFromJson('secret').unsafeUnwrap(),
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
+        DYNAMODB_CONNECTION_TTL_SECONDS: process.env.DYNAMODB_CONNECTION_TTL_SECONDS!,
       },
       bundling: {
         minify: props.environment === 'production',
@@ -1263,6 +1268,7 @@ export class ApiLambdaStack extends cdk.Stack {
         entry: path.join(__dirname, '../lambda/websocket/disconnect/index.ts'),
         handler: 'handler',
         environment: {
+          // AWS_REGION is automatically provided by Lambda runtime
           ENVIRONMENT: props.environment,
           LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
           NODE_ENV: props.environment === 'production' ? 'production' : 'development',
@@ -1303,6 +1309,7 @@ export class ApiLambdaStack extends cdk.Stack {
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
         NODE_ENV: props.environment === 'production' ? 'production' : 'development',
         // AWS_REGION is automatically set by Lambda runtime - do not override
+        AWS_ENDPOINT_SUFFIX: process.env.AWS_ENDPOINT_SUFFIX!,
         WEBSOCKET_ENDPOINT: `https://${this.webSocketApi.ref}.execute-api.${this.region}.amazonaws.com/${props.environment}`,
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
         DYNAMODB_RATE_LIMIT_TABLE: props.sessionRateLimitTable.tableName, // Phase 1.6: Token Bucket rate limiting
@@ -1320,23 +1327,22 @@ export class ApiLambdaStack extends cdk.Stack {
         ELEVENLABS_API_KEY: elevenLabsSecret.secretValueFromJson('apiKey').unsafeUnwrap(),
         ELEVENLABS_VOICE_ID: elevenLabsSecret.secretValueFromJson('voiceId').unsafeUnwrap(),
         ELEVENLABS_MODEL_ID: elevenLabsSecret.secretValueFromJson('modelId').unsafeUnwrap(),
-        BEDROCK_REGION: process.env.BEDROCK_REGION || 'us-east-1',
-        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6',
+        BEDROCK_REGION: process.env.BEDROCK_REGION!,
+        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID!,
         // CloudFront Configuration (for signed URLs)
-        // Using hardcoded value for dev environment (see CDK_CLOUDFRONT_DOMAIN_FIX.md)
-        CLOUDFRONT_DOMAIN: 'd3mx0sug5s3a6x.cloudfront.net',
-        CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID || '',
-        CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY || '',
-        // Language and Media Configuration (デフォルト値はLambda内で管理)
-        STT_LANGUAGE: process.env.STT_LANGUAGE || '',
-        STT_AUTO_DETECT_LANGUAGES: process.env.STT_AUTO_DETECT_LANGUAGES || '',
-        VIDEO_FORMAT: process.env.VIDEO_FORMAT || '',
-        VIDEO_RESOLUTION: process.env.VIDEO_RESOLUTION || '',
-        AUDIO_CONTENT_TYPE: process.env.AUDIO_CONTENT_TYPE || '',
-        VIDEO_CONTENT_TYPE: process.env.VIDEO_CONTENT_TYPE || '',
+        CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN!,
+        CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID!,
+        CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY!,
+        // Language and Media Configuration
+        STT_LANGUAGE: process.env.STT_LANGUAGE!,
+        STT_AUTO_DETECT_LANGUAGES: process.env.STT_AUTO_DETECT_LANGUAGES!,
+        VIDEO_FORMAT: process.env.VIDEO_FORMAT!,
+        VIDEO_RESOLUTION: process.env.VIDEO_RESOLUTION!,
+        AUDIO_CONTENT_TYPE: process.env.AUDIO_CONTENT_TYPE!,
+        VIDEO_CONTENT_TYPE: process.env.VIDEO_CONTENT_TYPE!,
         // Analysis Configuration
         ANALYSIS_FUNCTION_NAME: `prance-sessions-analysis-${props.environment}`,
-        ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS || 'true',
+        ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS!,
       },
       bundling: {
         minify: props.environment === 'production',

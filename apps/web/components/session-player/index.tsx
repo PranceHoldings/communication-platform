@@ -531,7 +531,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       // Phase 1.6: Handle rate limit errors with retry guidance
       if (message.code === 'RATE_LIMIT_EXCEEDED') {
         console.warn('[SessionPlayer] Rate limit exceeded:', message);
-        const retryAfter = message.details?.retryAfter || 1;
+        const details = message.details as any;
+        const retryAfter = (details?.retryAfter as number) || 1;
         toast.warning(
           t('errors.rateLimit.message', {
             seconds: retryAfter,

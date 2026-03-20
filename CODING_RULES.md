@@ -1,6 +1,6 @@
 # コーディングルール - クイックリファレンス
 
-**最終更新:** 2026-03-15
+**最終更新:** 2026-03-20
 
 このドキュメントはコード作成時に常に参照すべき重要ルールのクイックリファレンスです。
 
@@ -10,6 +10,171 @@
 - [infrastructure/CLAUDE.md](infrastructure/CLAUDE.md) - インフラ・Lambda開発ガイド
 - [scripts/CLAUDE.md](scripts/CLAUDE.md) - スクリプト使用ガイド
 - [docs/CLAUDE.md](docs/CLAUDE.md) - ドキュメント管理ガイド
+- [docs/07-development/HARDCODE_PREVENTION_SYSTEM.md](docs/07-development/HARDCODE_PREVENTION_SYSTEM.md) - ハードコード防止システム 🆕
+
+---
+
+## 🔴 ハードコード完全防止（2026-03-20実装）
+
+**重要:** コーディング中にリアルタイムで警告、コミット時に自動ブロック
+
+### ESLint Custom Rules（7つのルール）
+
+#### ❌ 禁止パターン
+
+```typescript
+// 1. AWS リージョンのハードコード
+const region = 'us-east-1'; // ❌
+
+// 2. 言語コードのハードコード
+const language = 'en-US'; // ❌
+
+// 3. メディアフォーマットのハードコード
+const format = 'webm'; // ❌
+const contentType = 'audio/webm'; // ❌
+
+// 4. AWS ドメインのハードコード
+const url = 'https://bucket.s3.amazonaws.com/key'; // ❌
+
+// 5. フォールバックパターン
+const maxResults = process.env.MAX_RESULTS || 1000; // ❌
+
+// 6. 直接的な process.env アクセス
+const apiKey = process.env.ELEVENLABS_API_KEY; // ❌
+
+// 7. 数値定数のハードコード
+const MAX_RESULTS = 1000; // ❌
+```
+
+#### ✅ 正しいパターン
+
+```typescript
+// env-validator.ts を使用（唯一の方法）
+import { getRequiredEnv, getAwsRegion, getAwsEndpointSuffix } from '../../shared/utils/env-validator';
+
+const region = getAwsRegion();
+const language = getRequiredEnv('STT_LANGUAGE');
+const format = getRequiredEnv('VIDEO_FORMAT');
+const url = `https://bucket.s3.${getAwsRegion()}.${getAwsEndpointSuffix()}/key`;
+const maxResults = getMaxResults(); // defaults.ts から
+```
+
+### VSCode Snippets
+
+**使い方:** コード内で prefix をタイプ → Tab
+
+| Prefix           | 展開内容                   |
+| ---------------- | -------------------------- |
+| `import-env`     | getRequiredEnv インポート  |
+| `env-get`        | 環境変数取得               |
+| `env-region`     | AWS リージョン取得         |
+| `lambda-full`    | Lambda関数テンプレート     |
+| `s3-client`      | S3 Client初期化            |
+| `dynamodb-client`| DynamoDB Client初期化      |
+
+**例:**
+```typescript
+// タイプ: lambda-full → Tab
+// → 完全なLambda関数テンプレートが展開される（env-validator統合済み）
+```
+
+### Pre-commit Hook
+
+**自動実行:** `git commit` 時に自動検証
+
+```bash
+git commit -m "feat: add feature"
+# → 自動実行:
+#   [1/3] Checking for hardcoded values...
+#   [2/3] Validating environment variables...
+#   [3/3] Running ESLint on staged files...
+#
+# エラーがあればコミット拒否
+```
+
+**詳細:** [docs/07-development/HARDCODE_PREVENTION_SYSTEM.md](docs/07-development/HARDCODE_PREVENTION_SYSTEM.md)
+
+---
+
+## 🔴 環境変数 - Single Source of Truth（2026-03-20実装）🆕
+
+**最重要原則:** `.env.local`のみが環境変数を定義、`infrastructure/.env`は自動生成
+
+### ❌ 禁止事項
+
+```bash
+# 1. infrastructure/.env を直接編集
+# ❌ 絶対にやってはいけない
+vim infrastructure/.env  # 手動編集禁止
+
+# 2. 環境変数の重複定義
+# ❌ .env.local に同じ変数を2回定義
+MAX_RESULTS=1000
+MAX_RESULTS=2000  # 重複
+
+# 3. 機密情報を infrastructure/.env に含める
+# ❌ Secrets は Secrets Manager で管理
+ELEVENLABS_API_KEY=***  # infrastructure/.env に含めない
+```
+
+### ✅ 正しい手順
+
+```bash
+# 1. 環境変数を追加
+echo "MY_NEW_VAR=value" >> .env.local
+
+# 2. 自動同期
+bash scripts/sync-env-vars.sh
+
+# 3. 検証
+bash scripts/validate-env-single-source.sh
+
+# 4. コミット（自動でSSOT検証）
+git add .
+git commit -m "feat: add MY_NEW_VAR"
+```
+
+### 自動同期システム
+
+**同期:** `.env.local` → `infrastructure/.env`（非機密情報のみ）
+
+```bash
+# 同期実行
+bash scripts/sync-env-vars.sh
+
+# 同期状態確認
+bash scripts/sync-env-vars.sh --check-only
+
+# SSOT検証（Pre-commit hookで自動実行）
+bash scripts/validate-env-single-source.sh
+```
+
+### Pre-commit Hook（4段階検証）
+
+```bash
+git commit -m "feat: add feature"
+# → 自動実行:
+#   [1/4] Checking for hardcoded values...
+#   [2/4] Validating environment variables consistency...
+#   [3/4] Validating Single Source of Truth (.env.local)...  🆕
+#   [4/4] Running ESLint on staged files...
+```
+
+### 機密情報の管理
+
+| 情報タイプ       | 開発環境                | 本番環境                |
+| ---------------- | ----------------------- | ----------------------- |
+| 非機密情報       | `.env.local`            | `.env.local` または環境変数 |
+| 機密情報         | `.env.local`（ダミー値） | AWS Secrets Manager     |
+
+**機密情報の命名規則（自動除外）:**
+- `*_SECRET`
+- `*_KEY`
+- `*_PASSWORD`
+- `*_TOKEN`
+- `*_CREDENTIALS`
+
+**詳細:** [docs/07-development/ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md](docs/07-development/ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md)
 
 ---
 

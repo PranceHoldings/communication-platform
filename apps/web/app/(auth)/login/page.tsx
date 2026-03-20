@@ -30,7 +30,7 @@ export default function LoginPage() {
       const response = await authApi.login({ email, password });
 
       if (!response.success || !response.data) {
-        throw new Error(response.error?.message || t('auth.login.errors.serverError'));
+        throw new Error(response.error || t('auth.login.errors.serverError'));
       }
 
       // 認証情報を保存

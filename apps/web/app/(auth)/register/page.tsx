@@ -45,7 +45,7 @@ export default function RegisterPage() {
       const response = await authApi.register({ name, email, password });
 
       if (!response.success || !response.data) {
-        throw new Error(response.error?.message || t('auth.register.errors.serverError'));
+        throw new Error(response.error || t('auth.register.errors.serverError'));
       }
 
       // 認証情報を保存

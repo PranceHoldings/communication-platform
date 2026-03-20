@@ -3,10 +3,17 @@ import type { User } from '@prance/shared';
  * Authentication API
  */
 
-import { apiClient, ApiResponse } from './client';
+import { apiClient } from './client';
 
 // Re-export User type for convenience
 export type { User };
+
+// API Response wrapper type
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+}
 
 export interface AuthTokens {
   accessToken: string;
