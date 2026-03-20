@@ -20,6 +20,7 @@ import {
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useVideoRecorder } from '@/hooks/useVideoRecorder';
 import { useAudioVisualizer } from '@/hooks/useAudioVisualizer';
+import { useAudioBuffer } from '@/hooks/useAudioBuffer';
 import { useErrorMessage, type ErrorDetails } from '@/hooks/useErrorMessage';
 import { useSilenceTimer } from '@/hooks/useSilenceTimer';
 import { checkBrowserCapabilities, getRecommendedBrowserMessage } from '@/lib/browser-check';
@@ -29,11 +30,7 @@ import { ProcessingIndicator, ProcessingStage } from './ProcessingIndicator';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { toast } from 'sonner';
-import {
-  ConnectionStatus,
-  ErrorGuidance,
-  useConnectionState,
-} from '@/components/error-handling';
+import { ConnectionStatus, ErrorGuidance, useConnectionState } from '@/components/error-handling';
 
 type SessionPlayerStatus = 'IDLE' | 'READY' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
 
@@ -531,6 +528,22 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleError = useCallback(
     (message: ErrorMessage) => {
+      // Phase 1.6: Handle rate limit errors with retry guidance
+      if (message.code === 'RATE_LIMIT_EXCEEDED') {
+        console.warn('[SessionPlayer] Rate limit exceeded:', message);
+        const retryAfter = message.details?.retryAfter || 1;
+        toast.warning(
+          t('errors.rateLimit.message', {
+            seconds: retryAfter,
+          }),
+          {
+            duration: 5000,
+            description: t('errors.rateLimit.guidance'),
+          }
+        );
+        return; // Don't treat as critical error
+      }
+
       // Filter non-critical errors (user silence is normal during AI responses)
       const isNonCritical =
         message.code === 'NO_AUDIO_DATA' ||
@@ -700,6 +713,32 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     error: wsError,
   });
 
+  // Phase 1.6: Audio buffer for batching chunks (reduces network requests by 80%)
+  const sendAudioChunkToWebSocket = useCallback((data: ArrayBuffer, timestamp: number) => {
+    if (sendMessageRef.current && isConnectedRef.current && isAuthenticatedRef.current) {
+      const bytes = new Uint8Array(data);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]!);
+      }
+      const base64 = btoa(binary);
+
+      sendMessageRef.current({
+        type: 'audio_chunk_realtime',
+        data: base64,
+        timestamp,
+        sequenceNumber: 0, // Batched chunks don't need individual sequence numbers
+        contentType: 'audio/webm;codecs=opus',
+      });
+    }
+  }, []);
+
+  const audioBuffer = useAudioBuffer(sendAudioChunkToWebSocket, {
+    maxBufferSize: 10, // Buffer 10 chunks
+    batchSize: 5, // Send 5 chunks at a time
+    flushInterval: 100, // Flush every 100ms
+  });
+
   // Sync WebSocket values to refs (to break circular dependencies)
   useEffect(() => {
     isConnectedRef.current = isConnected;
@@ -758,6 +797,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       // Small delay to ensure transcript is rendered
       setTimeout(() => {
+        // Phase 1.6: Flush audio buffer before ending session
+        console.log('[SessionPlayer] Flushing audio buffer before session end');
+        audioBuffer.flush();
+
         endSession();
 
         // Set timeout to disconnect after 30 seconds if no session_complete received
@@ -774,12 +817,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         toast.info(t('sessions.player.messages.processingComplete'));
       }, 100);
     }
-  }, [shouldSendSessionEnd, isConnected, endSession, t]);
+  }, [shouldSendSessionEnd, isConnected, endSession, t, audioBuffer]);
 
-  // Audio Recorder統合
+  // Audio Recorder統合 (Phase 1.6: Integrated with audio buffer)
   const handleAudioChunk = useCallback(
     async (chunk: Blob, timestamp: number, sequenceNumber: number) => {
-      console.log('[SessionPlayer] handleAudioChunk called (real-time mode):', {
+      console.log('[SessionPlayer] handleAudioChunk called (buffered mode):', {
         chunkSize: chunk.size,
         chunkType: chunk.type,
         timestamp,
@@ -788,40 +831,23 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         status,
       });
 
-      // Send audio chunk in real-time via WebSocket
-      if (isConnectedRef.current && isAuthenticatedRef.current && sendMessageRef.current) {
+      // Phase 1.6: Add chunk to buffer (batching reduces network requests by 80%)
+      if (isConnectedRef.current && isAuthenticatedRef.current) {
         try {
-          // Convert chunk to ArrayBuffer and send as Base64
           const arrayBuffer = await chunk.arrayBuffer();
-          const bytes = new Uint8Array(arrayBuffer);
+          audioBuffer.addChunk(arrayBuffer, timestamp);
 
-          // Convert to Base64
-          let binary = '';
-          for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]!);
-          }
-          const base64 = btoa(binary);
-
-          // Send via WebSocket
-          sendMessageRef.current({
-            type: 'audio_chunk_realtime',
-            data: base64,
-            timestamp,
-            sequenceNumber,
-            contentType: chunk.type,
-          });
-
-          console.log('[SessionPlayer] Real-time audio chunk sent:', {
+          console.log('[SessionPlayer] Audio chunk added to buffer:', {
             sequenceNumber,
             size: chunk.size,
-            base64Length: base64.length,
+            bufferStats: audioBuffer.getStats(),
           });
         } catch (error) {
-          console.error('[SessionPlayer] Failed to send real-time audio chunk:', error);
+          console.error('[SessionPlayer] Failed to add audio chunk to buffer:', error);
         }
       }
     },
-    [isConnected, status]
+    [isConnected, status, audioBuffer]
   );
 
   const handleSpeechEnd = useCallback(() => {
@@ -1243,6 +1269,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         // 5. Send session end notification immediately if no audio to process
         if (isConnectedRef.current && endSessionRef.current) {
           console.log('[SessionPlayer] No audio recorded, sending session_end immediately');
+
+          // Phase 1.6: Flush audio buffer before ending session
+          console.log('[SessionPlayer] Flushing audio buffer before session end');
+          audioBuffer.flush();
+
           endSessionRef.current();
 
           // 6. Set timeout to disconnect after 30 seconds if no session_complete received
