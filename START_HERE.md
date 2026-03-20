@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-20 (Day 30 - Stage 3 完全完了)
-**現在の Phase:** Stage 3 E2E Real WebSocket Tests - 100%完了 ✅
-**E2Eテスト:** ✅ Stage 3 - 完全完了 (6/6 passing, 100%)
-**ステータス:** ✅ Stage 3 完全完了 - WebSocket統合100%動作、全テストPass
+**最終更新:** 2026-03-20 (Day 30 - Stage 3 Part 2準備完了)
+**現在の Phase:** Stage 3 Part 2 - 初期挨拶シナリオテスト準備中
+**E2Eテスト:** ✅ Stage 3 Part 1 - 完全完了 (6/6 passing, 100%)
+**ステータス:** ⏳ Stage 3 Part 2準備中 - データ作成完了、テストスイート作成待ち
 
 ---
 
@@ -59,7 +59,30 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 ### 最新達成
 
-**✅ Stage 3 E2E Real WebSocket Tests - 100%完了（2026-03-20 - Day 30）:**
+**✅ Stage 3 Part 2準備完了 + Lambda修正（2026-03-20 - Day 30）:**
+
+**1. Lambda関数バグ修正・デプロイ完了:**
+- 問題: シナリオ作成APIでLANGUAGE_DEFAULTS未定義エラー
+- 修正: `shared/config/defaults` からインポート追加
+- デプロイ: 98.57秒で完了 ✅
+- コミット: `d177ae5`
+
+**2. 初期挨拶シナリオ作成完了:**
+- Scenario ID: `4c781d7a-3bba-483f-88a2-c929ba6480e4`
+- Session ID: `f9f4e9a6-c3f9-4688-b999-1ce568d20cf7`
+- Avatar ID: `89c0236b-a02b-4cf3-ba50-4385f9d937ef`
+- Initial Greeting: "Hello! Welcome to your interview session..."
+- テストデータ保存: `apps/web/tests/e2e/test-data/greeting-scenario.json`
+
+**次のステップ:**
+- テストスイート作成: `stage3-part2-initial-greeting.spec.ts`
+- 推定所要時間: 30分
+
+---
+
+**過去の達成:**
+
+**✅ Stage 3 Part 1 - 100%完了（2026-03-20 - Day 30）:**
 
 **実装内容（Option A - UI Timing Improvements）:**
 
@@ -243,7 +266,7 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 ---
 
-### ✅ 完了：Stage 3 - 100%完全達成
+### ✅ 完了：Stage 3 Part 1 - 100%完全達成
 
 **達成:**
 - ✅ 選択肢B完了：S3-Real-002含む全テスト成功（6/6, 100%） ✅
@@ -251,6 +274,7 @@ cat docs/07-development/KNOWN_ISSUES.md
 - ✅ WebSocket統合100%動作確認
 - ✅ 全E2Eテスト成功（完璧な結果）
 - ✅ 完了レポート更新
+- ✅ コミット: `0329a7f`
 
 **詳細レポート:**
 ```bash
@@ -259,29 +283,34 @@ cat apps/web/tests/e2e/STAGE3_OPTION_A_COMPLETE.md
 
 ---
 
-### 🎯 次のアクション：選択肢C実施中
-
-#### 現在実施中：選択肢C - Part 2実装（初期挨拶シナリオ）
+### ⏳ 進行中：選択肢C - Part 2実装（初期挨拶シナリオ）
 
 **目的:** 初期挨拶付きシナリオで包括的テスト
 
-**アプローチ:**
-1. データベースに初期挨拶シナリオを追加
-2. 新規テストスイート作成（stage3-part2.spec.ts）
-3. より広範なシナリオカバレッジ
-   - 初期挨拶メッセージ検証
-   - Toast内容検証機能
-   - 複数ターン会話
+**進捗状況:**
+- ✅ Lambda関数バグ修正完了（LANGUAGE_DEFAULTS）
+- ✅ Lambda関数デプロイ完了（98.57秒）
+- ✅ 初期挨拶シナリオ作成完了
+  - Scenario ID: `4c781d7a-3bba-483f-88a2-c929ba6480e4`
+  - Session ID: `f9f4e9a6-c3f9-4688-b999-1ce568d20cf7`
+- ✅ テストデータJSON保存完了
+- ⏳ **次：テストスイート作成**
+
+**次のステップ（推定30分）:**
+1. `apps/web/tests/e2e/stage3-part2-initial-greeting.spec.ts` 作成
+   - S3-Part2-001: 初期挨拶メッセージ受信検証
+   - S3-Part2-002: Toast内容検証
+   - S3-Part2-003: 複数ターン会話フロー
+2. テスト実行・検証
+3. 完了レポート作成
 
 **期待結果:**
 - Part 1: ✅ 完了（6/6 tests, 100%）
 - Part 2: 2-3個の新規テスト成功
 
-**推定所要時間:** 1-2時間
-
 ---
 
-#### 選択肢C完了後：Phase 5へ移行
+### 🎯 選択肢C完了後：Phase 5へ移行
 
 **Phase 5: ランタイム設定管理システム（5-7日）**
 
@@ -291,6 +320,11 @@ cat apps/web/tests/e2e/STAGE3_OPTION_A_COMPLETE.md
 - UI上から設定変更（MAX_RESULTS, CLAUDE_TEMPERATURE等）
 - 3層キャッシュ（Lambda → ElastiCache → Aurora RDS）
 - A/Bテスト・緊急時のパラメータ調整対応
+
+**計画確認:**
+```bash
+cat docs/05-modules/RUNTIME_CONFIGURATION.md
+```
    - Toast内容検証機能
 ```
 
