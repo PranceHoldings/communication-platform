@@ -1,0 +1,79 @@
+{
+  "title": "ベンチマーク比較",
+  "description": "同条件のユーザーとパフォーマンスを比較",
+  "loading": "ベンチマークデータを読み込み中...",
+  "insufficientData": "比較に十分なデータがありません。より多くのセッションを完了してください。",
+  "sampleSize": "同条件の{count}名のユーザーと比較",
+  "noData": "ベンチマークデータはまだありません",
+  "yourScore": "あなたのスコア",
+  "average": "平均",
+  "median": "中央値",
+  "percentile": "パーセンタイル",
+  "zScore": "Z-スコア",
+  "deviationValue": "偏差値",
+  "excellent": "優秀",
+  "good": "良好",
+  "average_level": "平均的",
+  "belowAverage": "平均以下",
+  "needsImprovement": "要改善",
+  "metrics": {
+    "overallScore": "総合スコア",
+    "emotionScore": "感情コントロール",
+    "audioScore": "音声品質",
+    "contentScore": "内容品質",
+    "deliveryScore": "伝達力"
+  },
+  "statistics": {
+    "min": "最小値",
+    "max": "最大値",
+    "stdDev": "標準偏差",
+    "quartile25": "第1四分位数",
+    "quartile75": "第3四分位数"
+  },
+  "comparison": {
+    "title": "比較分析",
+    "description": "同条件のユーザーとの比較",
+    "aboveAverage": "平均以上のパフォーマンスです",
+    "atAverage": "平均的なパフォーマンスです",
+    "belowAverage": "改善の余地があります"
+  },
+  "growth": {
+    "title": "成長トラッキング",
+    "description": "時間経過による進捗",
+    "sessionNumber": "セッション #",
+    "noHistory": "成長を確認するには、より多くのセッションを完了してください",
+    "trend": "傾向",
+    "improving": "改善中",
+    "stable": "安定",
+    "declining": "低下",
+    "change": "前回からの変化",
+    "increase": "+{value}",
+    "decrease": "{value}",
+    "showing": "{total}件中{shown}件のセッションを表示"
+  },
+  "insights": {
+    "title": "AI分析による改善提案",
+    "description": "パフォーマンスに基づくパーソナライズされた提案",
+    "noIssues": "素晴らしい！すべての指標で良好なパフォーマンスです。",
+    "lowPerformance": "{metric}が平均以下です",
+    "belowAverage": "{metric}の改善が必要です",
+    "priority": {
+      "high": "優先度：高",
+      "medium": "優先度：中",
+      "low": "優先度：低"
+    },
+    "suggestions": {
+      "overallScore": "総合的なコミュニケーション能力の向上に注力しましょう。定期的な練習で自信を築きましょう。",
+      "emotionScore": "感情表現とコントロールに取り組みましょう。会話中に適切な感情を伝えるよう心がけましょう。",
+      "audioScore": "声の明瞭さとトーンを改善しましょう。はっきりと適度なペースで話しましょう。",
+      "contentScore": "話す前に考えを整理することで、内容の質を向上させましょう。",
+      "deliveryScore": "発音とイントネーションを練習して、伝達力を向上させましょう。"
+    }
+  },
+  "actions": {
+    "viewDetails": "詳細を見る",
+    "refresh": "データを更新",
+    "export": "レポートをエクスポート",
+    "share": "結果を共有"
+  }
+}

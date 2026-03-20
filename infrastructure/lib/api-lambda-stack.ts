@@ -24,6 +24,8 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   recordingsBucket: s3.Bucket;
   guestRateLimitTable: dynamodb.Table;
   sessionRateLimitTable: dynamodb.Table; // Phase 1.6: Token Bucket rate limiting
+  benchmarkCacheTable: dynamodb.Table; // Phase 4: Benchmark cache
+  userSessionHistoryTable: dynamodb.Table; // Phase 4: User session history for growth tracking
 }
 
 export class ApiLambdaStack extends cdk.Stack {
@@ -73,6 +75,9 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly authorizer: apigateway.TokenAuthorizer;
   // WebSocket Functions
   public readonly websocketDefaultFunction: nodejs.NodejsFunction;
+  // Phase 4: Benchmark System
+  public readonly getBenchmarkFunction: nodejs.NodejsFunction;
+  public readonly updateSessionHistoryFunction: nodejs.NodejsFunction;
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
     super(scope, id, props);
@@ -216,6 +221,9 @@ export class ApiLambdaStack extends cdk.Stack {
       GUEST_RATE_LIMIT_TABLE_NAME: props.guestRateLimitTable.tableName,
       BEDROCK_REGION: this.region,
       S3_BUCKET: props.recordingsBucket.bucketName,
+      // Phase 4: Benchmark System
+      DYNAMODB_BENCHMARK_CACHE_TABLE: props.benchmarkCacheTable.tableName,
+      DYNAMODB_USER_SESSION_HISTORY_TABLE: props.userSessionHistoryTable.tableName,
     };
 
     // Lambda共通設定
@@ -1491,6 +1499,88 @@ export class ApiLambdaStack extends cdk.Stack {
     // Lambda invoke permission for session analysis (auto-trigger on session_end)
     this.sessionAnalysisFunction.grantInvoke(this.websocketDefaultFunction);
 
+    // ==================== Phase 4: Benchmark System ====================
+
+    // GetBenchmark Lambda Function
+    this.getBenchmarkFunction = new nodejs.NodejsFunction(this, 'GetBenchmarkFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-benchmark-get-${props.environment}`,
+      description: 'Get benchmark data for user score comparison (Phase 4)',
+      entry: path.join(__dirname, '../lambda/benchmark/get/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      environment: {
+        ...commonEnvironment,
+        DYNAMODB_BENCHMARK_CACHE_TABLE: props.benchmarkCacheTable.tableName,
+        MIN_SAMPLE_SIZE: process.env.MIN_SAMPLE_SIZE!,
+      },
+      bundling: {
+        minify: props.environment === 'production',
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+      },
+    });
+
+    // UpdateSessionHistory Lambda Function
+    this.updateSessionHistoryFunction = new nodejs.NodejsFunction(
+      this,
+      'UpdateSessionHistoryFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-benchmark-update-history-${props.environment}`,
+        description: 'Update session history and benchmark cache (Phase 4)',
+        entry: path.join(__dirname, '../lambda/benchmark/update-history/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        environment: {
+          ...commonEnvironment,
+          DYNAMODB_BENCHMARK_CACHE_TABLE: props.benchmarkCacheTable.tableName,
+          DYNAMODB_USER_SESSION_HISTORY_TABLE: props.userSessionHistoryTable.tableName,
+          SESSION_HISTORY_TTL_DAYS: process.env.SESSION_HISTORY_TTL_DAYS!,
+          BENCHMARK_CACHE_TTL_DAYS: process.env.BENCHMARK_CACHE_TTL_DAYS!,
+        },
+        bundling: {
+          minify: props.environment === 'production',
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk', '@aws-sdk/*'],
+          nodeModules: ['@prisma/client'],
+          commandHooks: {
+            beforeBundling(_inputDir: string, _outputDir: string): string[] {
+              return [];
+            },
+            afterBundling(inputDir: string, outputDir: string): string[] {
+              return [
+                // Copy Prisma generated client
+                `mkdir -p ${outputDir}/node_modules/.prisma`,
+                `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+                // Copy Prisma schema
+                `mkdir -p ${outputDir}/prisma`,
+                `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+              ];
+            },
+            beforeInstall(): string[] {
+              return [];
+            },
+          },
+        },
+      }
+    );
+
+    // DynamoDB permissions for Benchmark functions
+    props.benchmarkCacheTable.grantReadData(this.getBenchmarkFunction);
+    props.benchmarkCacheTable.grantReadWriteData(this.updateSessionHistoryFunction);
+    props.userSessionHistoryTable.grantReadWriteData(this.updateSessionHistoryFunction);
+
+    // Database access for UpdateSessionHistory
+    props.databaseSecret.grantRead(this.updateSessionHistoryFunction);
+
     // ==================== API Gateway統合 ====================
 
     const healthIntegration = new apigateway.LambdaIntegration(this.healthCheckFunction, {
@@ -1717,6 +1807,20 @@ export class ApiLambdaStack extends cdk.Stack {
       }
     );
 
+    // Phase 4: Benchmark System Integrations
+    const getBenchmarkIntegration = new apigateway.LambdaIntegration(this.getBenchmarkFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const updateSessionHistoryIntegration = new apigateway.LambdaIntegration(
+      this.updateSessionHistoryFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
     // APIリソースの作成
     const apiV1 = this.restApi.root.resourceForPath('api/v1');
 
@@ -1824,6 +1928,24 @@ export class ApiLambdaStack extends cdk.Stack {
     // POST /api/v1/sessions/{id}/report (Generate PDF report)
     const reportResource = sessionIdResource.addResource('report');
     reportResource.addMethod('POST', generateReportIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Phase 4: Benchmark endpoints
+    const benchmarkResource = apiV1.addResource('benchmark');
+
+    // POST /api/v1/benchmark (Get benchmark data)
+    benchmarkResource.addMethod('POST', getBenchmarkIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/benchmark/update-history (Update session history)
+    const updateHistoryResource = benchmarkResource.addResource('update-history');
+    updateHistoryResource.addMethod('POST', updateSessionHistoryIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
@@ -2234,6 +2356,7 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseCluster.connections.allowDefaultPortFrom(this.deleteAvatarFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.cloneAvatarFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.generateReportFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.updateSessionHistoryFunction);
 
     new cdk.CfnOutput(this, 'MigrationFunctionName', {
       value: this.migrationFunction.functionName,

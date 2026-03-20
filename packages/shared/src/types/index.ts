@@ -850,6 +850,52 @@ export interface ScoreAssessment {
 }
 
 // ============================================================
+// Phase 4: Benchmark System
+// ============================================================
+
+export interface BenchmarkMetric {
+  metric: 'overallScore' | 'emotionScore' | 'audioScore' | 'contentScore' | 'deliveryScore';
+  value: number;
+  mean: number;
+  median: number;
+  stdDev: number;
+  min: number;
+  max: number;
+  p25: number;
+  p75: number;
+  zScore: number;
+  deviationValue: number;
+  percentileRank: number;
+}
+
+export interface BenchmarkData {
+  profileHash: string;
+  metrics: BenchmarkMetric[];
+  sampleSize: number;
+  sufficientData: boolean;
+}
+
+export interface SessionHistoryItem {
+  sessionId: string;
+  scenarioId: string;
+  completedAt: string;
+  overallScore: number;
+  emotionScore: number;
+  audioScore: number;
+  contentScore: number;
+  deliveryScore: number;
+  duration: number;
+}
+
+export interface UserAttributes {
+  age?: number;
+  gender?: string;
+  experience?: string;
+  industry?: string;
+  role?: string;
+}
+
+// ============================================================
 // API Response Types (SINGLE SOURCE OF TRUTH)
 // ============================================================
 

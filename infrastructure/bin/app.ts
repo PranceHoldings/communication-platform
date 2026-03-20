@@ -138,6 +138,8 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   recordingsBucket: storageStack.recordingsBucket,
   guestRateLimitTable: guestRateLimitStack.table,
   sessionRateLimitTable: dynamoDBStack.sessionRateLimitTable, // Phase 1.6: Token Bucket rate limiting
+  benchmarkCacheTable: dynamoDBStack.benchmarkCacheTable, // Phase 4: Benchmark cache
+  userSessionHistoryTable: dynamoDBStack.userSessionHistoryTable, // Phase 4: User session history
   description: 'Prance Platform - API Gateway, Lambda Functions, and Authorizer',
 });
 
