@@ -18,7 +18,6 @@
  */
 
 import type {
-  StandardAPIResponse,
   PaginationMeta,
 } from './api';
 
@@ -223,6 +222,9 @@ export type EndpointResponseType<T extends keyof typeof API_ENDPOINTS> =
 
 /**
  * Helper type to extract request type from endpoint definition
+ * Returns 'requestType' if it exists, otherwise never
  */
 export type EndpointRequestType<T extends keyof typeof API_ENDPOINTS> =
-  typeof API_ENDPOINTS[T]['requestType'];
+  'requestType' extends keyof typeof API_ENDPOINTS[T]
+    ? typeof API_ENDPOINTS[T]['requestType']
+    : never;
