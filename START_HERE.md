@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-20 09:05 UTC (Day 30 - Production デプロイ完了 🚀)
-**現在の Phase:** Production運用開始 🚀 - Phase 1-4完全デプロイ済み
-**E2Eテスト:** 35/35 (100%) ✅ - 全カテゴリー成功
-**ステータス:** 🚀 Production環境稼働中、Phase 1-4全機能デプロイ完了
+**最終更新:** 2026-03-20 10:30 UTC (Day 30 - Phase 1.5-1.6 再検証準備)
+**現在の Phase:** Phase 1.5-1.6 再検証開始 🔴 - セッション実行機能の完全動作確認
+**E2Eテスト:** ⚠️ 要検証 - 前回実行時63/73失敗（開発サーバー未起動が原因）
+**ステータス:** 🔴 Phase 1の完成度確認中、Production環境は稼働中
 
 ---
 
@@ -181,15 +181,181 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 ## 🎯 次のアクション
 
-### 🚀 ✅ 完了：Production環境デプロイ（2026-03-20 09:01 UTC）
+### 🔴 最優先：Phase 1.5-1.6 再検証（Day 30開始）
 
-**Phase 1-4のすべての機能がProduction環境で稼働中です！**
+**目的:** セッション実行機能の完全動作確認とE2Eテスト成功
+
+**背景:**
+- START_HERE.mdに「E2E 35/35 (100%)」と記載されていたが、実際は**63/73失敗**
+- Day 28の記録: Stage 2-3で0/20失敗（セッション実行機能が未実装または動作していない）
+- Phase 1の完成度が不明確な状態
+
+**検証手順:**
+
+#### Step 1: 環境準備と基本確認（10分）
+
+```bash
+# 1. 開発サーバー起動
+cd /workspaces/prance-communication-platform
+npm run dev
+
+# 別ターミナルで以下を実行
+
+# 2. サーバー起動待機（20秒）
+sleep 20
+
+# 3. ブラウザ動作確認
+# http://localhost:3000 にアクセス
+# ログイン → セッション一覧 → セッション詳細画面
+
+# 4. E2Eテスト実行（全Stage）
+cd apps/web
+npm run test:e2e
+```
+
+**期待結果:**
+- 開発サーバー起動済み → 成功率が向上するはず
+- Day 28の21/50 (42%)と比較
+- どのStageで失敗しているか特定
+
+#### Step 2: 結果分析とカテゴリ別確認（20分）
+
+**分析項目:**
+
+1. **Stage 0 (Smoke Tests):**
+   - ホームページ読み込み、ログインページアクセス
+   - 期待: 5/5成功
+
+2. **Stage 1 (Basic UI Flow):**
+   - セッション一覧、セッションプレイヤー表示
+   - 期待: 10/10成功
+
+3. **Stage 2 (Mocked Integration):**
+   - 🔴 重点項目: セッション開始ボタンクリック → ステータス遷移
+   - 期待: Day 28では0/10失敗 → 原因特定が必要
+
+4. **Stage 3 (Full E2E):**
+   - 🔴 重点項目: WebSocket接続、AI会話パイプライン
+   - 期待: Day 28では0/10失敗 → 原因特定が必要
+
+5. **Stage 4 (Recording):**
+   - 録画再生機能
+   - 期待: Day 28では10/10成功 → 再現するはず
+
+6. **Stage 5 (Analysis & Report):**
+   - 解析・レポート生成
+   - 期待: Day 28では1/10成功、9スキップ → データ依存
+
+#### Step 3: 問題の特定と詳細調査（30-60分）
+
+**Stage 2-3が失敗する場合:**
+
+1. **WebSocket接続確認:**
+   ```bash
+   # ブラウザ開発者ツール（F12）で確認
+   # Network タブ → WS フィルタ
+   # 接続状態: connected / disconnected / error
+   ```
+
+2. **セッション状態遷移確認:**
+   ```typescript
+   // apps/web/components/sessions/SessionPlayer.tsx
+   // useSessionState フックの動作を確認
+   // sessionStatus: 'IDLE' → 'READY' → 'IN_PROGRESS' → 'COMPLETED'
+   ```
+
+3. **Lambda関数ログ確認:**
+   ```bash
+   # WebSocket default Lambda
+   aws logs tail /aws/lambda/prance-websocket-default-dev --follow
+
+   # 期待されるログ:
+   # - WebSocket connection established
+   # - Message received: {"action": "startSession"}
+   # - STT processing started
+   # - AI response generated
+   # - TTS audio sent
+   ```
+
+4. **フロントエンドコンソールログ:**
+   ```bash
+   # ブラウザ開発者ツール（F12）→ Console
+   # エラーメッセージ、警告を確認
+   ```
+
+#### Step 4: 修正実施（状況に応じて）
+
+**想定される問題と修正:**
+
+**問題A: WebSocket接続が確立されない**
+```typescript
+// 原因: 認証トークンが正しく送信されていない
+// 修正: apps/web/lib/websocket/client.ts
+// Authorization ヘッダーの確認
+```
+
+**問題B: セッションステータスが遷移しない**
+```typescript
+// 原因: DynamoDB更新が失敗している
+// 修正: infrastructure/lambda/websocket/default/index.ts
+// updateSessionStatus 関数の確認
+```
+
+**問題C: AI応答が返ってこない**
+```typescript
+// 原因: Bedrock API呼び出しエラー
+// 修正: infrastructure/lambda/shared/ai/bedrock-claude.ts
+// エラーハンドリング追加
+```
+
+#### Step 5: 再テストと記録（20分）
+
+```bash
+# 修正後、再度E2Eテスト実行
+npm run test:e2e
+
+# 結果を記録
+# - 成功率: XX/73
+# - 各Stageの成功/失敗
+# - 修正した内容
+```
+
+#### Step 6: ドキュメント更新（10分）
+
+**更新ファイル:**
+- `START_HERE.md` - 正確なE2Eテスト結果を記載
+- `docs/09-progress/SESSION_HISTORY.md` - Day 30セッション記録追加
+- `docs/07-development/KNOWN_ISSUES.md` - Issue #5を更新（解決済み or 進行中）
+
+---
+
+### 📋 参考：過去の記録
+
+**Day 28 (2026-03-19) E2Eテスト結果:**
+```
+総合: 21/50 (42%)
+- Stage 1: 10/10 ✅
+- Stage 2: 0/10 ❌ (セッション開始ボタンクリック後、応答なし)
+- Stage 3: 0/10 ❌ (WebSocket接続が確立されない)
+- Stage 4: 10/10 ✅
+- Stage 5: 1/10 (9スキップ、解析データ不足)
+```
+
+**根本原因（Day 28分析）:**
+- セッション実行機能が未実装または動作していない
+- WebSocket通信、AI会話、リアルタイム録画の統合が不完全
+- Phase 1.5-1.6 (リアルタイム会話実装) が実際には完成していない
+
+---
+
+### 🔵 完了済み：Production環境デプロイ（2026-03-20 09:01 UTC）
+
+**Phase 4のすべての機能がProduction環境で稼働中です！**
 
 **デプロイ完了:**
-- ✅ DynamoDB Tables: BenchmarkCache v2, SessionHistory (08:57 UTC)
-- ✅ Lambda Functions: GetBenchmark, UpdateSessionHistory (09:01 UTC)
+- ✅ DynamoDB Tables: BenchmarkCache v2, SessionHistory
+- ✅ Lambda Functions: GetBenchmark, UpdateSessionHistory
 - ✅ API Endpoints: /api/v1/benchmark, /api/v1/benchmark/update-history
-- ✅ 全40+ Lambda関数更新完了
 
 **Production URLs:**
 - Frontend: https://app.prance.jp
@@ -198,55 +364,10 @@ cat docs/07-development/KNOWN_ISSUES.md
 - CDN: https://cdn.app.prance.jp
 
 **実装済み機能:**
-- ✅ Phase 1-1.6: MVP・リアルタイム会話・実用レベル化
 - ✅ Phase 2-2.5: 録画・解析・ゲストユーザー
 - ✅ Phase 3.1-3.4: Dev/Prod環境・E2Eテスト・環境変数管理
 - ✅ Phase 4: ベンチマークシステム（プロファイル比較、成長トラッキング、AI改善提案）
-
----
-
-### 🔵 推奨：本番環境監視・検証
-
-1. **動作確認:**
-   ```bash
-   # API Health Check
-   curl https://api.app.prance.jp/health
-
-   # Benchmark API Test (要認証)
-   curl -X POST https://api.app.prance.jp/api/v1/benchmark \
-     -H "Authorization: Bearer YOUR_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{"scenarioId": "test", "userScore": {...}}'
-   ```
-
-2. **CloudWatch監視:**
-   - Dashboard: https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=Prance-production-Performance
-   - Alarms: https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#alarmsV2:
-
-3. **ログ確認:**
-   ```bash
-   aws logs tail /aws/lambda/prance-benchmark-get-production --follow
-   aws logs tail /aws/lambda/prance-benchmark-update-history-production --follow
-   ```
-
----
-
-### 🟢 今後の拡張候補
-
-**Option 1: ベンチマークシステム拡張**
-- リアルタイムランキング
-- チーム/組織比較
-- カスタムベンチマーク
-- PDF/CSVエクスポート
-- 推定工数: 2-3日
-
-**Option 2: ATS連携実装（Phase 2.6）**
-- 6社対応（Greenhouse, Lever等）
-- 候補者同期、結果エクスポート
-- 推定工数: 3-4日
-
-**Option 3: Phase 5 - ランタイム設定管理**
-- UI上から設定変更（再起動不要）
+- ⚠️ Phase 1-1.6: MVP・リアルタイム会話 - **再検証中**
 - A/Bテスト、パラメータ最適化
 - 推定工数: 5-7日
 
