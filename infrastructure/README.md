@@ -24,13 +24,13 @@ AWS Cloud Development Kit (CDK) を使用したPranceプラットフォームの
 
 本プラットフォームは、お名前.comで取得したルートドメイン `prance.jp` を使用します。
 
-| 環境             | ドメイン                        | 説明             |
-| ---------------- | ------------------------------- | ---------------- |
-| **開発**         | `dev.app.prance.jp`     | 開発環境         |
-| **ステージング** | `staging.app.prance.jp` | ステージング環境 |
-| **本番**         | `platform.prance.jp`         | 本番環境         |
+| 環境             | Frontend              | REST API                | WebSocket            | CDN                   |
+| ---------------- | --------------------- | ----------------------- | -------------------- | --------------------- |
+| **開発**         | localhost:3000        | (API Gateway直接)       | (API Gateway直接)    | CloudFront            |
+| **ステージング** | staging.app.prance.jp | api.staging.app.prance.jp | ws.staging.app.prance.jp | cdn.staging.app.prance.jp |
+| **本番** ✅      | app.prance.jp         | api.app.prance.jp       | ws.app.prance.jp     | cdn.app.prance.jp     |
 
-**📖 詳細な設定手順:** [docs/DOMAIN_SETUP.md](docs/DOMAIN_SETUP.md)
+**📖 詳細な設定手順:** [../docs/06-infrastructure/DOMAIN_SETUP_SUMMARY.md](../docs/06-infrastructure/DOMAIN_SETUP_SUMMARY.md)
 
 ### 初回セットアップ（1回のみ）
 
@@ -216,11 +216,13 @@ npm run destroy
 
 ### Lambda Stack
 
-- **Runtime**: Node.js 20.x
+- **Runtime**: Node.js 22.x LTS (2026-03-06移行完了)
 - **Architecture**: ARM64 (Graviton2 - コスト削減20%)
 - **Tracing**: AWS X-Ray有効化
 - **Log Retention**: 本番1ヶ月、開発1週間
 - **Bundling**: esbuild（自動最適化）
+- **環境変数管理**: env-validator.ts 経由のみ（ハードコード禁止）
+- **依存関係検証**: Pre-deploy検証システム統合
 
 ## 📝 環境変数
 
@@ -334,69 +336,114 @@ bash deploy.sh dev
 - [CDK TypeScript API Reference](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-construct-library.html)
 - [Prance Platform 企画書](../CLAUDE.md)
 
-## 🔄 次のステップ
+## 🔄 プロジェクトステータス
 
-1. ✅ Phase 0: インフラ基盤構築（完了）
-2. ✅ 認証API実装（完了）- Register、Login、/users/me、Lambda Authorizer
-3. ⏭️ Phase 1: MVP開発（進行中）
-   - フロントエンド開発（Next.js）
-   - アバター・会話エンジン実装
-   - 音声・セッション実行機能
-4. ⏭️ Phase 2: Step Functions（非同期処理ワークフロー）
-5. ⏭️ Phase 3: EventBridge統合（イベント駆動）
+### 完了したPhase
 
----
+1. ✅ **Phase 0: インフラ基盤構築** (2026-03-05完了)
+2. ✅ **Phase 1: MVP開発** (2026-03-06完了)
+3. ✅ **Phase 2: 録画・解析・レポート** (2026-03-17完了)
+4. ✅ **Phase 3: Production環境構築** (2026-03-18完了)
+   - Dev環境（Lambda + API Gateway + CloudFront統合）
+   - Production環境（カスタムドメイン設定完了）
+   - E2Eテスト（Stage 1-5: 100%成功）
+5. ✅ **Phase 4: ベンチマークシステム** (2026-03-20完了)
 
-## 🎯 デプロイ済みAPI情報（2026-03-05）
+### 🎯 現在のデプロイ状況
 
-**API Base URL:** `https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/`
+#### Development環境
+- **Frontend (Local):** http://localhost:3000
+- **REST API:** https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1
+- **WebSocket:** wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
+- **CDN:** https://d3mx0sug5s3a6x.cloudfront.net
 
-**稼働中のエンドポイント:**
-
-```bash
-# ヘルスチェック
-GET /api/v1/health
-
-# 認証API
-POST /api/v1/auth/register     # ユーザー登録
-POST /api/v1/auth/login        # ログイン
-GET  /api/v1/users/me          # 現在のユーザー情報取得（認証必要）
-```
-
-**動作確認:**
-
-```bash
-# API Base URL設定
-API_URL="https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev"
-
-# 1. ヘルスチェック
-curl "$API_URL/api/v1/health"
-
-# 2. ユーザー登録
-curl -X POST "$API_URL/api/v1/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"SecurePass123","name":"Test User"}'
-
-# 3. ログイン
-TOKEN=$(curl -s -X POST "$API_URL/api/v1/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"SecurePass123"}' | jq -r '.data.tokens.accessToken')
-
-# 4. 認証済みAPI呼び出し
-curl -X GET "$API_URL/api/v1/users/me" \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-**Lambda関数一覧:**
-
-- `prance-authorizer-dev` - JWT Token検証
-- `prance-auth-register-dev` - ユーザー登録
-- `prance-auth-login-dev` - ログイン
-- `prance-users-me-dev` - ユーザー情報取得
-- `prance-health-check-dev` - ヘルスチェック
-- `prance-db-migration-dev` - DBマイグレーション
+#### Production環境
+- **Frontend:** https://app.prance.jp
+- **REST API:** https://api.app.prance.jp
+- **WebSocket:** wss://ws.app.prance.jp
+- **CDN:** https://cdn.app.prance.jp
 
 ---
 
-**最終更新**: 2026-03-05
-**バージョン**: 0.1.0-alpha
+## 🔴 環境変数管理システム（2026-03-20実装）
+
+### Single Source of Truth (SSOT)
+
+**原則:** `.env.local` のみが環境変数を定義、`infrastructure/.env` は自動生成
+
+```bash
+# ✅ 正しい手順
+echo "MY_NEW_VAR=value" >> .env.local
+bash scripts/sync-env-vars.sh
+
+# ❌ 禁止
+vim infrastructure/.env  # 手動編集禁止
+```
+
+### 自動同期システム
+
+```bash
+# 環境変数同期
+bash scripts/sync-env-vars.sh
+
+# SSOT検証
+bash scripts/validate-env-single-source.sh
+```
+
+### Pre-commit Hook（4段階検証）
+
+```bash
+git commit -m "feat: add feature"
+# → 自動実行:
+#   [1/4] Checking for hardcoded values...
+#   [2/4] Validating environment variables consistency...
+#   [3/4] Validating Single Source of Truth (.env.local)...
+#   [4/4] Running ESLint on staged files...
+```
+
+**詳細:** [../docs/07-development/ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md](../docs/07-development/ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md)
+
+---
+
+## 🔴 ハードコード防止システム（2026-03-20実装）
+
+### ESLint Custom Rules
+
+7つのカスタムルールでハードコードをリアルタイム検出：
+- AWS リージョン、言語コード、メディアフォーマット、AWS ドメイン等
+
+### env-validator.ts 経由のアクセス
+
+```typescript
+// ✅ 正しい
+import { getRequiredEnv, getAwsRegion } from '../../shared/utils/env-validator';
+const region = getAwsRegion();
+
+// ❌ 禁止
+const region = 'us-east-1';  // ハードコード
+const region = process.env.AWS_REGION || 'us-east-1';  // フォールバック
+```
+
+### VSCode Snippets
+
+- `lambda-full` - Lambda関数テンプレート（env-validator統合済み）
+- `import-env` - getRequiredEnv インポート
+- `env-get` - 環境変数取得
+
+**詳細:** [../docs/07-development/HARDCODE_PREVENTION_SYSTEM.md](../docs/07-development/HARDCODE_PREVENTION_SYSTEM.md)
+
+---
+
+## 📚 関連ドキュメント
+
+- **[../CLAUDE.md](../CLAUDE.md)** - プロジェクト全体概要
+- **[CLAUDE.md](CLAUDE.md)** - インフラ開発ガイド（詳細版）
+- **[../scripts/CLAUDE.md](../scripts/CLAUDE.md)** - スクリプト使用ガイド
+- **[../docs/07-development/LAMBDA_VERSION_MANAGEMENT.md](../docs/07-development/LAMBDA_VERSION_MANAGEMENT.md)** - Lambdaバージョン管理
+- **[../docs/06-infrastructure/AWS_SERVERLESS.md](../docs/06-infrastructure/AWS_SERVERLESS.md)** - AWSサーバーレス詳細
+
+---
+
+**最終更新**: 2026-03-20
+**バージョン**: 1.0.0
+**ステータス**: Production稼働中
