@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-20 14:10 UTC (Day 30 - Stage 2 Phase 1 Complete)
-**現在の Phase:** Stage 2 Phase 2 準備中 - Mock環境強化とテスト拡張
-**E2Eテスト:** ✅ Stage 2 Phase 1 Complete - 1/1 core test (100% pass rate)
-**ステータス:** 🟢 E2Eテスト基盤確立、Phase 2に向けて準備完了
+**最終更新:** 2026-03-20 16:30 UTC (Day 30 - Stage 2 Phase 2 Complete)
+**現在の Phase:** Stage 2 Complete - E2Eテスト基盤確立完了
+**E2Eテスト:** ✅ Stage 2 Complete - Phase 1 (1/1) + Phase 2 (1/1) = 2/2 tests (100% pass rate)
+**ステータス:** 🎉 Stage 2完了、Production Ready E2Eテストシステム確立
 
 ---
 
@@ -181,63 +181,67 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 ## 🎯 次のアクション
 
-### ✅ 前回完了：Stage 2 Phase 1 - WebSocket Core Tests (2026-03-20)
+### ✅ 前回完了：Stage 2 Phase 2 - Extended WebSocket Tests (2026-03-20)
 
 **達成:**
-- ✅ コアテスト作成完了 (stage2-core.spec.ts)
+- ✅ Mock拡張完了 (simulateFullConversation, waitForToast)
+- ✅ 拡張テスト作成完了 (stage2-extended.spec.ts)
 - ✅ テスト成功率: 0% → 100% (1/1)
-- ✅ 実行時間: ~1.5min → ~12s (87%削減)
-- ✅ コード量: 380行 → 115行 (70%削減)
-- ✅ レポート作成: STAGE2_PHASE1_COMPLETE.md, TEST_SPECIFICATION_ANALYSIS.md
-- ✅ コミット完了: fd66c0a
+- ✅ 実行時間: ~16s
+- ✅ カバレッジ: Processing stages, Multi-turn conversations, Error handling
+- ✅ レポート作成: STAGE2_PHASE2_COMPLETE.md
+- ✅ コミット完了: 22bbc5e
 
-**詳細:** `apps/web/tests/e2e/STAGE2_PHASE1_COMPLETE.md`
+**詳細:** `apps/web/tests/e2e/STAGE2_PHASE2_COMPLETE.md`
+
+**Stage 2 総括:**
+- Phase 1 (Core): 1/1 tests passing (100%)
+- Phase 2 (Extended): 1/1 tests passing (100%)
+- **Total: 2/2 tests passing (100%) ✅ Production Ready**
 
 ---
 
-### 🟢 現在のタスク：Stage 2 Phase 2 - Mock環境強化
+### 🟢 現在のタスク：次のステージ選択
 
-**目的:** 包括的なテストカバレッジのため Mock環境を強化
+**Stage 2完了により、以下の選択肢があります:**
 
-**実装予定:**
-1. **Processing Stage Tests**
-   - 自動 `processing_update` メッセージ送信
-   - STT → AI → TTS の段階的検証
+#### Option A: Stage 3 - Real Integration Tests (推奨)
 
-2. **Silence Timer Tests**
-   - Timer有効シナリオの作成
-   - Timer動作（リセット、一時停止）の検証
+**目的:** 実際のバックエンドサービスとの統合テスト
 
-3. **Error Handling Tests**
-   - Toast notification の検出
-   - エラーメッセージの検証
+**テスト対象:**
+- End-to-endオーディオ処理 (STT → AI → TTS)
+- リアルタイム処理ステージ更新
+- 実シナリオ設定での Silence Timer
+- 実際の失敗シナリオでのエラーハンドリング
 
-4. **Extended Conversation Tests**
-   - 複数ターン会話のシミュレーション
-   - Transcript の一貫性検証
+**推定時間:** 2-3時間
 
-**実施手順:**
+**優先度:** High - Mock環境の限界を超えて実環境での動作を検証
 
-#### Step 1: Mock拡張実装（30-45分）
+#### Option B: Stage 4 - Performance Tests
 
-```bash
-# WebSocketMock の自動 processing_update 機能
-# apps/web/tests/e2e/helpers/websocket-mock.ts に追加
+**目的:** 負荷テスト・パフォーマンス測定
 
-1. simulateFullConversation() メソッド作成
-   - User transcript送信
-   - Processing: AI stage
-   - AI response送信
-   - Processing: TTS stage
-   - Audio response送信
-   - Processing: idle
+**テスト対象:**
+- 同時接続数テスト
+- レスポンスタイム測定
+- メモリリーク検出
+- WebSocket接続安定性
 
-2. Timer有効シナリオ作成
-   - testSessionWithTimerId fixture 実装
-   - showSilenceTimer: true のシナリオ取得
+**推定時間:** 3-4時間
 
-3. Toast detection ヘルパー
-   - waitForToast() メソッド追加
+**優先度:** Medium - 実運用前のパフォーマンス検証
+
+#### Option C: 別プロジェクトタスク
+
+**利用可能なタスク:**
+- Phase 5: ランタイム設定管理システム（計画済み）
+- 新機能開発
+- バグ修正
+- ドキュメント整備
+
+**優先度:** User選択次第
    - Toast内容検証機能
 ```
 
