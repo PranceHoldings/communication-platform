@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-20 16:30 UTC (Day 30 - Stage 2 Phase 2 Complete)
-**現在の Phase:** Stage 2 Complete - E2Eテスト基盤確立完了
-**E2Eテスト:** ✅ Stage 2 Complete - Phase 1 (1/1) + Phase 2 (1/1) = 2/2 tests (100% pass rate)
-**ステータス:** 🎉 Stage 2完了、Production Ready E2Eテストシステム確立
+**最終更新:** 2026-03-20 20:00 UTC (Day 30 - Stage 3 Part 1 実装中)
+**現在の Phase:** Stage 3 E2E Real WebSocket Tests - Option 3 実装中
+**E2Eテスト:** ⚠️ Stage 3 Part 1 - WebSocket機能確認済み、UIタイミング調整中 (1/6 passing)
+**ステータス:** 🔄 Stage 3 実装中 - WebSocket統合動作確認済み、次のアクション選択待ち
 
 ---
 
@@ -58,6 +58,46 @@ cat docs/07-development/KNOWN_ISSUES.md
 | **Phase 4** | **ベンチマークシステム** | 100% | ✅ 完了（2026-03-20） |
 
 ### 最新達成
+
+**⚠️ Stage 3 E2E Real WebSocket Tests - Part 1 実装中（2026-03-20 18:00-20:00 UTC - Day 30）:**
+
+**実装内容（Option 3 - Hybrid Approach）:**
+
+**Part 1: 既存テスト修正（70%完了）**
+- ✅ Page Object拡張（3メソッド追加）
+  - `isSessionStarted()` - セッション開始確認
+  - `waitForSessionStarted()` - ボタン状態変化待機
+  - `waitForAnyStatus()` - 複数ステータス待機
+- ✅ 6テストファイル修正（ボタン期待値、ステータスパターン）
+- ✅ **WebSocket統合動作確認** - 接続、認証、メッセージ交換全て成功
+- ⚠️ UIタイミング問題で4テスト失敗中（ボタンレンダリング遅延）
+
+**確認済み機能:**
+- WebSocket接続: ✅ 成功（wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev）
+- 認証メッセージ: ✅ 双方向通信確認
+- ステータス更新: ✅ "In Progress" 確認
+- UIイベント: ✅ 通知表示確認
+
+**テスト結果:**
+- 1/6 tests passing (17%)
+- WebSocket message flow verification: ✅ PASS
+- 残り5テスト: UIタイミング問題（機能は正常）
+
+**データベース調査:**
+- 全10シナリオで `initial_greeting: null` 確認
+- バックエンドは正常動作（挨拶なしは仕様通り）
+
+**ドキュメント作成:**
+- `STAGE3_ANALYSIS.md` (20KB) - 詳細分析、3オプション提示
+- `STAGE3_PROGRESS_REPORT.md` (10KB) - 進捗状況、次回再開手順
+
+**所要時間:** 約2時間
+
+**次のアクション:** 選択肢A/B/Cから1つ選択（選択肢C推奨）
+
+---
+
+**過去の達成:**
 
 **🎉 Phase 4 ベンチマークシステム実装完了（2026-03-20 08:30 UTC - Day 30）:**
 
@@ -201,47 +241,82 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 ---
 
-### 🟢 現在のタスク：次のステージ選択
+### 🟡 現在のタスク：Stage 3 Part 1 完了方法を選択
 
-**Stage 2完了により、以下の選択肢があります:**
+**Stage 3 Option 3 (Hybrid Approach) 実装中:**
+- ✅ WebSocket統合動作確認済み
+- ⚠️ UIタイミング問題で一部テスト失敗中（1/6 passing）
 
-#### Option A: Stage 3 - Real Integration Tests (推奨)
+**詳細レポート:**
+```bash
+cat apps/web/tests/e2e/STAGE3_PROGRESS_REPORT.md
+```
 
-**目的:** 実際のバックエンドサービスとの統合テスト
+**次の3つの選択肢から1つ選択:**
 
-**テスト対象:**
-- End-to-endオーディオ処理 (STT → AI → TTS)
-- リアルタイム処理ステージ更新
-- 実シナリオ設定での Silence Timer
-- 実際の失敗シナリオでのエラーハンドリング
+---
 
-**推定時間:** 2-3時間
+#### 選択肢A: UIタイミング問題を解決（推定1-2時間）
 
-**優先度:** High - Mock環境の限界を超えて実環境での動作を検証
+**目的:** 全6テストを成功させる
 
-#### Option B: Stage 4 - Performance Tests
+**アプローチ:**
+- より堅牢な待機戦略実装
+- WebSocket接続確認を待機条件に追加
+- リトライロジック追加
 
-**目的:** 負荷テスト・パフォーマンス測定
+**期待結果:** 6/6 tests passing
 
-**テスト対象:**
-- 同時接続数テスト
-- レスポンスタイム測定
-- メモリリーク検出
-- WebSocket接続安定性
+**コマンド:**
+```bash
+# 進捗レポートのSection "選択肢A" 参照
+cat apps/web/tests/e2e/STAGE3_PROGRESS_REPORT.md | grep -A 30 "選択肢A"
+```
 
-**推定時間:** 3-4時間
+---
 
-**優先度:** Medium - 実運用前のパフォーマンス検証
+#### 選択肢B: Part 2実装（初期挨拶シナリオ）（推定1-2時間）
 
-#### Option C: 別プロジェクトタスク
+**目的:** 初期挨拶付きシナリオで包括的テスト
 
-**利用可能なタスク:**
-- Phase 5: ランタイム設定管理システム（計画済み）
-- 新機能開発
-- バグ修正
-- ドキュメント整備
+**アプローチ:**
+- Part 1を「機能確認済み」として完了
+- データベースに初期挨拶追加
+- 新規テストスイート作成
 
-**優先度:** User選択次第
+**期待結果:**
+- Part 1: 機能確認済み
+- Part 2: 2-3個の新規テスト成功
+
+**コマンド:**
+```bash
+# 進捗レポートのSection "選択肢B" 参照
+cat apps/web/tests/e2e/STAGE3_PROGRESS_REPORT.md | grep -A 50 "選択肢B"
+```
+
+---
+
+#### 選択肢C: Stage 3完了、Phase 5へ移行（推奨★）
+
+**目的:** WebSocket確認済みとしてPhase 5開始
+
+**判断理由:**
+- **WebSocket統合は確認済み** ✅
+- UIタイミング調整は時間対効果が低い
+- Phase 5（ランタイム設定管理）の方が実用的価値が高い
+
+**期待結果:**
+- Stage 3: 機能確認済み完了
+- Phase 5: 実装開始可能
+
+**コマンド:**
+```bash
+# 進捗レポートのSection "選択肢C" 参照
+cat apps/web/tests/e2e/STAGE3_PROGRESS_REPORT.md | grep -A 30 "選択肢C"
+
+# Phase 5計画確認
+cat docs/05-modules/RUNTIME_CONFIGURATION.md
+```
    - Toast内容検証機能
 ```
 

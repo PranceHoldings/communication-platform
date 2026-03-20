@@ -97,6 +97,32 @@ export class SessionPlayerPage {
   }
 
   /**
+   * Check if session has started (start button removed, pause/stop buttons visible)
+   */
+  async isSessionStarted(): Promise<boolean> {
+    const startButtonCount = await this.startButton.count();
+    const pauseButtonCount = await this.pauseButton.count();
+    const stopButtonCount = await this.stopButton.count();
+
+    return startButtonCount === 0 && pauseButtonCount > 0 && stopButtonCount > 0;
+  }
+
+  /**
+   * Wait for session to start (start button removed, control buttons visible)
+   */
+  async waitForSessionStarted(timeout = 10000): Promise<void> {
+    // Wait for start button to disappear
+    await expect(this.startButton).not.toBeVisible({ timeout });
+
+    // Give UI a moment to render control buttons
+    await this.page.waitForTimeout(500);
+
+    // Wait for control buttons to appear
+    await expect(this.pauseButton).toBeVisible({ timeout });
+    await expect(this.stopButton).toBeVisible({ timeout });
+  }
+
+  /**
    * Wait for status to change
    */
   async waitForStatus(status: SessionStatus, timeout = 10000): Promise<void> {
@@ -110,6 +136,29 @@ export class SessionPlayerPage {
     };
 
     await expect(this.statusBadge).toContainText(statusText[status], { timeout });
+  }
+
+  /**
+   * Wait for any of multiple statuses
+   */
+  async waitForAnyStatus(statuses: SessionStatus[], timeout = 10000): Promise<string> {
+    const statusText: Record<SessionStatus, RegExp> = {
+      IDLE: /not started/i,
+      CONNECTING: /connecting/i,
+      READY: /ready/i,
+      ACTIVE: /in progress|active/i,
+      COMPLETED: /completed/i,
+    };
+
+    // Combine all patterns
+    const patterns = statuses.map(s => statusText[s].source).join('|');
+    const combinedPattern = new RegExp(patterns, 'i');
+
+    await expect(this.statusBadge).toContainText(combinedPattern, { timeout });
+
+    // Return the actual status text
+    const actualText = await this.statusBadge.textContent();
+    return actualText || '';
   }
 
   /**
