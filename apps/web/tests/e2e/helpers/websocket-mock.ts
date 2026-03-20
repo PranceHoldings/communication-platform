@@ -283,7 +283,7 @@ export class WebSocketMock {
   }
 
   /**
-   * Full conversation flow helper
+   * Full conversation flow helper (simple version without processing updates)
    */
   async simulateConversation(userText: string, aiText: string, aiAudioUrl: string): Promise<void> {
     // 1. User transcript
@@ -296,5 +296,93 @@ export class WebSocketMock {
 
     // 3. Audio URL
     await this.sendAudioResponse(aiAudioUrl);
+  }
+
+  /**
+   * Full conversation flow with processing stages (enhanced version for Phase 2)
+   */
+  async simulateFullConversation(
+    userText: string,
+    aiText: string,
+    aiAudioUrl: string
+  ): Promise<void> {
+    console.log('[WebSocketMock] simulateFullConversation: Starting');
+
+    // 1. User speaks
+    await this.sendTranscript('USER', userText);
+    await this.page.waitForTimeout(200);
+
+    // 2. Processing: AI generating response
+    await this.sendProcessingUpdate('ai', 'Generating AI response...');
+    await this.page.waitForTimeout(200);
+
+    // 3. AI response ready
+    await this.sendAvatarResponse(aiText);
+    await this.page.waitForTimeout(200);
+
+    // 4. Processing: TTS synthesis
+    await this.sendProcessingUpdate('tts', 'Synthesizing speech...');
+    await this.page.waitForTimeout(200);
+
+    // 5. Audio ready
+    await this.sendAudioResponse(aiAudioUrl);
+    await this.page.waitForTimeout(200);
+
+    console.log('[WebSocketMock] simulateFullConversation: Complete');
+  }
+
+  /**
+   * Wait for toast notification to appear
+   */
+  async waitForToast(expectedText?: string, timeout = 5000): Promise<boolean> {
+    try {
+      // Common toast notification selectors
+      const toastSelectors = [
+        '[data-sonner-toaster]', // Sonner toast
+        '[data-sonner-toast]',
+        '.toast',
+        '[role="alert"]',
+        '[role="status"]',
+      ];
+
+      for (const selector of toastSelectors) {
+        const element = this.page.locator(selector);
+        const count = await element.count();
+
+        if (count > 0) {
+          if (expectedText) {
+            // Check if toast contains expected text
+            const text = await element.first().textContent();
+            if (text && text.toLowerCase().includes(expectedText.toLowerCase())) {
+              console.log(`[WebSocketMock] Found toast with text: "${expectedText}"`);
+              return true;
+            }
+          } else {
+            // Just check if toast exists
+            const isVisible = await element.first().isVisible();
+            if (isVisible) {
+              console.log(`[WebSocketMock] Found toast notification`);
+              return true;
+            }
+          }
+        }
+      }
+
+      // Try text-based search as fallback
+      if (expectedText) {
+        const textElement = this.page.getByText(expectedText, { exact: false });
+        const count = await textElement.count();
+        if (count > 0) {
+          console.log(`[WebSocketMock] Found toast by text: "${expectedText}"`);
+          return true;
+        }
+      }
+
+      console.log('[WebSocketMock] Toast not found');
+      return false;
+    } catch (error) {
+      console.log('[WebSocketMock] Error waiting for toast:', error);
+      return false;
+    }
   }
 }

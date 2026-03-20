@@ -311,4 +311,63 @@ export class SessionPlayerPage {
   async getSessionDuration(): Promise<string> {
     return (await this.duration.textContent()) || '0:00';
   }
+
+  /**
+   * Wait for toast notification
+   */
+  async waitForToast(expectedText?: string, timeout = 5000): Promise<boolean> {
+    console.log(`[PageObject] Waiting for toast${expectedText ? `: "${expectedText}"` : ''}`);
+
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+      // Try multiple toast selectors
+      const selectors = [
+        '[data-sonner-toaster]',
+        '[data-sonner-toast]',
+        '.toast',
+        '[role="alert"]',
+        '[role="status"]',
+      ];
+
+      for (const selector of selectors) {
+        const element = this.page.locator(selector);
+        const count = await element.count();
+
+        if (count > 0) {
+          const isVisible = await element.first().isVisible().catch(() => false);
+          if (isVisible) {
+            if (expectedText) {
+              const text = await element.first().textContent().catch(() => '');
+              if (text.toLowerCase().includes(expectedText.toLowerCase())) {
+                console.log(`[PageObject] Found toast with expected text`);
+                return true;
+              }
+            } else {
+              console.log(`[PageObject] Found toast notification`);
+              return true;
+            }
+          }
+        }
+      }
+
+      // Try text-based search
+      if (expectedText) {
+        const textLocator = this.page.getByText(expectedText, { exact: false });
+        const count = await textLocator.count();
+        if (count > 0) {
+          const isVisible = await textLocator.first().isVisible().catch(() => false);
+          if (isVisible) {
+            console.log(`[PageObject] Found toast by text search`);
+            return true;
+          }
+        }
+      }
+
+      await this.page.waitForTimeout(200);
+    }
+
+    console.log(`[PageObject] Toast not found within ${timeout}ms`);
+    return false;
+  }
 }
