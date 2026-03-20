@@ -12,28 +12,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
 // デバッグ: API URL確認
 console.log('[API Client] Base URL:', API_BASE_URL);
 
-/**
- * @deprecated Use StandardAPIResponse from @prance/shared instead
- * Kept for backward compatibility during migration
- */
-export interface StandardAPIResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
-}
-
-/**
- * @deprecated Use StandardErrorResponse from @prance/shared instead
- */
-export interface ApiError {
-  code: string;
-  message: string;
-  details?: unknown;
-}
 
 class ApiClient {
   private baseUrl: string;
@@ -83,7 +61,7 @@ class ApiClient {
       if (!response.ok) {
         return {
           success: false,
-          error: (data as { error?: ApiError }).error || {
+          error: (data as any).error || {
             code: 'UNKNOWN_ERROR',
             message: 'An unknown error occurred',
           },
