@@ -493,3 +493,60 @@ model GuestSessionLog {
   @@index([createdAt])
   @@map("guest_session_logs")
 }
+
+// ============================================================
+// ランタイム設定管理（Runtime Configuration Management）
+// ============================================================
+
+model RuntimeConfig {
+  key          String            @id // 設定キー（PRIMARY KEY）
+  value        Json // 設定値（JSON）
+  dataType     RuntimeConfigDataType @map("data_type") // データ型
+  category     RuntimeConfigCategory // カテゴリ
+  defaultValue Json              @map("default_value") // デフォルト値
+  minValue     Float?            @map("min_value") // 最小値（数値の場合）
+  maxValue     Float?            @map("max_value") // 最大値（数値の場合）
+  description  String // 説明
+  updatedAt    DateTime          @updatedAt @map("updated_at") // 最終更新日時
+  updatedBy    String?           @map("updated_by") // 最終更新者（User ID）
+
+  history RuntimeConfigHistory[]
+
+  @@index([category])
+  @@index([updatedAt])
+  @@map("runtime_configs")
+}
+
+enum RuntimeConfigDataType {
+  NUMBER
+  STRING
+  BOOLEAN
+  JSON
+}
+
+enum RuntimeConfigCategory {
+  QUERY_PROCESSING    // クエリ・処理パラメータ
+  AI_PROCESSING       // AI処理パラメータ
+  AUDIO_PROCESSING    // 音声処理パラメータ
+  SCORE_CALCULATION   // スコア計算パラメータ
+  SECURITY            // セキュリティパラメータ
+  SYSTEM              // システムパラメータ
+}
+
+model RuntimeConfigHistory {
+  id        String   @id @default(uuid())
+  key       String // 設定キー
+  oldValue  Json     @map("old_value") // 変更前の値
+  newValue  Json     @map("new_value") // 変更後の値
+  changedBy String   @map("changed_by") // 変更者（User ID）
+  changedAt DateTime @default(now()) @map("changed_at") // 変更日時
+  reason    String? // 変更理由
+  ipAddress String?  @map("ip_address") // IPアドレス
+
+  config RuntimeConfig @relation(fields: [key], references: [key], onDelete: Cascade)
+
+  @@index([key])
+  @@index([changedAt])
+  @@index([changedBy])
+  @@map("runtime_config_history")
+}

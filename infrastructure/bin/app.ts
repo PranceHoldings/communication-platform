@@ -15,6 +15,7 @@ import { DnsStack } from '../lib/dns-stack';
 import { CertificateStack } from '../lib/certificate-stack';
 import { MonitoringStack } from '../lib/monitoring-stack';
 import { ApiGatewayDomainStack } from '../lib/api-gateway-domain-stack';
+import { ElastiCacheStack } from '../lib/elasticache-stack';
 // import { NextJsLambdaStack } from '../lib/nextjs-lambda-stack'; // Temporarily disabled for Phase 1.6
 import { getConfig } from '../lib/config';
 
@@ -126,6 +127,14 @@ const guestRateLimitStack = new GuestRateLimitStack(app, `${stackPrefix}-GuestRa
   description: 'Prance Platform - Guest Session Rate Limiting',
 });
 
+// ElastiCache スタック（Phase 5: Runtime Configuration Management）
+const elastiCacheStack = new ElastiCacheStack(app, `${stackPrefix}-ElastiCache`, {
+  env,
+  vpc: networkStack.vpc,
+  environment: config,
+  description: 'Prance Platform - ElastiCache Serverless for Runtime Config',
+});
+
 // API + Lambda + Authorizerスタック（完全統合）
 const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   env,
@@ -193,10 +202,12 @@ if (certificateStack) {
 }
 databaseStack.addDependency(networkStack);
 cognitoStack.addDependency(networkStack);
+elastiCacheStack.addDependency(networkStack);
 apiLambdaStack.addDependency(networkStack);
 apiLambdaStack.addDependency(databaseStack);
 apiLambdaStack.addDependency(dynamoDBStack);
 apiLambdaStack.addDependency(storageStack);
+apiLambdaStack.addDependency(elastiCacheStack);
 monitoringStack.addDependency(apiLambdaStack);
 apiGatewayDomainStack.addDependency(apiLambdaStack);
 // nextJsLambdaStack.addDependency(apiGatewayDomainStack); // API URLsが先に必要 // Disabled for Phase 1.6
