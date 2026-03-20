@@ -237,6 +237,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleAvatarResponse = useCallback(
     (message: AvatarResponseMessage) => {
+      const timestamp = new Date().toISOString();
+      console.log(`[WS_SEQ ${timestamp}] SessionPlayer.handleAvatarResponse: ${message.type}`, message.text?.substring(0, 50));
       // AIアバターの応答
       if (message.type === 'avatar_response_partial') {
         // Partial AI response - update transcript
@@ -272,9 +274,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         setProcessingMessage('');
       } else if (message.type === 'avatar_response_final') {
         // Final AI response
+        const timestamp2 = new Date().toISOString();
+        console.log(`[WS_SEQ ${timestamp2}] SessionPlayer: Adding avatar_response_final to transcript:`, message.text?.substring(0, 50));
         setTranscript(prev => {
+          console.log(`[WS_SEQ ${timestamp2}] SessionPlayer: Previous transcript length:`, prev.length);
           const filtered = prev.filter(item => !item.partial || item.speaker !== 'AI');
-          return [
+          console.log(`[WS_SEQ ${timestamp2}] SessionPlayer: After filtering partial AI, length:`, filtered.length);
+          const newTranscript = [
             ...filtered,
             {
               id: `ai-${message.timestamp}`,
@@ -284,6 +290,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               partial: false,
             },
           ];
+          console.log(`[WS_SEQ ${timestamp2}] SessionPlayer: NEW transcript length:`, newTranscript.length);
+          return newTranscript;
         });
 
         // Clear processing timeout (AI response received successfully)
@@ -1003,6 +1011,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     (orgSettings?.enableSilencePrompt === false
       ? false // Parent setting disabled -> force child setting to false
       : (orgSettings?.showSilenceTimer ?? DEFAULT_ORG_SETTINGS.showSilenceTimer));
+
+  console.log('[SessionPlayer] effectiveShowSilenceTimer calculation:', {
+    scenarioShowSilenceTimer: scenario.showSilenceTimer,
+    orgShowSilenceTimer: orgSettings?.showSilenceTimer,
+    effectiveShowSilenceTimer,
+  });
 
   const effectiveSilenceTimeout =
     scenario.silenceTimeout ?? orgSettings?.silenceTimeout ?? DEFAULT_ORG_SETTINGS.silenceTimeout;

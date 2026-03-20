@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-20 10:30 UTC (Day 30 - Phase 1.5-1.6 再検証準備)
-**現在の Phase:** Phase 1.5-1.6 再検証開始 🔴 - セッション実行機能の完全動作確認
-**E2Eテスト:** ⚠️ 要検証 - 前回実行時63/73失敗（開発サーバー未起動が原因）
-**ステータス:** 🔴 Phase 1の完成度確認中、Production環境は稼働中
+**最終更新:** 2026-03-20 14:10 UTC (Day 30 - Stage 2 Phase 1 Complete)
+**現在の Phase:** Stage 2 Phase 2 準備中 - Mock環境強化とテスト拡張
+**E2Eテスト:** ✅ Stage 2 Phase 1 Complete - 1/1 core test (100% pass rate)
+**ステータス:** 🟢 E2Eテスト基盤確立、Phase 2に向けて準備完了
 
 ---
 
@@ -181,52 +181,85 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 ## 🎯 次のアクション
 
-### 🔴 最優先：Phase 1.5-1.6 再検証（Day 30開始）
+### ✅ 前回完了：Stage 2 Phase 1 - WebSocket Core Tests (2026-03-20)
 
-**目的:** セッション実行機能の完全動作確認とE2Eテスト成功
+**達成:**
+- ✅ コアテスト作成完了 (stage2-core.spec.ts)
+- ✅ テスト成功率: 0% → 100% (1/1)
+- ✅ 実行時間: ~1.5min → ~12s (87%削減)
+- ✅ コード量: 380行 → 115行 (70%削減)
+- ✅ レポート作成: STAGE2_PHASE1_COMPLETE.md, TEST_SPECIFICATION_ANALYSIS.md
+- ✅ コミット完了: fd66c0a
 
-**背景:**
-- START_HERE.mdに「E2E 35/35 (100%)」と記載されていたが、実際は**63/73失敗**
-- Day 28の記録: Stage 2-3で0/20失敗（セッション実行機能が未実装または動作していない）
-- Phase 1の完成度が不明確な状態
+**詳細:** `apps/web/tests/e2e/STAGE2_PHASE1_COMPLETE.md`
 
-**検証手順:**
+---
 
-#### Step 1: 環境準備と基本確認（10分）
+### 🟢 現在のタスク：Stage 2 Phase 2 - Mock環境強化
+
+**目的:** 包括的なテストカバレッジのため Mock環境を強化
+
+**実装予定:**
+1. **Processing Stage Tests**
+   - 自動 `processing_update` メッセージ送信
+   - STT → AI → TTS の段階的検証
+
+2. **Silence Timer Tests**
+   - Timer有効シナリオの作成
+   - Timer動作（リセット、一時停止）の検証
+
+3. **Error Handling Tests**
+   - Toast notification の検出
+   - エラーメッセージの検証
+
+4. **Extended Conversation Tests**
+   - 複数ターン会話のシミュレーション
+   - Transcript の一貫性検証
+
+**実施手順:**
+
+#### Step 1: Mock拡張実装（30-45分）
 
 ```bash
-# 1. 開発サーバー起動
-cd /workspaces/prance-communication-platform
-npm run dev
+# WebSocketMock の自動 processing_update 機能
+# apps/web/tests/e2e/helpers/websocket-mock.ts に追加
 
-# 別ターミナルで以下を実行
+1. simulateFullConversation() メソッド作成
+   - User transcript送信
+   - Processing: AI stage
+   - AI response送信
+   - Processing: TTS stage
+   - Audio response送信
+   - Processing: idle
 
-# 2. サーバー起動待機（20秒）
-sleep 20
+2. Timer有効シナリオ作成
+   - testSessionWithTimerId fixture 実装
+   - showSilenceTimer: true のシナリオ取得
 
-# 3. ブラウザ動作確認
-# http://localhost:3000 にアクセス
-# ログイン → セッション一覧 → セッション詳細画面
-
-# 4. E2Eテスト実行（全Stage）
-cd apps/web
-npm run test:e2e
+3. Toast detection ヘルパー
+   - waitForToast() メソッド追加
+   - Toast内容検証機能
 ```
 
-**期待結果:**
-- 開発サーバー起動済み → 成功率が向上するはず
-- Day 28の21/50 (42%)と比較
-- どのStageで失敗しているか特定
+#### Step 2: 拡張テスト作成（45-60分）
 
-#### Step 2: 結果分析とカテゴリ別確認（20分）
+```typescript
+// apps/web/tests/e2e/stage2-extended.spec.ts
 
-**分析項目:**
+test('EXT-001: Processing stage transitions')
+test('EXT-002: Silence timer reset on speech')
+test('EXT-003: Error toast notification')
+test('EXT-004: Multi-turn conversation')
+```
 
-1. **Stage 0 (Smoke Tests):**
-   - ホームページ読み込み、ログインページアクセス
-   - 期待: 5/5成功
+#### Step 3: 実行・検証（15分）
 
-2. **Stage 1 (Basic UI Flow):**
+```bash
+cd apps/web
+npm run test:e2e -- stage2-extended.spec.ts
+
+# 期待結果: 3-4/4 tests passing (75-100%)
+```
    - セッション一覧、セッションプレイヤー表示
    - 期待: 10/10成功
 

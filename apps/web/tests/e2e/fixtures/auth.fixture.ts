@@ -20,8 +20,18 @@ export const TEST_USER = {
 export async function login(page: Page): Promise<void> {
   // Listen for console messages (for debugging)
   page.on('console', (msg) => {
+    const text = msg.text();
     if (msg.type() === 'error') {
-      console.log(`❌ Browser Console Error: ${msg.text()}`);
+      console.log(`❌ Browser Console Error: ${text}`);
+    } else if (
+      text.includes('[WS_SEQ]') ||
+      text.includes('[useWebSocket]') ||
+      text.includes('[SessionPlayer]') ||
+      text.includes('[MockWebSocket') ||
+      text.includes('[WebSocketMock') ||
+      text.includes('[PageObject]')
+    ) {
+      console.log(text);  // Print as-is to preserve timestamp formatting
     }
   });
 

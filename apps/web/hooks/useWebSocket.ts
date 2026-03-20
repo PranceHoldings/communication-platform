@@ -158,9 +158,11 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
+      const timestamp = new Date().toISOString();
+      console.log(`[WS_SEQ ${timestamp}] <<<< RECEIVED RAW:`, event.data);
       try {
         const message = JSON.parse(event.data) as ServerToClientMessage;
-        console.log('WebSocket message received:', message);
+        console.log(`[WS_SEQ ${timestamp}] <<<< PARSED:`, message.type, JSON.stringify(message).substring(0, 100));
 
         // Ignore empty messages
         if (!message || typeof message !== 'object' || Object.keys(message).length === 0) {
@@ -191,16 +193,19 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         switch (message.type) {
           case 'transcript_partial':
           case 'transcript_final':
+            console.log(`[WS_SEQ] → Calling onTranscript callback`);
             onTranscriptRef.current?.(message as unknown as TranscriptMessage);
             break;
 
           case 'avatar_response':
           case 'avatar_response_partial':
           case 'avatar_response_final':
+            console.log(`[WS_SEQ] → Calling onAvatarResponse callback for: ${message.type}`);
             onAvatarResponseRef.current?.(message as unknown as AvatarResponseMessage);
             break;
 
           case 'audio_response':
+            console.log(`[WS_SEQ] → Calling onAudioResponse callback`);
             onAudioResponseRef.current?.(message as unknown as AudioResponseMessage);
             break;
 
@@ -239,12 +244,19 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             break;
 
           case 'authenticated':
-            console.log('Authentication confirmed:', message);
+            console.log('[useWebSocket] Entered authenticated case');
+            console.log('[useWebSocket] Authentication confirmed:', message);
             const authMessage = message as any;
             const authSessionId = authMessage.sessionId;
             const authInitialGreeting = authMessage.initialGreeting;
+            console.log('[useWebSocket] authSessionId:', authSessionId);
+            console.log('[useWebSocket] authInitialGreeting:', authInitialGreeting);
+            console.log('[useWebSocket] onAuthenticatedRef.current exists:', !!onAuthenticatedRef.current);
             if (authSessionId) {
+              console.log('[useWebSocket] Calling onAuthenticatedRef.current with sessionId:', authSessionId);
               onAuthenticatedRef.current?.(authSessionId, authInitialGreeting);
+            } else {
+              console.warn('[useWebSocket] No authSessionId, skipping callback');
             }
             break;
 
