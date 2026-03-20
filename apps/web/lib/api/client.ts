@@ -1,13 +1,22 @@
 /**
  * API Client for Prance Platform
+ *
+ * CRITICAL: Uses StandardAPIResponse from @prance/shared
+ * This ensures type safety between Frontend (caller) and Lambda (callee)
  */
+
+import type { StandardAPIResponse, isSuccessResponse } from '@prance/shared';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 // デバッグ: API URL確認
 console.log('[API Client] Base URL:', API_BASE_URL);
 
-export interface ApiResponse<T> {
+/**
+ * @deprecated Use StandardAPIResponse from @prance/shared instead
+ * Kept for backward compatibility during migration
+ */
+export interface StandardAPIResponse<T> {
   success: boolean;
   data?: T;
   error?: {
@@ -17,6 +26,9 @@ export interface ApiResponse<T> {
   };
 }
 
+/**
+ * @deprecated Use StandardErrorResponse from @prance/shared instead
+ */
 export interface ApiError {
   code: string;
   message: string;
@@ -30,7 +42,7 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<StandardAPIResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
 
     const headers: Record<string, string> = {
@@ -66,7 +78,7 @@ class ApiClient {
         ok: response.ok,
       });
 
-      const data = (await response.json()) as ApiResponse<T>;
+      const data = (await response.json()) as StandardAPIResponse<T>;
 
       if (!response.ok) {
         return {
@@ -91,32 +103,32 @@ class ApiClient {
     }
   }
 
-  async get<T>(endpoint: string): Promise<ApiResponse<T>> {
+  async get<T>(endpoint: string): Promise<StandardAPIResponse<T>> {
     return this.request<T>(endpoint, { method: 'GET' });
   }
 
-  async post<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, body?: unknown): Promise<StandardAPIResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
 
-  async put<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, body?: unknown): Promise<StandardAPIResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
 
-  async patch<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
+  async patch<T>(endpoint: string, body?: unknown): Promise<StandardAPIResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PATCH',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
 
-  async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
+  async delete<T>(endpoint: string): Promise<StandardAPIResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
@@ -142,7 +154,7 @@ class ApiClient {
    * Unwrap API response and throw error if not successful
    * Reduces boilerplate in API functions
    */
-  unwrapResponse<T>(response: ApiResponse<T>): T {
+  unwrapResponse<T>(response: StandardAPIResponse<T>): T {
     if (!response.success || !response.data) {
       throw new Error(response.error?.message || 'Request failed');
     }
@@ -152,7 +164,7 @@ class ApiClient {
   /**
    * Unwrap API response for void/delete operations
    */
-  unwrapVoidResponse(response: ApiResponse<any>): void {
+  unwrapVoidResponse(response: StandardAPIResponse<any>): void {
     if (!response.success) {
       throw new Error(response.error?.message || 'Request failed');
     }

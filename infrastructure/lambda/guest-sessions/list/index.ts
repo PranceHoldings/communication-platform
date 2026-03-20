@@ -12,6 +12,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PrismaClient, GuestSessionStatus } from '@prisma/client';
 import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
+import { successResponse, errorResponse } from '../../shared/utils/response';
 
 const prisma = new PrismaClient();
 
@@ -74,11 +75,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // 1. Authentication check
     const authHeader = event.headers.Authorization || event.headers.authorization;
     if (!authHeader) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing authorization header' }),
-      };
+      return errorResponse(401, 'Missing authorization header');
     }
 
     const token = extractTokenFromHeader(authHeader);
@@ -95,14 +92,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       userData.role !== 'CLIENT_USER' &&
       userData.role !== 'SUPER_ADMIN'
     ) {
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error:
-            'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can list guest sessions',
-        }),
-      };
+      return errorResponse(
+        403,
+        'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can list guest sessions'
+      );
     }
 
     // 2. Parse query parameters
@@ -119,20 +112,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     // Validate limit
     if (query.limit! < 1 || query.limit! > 100) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Limit must be between 1 and 100' }),
-      };
+      return errorResponse(400, 'Limit must be between 1 and 100');
     }
 
     // Validate offset
     if (query.offset! < 0) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Offset must be non-negative' }),
-      };
+      return errorResponse(400, 'Offset must be non-negative');
     }
 
     // Validate status enum
@@ -140,11 +125,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       query.status &&
       !['PENDING', 'ACTIVE', 'COMPLETED', 'EXPIRED', 'REVOKED'].includes(query.status)
     ) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Invalid status value' }),
-      };
+      return errorResponse(400, 'Invalid status value');
     }
 
     console.log('[ListGuestSessions] Query params:', query);
@@ -257,25 +238,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       },
     };
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify(response),
-    };
+    return successResponse(response);
   } catch (error) {
     console.error('[ListGuestSessions] Error:', error);
 
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    return errorResponse(error instanceof Error ? error : new Error('Internal server error'), 500);
   } finally {
     await prisma.$disconnect();
   }

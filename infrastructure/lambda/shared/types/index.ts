@@ -19,6 +19,9 @@
 // Export organization types
 export * from './organization';
 
+// Export API response types (ENFORCED)
+export * from './api-response';
+
 // ========================================
 // Enum Types (Prisma Schema aligned)
 // ========================================

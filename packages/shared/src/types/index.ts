@@ -848,3 +848,10 @@ export interface ScoreAssessment {
   description: string;
   color: string; // For UI display
 }
+
+// ============================================================
+// API Response Types (SINGLE SOURCE OF TRUTH)
+// ============================================================
+
+export * from './api';
+export * from './api-endpoints';
