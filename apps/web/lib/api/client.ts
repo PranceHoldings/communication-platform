@@ -5,7 +5,8 @@
  * This ensures type safety between Frontend (caller) and Lambda (callee)
  */
 
-import type { StandardAPIResponse, isSuccessResponse } from '@prance/shared';
+import type { StandardAPIResponse } from '@prance/shared';
+import { isSuccessResponse } from '@prance/shared';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -133,8 +134,8 @@ class ApiClient {
    * Reduces boilerplate in API functions
    */
   unwrapResponse<T>(response: StandardAPIResponse<T>): T {
-    if (!response.success || !response.data) {
-      throw new Error(response.error?.message || 'Request failed');
+    if (!isSuccessResponse(response)) {
+      throw new Error(response.error.message || 'Request failed');
     }
     return response.data;
   }
@@ -143,8 +144,8 @@ class ApiClient {
    * Unwrap API response for void/delete operations
    */
   unwrapVoidResponse(response: StandardAPIResponse<any>): void {
-    if (!response.success) {
-      throw new Error(response.error?.message || 'Request failed');
+    if (!isSuccessResponse(response)) {
+      throw new Error(response.error.message || 'Request failed');
     }
   }
 }

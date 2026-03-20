@@ -4,7 +4,7 @@
  * Encapsulates selectors and actions for Analysis and Report components.
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 
 export class AnalysisPage {
   readonly page: Page;
@@ -184,7 +184,7 @@ export class AnalysisPage {
   async getAverageConfidence(): Promise<number> {
     const text = await this.averageConfidence.textContent();
     const match = text?.match(/(\d+)%/);
-    return match ? parseInt(match[1], 10) : 0;
+    return match ? parseInt(match[1]!, 10) : 0;
   }
 
   /**

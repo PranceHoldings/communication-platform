@@ -4,7 +4,7 @@
  * Encapsulates selectors and actions for the Recording Player component.
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 
 export class RecordingPlayerPage {
   readonly page: Page;
@@ -213,7 +213,7 @@ export class RecordingPlayerPage {
     const items = await this.transcriptItems.all();
 
     for (let i = 0; i < items.length; i++) {
-      const isActive = await items[i].getAttribute('data-active');
+      const isActive = await items[i]!.getAttribute('data-active');
       if (isActive === 'true') return i;
     }
 
