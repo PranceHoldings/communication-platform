@@ -1,17 +1,15 @@
 /**
  * Runtime Configuration Loader
- * Phase 5: Runtime Configuration Management
+ * Phase 5.3: Flexible caching architecture
  *
- * 3-tier caching architecture:
- * 1. Lambda memory cache (TTL: 10 seconds) - Fastest
- * 2. ElastiCache Redis (TTL: 60 seconds) - Fast
+ * Caching tiers (graceful degradation):
+ * 1. Lambda memory cache (TTL: 10 seconds) - Always available
+ * 2. ElastiCache Redis (TTL: 60 seconds) - Optional, used if available
  * 3. Aurora RDS (permanent storage) - Source of truth
  * 4. Environment variable fallback (for backward compatibility)
  */
 
 import { prisma } from '../database/prisma';
-import { getCacheValue, setCacheValue } from './elasticache-client';
-import { getRequiredEnv } from './env-validator';
 
 // Lambda memory cache
 interface CacheEntry {
@@ -27,8 +25,50 @@ const MEMORY_CACHE_TTL_MS = 10_000;
 // ElastiCache TTL: 60 seconds
 const ELASTICACHE_TTL_SECONDS = 60;
 
+// ElastiCache availability flag (lazy initialization)
+let elasticacheAvailable: boolean | null = null;
+
+// Optional ElastiCache client (lazy loaded)
+let elasticacheClient: any = null;
+
 /**
- * Get runtime configuration value with 3-tier caching
+ * Check if ElastiCache is available
+ */
+async function checkElastiCacheAvailability(): Promise<boolean> {
+  if (elasticacheAvailable !== null) {
+    return elasticacheAvailable;
+  }
+
+  // Check if ELASTICACHE_ENDPOINT is set
+  if (!process.env.ELASTICACHE_ENDPOINT) {
+    console.log('[RuntimeConfig] ElastiCache not configured, using 2-tier cache (Memory + RDS)');
+    elasticacheAvailable = false;
+    return false;
+  }
+
+  try {
+    // Lazy load ElastiCache client
+    const { isRedisAvailable } = await import('./elasticache-client');
+    elasticacheAvailable = await isRedisAvailable();
+
+    if (elasticacheAvailable) {
+      console.log('[RuntimeConfig] ElastiCache available, using 3-tier cache (Memory + Redis + RDS)');
+      const { getCacheValue, setCacheValue } = await import('./elasticache-client');
+      elasticacheClient = { getCacheValue, setCacheValue };
+    } else {
+      console.log('[RuntimeConfig] ElastiCache unavailable, using 2-tier cache (Memory + RDS)');
+    }
+
+    return elasticacheAvailable;
+  } catch (error) {
+    console.warn('[RuntimeConfig] ElastiCache check failed, using 2-tier cache:', error);
+    elasticacheAvailable = false;
+    return false;
+  }
+}
+
+/**
+ * Get runtime configuration value with flexible caching
  *
  * @param key - Configuration key
  * @param options - Optional parameters
@@ -52,10 +92,10 @@ export async function getRuntimeConfig<T>(
     }
   }
 
-  // Layer 2: ElastiCache Redis (fast)
-  if (!skipCache) {
+  // Layer 2: ElastiCache Redis (fast) - Optional
+  if (!skipCache && (await checkElastiCacheAvailability()) && elasticacheClient) {
     try {
-      const redisValue = await getCacheValue<T>(`runtime:${key}`);
+      const redisValue = await elasticacheClient.getCacheValue<T>(`runtime:${key}`);
       if (redisValue !== null) {
         console.log(`[RuntimeConfig] Cache hit (Redis): ${key}`);
         // Store in memory cache
@@ -66,7 +106,7 @@ export async function getRuntimeConfig<T>(
         return redisValue;
       }
     } catch (error) {
-      console.error(`[RuntimeConfig] Redis error for key ${key}:`, error);
+      console.error(`[RuntimeConfig] Redis error for key ${key}, falling back to database:`, error);
       // Continue to database
     }
   }
@@ -82,14 +122,21 @@ export async function getRuntimeConfig<T>(
     });
 
     if (config) {
-      const value = config.value as T;
+      const value = parseConfigValue(config.value, config.dataType) as T;
       console.log(`[RuntimeConfig] Database hit: ${key}`);
 
-      // Update both caches
+      // Update caches (if not skipped)
       if (!skipCache) {
-        // ElastiCache
-        await setCacheValue(`runtime:${key}`, value, ELASTICACHE_TTL_SECONDS);
-        // Memory cache
+        // ElastiCache (if available)
+        if (elasticacheAvailable && elasticacheClient) {
+          try {
+            await elasticacheClient.setCacheValue(`runtime:${key}`, value, ELASTICACHE_TTL_SECONDS);
+          } catch (error) {
+            console.error(`[RuntimeConfig] Failed to update Redis cache for ${key}:`, error);
+          }
+        }
+
+        // Memory cache (always)
         memoryCache.set(key, {
           value,
           expiry: Date.now() + MEMORY_CACHE_TTL_MS,
@@ -117,6 +164,26 @@ export async function getRuntimeConfig<T>(
 
   // No value found
   throw new Error(`Runtime configuration not found: ${key}`);
+}
+
+/**
+ * Parse configuration value based on data type
+ */
+function parseConfigValue(rawValue: any, dataType: string): any {
+  switch (dataType) {
+    case 'NUMBER':
+      return typeof rawValue === 'number' ? rawValue : parseFloat(String(rawValue));
+    case 'STRING':
+      return String(rawValue);
+    case 'BOOLEAN':
+      if (typeof rawValue === 'boolean') return rawValue;
+      const str = String(rawValue).toLowerCase();
+      return str === 'true' || str === '1';
+    case 'JSON':
+      return typeof rawValue === 'object' ? rawValue : JSON.parse(String(rawValue));
+    default:
+      return rawValue;
+  }
 }
 
 /**
@@ -162,6 +229,21 @@ export function clearAllMemoryCache(): void {
   console.log('[RuntimeConfig] All memory cache cleared');
 }
 
+/**
+ * Get cache statistics
+ */
+export function getCacheStats(): {
+  memoryCacheSize: number;
+  memoryCacheKeys: string[];
+  elasticacheAvailable: boolean | null;
+} {
+  return {
+    memoryCacheSize: memoryCache.size,
+    memoryCacheKeys: Array.from(memoryCache.keys()),
+    elasticacheAvailable,
+  };
+}
+
 // ============================================================
 // Typed getters for common runtime configs
 // ============================================================
@@ -192,6 +274,23 @@ export async function getMaxAutoDetectLanguages(): Promise<number> {
   return getRuntimeConfig<number>('MAX_AUTO_DETECT_LANGUAGES');
 }
 
+// Audio Processing
+export async function getTtsStability(): Promise<number> {
+  return getRuntimeConfig<number>('TTS_STABILITY');
+}
+
+export async function getTtsSimilarityBoost(): Promise<number> {
+  return getRuntimeConfig<number>('TTS_SIMILARITY_BOOST');
+}
+
+export async function getSilenceThreshold(): Promise<number> {
+  return getRuntimeConfig<number>('SILENCE_THRESHOLD');
+}
+
+export async function getOptimalPauseSec(): Promise<number> {
+  return getRuntimeConfig<number>('OPTIMAL_PAUSE_SEC');
+}
+
 // Security
 export async function getRateLimitMaxAttempts(): Promise<number> {
   return getRuntimeConfig<number>('RATE_LIMIT_MAX_ATTEMPTS');
@@ -205,15 +304,7 @@ export async function getBcryptSaltRounds(): Promise<number> {
   return getRuntimeConfig<number>('BCRYPT_SALT_ROUNDS');
 }
 
-// Score Calculation
-export async function getMinConfidenceThreshold(): Promise<number> {
-  return getRuntimeConfig<number>('MIN_CONFIDENCE_THRESHOLD');
-}
-
-export async function getMinQualityThreshold(): Promise<number> {
-  return getRuntimeConfig<number>('MIN_QUALITY_THRESHOLD');
-}
-
+// Score Calculation - Component Weights
 export async function getEmotionWeight(): Promise<number> {
   return getRuntimeConfig<number>('EMOTION_WEIGHT');
 }
@@ -228,4 +319,30 @@ export async function getContentWeight(): Promise<number> {
 
 export async function getDeliveryWeight(): Promise<number> {
   return getRuntimeConfig<number>('DELIVERY_WEIGHT');
+}
+
+// Score Calculation - Category Weights
+export async function getScoreWeightCommunication(): Promise<number> {
+  return getRuntimeConfig<number>('SCORE_WEIGHT_COMMUNICATION');
+}
+
+export async function getScoreWeightProblemSolving(): Promise<number> {
+  return getRuntimeConfig<number>('SCORE_WEIGHT_PROBLEM_SOLVING');
+}
+
+export async function getScoreWeightTechnical(): Promise<number> {
+  return getRuntimeConfig<number>('SCORE_WEIGHT_TECHNICAL');
+}
+
+export async function getScoreWeightPresentation(): Promise<number> {
+  return getRuntimeConfig<number>('SCORE_WEIGHT_PRESENTATION');
+}
+
+// Score Calculation - Thresholds
+export async function getScoreThresholdGood(): Promise<number> {
+  return getRuntimeConfig<number>('SCORE_THRESHOLD_GOOD');
+}
+
+export async function getScoreThresholdExcellent(): Promise<number> {
+  return getRuntimeConfig<number>('SCORE_THRESHOLD_EXCELLENT');
 }

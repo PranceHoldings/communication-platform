@@ -67,6 +67,7 @@ export const handler = async (
         value: true,
         dataType: true,
         category: true,
+        accessLevel: true,
         defaultValue: true,
         minValue: true,
         maxValue: true,
@@ -83,6 +84,31 @@ export const handler = async (
         body: JSON.stringify({
           error: 'Configuration not found',
           key,
+        }),
+      };
+    }
+
+    // Check if user has permission to view this config
+    if (config.accessLevel === 'DEVELOPER_ONLY') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. This configuration is for developers only.',
+        }),
+      };
+    }
+
+    // CLIENT_ADMIN can only view CLIENT_ADMIN_* configs
+    if (
+      payload.role === 'CLIENT_ADMIN' &&
+      !config.accessLevel.startsWith('CLIENT_ADMIN')
+    ) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. You do not have permission to view this configuration.',
         }),
       };
     }

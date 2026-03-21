@@ -1,8 +1,8 @@
 # 既知の問題リスト
 
-**バージョン:** 1.2
+**バージョン:** 1.3
 **作成日:** 2026-03-19
-**最終更新:** 2026-03-20 (Day 30)
+**最終更新:** 2026-03-21 08:30 UTC (Day 30)
 
 ---
 
@@ -10,6 +10,98 @@
 
 このドキュメントは、現在発生中の問題と回避策を記録します。
 セッション再開時に同じ問題を繰り返さないための参照資料です。
+
+---
+
+## 🔴 Critical Issues（重大な問題）
+
+### Issue #6: Tailwind CSS Build Error - System Error -35 (Resource Deadlock)
+
+**発生日:** 2026-03-21 08:00 UTC (Day 30)
+**発見経緯:** Phase 5.4 Batch 1+2デプロイ後、E2Eテスト実行時にNext.jsが500エラー
+**状態:** 🔴 未解決
+**影響:** フロントエンド（Next.js）のビルドができず、E2Eテスト実行不可
+**重要度:** Medium（バックエンドは正常動作、フロントエンドのみ影響）
+
+#### 問題詳細
+
+**エラーメッセージ:**
+```
+Module build failed (from ../../node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js):
+Error: Unknown system error -35: Unknown system error -35, read
+    at async readFileHandle (node:internal/fs/promises:552:24)
+    at async /workspaces/prance-communication-platform/node_modules/tailwindcss/lib/lib/expandTailwindAtRules.js:173:34
+```
+
+**影響範囲:**
+- Next.js開発サーバー起動後、すべてのページで500エラー
+- Tailwind CSSのビルド処理でファイルシステムエラー
+- E2Eテスト実行不可（19/21テスト失敗）
+
+**試行した修復方法（すべて失敗）:**
+1. `.next`ディレクトリ削除・再作成 ❌
+2. Next.jsプロセス再起動 ❌
+3. `node_modules`削除試行 ❌（fseventsディレクトリ削除不可）
+
+#### 根本原因
+
+**仮説1: CodeSpaces/Docker環境のファイルシステム問題**
+- System error -35は通常「Resource deadlock would occur」を意味
+- 複数のNode.jsプロセスがファイルシステムにアクセスして競合
+- fsevents（macOS file system events）の不正な状態
+
+**仮説2: Turbo（Monorepo Build Tool）の競合**
+```
+npm run dev
+→ turbo run dev
+→ x io error: Resource deadlock would occur (os error 35)
+```
+
+#### 回避策
+
+**Option A: CodeSpaces再起動（最も確実）**
+```bash
+# CodeSpaces環境全体を再起動
+# GitHub CodeSpaces UI → "Restart Codespace"
+```
+
+**Option B: プロセス完全クリーンアップ**
+```bash
+# すべてのNode.jsプロセスを強制終了
+pkill -9 node
+
+# .nextとnode_modules完全削除（時間がかかる）
+rm -rf apps/web/.next
+rm -rf node_modules
+npm install
+
+# Next.js再起動
+cd apps/web && PORT=3000 npx next dev
+```
+
+**Option C: 別のポートで起動**
+```bash
+# ポート3000の競合を回避
+cd apps/web && PORT=3001 npx next dev
+```
+
+#### 重要な注記
+
+**Phase 5.4 Batch 1+2のデプロイは成功している:**
+- Lambda関数は正常に更新済み（4ファイル、269.68秒）
+- データベースのruntime configsも正常に存在
+- **バックエンドレベルでの検証は可能**（CloudWatch Logs、直接API呼び出し）
+
+**この問題はBatch 1+2デプロイとは無関係:**
+- Lambda関数の変更はフロントエンドビルドに影響しない
+- Tailwind CSSエラーはCodeSpaces環境固有の問題
+- E2Eテストは環境修復後または次回セッションで実施可能
+
+#### 次回セッションでの対応
+
+1. **CodeSpaces再起動（推奨）** - 最も確実で迅速
+2. **または:** 別のCodeSpaces環境でクローン
+3. **最後の手段:** ローカル環境でテスト実行
 
 ---
 

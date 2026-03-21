@@ -1,15 +1,18 @@
 /**
  * パスワードハッシュ化ユーティリティ
+ * Updated: 2026-03-21 - Phase 5.4 Integration with runtime-config-loader
  */
 
 import bcrypt from 'bcryptjs';
-import { getBcryptSaltRounds } from '../utils/env-validator';
+import { getBcryptSaltRounds } from '../utils/runtime-config-loader';
 
 /**
  * パスワードをハッシュ化
+ * Runtime configuration から salt rounds を取得
  */
 export const hashPassword = async (password: string): Promise<string> => {
-  return bcrypt.hash(password, getBcryptSaltRounds());
+  const saltRounds = await getBcryptSaltRounds();
+  return bcrypt.hash(password, saltRounds);
 };
 
 /**

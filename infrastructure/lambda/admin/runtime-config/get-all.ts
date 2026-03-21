@@ -52,14 +52,33 @@ export const handler = async (
     // Query parameters for filtering
     const category = event.queryStringParameters?.category;
 
-    // Get all runtime configs (with optional category filter)
+    // Determine which access levels the user can view
+    const allowedAccessLevels: string[] = [];
+    if (payload.role === 'SUPER_ADMIN') {
+      // SUPER_ADMIN can view all except DEVELOPER_ONLY
+      allowedAccessLevels.push(
+        'SUPER_ADMIN_READ_ONLY',
+        'SUPER_ADMIN_READ_WRITE',
+        'CLIENT_ADMIN_READ_WRITE',
+        'CLIENT_ADMIN_READ_ONLY'
+      );
+    } else if (payload.role === 'CLIENT_ADMIN') {
+      // CLIENT_ADMIN can only view CLIENT_ADMIN_* configs
+      allowedAccessLevels.push('CLIENT_ADMIN_READ_WRITE', 'CLIENT_ADMIN_READ_ONLY');
+    }
+
+    // Get all runtime configs (with optional category filter + access level filter)
     const configs = await prisma.runtimeConfig.findMany({
-      where: category ? { category: category as any } : undefined,
+      where: {
+        ...(category ? { category: category as any } : {}),
+        accessLevel: { in: allowedAccessLevels as any },
+      },
       select: {
         key: true,
         value: true,
         dataType: true,
         category: true,
+        accessLevel: true,
         defaultValue: true,
         minValue: true,
         maxValue: true,

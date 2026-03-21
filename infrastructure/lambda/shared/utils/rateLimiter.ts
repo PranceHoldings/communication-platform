@@ -25,10 +25,12 @@ import {
   getOptionalEnv,
   getOptionalEnvAsNumber,
   getEnvironmentName,
+} from './env-validator';
+import {
   getRateLimitMaxAttempts,
   getRateLimitLockoutDurationMs,
   getRateLimitAttemptWindowMs,
-} from './env-validator';
+} from './runtime-config-loader';
 
 // DynamoDB Client
 const client = new DynamoDBClient({ region: getAwsRegion() });
@@ -37,9 +39,6 @@ const ddbDocClient = DynamoDBDocumentClient.from(client);
 // Configuration helpers (dynamic to support test environment variable changes)
 const getTableName = () =>
   getOptionalEnv('GUEST_RATE_LIMIT_TABLE', `prance-guest-rate-limits-${getEnvironmentName()}`);
-const getMaxAttempts = getRateLimitMaxAttempts;
-const getLockoutDuration = getRateLimitLockoutDurationMs;
-const getAttemptWindow = getRateLimitAttemptWindowMs;
 
 /**
  * Rate limit check result
@@ -80,7 +79,8 @@ export interface RateLimitAttempt {
  */
 export async function checkRateLimit(ipAddress: string, token?: string): Promise<RateLimitResult> {
   const now = Date.now();
-  const windowStart = now - getAttemptWindow();
+  const attemptWindow = await getRateLimitAttemptWindowMs();
+  const windowStart = now - attemptWindow;
 
   try {
     // Query attempts within the time window
@@ -100,11 +100,13 @@ export async function checkRateLimit(ipAddress: string, token?: string): Promise
     );
 
     const attempts = result.Items?.length || 0;
+    const maxAttempts = await getRateLimitMaxAttempts();
 
     // Check if locked
-    if (attempts >= getMaxAttempts()) {
+    if (attempts >= maxAttempts) {
       const oldestAttempt = result.Items?.[result.Items.length - 1];
-      const lockedUntil = new Date(oldestAttempt.timestamp + getLockoutDuration());
+      const lockoutDuration = await getRateLimitLockoutDurationMs();
+      const lockedUntil = new Date(oldestAttempt.timestamp + lockoutDuration);
 
       // Check if lockout period has expired
       if (now < lockedUntil.getTime()) {
@@ -121,7 +123,7 @@ export async function checkRateLimit(ipAddress: string, token?: string): Promise
       return {
         allowed: true,
         attempts: 0,
-        remainingAttempts: getMaxAttempts(),
+        remainingAttempts: maxAttempts,
       };
     }
 
@@ -129,16 +131,17 @@ export async function checkRateLimit(ipAddress: string, token?: string): Promise
     return {
       allowed: true,
       attempts,
-      remainingAttempts: getMaxAttempts() - attempts,
+      remainingAttempts: maxAttempts - attempts,
     };
   } catch (error) {
     console.error('[RateLimiter] Error checking rate limit:', error);
 
     // Fail open (allow request) to prevent DoS via rate limiter errors
+    const maxAttempts = await getRateLimitMaxAttempts();
     return {
       allowed: true,
       attempts: 0,
-      remainingAttempts: getMaxAttempts(),
+      remainingAttempts: maxAttempts,
     };
   }
 }
@@ -155,7 +158,8 @@ export async function checkRateLimit(ipAddress: string, token?: string): Promise
  */
 export async function recordAttempt(ipAddress: string, token?: string): Promise<void> {
   const now = Date.now();
-  const ttl = Math.floor((now + getLockoutDuration()) / 1000);
+  const lockoutDuration = await getRateLimitLockoutDurationMs();
+  const ttl = Math.floor((now + lockoutDuration) / 1000);
 
   try {
     await ddbDocClient.send(
@@ -262,7 +266,8 @@ export async function getRateLimitStats(ipAddress: string): Promise<{
   lockedUntil?: Date;
 }> {
   const now = Date.now();
-  const windowStart = now - getAttemptWindow();
+  const attemptWindow = await getRateLimitAttemptWindowMs();
+  const windowStart = now - attemptWindow;
 
   try {
     // Query all attempts
@@ -279,7 +284,8 @@ export async function getRateLimitStats(ipAddress: string): Promise<{
     const totalAttempts = result.Items?.length || 0;
     const recentAttempts = result.Items?.filter(item => item.timestamp > windowStart).length || 0;
 
-    const isLocked = recentAttempts >= getMaxAttempts();
+    const maxAttempts = await getRateLimitMaxAttempts();
+    const isLocked = recentAttempts >= maxAttempts;
     let lockedUntil: Date | undefined;
 
     if (isLocked && result.Items && result.Items.length > 0) {
@@ -288,7 +294,8 @@ export async function getRateLimitStats(ipAddress: string): Promise<{
       )[0];
 
       if (oldestRecentAttempt) {
-        lockedUntil = new Date(oldestRecentAttempt.timestamp + getLockoutDuration());
+        const lockoutDuration = await getRateLimitLockoutDurationMs();
+        lockedUntil = new Date(oldestRecentAttempt.timestamp + lockoutDuration);
       }
     }
 

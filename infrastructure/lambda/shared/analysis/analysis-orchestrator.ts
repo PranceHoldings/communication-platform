@@ -306,8 +306,8 @@ export class AnalysisOrchestrator {
     audioAnalyses: AudioAnalysis[],
     criteria?: ScoringCriteria
   ): Promise<SessionScore> {
-    // Calculate score
-    const scoreResult = this.scoreCalculator.calculateScore(
+    // Calculate score (now async to support runtime configuration)
+    const scoreResult = await this.scoreCalculator.calculateScore(
       emotionAnalyses,
       audioAnalyses,
       criteria || { preset: 'default' }

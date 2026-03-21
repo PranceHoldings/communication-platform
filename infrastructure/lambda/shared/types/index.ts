@@ -37,6 +37,14 @@ export type ProcessingStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
 export type Speaker = 'AI' | 'USER';
 export type Highlight = 'POSITIVE' | 'NEGATIVE' | 'IMPORTANT';
 
+// Runtime Configuration Access Levels
+export type RuntimeConfigAccessLevel =
+  | 'DEVELOPER_ONLY'
+  | 'SUPER_ADMIN_READ_ONLY'
+  | 'SUPER_ADMIN_READ_WRITE'
+  | 'CLIENT_ADMIN_READ_WRITE'
+  | 'CLIENT_ADMIN_READ_ONLY';
+
 // ========================================
 // Error Types (copied from @prance/shared)
 // ========================================

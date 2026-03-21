@@ -1,6 +1,7 @@
 /**
  * Score Calculator
  * Calculates comprehensive session scores based on emotion and audio analysis
+ * Updated: 2026-03-21 - Phase 5.4 Integration with runtime-config-loader
  */
 
 import type {
@@ -17,7 +18,7 @@ import type {
   ScoreAssessment,
   EmotionScore,
 } from '@prance/shared';
-import { getOptimalPauseSec } from '../utils/env-validator';
+import { getOptimalPauseSec } from '../utils/runtime-config-loader';
 
 // ============================================================
 // Scoring Presets
@@ -63,12 +64,13 @@ export const SCORING_PRESETS: Record<ScoringPreset, ScoringWeights> = {
 export class ScoreCalculator {
   /**
    * Calculate comprehensive session score
+   * Now async to support runtime configuration loading
    */
-  calculateScore(
+  async calculateScore(
     emotionAnalyses: EmotionAnalysis[],
     audioAnalyses: AudioAnalysis[],
     criteria: ScoringCriteria = { preset: 'default' }
-  ): ScoreCalculationResult {
+  ): Promise<ScoreCalculationResult> {
     console.log('[ScoreCalculator] Calculating score', {
       emotionAnalysesCount: emotionAnalyses.length,
       audioAnalysesCount: audioAnalyses.length,
@@ -80,7 +82,7 @@ export class ScoreCalculator {
 
     // Calculate category scores
     const emotionResult = this.calculateEmotionScore(emotionAnalyses);
-    const audioResult = this.calculateAudioScore(audioAnalyses);
+    const audioResult = await this.calculateAudioScore(audioAnalyses);
     const contentResult = this.calculateContentScore(emotionAnalyses, audioAnalyses);
     const deliveryScore = this.calculateDeliveryScore(emotionAnalyses, audioAnalyses);
 
@@ -214,11 +216,12 @@ export class ScoreCalculator {
 
   /**
    * Calculate audio score
+   * Now async to load runtime configuration
    */
-  private calculateAudioScore(audioAnalyses: AudioAnalysis[]): {
+  private async calculateAudioScore(audioAnalyses: AudioAnalysis[]): Promise<{
     score: number;
     details: AudioScoreDetails;
-  } {
+  }> {
     if (audioAnalyses.length === 0) {
       return {
         score: 50,
@@ -243,9 +246,9 @@ export class ScoreCalculator {
 
     const clarity = clarityFromFillers * 0.6 + clarityFromSTT * 0.4;
 
-    // 2. Fluency (流暢さ)
+    // 2. Fluency (流暢さ) - Load optimal pause from runtime config
     const avgPauseDuration = this.average(audioAnalyses.map(a => a.pauseDuration || 0));
-    const optimalPause = getOptimalPauseSec();
+    const optimalPause = await getOptimalPauseSec();
 
     const fluency = Math.max(0, 100 - Math.abs(avgPauseDuration - optimalPause) * 50);
 

@@ -50,13 +50,13 @@ export const handler = async (
       };
     }
 
-    // Only SUPER_ADMIN can update runtime config
-    if (payload.role !== 'SUPER_ADMIN') {
+    // Authorization: SUPER_ADMIN or CLIENT_ADMIN (with restrictions)
+    if (payload.role !== 'SUPER_ADMIN' && payload.role !== 'CLIENT_ADMIN') {
       return {
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Insufficient permissions. Only SUPER_ADMIN can update runtime configuration.',
+          error: 'Insufficient permissions. Only SUPER_ADMIN and CLIENT_ADMIN can update runtime configuration.',
         }),
       };
     }
@@ -89,6 +89,7 @@ export const handler = async (
         value: true,
         dataType: true,
         category: true,
+        accessLevel: true,
         minValue: true,
         maxValue: true,
         description: true,
@@ -104,6 +105,64 @@ export const handler = async (
           key,
         }),
       };
+    }
+
+    // Check write permissions based on access level
+    if (currentConfig.accessLevel === 'DEVELOPER_ONLY') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. This configuration is for developers only.',
+        }),
+      };
+    }
+
+    if (currentConfig.accessLevel === 'SUPER_ADMIN_READ_ONLY' && payload.role !== 'SUPER_ADMIN') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. This configuration is read-only.',
+        }),
+      };
+    }
+
+    if (currentConfig.accessLevel === 'SUPER_ADMIN_READ_ONLY') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. This configuration is read-only for security reasons.',
+        }),
+      };
+    }
+
+    if (currentConfig.accessLevel === 'SUPER_ADMIN_READ_WRITE' && payload.role !== 'SUPER_ADMIN') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. Only SUPER_ADMIN can update this configuration.',
+        }),
+      };
+    }
+
+    if (currentConfig.accessLevel === 'CLIENT_ADMIN_READ_ONLY') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. This configuration is read-only.',
+        }),
+      };
+    }
+
+    // CLIENT_ADMIN can update CLIENT_ADMIN_READ_WRITE configs
+    // SUPER_ADMIN can update all except DEVELOPER_ONLY and *_READ_ONLY configs
+    if (currentConfig.accessLevel === 'CLIENT_ADMIN_READ_WRITE') {
+      // Both SUPER_ADMIN and CLIENT_ADMIN can update
+      // Permission granted
     }
 
     // Validate data type
@@ -128,6 +187,7 @@ export const handler = async (
         value: true,
         dataType: true,
         category: true,
+        accessLevel: true,
         defaultValue: true,
         minValue: true,
         maxValue: true,

@@ -45,13 +45,13 @@ export const handler = async (
       };
     }
 
-    // Only SUPER_ADMIN can rollback runtime config
-    if (payload.role !== 'SUPER_ADMIN') {
+    // Authorization: SUPER_ADMIN or CLIENT_ADMIN (with restrictions)
+    if (payload.role !== 'SUPER_ADMIN' && payload.role !== 'CLIENT_ADMIN') {
       return {
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Insufficient permissions. Only SUPER_ADMIN can rollback runtime configuration.',
+          error: 'Insufficient permissions. Only SUPER_ADMIN and CLIENT_ADMIN can rollback runtime configuration.',
         }),
       };
     }
@@ -119,6 +119,7 @@ export const handler = async (
       select: {
         key: true,
         value: true,
+        accessLevel: true,
       },
     });
 
@@ -132,6 +133,50 @@ export const handler = async (
         }),
       };
     }
+
+    // Check write permissions based on access level (same logic as update)
+    if (currentConfig.accessLevel === 'DEVELOPER_ONLY') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. This configuration is for developers only.',
+        }),
+      };
+    }
+
+    if (currentConfig.accessLevel === 'SUPER_ADMIN_READ_ONLY') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. This configuration is read-only for security reasons.',
+        }),
+      };
+    }
+
+    if (currentConfig.accessLevel === 'SUPER_ADMIN_READ_WRITE' && payload.role !== 'SUPER_ADMIN') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. Only SUPER_ADMIN can rollback this configuration.',
+        }),
+      };
+    }
+
+    if (currentConfig.accessLevel === 'CLIENT_ADMIN_READ_ONLY') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied. This configuration is read-only.',
+        }),
+      };
+    }
+
+    // CLIENT_ADMIN can rollback CLIENT_ADMIN_READ_WRITE configs
+    // SUPER_ADMIN can rollback all except DEVELOPER_ONLY and *_READ_ONLY configs
 
     // Rollback to old value from history
     const rollbackValue = historyRecord.oldValue;
@@ -148,6 +193,7 @@ export const handler = async (
         value: true,
         dataType: true,
         category: true,
+        accessLevel: true,
         defaultValue: true,
         minValue: true,
         maxValue: true,

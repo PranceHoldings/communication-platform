@@ -499,20 +499,22 @@ model GuestSessionLog {
 // ============================================================
 
 model RuntimeConfig {
-  key          String            @id // 設定キー（PRIMARY KEY）
-  value        Json // 設定値（JSON）
-  dataType     RuntimeConfigDataType @map("data_type") // データ型
-  category     RuntimeConfigCategory // カテゴリ
-  defaultValue Json              @map("default_value") // デフォルト値
-  minValue     Float?            @map("min_value") // 最小値（数値の場合）
-  maxValue     Float?            @map("max_value") // 最大値（数値の場合）
-  description  String // 説明
-  updatedAt    DateTime          @updatedAt @map("updated_at") // 最終更新日時
-  updatedBy    String?           @map("updated_by") // 最終更新者（User ID）
+  key          String                     @id // 設定キー（PRIMARY KEY）
+  value        Json                       // 設定値（JSON）
+  dataType     RuntimeConfigDataType      @map("data_type") // データ型
+  category     RuntimeConfigCategory      // カテゴリ
+  accessLevel  RuntimeConfigAccessLevel   @default(SUPER_ADMIN_READ_WRITE) @map("access_level") // アクセスレベル
+  defaultValue Json                       @map("default_value") // デフォルト値
+  minValue     Float?                     @map("min_value") // 最小値（数値の場合）
+  maxValue     Float?                     @map("max_value") // 最大値（数値の場合）
+  description  String                     // 説明
+  updatedAt    DateTime                   @updatedAt @map("updated_at") // 最終更新日時
+  updatedBy    String?                    @map("updated_by") // 最終更新者（User ID）
 
   history RuntimeConfigHistory[]
 
   @@index([category])
+  @@index([accessLevel])
   @@index([updatedAt])
   @@map("runtime_configs")
 }
@@ -531,6 +533,14 @@ enum RuntimeConfigCategory {
   SCORE_CALCULATION   // スコア計算パラメータ
   SECURITY            // セキュリティパラメータ
   SYSTEM              // システムパラメータ
+}
+
+enum RuntimeConfigAccessLevel {
+  DEVELOPER_ONLY              // 0: 開発者のみ（UI非表示）
+  SUPER_ADMIN_READ_ONLY       // 1: スーパー管理者参照のみ
+  SUPER_ADMIN_READ_WRITE      // 2: スーパー管理者編集可能
+  CLIENT_ADMIN_READ_WRITE     // 3: クライアント管理者編集可能（安全な変数のみ）
+  CLIENT_ADMIN_READ_ONLY      // 4: クライアント管理者参照のみ
 }
 
 model RuntimeConfigHistory {
