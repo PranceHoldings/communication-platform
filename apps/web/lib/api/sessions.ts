@@ -2,11 +2,17 @@
  * Sessions API
  *
  * 注意: このファイルの型定義はAPIレスポンスの形式に基づいています。
- * Lambda関数が以下のマッピングを行っています:
- * - durationSec → duration
- * - metadataJson → metadata
- * - startedAt → createdAt (互換性のため)
- * - thumbnailUrl → imageUrl (Avatar)
+ *
+ * なぜ packages/shared と異なる型定義が必要か:
+ * 1. Date → string 変換: JSONシリアライズでDate型がstring型に変換される
+ * 2. フィールドマッピング: Lambda関数が以下の変換を行う
+ *    - durationSec → duration
+ *    - metadataJson → metadata
+ *    - startedAt → createdAt (互換性のため)
+ *    - thumbnailUrl → imageUrl (Avatar)
+ * 3. UI固有フィールド: フロントエンド専用の追加フィールド
+ *
+ * 詳細: CODING_RULES.md - Section 12「型定義の一元管理」
  */
 
 import { apiClient } from './client';

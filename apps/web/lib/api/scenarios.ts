@@ -2,6 +2,17 @@ import { apiClient } from './client';
 import { buildQueryString } from './utils';
 import type { Visibility, PaginationMeta } from '@prance/shared';
 
+/**
+ * Scenario API Response型
+ *
+ * 注意: この型定義は packages/shared のScenario型とは異なります。
+ * 理由:
+ * 1. Date → string 変換: JSON APIレスポンスではDate型がstring型に変換される
+ * 2. UI固有フィールド: showSilenceTimer等のフロントエンド専用フィールド
+ * 3. null許容性: APIレスポンスではnullが明示的に返される
+ *
+ * バックエンドのPrismaエンティティとの対応はLambda関数で行われます。
+ */
 export interface Scenario {
   id: string;
   title: string;

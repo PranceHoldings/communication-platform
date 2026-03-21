@@ -20,6 +20,10 @@ interface CacheEntry {
 const memoryCache = new Map<string, CacheEntry>();
 
 // Memory cache TTL: 10 seconds
+// NOTE: This is an internal performance tuning constant and intentionally not
+// environment-variable-based. It represents Lambda memory cache behavior (fast, volatile)
+// and should remain consistent across environments. If you need to adjust cache behavior,
+// modify ELASTICACHE_TTL_SECONDS or database-level settings instead.
 const MEMORY_CACHE_TTL_MS = 10_000;
 
 // ElastiCache TTL: 60 seconds
