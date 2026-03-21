@@ -1,0 +1,87 @@
+{
+  "runtimeConfig": {
+    "title": "Configurazione Runtime",
+    "description": "Gestisci i parametri di sistema senza riavvio del server",
+    "categories": {
+      "QUERY_PROCESSING": "Query e Elaborazione",
+      "AI_PROCESSING": "Elaborazione IA",
+      "AUDIO_PROCESSING": "Elaborazione Audio",
+      "SCORE_CALCULATION": "Calcolo Punteggio",
+      "SECURITY": "Sicurezza",
+      "SYSTEM": "Sistema"
+    },
+    "accessLevels": {
+      "DEVELOPER_ONLY": "Solo Sviluppatori",
+      "SUPER_ADMIN_READ_ONLY": "Sola Lettura (Sicurezza)",
+      "SUPER_ADMIN_READ_WRITE": "Modificabile dall'Admin",
+      "CLIENT_ADMIN_READ_WRITE": "Modificabile",
+      "CLIENT_ADMIN_READ_ONLY": "Sola Lettura"
+    },
+    "dataTypes": {
+      "NUMBER": "Numero",
+      "STRING": "Stringa",
+      "BOOLEAN": "Booleano",
+      "JSON": "JSON"
+    },
+    "list": {
+      "title": "Tutte le Configurazioni",
+      "filterByCategory": "Filtra per categoria",
+      "allCategories": "Tutte le Categorie",
+      "searchPlaceholder": "Cerca per chiave o descrizione...",
+      "noResults": "Nessuna configurazione trovata",
+      "totalConfigs": "{count} configurazione(i)"
+    },
+    "card": {
+      "key": "Chiave",
+      "value": "Valore",
+      "dataType": "Tipo",
+      "category": "Categoria",
+      "description": "Descrizione",
+      "range": "Intervallo",
+      "defaultValue": "Predefinito",
+      "updatedAt": "Aggiornato",
+      "updatedBy": "Aggiornato da",
+      "edit": "Modifica",
+      "viewHistory": "Cronologia"
+    },
+    "edit": {
+      "title": "Modifica Configurazione",
+      "currentValue": "Valore Attuale",
+      "newValue": "Nuovo Valore",
+      "reason": "Motivo della modifica (opzionale)",
+      "reasonPlaceholder": "Descrivi perché stai effettuando questa modifica...",
+      "constraints": "Vincoli",
+      "min": "Minimo",
+      "max": "Massimo",
+      "default": "Predefinito",
+      "cancel": "Annulla",
+      "save": "Salva Modifiche",
+      "saving": "Salvataggio...",
+      "success": "Configurazione aggiornata con successo",
+      "error": "Impossibile aggiornare la configurazione"
+    },
+    "history": {
+      "title": "Cronologia Modifiche",
+      "noHistory": "Nessuna cronologia disponibile",
+      "timestamp": "Data e ora",
+      "changedBy": "Modificato da",
+      "oldValue": "Valore Precedente",
+      "newValue": "Nuovo Valore",
+      "reason": "Motivo",
+      "ipAddress": "Indirizzo IP",
+      "rollback": "Ripristina",
+      "rollbackConfirm": "Sei sicuro di voler ripristinare questo valore?",
+      "rollbackSuccess": "Configurazione ripristinata con successo",
+      "rollbackError": "Impossibile ripristinare la configurazione",
+      "loadMore": "Carica altro"
+    },
+    "validation": {
+      "required": "Questo campo è obbligatorio",
+      "mustBeNumber": "Deve essere un numero",
+      "mustBeBoolean": "Deve essere true o false",
+      "belowMin": "Il valore deve essere almeno {min}",
+      "aboveMax": "Il valore deve essere al massimo {max}",
+      "invalidJson": "Formato JSON non valido"
+    }
+  }
+}

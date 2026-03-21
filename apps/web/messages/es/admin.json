@@ -1,0 +1,87 @@
+{
+  "runtimeConfig": {
+    "title": "Configuración en Tiempo de Ejecución",
+    "description": "Gestionar parámetros del sistema sin reiniciar el servidor",
+    "categories": {
+      "QUERY_PROCESSING": "Consulta y Procesamiento",
+      "AI_PROCESSING": "Procesamiento de IA",
+      "AUDIO_PROCESSING": "Procesamiento de Audio",
+      "SCORE_CALCULATION": "Cálculo de Puntuación",
+      "SECURITY": "Seguridad",
+      "SYSTEM": "Sistema"
+    },
+    "accessLevels": {
+      "DEVELOPER_ONLY": "Solo Desarrolladores",
+      "SUPER_ADMIN_READ_ONLY": "Solo Lectura (Seguridad)",
+      "SUPER_ADMIN_READ_WRITE": "Editable por Admin",
+      "CLIENT_ADMIN_READ_WRITE": "Editable",
+      "CLIENT_ADMIN_READ_ONLY": "Solo Lectura"
+    },
+    "dataTypes": {
+      "NUMBER": "Número",
+      "STRING": "Cadena",
+      "BOOLEAN": "Booleano",
+      "JSON": "JSON"
+    },
+    "list": {
+      "title": "Todas las Configuraciones",
+      "filterByCategory": "Filtrar por categoría",
+      "allCategories": "Todas las Categorías",
+      "searchPlaceholder": "Buscar por clave o descripción...",
+      "noResults": "No se encontraron configuraciones",
+      "totalConfigs": "{count} configuración(es)"
+    },
+    "card": {
+      "key": "Clave",
+      "value": "Valor",
+      "dataType": "Tipo",
+      "category": "Categoría",
+      "description": "Descripción",
+      "range": "Rango",
+      "defaultValue": "Predeterminado",
+      "updatedAt": "Actualizado",
+      "updatedBy": "Actualizado por",
+      "edit": "Editar",
+      "viewHistory": "Historial"
+    },
+    "edit": {
+      "title": "Editar Configuración",
+      "currentValue": "Valor Actual",
+      "newValue": "Nuevo Valor",
+      "reason": "Razón del cambio (opcional)",
+      "reasonPlaceholder": "Describe por qué estás haciendo este cambio...",
+      "constraints": "Restricciones",
+      "min": "Mín",
+      "max": "Máx",
+      "default": "Predeterminado",
+      "cancel": "Cancelar",
+      "save": "Guardar Cambios",
+      "saving": "Guardando...",
+      "success": "Configuración actualizada correctamente",
+      "error": "Error al actualizar la configuración"
+    },
+    "history": {
+      "title": "Historial de Cambios",
+      "noHistory": "No hay historial de cambios disponible",
+      "timestamp": "Marca de tiempo",
+      "changedBy": "Cambiado por",
+      "oldValue": "Valor Anterior",
+      "newValue": "Nuevo Valor",
+      "reason": "Razón",
+      "ipAddress": "Dirección IP",
+      "rollback": "Revertir",
+      "rollbackConfirm": "¿Estás seguro de que deseas revertir a este valor?",
+      "rollbackSuccess": "Configuración revertida correctamente",
+      "rollbackError": "Error al revertir la configuración",
+      "loadMore": "Cargar más"
+    },
+    "validation": {
+      "required": "Este campo es obligatorio",
+      "mustBeNumber": "Debe ser un número",
+      "mustBeBoolean": "Debe ser true o false",
+      "belowMin": "El valor debe ser al menos {min}",
+      "aboveMax": "El valor debe ser como máximo {max}",
+      "invalidJson": "Formato JSON inválido"
+    }
+  }
+}

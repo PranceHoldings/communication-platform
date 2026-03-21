@@ -1,0 +1,87 @@
+{
+  "runtimeConfig": {
+    "title": "Laufzeitkonfiguration",
+    "description": "Systemparameter ohne Serverneustart verwalten",
+    "categories": {
+      "QUERY_PROCESSING": "Abfrage & Verarbeitung",
+      "AI_PROCESSING": "KI-Verarbeitung",
+      "AUDIO_PROCESSING": "Audioverarbeitung",
+      "SCORE_CALCULATION": "Bewertungsberechnung",
+      "SECURITY": "Sicherheit",
+      "SYSTEM": "System"
+    },
+    "accessLevels": {
+      "DEVELOPER_ONLY": "Nur Entwickler",
+      "SUPER_ADMIN_READ_ONLY": "Nur Lesen (Sicherheit)",
+      "SUPER_ADMIN_READ_WRITE": "Admin bearbeitbar",
+      "CLIENT_ADMIN_READ_WRITE": "Bearbeitbar",
+      "CLIENT_ADMIN_READ_ONLY": "Nur Lesen"
+    },
+    "dataTypes": {
+      "NUMBER": "Zahl",
+      "STRING": "Zeichenkette",
+      "BOOLEAN": "Boolean",
+      "JSON": "JSON"
+    },
+    "list": {
+      "title": "Alle Konfigurationen",
+      "filterByCategory": "Nach Kategorie filtern",
+      "allCategories": "Alle Kategorien",
+      "searchPlaceholder": "Nach Schlüssel oder Beschreibung suchen...",
+      "noResults": "Keine Konfigurationen gefunden",
+      "totalConfigs": "{count} Konfiguration(en)"
+    },
+    "card": {
+      "key": "Schlüssel",
+      "value": "Wert",
+      "dataType": "Typ",
+      "category": "Kategorie",
+      "description": "Beschreibung",
+      "range": "Bereich",
+      "defaultValue": "Standard",
+      "updatedAt": "Aktualisiert",
+      "updatedBy": "Aktualisiert von",
+      "edit": "Bearbeiten",
+      "viewHistory": "Verlauf"
+    },
+    "edit": {
+      "title": "Konfiguration bearbeiten",
+      "currentValue": "Aktueller Wert",
+      "newValue": "Neuer Wert",
+      "reason": "Grund für Änderung (optional)",
+      "reasonPlaceholder": "Beschreiben Sie, warum Sie diese Änderung vornehmen...",
+      "constraints": "Einschränkungen",
+      "min": "Min",
+      "max": "Max",
+      "default": "Standard",
+      "cancel": "Abbrechen",
+      "save": "Änderungen speichern",
+      "saving": "Wird gespeichert...",
+      "success": "Konfiguration erfolgreich aktualisiert",
+      "error": "Konfiguration konnte nicht aktualisiert werden"
+    },
+    "history": {
+      "title": "Änderungsverlauf",
+      "noHistory": "Kein Änderungsverlauf verfügbar",
+      "timestamp": "Zeitstempel",
+      "changedBy": "Geändert von",
+      "oldValue": "Alter Wert",
+      "newValue": "Neuer Wert",
+      "reason": "Grund",
+      "ipAddress": "IP-Adresse",
+      "rollback": "Zurücksetzen",
+      "rollbackConfirm": "Sind Sie sicher, dass Sie auf diesen Wert zurücksetzen möchten?",
+      "rollbackSuccess": "Konfiguration erfolgreich zurückgesetzt",
+      "rollbackError": "Konfiguration konnte nicht zurückgesetzt werden",
+      "loadMore": "Mehr laden"
+    },
+    "validation": {
+      "required": "Dieses Feld ist erforderlich",
+      "mustBeNumber": "Muss eine Zahl sein",
+      "mustBeBoolean": "Muss true oder false sein",
+      "belowMin": "Wert muss mindestens {min} sein",
+      "aboveMax": "Wert darf höchstens {max} sein",
+      "invalidJson": "Ungültiges JSON-Format"
+    }
+  }
+}
