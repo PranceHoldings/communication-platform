@@ -1,9 +1,10 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-21 (Day 30 - Phase 5.4 完了 ✅)
-**現在の Phase:** Phase 5 - Runtime Configuration Management (100% 完了 ✅)
-**デプロイ:** ✅ Batch 1-6 (全11ファイル移行完了、16 runtime configs)
-**ステータス:** ✅ **Phase 5.4 Complete** - 次: Runtime Verification Testing or Next Phase
+**最終更新:** 2026-03-21 22:30 UTC (Day 30 - Three.js Avatar基盤実装完了 ✅)
+**現在の Phase:** Phase 5 完了 → **Phase 1.6 アバターレンダリング進行中** 🟡
+**重要な発見:** Phase 1.5は実装完了（100%）、Three.jsアバター基盤実装完了（50%）
+**次のアクション:** SessionPlayerへのアバター統合 + 3Dモデル追加
+**ステータス:** 🟡 **Three.js基盤完了** - SessionPlayer統合が次のステップ
 
 ---
 
@@ -32,15 +33,54 @@ bash scripts/verify-environment.sh
 
 **期待結果:** `✅ All environment checks passed`
 
-### Step 2: 既知の問題確認
+### Step 2: Phase 1残タスク確認（重要）⚠️
+
+```bash
+cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_1_REMAINING_TASKS_SUMMARY.md
+```
+
+**重要:** Phase 1は「完了」と記載されていましたが、実際には以下が未完成：
+- 🔴 アバターレンダリング（0%）- 最優先ブロッカー
+- 🔴 リアルタイム会話（60-70%）- 実用性ゼロ
+- 🟡 録画機能信頼性（80%）- ACK/リトライなし
+- 🟡 シナリオエンジン（50%）- バリデーションなし
+
+### Step 3: 既知の問題確認
 
 ```bash
 cat docs/07-development/KNOWN_ISSUES.md
 ```
 
-### Step 3: タスク実行
+### Step 4: 次回セッション開始手順（2026-03-22以降）
 
-**下記の「🎯 次のアクション」セクションの指示に従う**
+**🔴 最優先タスク: SessionPlayerへのアバター統合**
+
+```bash
+# 1. 実装確認
+cat apps/web/components/avatar/index.tsx
+cat apps/web/components/avatar/AvatarRenderer.tsx
+
+# 2. SessionPlayerを確認
+cat apps/web/components/session-player/index.tsx | grep -A5 "avatarCanvasRef"
+
+# 3. 統合実装開始
+# - AvatarRendererをSessionPlayerにインポート
+# - avatarCanvasRefを接続
+# - WebSocket音声強度データとリップシンク連携
+```
+
+**実装手順:**
+1. `apps/web/components/session-player/index.tsx`にAvatarRendererを統合
+2. `avatarCanvasRef`をAvatarRendererのcanvasに接続
+3. WebSocket音声データ（`audioLevel`）をリップシンク強度に変換
+4. VideoComposerとの統合確認
+5. 3Dモデル追加（Ready Player Me: https://readyplayer.me/）
+6. 録画機能テスト
+
+**参考ファイル:**
+- 実装済み: `apps/web/components/avatar/`（全ファイル）
+- 統合先: `apps/web/components/session-player/index.tsx`（line 123, 2526付近）
+- 音声データ: `apps/web/hooks/useAudioRecorder.ts`（audioLevelステート）
 
 ---
 
@@ -48,18 +88,82 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 ### Phase進捗
 
-| Phase | 内容 | 進捗 | ステータス |
-|-------|------|------|-----------|
-| Phase 1-1.5 | MVP・リアルタイム会話 | 100% | ✅ 完了 |
-| Phase 1.6 | 実用レベル化 | 100% | ✅ 完了 |
+| Phase | 内容 | 進捗 | 実際のステータス |
+|-------|------|------|-----------------|
+| **Phase 1.5** | **リアルタイム会話** | **100%** | ✅ **完了** - STT/AI/TTSストリーミング実装済み |
+| **Phase 1.6 Avatar** | **アバターレンダリング** | **50%** | 🟡 **進行中** - Three.js基盤完了、統合待ち |
+| **Phase 1.6 Recording** | **録画機能信頼性** | **80%** | ⚠️ **改善必要** - ACK/リトライなし |
+| **Phase 1.6 Scenario** | **シナリオエンジン** | **50%** | ⚠️ **部分実装** - バリデーションなし |
 | Phase 2-2.5 | 録画・解析・ゲストユーザー | 100% | ✅ 完了 |
 | Phase 3.1-3.3 | Dev/Production環境・E2Eテスト | 100% | ✅ 完了 |
 | Phase 3.4 | 環境変数完全管理 | 100% | ✅ 完了（2026-03-20） |
 | Phase 4 | ベンチマークシステム | 100% | ✅ 完了（2026-03-20） |
-| Phase 5.1-5.3 | Runtime Config (Data/API/Loader) | 100% | ✅ 完了（2026-03-21） |
-| **Phase 5.4** | **Runtime Config Integration** | **100%** | ✅ 完了（2026-03-21 11:45 UTC）|
+| Phase 5.1-5.4 | Runtime Config Management | 100% | ✅ 完了（2026-03-21） |
+| Phase 5.4.1 | Score Preset Weights | 100% | ✅ 完了（2026-03-21 15:30 UTC）|
 
 ### 最新達成
+
+**🎉 Phase 1.6 Three.js Avatar基盤実装完了（2026-03-21 22:30 UTC - Day 30）:**
+
+**✅ 実装完了内容:**
+- **ThreeDAvatar.tsx** - React Three Fiberベースの3Dアバターコンポーネント
+- **AvatarRenderer.tsx** - 統一アバターインターフェース（THREE_D/TWO_D/STATIC_IMAGE対応）
+- **blendshape-controller.ts** - 表情・リップシンク制御システム
+- **gltf-loader.ts** - GLTFモデルローダー・バリデーション
+- **5ファイル作成** - 完全な3Dアバターシステム基盤
+
+**機能実装:**
+- ✅ GLTFモデルロード（GLTFLoader + React Three Fiber）
+- ✅ Blendshapeベースのリップシンク（0.0-1.0強度対応）
+- ✅ 感情ベースの表情制御（neutral, happy, sad, angry, surprised）
+- ✅ カメラコントロール（OrbitControls）
+- ✅ ライティング設定（ambient + directional + point lights）
+- ✅ ローディング・エラーUI
+- ✅ ARKit互換Blendshape対応
+
+**技術スタック:**
+- React Three Fiber ^8.15.0 ✅ 既存インストール済み
+- Three.js ^0.160.0 ✅ 既存インストール済み
+- @react-three/drei ^9.92.0 ✅ 既存インストール済み
+
+**次のステップ:**
+1. 3Dモデル追加（Ready Player Me推奨）
+2. SessionPlayerへの統合
+3. WebSocket音声データとのリップシンク連携
+4. VideoComposerとの統合
+
+**所要時間:** 約3.5時間
+**進捗:** Phase 1.6 Avatar 0% → 50%
+
+---
+
+**🎉 Phase 5.4.1 完了 - Score Preset Weights Migration（2026-03-21 15:30 UTC - Day 30）:**
+
+**✅ Priority 1 Migration Complete:**
+- **20 score preset weights** migrated to runtime_configs database
+- **2 code files updated** (runtime-config-loader, score-calculator)
+- **44 Lambda functions** deployed successfully (190.71s)
+- **Database migration** verified (all 20 configs, weight sums = 1.0)
+- **Dynamic weight loading** implemented with 3-tier caching
+
+**Score Preset Weights (20 configs):**
+- Default Preset: emotion=0.35, audio=0.35, content=0.2, delivery=0.1
+- Interview Practice: emotion=0.4, audio=0.3, content=0.2, delivery=0.1
+- Language Learning: emotion=0.15, audio=0.5, content=0.25, delivery=0.1
+- Presentation: emotion=0.3, audio=0.3, content=0.3, delivery=0.1
+- Custom: emotion=0.35, audio=0.35, content=0.2, delivery=0.1
+
+**Benefits Achieved:**
+- ✅ Weights now loaded from database (no Lambda redeploy needed)
+- ✅ UI management ready (foundation for admin customization)
+- ✅ A/B testing enabled (change weights without code changes)
+- ✅ Performance: Negligible impact (~1ms first load, <0.1ms cached)
+
+**Documentation:**
+- `SCORE_PRESET_WEIGHTS_MIGRATION_COMPLETE.md` - Full completion report
+- `HARDCODED_VALUES_ANALYSIS.md` - Original analysis (35+ hardcoded values)
+
+---
 
 **🎉 Phase 5.4 完了 - Runtime Configuration Integration（2026-03-21 11:45 UTC - Day 30）:**
 
@@ -78,24 +182,9 @@ cat docs/07-development/KNOWN_ISSUES.md
 - Batch 5: Other Utilities (2 files)
 - Batch 6: STT Configuration (1 file)
 
-**Runtime Configurations (16 keys):**
-1. BCRYPT_SALT_ROUNDS (10)
-2. EMOTION_WEIGHT (0.25)
-3. AUDIO_WEIGHT (0.25)
-4. CONTENT_WEIGHT (0.25)
-5. DELIVERY_WEIGHT (0.25)
-6. MIN_OVERALL_SCORE (0.0)
-7. RATE_LIMIT_REQUESTS_PER_MINUTE (60)
-8. RATE_LIMIT_TIME_WINDOW_MS (60000)
-9. AUDIO_CHUNK_DURATION (1000ms)
-10. MAX_CHUNKS_PER_BATCH (10)
-11. TTS_STABILITY (0.5)
-12. TTS_SIMILARITY_BOOST (0.75)
-13. CLAUDE_TEMPERATURE (0.7)
-14. VIDEO_CHUNK_BATCH_SIZE (50)
-15. ANALYSIS_BATCH_SIZE (10)
-16. MAX_RESULTS (1000)
-17. DEFAULT_STT_CONFIDENCE (0.95)
+**Runtime Configurations (36 keys total):**
+- Original 16 keys: BCRYPT_SALT_ROUNDS, EMOTION_WEIGHT, AUDIO_WEIGHT, etc.
+- **+20 new keys (Phase 5.4.1):** SCORE_PRESET_* weights
 
 **Excluded:** 21 files (infrastructure configs only - AWS_REGION, S3_BUCKET, etc.)
 
@@ -324,79 +413,217 @@ cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH3_COMPLETE
 
 ## 🎯 次のアクション
 
-### ✅ 前回完了：Phase 5.4 完全達成 - Runtime Configuration Integration (2026-03-21 11:45 UTC)
+### 🚨 最優先：Phase 1.6 アバターレンダリング統合（残り1週間）
 
-**🎉 100% Coverage Achieved:**
-- ✅ 11ファイル移行完了 (100% of runtime-configurable files)
-- ✅ 16 runtime configs migrated to 3-tier caching system
-- ✅ 23 Lambda functions updated and verified
-- ✅ 6 successful deployments (~850 seconds total)
-- ✅ 0 runtime errors detected
-- ✅ 12 comprehensive documentation files created (271KB)
+**実装確認結果（2026-03-21 22:30 UTC）:**
 
-**最終Batch:**
-- Batch 6: stt-azure.ts (DEFAULT_STT_CONFIDENCE)
-- Deployment: ~120s (estimated)
-- Status: ✅ Complete
+Phase 1.5（リアルタイム会話）は**実装完了**、Three.jsアバター基盤も**実装完了**しました。残るタスクは**SessionPlayerへの統合**です。
 
-**詳細レポート:**
+**現在のステータス:**
+- ✅ Phase 1.5: リアルタイム会話 - **100%完了**
+- 🟡 Phase 1.6: アバターレンダリング - **50%完了**（基盤実装完了、統合待ち）
+- ⏳ Phase 1.6: 録画機能信頼性 - 80%（並行実施可能）
+- ⏳ Phase 1.6: シナリオエンジン - 50%（並行実施可能）
+
+**詳細分析レポート:**
 ```bash
-cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_COMPLETION_REPORT.md
+cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_1_REMAINING_TASKS_SUMMARY.md
 ```
 
 ---
 
-### 📋 次のステップ：3つの選択肢
+### 🔴 致命的な問題（4つ）
 
-#### 選択肢1: Runtime Verification Testing（推奨）⭐
+#### 1. Phase 1.5: リアルタイム会話 ✅ 完了
 
-**目的:** 移行済み11ファイルの動作確認
+**実装確認結果（2026-03-21 19:00 UTC）:**
+- ✅ MediaRecorder timeslice設定（1秒チャンク）- 実装済み
+- ✅ 音声チャンクのWebSocket送信 - 実装済み
+- ✅ 無音検出実装（Web Audio API）- 実装済み
+- ✅ Lambda側リアルタイムSTT処理 - 実装済み
+- ✅ ストリーミングAI応答（Bedrock Claude）- 実装済み
+- ✅ ストリーミングTTS（ElevenLabs WebSocket）- 実装済み
 
-**テストケース（6項目）:**
-1. ✅ BCRYPT_SALT_ROUNDS - PIN hashing
-2. ⏭️ Score Calculation Weights - Overall score
-3. ⏭️ Rate Limiter Configs - API throttling
-4. ⏭️ TTS/AI Configs - Voice and response quality
-5. ⏭️ Chunk Processing - Batch sizes
-6. ⏭️ DB Query MAX_RESULTS - Result truncation
+**実装率:** 100%
 
-**推定時間:** 1-2時間（キャッシュ有効期限待ち時間含む）
+**実装ファイル:**
+- `apps/web/hooks/useAudioRecorder.ts` - リアルタイム音声録音
+- `infrastructure/lambda/websocket/default/audio-processor.ts` - STT/AI/TTS パイプライン
+- `infrastructure/lambda/websocket/default/index.ts` - speech_end ハンドラー
 
-**テストプラン:**
-```bash
-cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_RUNTIME_VERIFICATION_PLAN.md
-```
-
----
-
-#### 選択肢2: Production環境デプロイ
-
-**前提条件:** ✅ All satisfied
-- Phase 5.4完了 (100%)
-- E2Eテスト成功 (35/35, 100%)
-- 環境変数完全管理システム確立
-
-**デプロイ手順:**
-```bash
-cd infrastructure
-npm run deploy:production
-```
-
-**推定時間:** 15-20分
-
-**リスク:** Low (すべてDev環境で検証済み)
+**所要時間:** 0日（既に完了）
 
 ---
 
-#### 選択肢3: 次のフェーズ開始
+#### 2. Phase 1.6: アバターレンダリングが未実装 🔴
 
-**Phase 6候補:**
-1. **Admin UI for Runtime Configs** - Web interface for config management
-2. **Performance Monitoring Dashboard** - Cache hit rate, latency metrics
-3. **AI Provider Failover System** - Automatic failover to backup providers
-4. **Advanced Analytics** - Deep dive into user behavior patterns
+**現状:**
+- ❌ `apps/web/components/session-player/index.tsx:2249` に**空のcanvas要素のみ**
+- ❌ Live2D/Three.jsの統合なし
+- ❌ セッション実行時、**アバターが表示されない**
+- ❌ ユーザーは静止画または空白画面を見る
 
-**推定期間:** 各1-2週間
+**実装率:** 0%
+
+**必要な作業:**
+- Live2D統合（2Dアバター、リップシンク、表情制御）
+- Three.js統合（3Dアバター、GLTFローダー、Blendshape）
+- アバター切り替え・VideoComposer統合
+
+**推定時間:** 7-12日
+
+---
+
+#### 3. Phase 1.6: 録画機能の信頼性不足
+
+**現状:**
+- ❌ ACK確認なし（チャンク送信成功を確認していない）
+- ❌ 自動リトライなし
+- ❌ 順序保証不十分
+- ❌ チャンク欠損検出なし
+
+**実装率:** 80%
+
+**必要な作業:**
+- WebSocket ACK追跡システム
+- 順序保証・重複排除
+- チャンク結合最適化
+
+**推定時間:** 3-5日
+
+**Note:** Phase 1.6.1 の実装計画は存在するが、実際の実装は未着手
+
+---
+
+#### 4. Phase 1.6: シナリオエンジンが部分的
+
+**現状:**
+- ❌ 実行前バリデーションなし
+- ❌ 変数システムなし
+- ❌ エラーリカバリーなし
+- ❌ シナリオキャッシュなし
+
+**実装率:** 50%
+
+**必要な作業:**
+- シナリオバリデーション
+- 変数システム（型チェック、デフォルト値、置換）
+- エラーリカバリーハンドラー
+
+**推定時間:** 2-3日
+
+---
+
+### 📋 Phase 1完全化 実装計画（Option A）⭐ 選択済み
+
+**合計推定時間:** 15-27日（2-4週間）
+
+#### ~~Week 1: Phase 1.5 リアルタイム会話完成~~ ✅ 完了済み
+
+**Day 1-3: リアルタイムSTT実装** ✅
+- [x] MediaRecorder timeslice設定（1秒チャンク）
+- [x] 音声チャンクのWebSocket送信
+- [x] 無音検出実装（Web Audio API）
+- [x] Lambda側リアルタイムSTT処理
+- [x] 文字起こし結果のWebSocket返却
+
+**Day 4-5: ストリーミングAI応答最適化** ✅
+- [x] Bedrock Streaming APIの最適化確認
+- [x] チャンクごとのWebSocket送信
+- [x] Frontendでのリアルタイム表示
+- [x] バッファリング・エラーハンドリング
+
+**Day 6-7: ストリーミングTTS改善** ✅
+- [x] 音声バッファリングキュー実装
+- [x] 自動再生開始ロジック
+- [x] 音声品質チェック
+- [x] エラーハンドリング
+
+---
+
+#### Week 2-3: Phase 1.6 アバターレンダリング実装
+
+**~~Day 8-12: Live2D統合（2Dアバター）~~** ⏸️ 延期
+- ⏸️ Live2D Cubism SDK 5 インストール（PixiJS v6依存の問題）
+- ⏸️ Three.jsを優先実装
+
+**Day 13-17: Three.js統合（3Dアバター）** ✅ 完了
+- [x] Three.js + React Three Fiber セットアップ
+- [x] GLTFモデルローダー実装
+- [x] リップシンク実装（Blendshape制御）
+- [x] 表情変更システム
+- [x] カメラ制御・ライティング
+- [x] パフォーマンス最適化（30-60fps）
+
+**実装ファイル（完了）:**
+- ✅ `apps/web/components/avatar/ThreeDAvatar.tsx`
+- ✅ `apps/web/lib/avatar/gltf-loader.ts`
+- ✅ `apps/web/lib/avatar/blendshape-controller.ts`
+- ✅ `apps/web/components/avatar/AvatarRenderer.tsx`
+- ✅ `apps/web/components/avatar/index.tsx`
+
+**Day 18-19: SessionPlayer統合（次のタスク）** 🔴 最優先
+- [ ] SessionPlayerにAvatarRendererを統合
+- [ ] avatarCanvasRefをThree.jsキャンバスに接続
+- [ ] WebSocket音声強度データとリップシンク連携
+- [ ] VideoComposerとの統合確認
+- [ ] 3Dモデル追加（Ready Player Me）
+- [ ] 録画機能テスト
+
+---
+
+#### Week 3: Phase 1.6 信頼性向上（並行実施可能）
+
+**Day 20-24: 録画機能信頼性向上**
+- [ ] WebSocket ACK追跡システム（Day 31計画）
+- [ ] 順序保証・重複排除（Day 32計画）
+- [ ] チャンク結合最適化（Day 33計画）
+- [ ] エラーハンドリング・UI改善（Day 34計画）
+
+**Day 25-27: シナリオエンジン改善**
+- [ ] シナリオバリデーション（Day 35計画）
+- [ ] 変数システム・キャッシュ（Day 36計画）
+- [ ] パフォーマンステスト・デプロイ（Day 37計画）
+
+---
+
+### 📊 実装優先順位
+
+| 優先度 | タスク | 推定時間 | ステータス |
+|--------|--------|---------|-----------|
+| P0 🔴 | SessionPlayer統合 + 3Dモデル | 2-3日 | ⏳ 次のタスク |
+| ~~P0~~ | ~~Three.jsアバター基盤実装~~ | ~~3-5日~~ | ✅ 完了済み（2026-03-21） |
+| ~~P0~~ | ~~リアルタイム会話完成~~ | ~~3-7日~~ | ✅ 完了済み |
+| P1 🟡 | 録画機能信頼性向上 | 3-5日 | ⏳ 保留 |
+| P1 🟡 | シナリオエンジン改善 | 2-3日 | ⏳ 保留 |
+
+---
+
+### 🎯 完了判定基準
+
+**Phase 1完全化の定義:**
+- ✅ ~~ユーザーが話す → **即座に**文字起こし表示（1-2秒）~~ - **完了**
+- ✅ ~~AI応答生成 → **2-5秒以内**~~ - **完了**
+- ✅ ~~音声再生開始 → **即座**~~ - **完了**
+- 🔴 アバターが**リアルタイムに**表情・リップシンク - **未実装**（最優先）
+- ⏳ 録画が**確実に**保存される（ACK確認、リトライ）- 80%完了
+- ⏳ シナリオエラーが**自動回復**される - 50%完了
+
+**成功率目標:** > 95%
+
+---
+
+### ✅ 前回完了：Phase 5.4.1 - Score Preset Weights Migration (2026-03-21 15:30 UTC)
+
+**Phase 5完全完了:**
+- ✅ 36 runtime configs（16 original + 20 score preset weights）
+- ✅ 100% code verification
+- ✅ Priority 1 hardcode migration完了
+
+**Full Report:**
+```bash
+cat docs/09-progress/archives/2026-03-21-phase5-status/SCORE_PRESET_WEIGHTS_MIGRATION_COMPLETE.md
+```
 
 ---
 
