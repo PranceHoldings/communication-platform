@@ -1,10 +1,10 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-21 22:30 UTC (Day 30 - Three.js Avatar基盤実装完了 ✅)
-**現在の Phase:** Phase 5 完了 → **Phase 1.6 アバターレンダリング進行中** 🟡
-**重要な発見:** Phase 1.5は実装完了（100%）、Three.jsアバター基盤実装完了（50%）
-**次のアクション:** SessionPlayerへのアバター統合 + 3Dモデル追加
-**ステータス:** 🟡 **Three.js基盤完了** - SessionPlayer統合が次のステップ
+**最終更新:** 2026-03-21 23:00 UTC (Day 30 - Phase 1.6 Avatar統合完了 ✅)
+**現在の Phase:** Phase 1.6 完了 → **Phase 1.6.1 録画機能信頼性向上開始** 🟡
+**重要な発見:** Phase 1.6 Avatar統合完全完了（100%）、テストページ作成完了
+**次のアクション:** Phase 1.6.1 Day 31 - WebSocket ACK確認・自動リトライ実装
+**ステータス:** ✅ **Phase 1.6完了** - 次は録画機能信頼性向上（ACK/リトライ）
 
 ---
 
@@ -91,9 +91,9 @@ cat apps/web/components/session-player/index.tsx | grep -A5 "avatarCanvasRef"
 | Phase | 内容 | 進捗 | 実際のステータス |
 |-------|------|------|-----------------|
 | **Phase 1.5** | **リアルタイム会話** | **100%** | ✅ **完了** - STT/AI/TTSストリーミング実装済み |
-| **Phase 1.6 Avatar** | **アバターレンダリング** | **50%** | 🟡 **進行中** - Three.js基盤完了、統合待ち |
-| **Phase 1.6 Recording** | **録画機能信頼性** | **80%** | ⚠️ **改善必要** - ACK/リトライなし |
-| **Phase 1.6 Scenario** | **シナリオエンジン** | **50%** | ⚠️ **部分実装** - バリデーションなし |
+| **Phase 1.6 Avatar** | **アバターレンダリング** | **100%** | ✅ **完了** - SessionPlayer統合、3Dモデル配置、テスト完了 |
+| **Phase 1.6.1 Recording** | **録画機能信頼性** | **0%** | 🔴 **開始準備** - ACK/リトライ実装待ち |
+| **Phase 1.6.1 Scenario** | **シナリオエンジン** | **50%** | ⚠️ **部分実装** - バリデーションなし |
 | Phase 2-2.5 | 録画・解析・ゲストユーザー | 100% | ✅ 完了 |
 | Phase 3.1-3.3 | Dev/Production環境・E2Eテスト | 100% | ✅ 完了 |
 | Phase 3.4 | 環境変数完全管理 | 100% | ✅ 完了（2026-03-20） |
@@ -103,37 +103,36 @@ cat apps/web/components/session-player/index.tsx | grep -A5 "avatarCanvasRef"
 
 ### 最新達成
 
-**🎉 Phase 1.6 Three.js Avatar基盤実装完了（2026-03-21 22:30 UTC - Day 30）:**
+**🎉 Phase 1.6 Avatar統合完全完了（2026-03-21 23:00 UTC - Day 30）:**
 
 **✅ 実装完了内容:**
-- **ThreeDAvatar.tsx** - React Three Fiberベースの3Dアバターコンポーネント
-- **AvatarRenderer.tsx** - 統一アバターインターフェース（THREE_D/TWO_D/STATIC_IMAGE対応）
-- **blendshape-controller.ts** - 表情・リップシンク制御システム
-- **gltf-loader.ts** - GLTFモデルローダー・バリデーション
-- **5ファイル作成** - 完全な3Dアバターシステム基盤
+1. **SessionPlayer統合** - AvatarRendererをSessionPlayerに完全統合
+2. **WebSocket連携** - audioLevel → lipSyncIntensity リアルタイム更新
+3. **VideoComposer統合** - 録画機能との統合確認完了
+4. **3Dモデル配置** - test-model.glb (Flamingo, 76KB) 配置完了
+5. **テストページ作成** - /test-avatar インタラクティブテスト環境
 
-**機能実装:**
-- ✅ GLTFモデルロード（GLTFLoader + React Three Fiber）
-- ✅ Blendshapeベースのリップシンク（0.0-1.0強度対応）
-- ✅ 感情ベースの表情制御（neutral, happy, sad, angry, surprised）
-- ✅ カメラコントロール（OrbitControls）
-- ✅ ライティング設定（ambient + directional + point lights）
-- ✅ ローディング・エラーUI
-- ✅ ARKit互換Blendshape対応
+**コミット:**
+- `10f36ca` - feat(avatar): integrate AvatarRenderer into SessionPlayer
+- `ac7362b` - feat(avatar): add 3D model and test page for avatar rendering
+
+**実装詳細:**
+- ✅ AvatarRenderer import + ref実装
+- ✅ handleAvatarReady コールバック
+- ✅ audioLevel監視useEffect
+- ✅ avatarRef.setLipSync() リアルタイム更新
+- ✅ canvas抽出・VideoComposer連携
+
+**テストURL:**
+- http://localhost:3000/test-avatar - インタラクティブアバターテスト
 
 **技術スタック:**
-- React Three Fiber ^8.15.0 ✅ 既存インストール済み
-- Three.js ^0.160.0 ✅ 既存インストール済み
-- @react-three/drei ^9.92.0 ✅ 既存インストール済み
+- React Three Fiber ^8.15.0
+- Three.js ^0.160.0
+- @react-three/drei ^9.92.0
 
-**次のステップ:**
-1. 3Dモデル追加（Ready Player Me推奨）
-2. SessionPlayerへの統合
-3. WebSocket音声データとのリップシンク連携
-4. VideoComposerとの統合
-
-**所要時間:** 約3.5時間
-**進捗:** Phase 1.6 Avatar 0% → 50%
+**所要時間:** 約2時間
+**進捗:** Phase 1.6 Avatar 50% → 100% ✅
 
 ---
 
@@ -413,54 +412,51 @@ cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH3_COMPLETE
 
 ## 🎯 次のアクション
 
-### 🚨 最優先：Phase 1.6 アバターレンダリング統合（残り1週間）
+### 🚨 最優先：Phase 1.6.1 録画機能信頼性向上（Day 31: ACK確認・自動リトライ）
 
-**実装確認結果（2026-03-21 22:30 UTC）:**
+**Phase 1.6 Avatar完了確認（2026-03-21 23:00 UTC）:**
 
-Phase 1.5（リアルタイム会話）は**実装完了**、Three.jsアバター基盤も**実装完了**しました。残るタスクは**SessionPlayerへの統合**です。
+Phase 1.6 Avatarが**完全完了**しました！SessionPlayer統合、WebSocket連携、3Dモデル配置、テストページ作成がすべて完了。
 
 **現在のステータス:**
 - ✅ Phase 1.5: リアルタイム会話 - **100%完了**
-- 🟡 Phase 1.6: アバターレンダリング - **50%完了**（基盤実装完了、統合待ち）
-- ⏳ Phase 1.6: 録画機能信頼性 - 80%（並行実施可能）
-- ⏳ Phase 1.6: シナリオエンジン - 50%（並行実施可能）
+- ✅ Phase 1.6: アバターレンダリング - **100%完了** 🎉
+- 🔴 Phase 1.6.1: 録画機能信頼性 - **0%** (ACK/リトライ未実装)
+- 🟡 Phase 1.6.1: シナリオエンジン - **50%** (バリデーション未実装)
 
-**詳細分析レポート:**
+**次のタスク: Phase 1.6.1 Day 31**
+- WebSocket ACK確認機能実装
+- 指数バックオフ自動リトライ
+- チャンク送信追跡システム
+- タイムアウト処理
+
+**実装計画:**
 ```bash
-cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_1_REMAINING_TASKS_SUMMARY.md
+cat docs/09-progress/archives/2026-03-21-phase1.6-analysis/PHASE_1.6.1_IMPLEMENTATION_PLAN.md
 ```
 
 ---
 
-### 🔴 致命的な問題（4つ）
+### ✅ 完了済みタスク（Phase 1.5-1.6）
 
 #### 1. Phase 1.5: リアルタイム会話 ✅ 完了
 
 **実装確認結果（2026-03-21 19:00 UTC）:**
-- ✅ MediaRecorder timeslice設定（1秒チャンク）- 実装済み
-- ✅ 音声チャンクのWebSocket送信 - 実装済み
-- ✅ 無音検出実装（Web Audio API）- 実装済み
-- ✅ Lambda側リアルタイムSTT処理 - 実装済み
-- ✅ ストリーミングAI応答（Bedrock Claude）- 実装済み
-- ✅ ストリーミングTTS（ElevenLabs WebSocket）- 実装済み
+- ✅ MediaRecorder timeslice設定（1秒チャンク）
+- ✅ 音声チャンクのWebSocket送信
+- ✅ 無音検出実装（Web Audio API）
+- ✅ Lambda側リアルタイムSTT処理
+- ✅ ストリーミングAI応答（Bedrock Claude）
+- ✅ ストリーミングTTS（ElevenLabs WebSocket）
 
-**実装率:** 100%
+#### 2. Phase 1.6: アバターレンダリング ✅ 完了
 
-**実装ファイル:**
-- `apps/web/hooks/useAudioRecorder.ts` - リアルタイム音声録音
-- `infrastructure/lambda/websocket/default/audio-processor.ts` - STT/AI/TTS パイプライン
-- `infrastructure/lambda/websocket/default/index.ts` - speech_end ハンドラー
-
-**所要時間:** 0日（既に完了）
-
----
-
-#### 2. Phase 1.6: アバターレンダリングが未実装 🔴
-
-**現状:**
-- ❌ `apps/web/components/session-player/index.tsx:2249` に**空のcanvas要素のみ**
-- ❌ Live2D/Three.jsの統合なし
-- ❌ セッション実行時、**アバターが表示されない**
+**実装確認結果（2026-03-21 23:00 UTC）:**
+- ✅ AvatarRendererをSessionPlayerに統合
+- ✅ WebSocket音声データとリップシンク連携
+- ✅ VideoComposer統合確認
+- ✅ 3Dモデル配置（test-model.glb）
+- ✅ テストページ作成（/test-avatar）
 - ❌ ユーザーは静止画または空白画面を見る
 
 **実装率:** 0%
