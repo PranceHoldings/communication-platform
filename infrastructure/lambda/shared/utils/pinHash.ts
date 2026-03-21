@@ -6,7 +6,7 @@
  */
 
 import bcrypt from 'bcryptjs';
-import { getBcryptSaltRounds } from './env-validator';
+import { getBcryptSaltRounds } from './runtime-config-loader';
 
 /**
  * PINコードをbcryptでハッシュ化
@@ -25,7 +25,8 @@ export async function hashPin(pin: string): Promise<string> {
     throw new Error('Invalid PIN format: must be 4-8 digits');
   }
 
-  return bcrypt.hash(pin, getBcryptSaltRounds());
+  const saltRounds = await getBcryptSaltRounds();
+  return bcrypt.hash(pin, saltRounds);
 }
 
 /**

@@ -154,10 +154,11 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
 });
 
 // Monitoring Stack (Phase 1.6 Performance Monitoring)
+// Phase 5.4 Batch 4: Use function name instead of IFunction to avoid Export dependency
 const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   env,
   environment,
-  websocketLambdaFunction: apiLambdaStack.websocketDefaultFunction,
+  websocketLambdaFunctionName: `prance-websocket-default-v2-${environment}`,
   alertEmail: process.env.ALERT_EMAIL, // Optional: Set in .env for email alerts
   description: 'Prance Platform - CloudWatch Monitoring and Alarms (Phase 1.6)',
 });

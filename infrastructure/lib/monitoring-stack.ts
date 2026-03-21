@@ -12,7 +12,7 @@ import { Construct } from 'constructs';
 
 export interface MonitoringStackProps extends cdk.StackProps {
   environment: string;
-  websocketLambdaFunction?: lambda.IFunction;
+  websocketLambdaFunctionName?: string; // Changed from IFunction to string (Phase 5.4 Batch 4)
   alertEmail?: string;
 }
 
@@ -23,7 +23,7 @@ export class MonitoringStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: MonitoringStackProps) {
     super(scope, id, props);
 
-    const { environment, websocketLambdaFunction, alertEmail } = props;
+    const { environment, websocketLambdaFunctionName, alertEmail } = props;
 
     // SNS Topic for alarms
     this.alarmTopic = new sns.Topic(this, 'AlarmTopic', {
@@ -40,7 +40,13 @@ export class MonitoringStack extends cdk.Stack {
       dashboardName: `Prance-${environment}-Performance`,
     });
 
-    if (websocketLambdaFunction) {
+    // Import Lambda function by name (Phase 5.4 Batch 4: Avoid Export dependency)
+    if (websocketLambdaFunctionName) {
+      const websocketLambdaFunction = lambda.Function.fromFunctionName(
+        this,
+        'ImportedWebSocketFunction',
+        websocketLambdaFunctionName
+      );
       this.addWebSocketMetrics(websocketLambdaFunction, environment);
       this.addWebSocketAlarms(websocketLambdaFunction, environment);
     }

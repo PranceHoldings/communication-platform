@@ -220,40 +220,118 @@ const { temperature = defaultTemperature, ... } = options;
 
 ---
 
-## ⏳ Batch 4: WebSocket (Pending)
+## ✅ Batch 4: WebSocket (COMPLETE)
 
-### Files to Migrate:
+**Completion Date:** 2026-03-21 10:46 UTC
+**Deployment Time:** 115.03 seconds
 
-1. `websocket/default/index.ts`
-2. `websocket/default/audio-processor.ts`
-3. `websocket/default/video-processor.ts`
-4. `websocket/connect/index.ts`
-5. Other WebSocket-related files
+### Migrated Files (1/1):
 
-**Estimated complexity:** Medium (real-time processing concerns)
+**1. websocket/default/chunk-utils.ts ✅**
+
+**File:** `infrastructure/lambda/websocket/default/chunk-utils.ts`
+
+**Changes:**
+```typescript
+// Line 6: Import change
+import { getVideoChunkBatchSize, getAnalysisBatchSize } from '../../shared/utils/runtime-config-loader';
+
+// Line 270: Added await
+const BATCH_SIZE = await getVideoChunkBatchSize();
+
+// Line 367: Added await
+const BATCH_SIZE = await getAnalysisBatchSize();
+```
+
+**Affected Functions:**
+- `downloadAndCombineChunks()` - VIDEO_CHUNK_BATCH_SIZE
+- `cleanupChunks()` - ANALYSIS_BATCH_SIZE
+
+**New Lambda Function:** `prance-websocket-default-v2-dev`
+
+**Status:** ✅ Complete - Deployed with new function name (v2) due to monitoring stack Export dependency
+
+**Special Notes:**
+- Lambda function renamed from `prance-websocket-default-dev` to `prance-websocket-default-v2-dev`
+- Monitoring stack updated to use function name reference instead of IFunction (avoiding CloudFormation Export dependency)
+
+> Details: [PHASE_5.4_BATCH4_COMPLETE.md](PHASE_5.4_BATCH4_COMPLETE.md)
+
+### Excluded Files (4/5):
+
+- `websocket/default/index.ts` - Uses only infrastructure configs
+- `websocket/default/audio-processor.ts` - Uses only infrastructure configs
+- `websocket/default/video-processor.ts` - Uses only infrastructure configs
+- `websocket/connect/index.ts` - Uses only infrastructure configs
 
 ---
 
-## ⏳ Batch 5: Other Utilities (Pending)
+## ✅ Batch 5: Other Utilities (COMPLETE)
 
-### Files to Migrate:
+**Completion Date:** 2026-03-21 11:05 UTC
+**Deployment Time:** 223.77 seconds
 
-1. `shared/utils/rate-limiter.ts`
-   - Uses: RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_LOCKOUT_DURATION_MS
+### Migrated Files (2/13):
 
-2. `shared/utils/rateLimiter.ts` (duplicate?)
-3. `shared/utils/tokenGenerator.ts`
-4. `shared/utils/pinHash.ts`
-5. `benchmark/get/index.ts`
-6. `benchmark/update-history/index.ts`
-7. `auth/authorizer/index.ts`
-8. `db-query/index.ts`
-9. `db-mutation/index.ts`
-10. `guest-sessions/create/index.ts`
-11. `guest-sessions/batch/index.ts`
-12. `health-check/index.ts`
-13. `sessions/analysis/index.ts`
-14. `sessions/trigger-analysis/index.ts`
+**1. shared/utils/pinHash.ts ✅**
+
+**File:** `infrastructure/lambda/shared/utils/pinHash.ts`
+
+**Changes:**
+```typescript
+// Line 9: Import change
+import { getBcryptSaltRounds } from './runtime-config-loader';
+
+// Line 28: Added await
+const saltRounds = await getBcryptSaltRounds();
+return bcrypt.hash(pin, saltRounds);
+```
+
+**Affected Lambda Functions:**
+- `prance-guest-auth-dev` (verifyPin)
+- `prance-guest-sessions-create-dev` (hashPin)
+- `prance-guest-sessions-batch-dev` (hashPin)
+
+**Status:** ✅ Complete
+
+---
+
+**2. db-query/index.ts ✅**
+
+**File:** `infrastructure/lambda/db-query/index.ts`
+
+**Changes:**
+```typescript
+// Line 23: Import separation
+import { getMaxResults } from '../shared/utils/runtime-config-loader';
+import { getRequiredEnv, getAwsRegion } from '../shared/utils/env-validator';
+
+// Line 213: Added await
+const maxResults = event.maxResults || (await getMaxResults());
+```
+
+**Affected Lambda Functions:**
+- `prance-db-query-dev`
+
+**Status:** ✅ Complete
+
+> Details: [PHASE_5.4_BATCH5_COMPLETE.md](PHASE_5.4_BATCH5_COMPLETE.md)
+
+### Excluded Files (11/13):
+
+These files only use infrastructure configs (not runtime-tunable):
+
+1. `shared/utils/rate-limiter.ts` - `getRequiredEnv`, `getAwsRegion` only
+2. `shared/utils/tokenGenerator.ts` - `getFrontendUrl` (infrastructure)
+3. `benchmark/get/index.ts` - `getRequiredEnv`, `getAwsRegion` only
+4. `benchmark/update-history/index.ts` - `getRequiredEnv`, `getAwsRegion` only
+5. `auth/authorizer/index.ts` - `getRequiredEnv` only
+6. `db-mutation/index.ts` - `getEnvironmentName` only
+7. `guest-sessions/create/index.ts` - `getFrontendUrl` only (pinHash already counted)
+8. `guest-sessions/batch/index.ts` - `getFrontendUrl` only (pinHash already counted)
+9. `health-check/index.ts` - `getEnvironmentName` only
+10. `sessions/analysis/index.ts` - `getS3Bucket` only
+11. `sessions/trigger-analysis/index.ts` - `getAnalysisLambdaFunctionName` only
 
 ---
 
@@ -299,18 +377,43 @@ These files use **non-runtime-config** environment variables:
 | 1. Security & Score | 3 | ✅ Complete | 100% (3/3) |
 | 2. Rate Limiter | 1 | ✅ Complete | 100% (1/1) |
 | 3. Audio/AI | 3 | ✅ Complete | 100% (3/3) |
-| 4. WebSocket | 5 | ⏳ Pending | 0% |
-| 5. Other | 13 | ⏳ Pending | 0% |
-| **Total** | **26** | 🔄 In Progress | **27% (7/26)** |
+| 4. WebSocket | 1 | ✅ Complete | 100% (1/1) |
+| 5. Other | 2 | ✅ Complete | 100% (2/2) |
+| **Total** | **10** | 🔄 In Progress | **38% (10/26)** |
 
-**Note:** Total reduced from 27 to 26 (rate-limiter.ts excluded, only rateLimiter.ts migrated)
-**Note:** Batch 3 updated: 4 → 3 files (report/ai-suggestions.ts excluded, no runtime configs used)
+**Note:** Batch 4 reduced: 5 → 1 file (only chunk-utils.ts uses runtime configs)
+**Note:** Batch 5 reduced: 13 → 2 files (11 files use infrastructure configs only)
+**Note:** Total migrated files reduced from 26 to ~10-15 (many files excluded)
 
 ---
 
 ## 🎯 Next Actions
 
-### Option 1: Verify Batch 1+2 Deployment (Recommended)
+### Option 1: Runtime Configuration Verification (Recommended)
+
+**Test runtime config loading for all completed batches:**
+
+```bash
+# 1. Test BCRYPT_SALT_ROUNDS (Batch 1, 5)
+# Create guest session and verify PIN hashing
+
+# 2. Test Score Calculation weights (Batch 1)
+# Run session analysis and check score calculation
+
+# 3. Test Rate Limiter configs (Batch 2)
+# Test rate limiting with runtime-configured values
+
+# 4. Test Audio/AI configs (Batch 3)
+# TTS_STABILITY, TTS_SIMILARITY_BOOST, CLAUDE_TEMPERATURE, MIN_PAUSE_DURATION_SEC
+
+# 5. Test Chunk processing (Batch 4)
+# VIDEO_CHUNK_BATCH_SIZE, ANALYSIS_BATCH_SIZE
+
+# 6. Test DB Query (Batch 5)
+# MAX_RESULTS truncation
+```
+
+### Option 2: Continue Migration (If more files exist)
 
 **Manual Testing:**
 ```bash
@@ -392,7 +495,42 @@ aws logs tail /aws/lambda/prance-auth-guest-dev --follow | grep -E "(RuntimeConf
 
 ---
 
-**Last Updated:** 2026-03-21 09:30 UTC
-**Status:** ✅ Batch 1+2+3 Complete (7/26 files, 27% overall) - Deployed
-**Deployment:** 3 deployments (391.19 seconds total)
-**Next Review:** Batch 4 implementation or runtime verification
+## 📚 Files Created/Updated
+
+### Code Changes (Batch 1-5):
+- `infrastructure/lambda/shared/auth/password.ts` ✅
+- `infrastructure/lambda/shared/analysis/score-calculator.ts` ✅
+- `infrastructure/lambda/shared/analysis/analysis-orchestrator.ts` ✅
+- `infrastructure/lambda/shared/utils/rateLimiter.ts` ✅
+- `infrastructure/lambda/shared/analysis/audio-analyzer.ts` ✅
+- `infrastructure/lambda/shared/audio/tts-elevenlabs.ts` ✅
+- `infrastructure/lambda/shared/ai/bedrock.ts` ✅
+- `infrastructure/lambda/websocket/default/chunk-utils.ts` ✅
+- `infrastructure/lambda/shared/utils/pinHash.ts` ✅
+- `infrastructure/lambda/db-query/index.ts` ✅
+
+### Infrastructure Changes:
+- `infrastructure/lib/api-lambda-stack.ts` - WebSocket function name v2
+- `infrastructure/lib/monitoring-stack.ts` - Function name reference
+- `infrastructure/bin/app.ts` - Monitoring stack props update
+
+### Documentation:
+- `docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH1_COMPLETE.md`
+- `docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH1_DEPLOYMENT.md`
+- `docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH2_COMPLETE.md`
+- `docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH3_COMPLETE.md`
+- `docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH4_COMPLETE.md` 🆕
+- `docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH5_COMPLETE.md` 🆕
+- `docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_INTEGRATION_STATUS.md` (this file)
+
+---
+
+**Last Updated:** 2026-03-21 11:10 UTC
+**Status:** ✅ Batch 1-5 Complete (10 files, 38% overall) - Deployed
+**Deployments:** 5 deployments (total ~700 seconds)
+- Batch 1: 138.24s
+- Batch 2: 115.82s
+- Batch 3: 137.13s
+- Batch 4: 115.03s (with Monitoring stack recreation)
+- Batch 5: 223.77s
+**Next Review:** Runtime configuration verification or complete remaining analysis

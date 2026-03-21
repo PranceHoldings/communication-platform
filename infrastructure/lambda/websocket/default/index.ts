@@ -1,7 +1,7 @@
 /**
  * WebSocket $default Handler
  * Handles all WebSocket messages with STT/AI/TTS integration
- * Last updated: 2026-03-20 15:00:00 UTC (Phase 1.6: added Token Bucket rate limiting)
+ * Last updated: 2026-03-21 09:20:00 UTC (Phase 5.4 Batch 4: chunk-utils.ts migration complete)
  */
 
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
@@ -40,8 +40,13 @@ import {
 import { checkRateLimit, RateLimitProfiles } from '../../shared/utils/rate-limiter';
 
 // Lambda function version
-const LAMBDA_VERSION = '1.1.0';
+const LAMBDA_VERSION = '1.1.2'; // Phase 5.4 Batch 4: runtime-config-loader for chunk-utils.ts
 const LAMBDA_NAME = 'websocket-default-handler';
+const BUILD_TIMESTAMP = '2026-03-21T09:46:23Z'; // Force CDK rebuild - unique per build
+const FORCE_REBUILD_FLAG = true; // Phase 5.4 Batch 4 deployment marker
+
+// Build identifier - unique filename format
+const BUILD_ID = `build-2026-03-21T09:46:23Z.marker`;
 
 // Supported languages (ISO 639-1 format: 'ja', 'en', 'zh-CN', 'zh-TW', etc.)
 // Source of truth: packages/shared/src/language/index.ts
@@ -233,7 +238,7 @@ interface ConnectionData {
 }
 
 export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyResultV2> => {
-  console.log('[Lambda Version]', LAMBDA_VERSION, '- Audio Processing: volume=10.0 + compressor');
+  console.log('[Lambda Version]', LAMBDA_VERSION, '- Batch 4:', FORCE_REBUILD_FLAG ? 'chunk-utils.ts migrated' : 'old', '- BuildID:', BUILD_ID);
   console.log('WebSocket Default Handler Event:', JSON.stringify(event, null, 2));
 
   const connectionId = event.requestContext.connectionId;

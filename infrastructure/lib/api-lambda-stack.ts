@@ -1315,8 +1315,8 @@ export class ApiLambdaStack extends cdk.Stack {
         props.environment === 'production'
           ? logs.RetentionDays.ONE_MONTH
           : logs.RetentionDays.ONE_WEEK,
-      functionName: `prance-websocket-default-${props.environment}`,
-      description: 'WebSocket $default message handler with STT/AI/TTS/Video processing',
+      functionName: `prance-websocket-default-v2-${props.environment}`,
+      description: 'WebSocket $default message handler (v2 - Phase 5.4 Batch 4: runtime-config-loader)',
       entry: path.join(__dirname, '../lambda/websocket/default/index.ts'),
       handler: 'handler',
       depsLockFilePath: path.join(__dirname, '../lambda/websocket/default/package-lock.json'),

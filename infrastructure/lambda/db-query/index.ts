@@ -20,7 +20,8 @@
 
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { prisma } from '../shared/database/prisma';
-import { getMaxResults, getRequiredEnv, getAwsRegion } from '../shared/utils/env-validator';
+import { getMaxResults } from '../shared/utils/runtime-config-loader';
+import { getRequiredEnv, getAwsRegion } from '../shared/utils/env-validator';
 
 const s3Client = new S3Client({ region: getAwsRegion() });
 const S3_BUCKET = getRequiredEnv('DB_QUERIES_BUCKET');
@@ -210,7 +211,7 @@ export const handler = async (event: QueryEvent): Promise<QueryResult> => {
 
     // Default to read-only mode for safety
     const readOnly = event.readOnly !== false;
-    const maxResults = event.maxResults || getMaxResults();
+    const maxResults = event.maxResults || (await getMaxResults());
 
     // Execute query
     const result = await executeQuery(sql, readOnly, maxResults);
