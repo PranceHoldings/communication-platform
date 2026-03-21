@@ -29,6 +29,7 @@ import { WaveformDisplay } from '@/components/audio-visualizer/WaveformDisplay';
 import { ProcessingIndicator, ProcessingStage } from './ProcessingIndicator';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
+import { AvatarRenderer, type AvatarRendererRef } from '@/components/avatar';
 import { toast } from 'sonner';
 import { ConnectionStatus, ErrorGuidance, useConnectionState } from '@/components/error-handling';
 
@@ -120,7 +121,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const PROCESSING_TIMEOUT_MS = 30000; // 30 seconds
 
   // 録画機能用のref
-  const avatarCanvasRef = useRef<HTMLCanvasElement>(null);
+  const avatarRef = useRef<AvatarRendererRef>(null);
+  const avatarCanvasRef = useRef<HTMLCanvasElement | null>(null); // AvatarRendererから取得したcanvasを保持
   const userVideoRef = useRef<HTMLVideoElement>(null);
   const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null); // VideoComposerから受け取ったcanvasを保持（useVideoRecorderに渡す）
 
@@ -1712,6 +1714,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     [t, getErrorMessage]
   );
 
+  // AvatarRenderer準備完了ハンドラー
+  const handleAvatarReady = useCallback(() => {
+    // AvatarRendererからcanvasを取得
+    const canvas = avatarRef.current?.getCanvas();
+    if (canvas) {
+      avatarCanvasRef.current = canvas;
+      console.log('[SessionPlayer] Avatar canvas ready:', {
+        width: canvas.width,
+        height: canvas.height,
+      });
+    }
+  }, []);
+
   // VideoComposer準備完了ハンドラー
   const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
     // VideoComposerから受け取ったcanvasをrefに保存
@@ -1721,6 +1736,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       height: canvas.height,
     });
   }, []);
+
+  // リアルタイムリップシンク更新
+  useEffect(() => {
+    if (avatarRef.current) {
+      avatarRef.current.setLipSync(audioLevel);
+    }
+  }, [audioLevel]);
 
   // useVideoRecorder統合
   const {
@@ -2522,8 +2544,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       {/* Hidden要素: 録画用 */}
       <div className="hidden">
-        {/* アバター用Canvas（将来Three.js統合用） */}
-        <canvas ref={avatarCanvasRef} width={1280} height={720} />
+        {/* AvatarRenderer - Three.js/Live2D/静的画像対応 */}
+        <AvatarRenderer
+          ref={avatarRef}
+          type={avatar.type}
+          modelUrl={avatar.modelUrl}
+          imageUrl={avatar.thumbnailUrl}
+          width={1280}
+          height={720}
+          lipSyncIntensity={audioLevel}
+          emotion="neutral"
+          onReady={handleAvatarReady}
+        />
 
         {/* ユーザーカメラ */}
         <video ref={userVideoRef} autoPlay playsInline muted />
