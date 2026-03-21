@@ -1,0 +1,80 @@
+{
+  "runtimeConfig": {
+    "title": "Runtime Configuration",
+    "description": "Manage system parameters without server restart",
+    "categories": {
+      "QUERY_PROCESSING": "Query & Processing",
+      "AI_PROCESSING": "AI Processing",
+      "AUDIO_PROCESSING": "Audio Processing",
+      "SCORE_CALCULATION": "Score Calculation",
+      "SECURITY": "Security",
+      "SYSTEM": "System"
+    },
+    "dataTypes": {
+      "NUMBER": "Number",
+      "STRING": "String",
+      "BOOLEAN": "Boolean",
+      "JSON": "JSON"
+    },
+    "list": {
+      "title": "All Configurations",
+      "filterByCategory": "Filter by category",
+      "allCategories": "All Categories",
+      "searchPlaceholder": "Search by key or description...",
+      "noResults": "No configurations found",
+      "totalConfigs": "{count} configuration(s)"
+    },
+    "card": {
+      "key": "Key",
+      "value": "Value",
+      "dataType": "Type",
+      "category": "Category",
+      "description": "Description",
+      "range": "Range",
+      "defaultValue": "Default",
+      "updatedAt": "Updated",
+      "updatedBy": "Updated by",
+      "edit": "Edit",
+      "viewHistory": "History"
+    },
+    "edit": {
+      "title": "Edit Configuration",
+      "currentValue": "Current Value",
+      "newValue": "New Value",
+      "reason": "Reason for change (optional)",
+      "reasonPlaceholder": "Describe why you're making this change...",
+      "constraints": "Constraints",
+      "min": "Min",
+      "max": "Max",
+      "default": "Default",
+      "cancel": "Cancel",
+      "save": "Save Changes",
+      "saving": "Saving...",
+      "success": "Configuration updated successfully",
+      "error": "Failed to update configuration"
+    },
+    "history": {
+      "title": "Change History",
+      "noHistory": "No change history available",
+      "timestamp": "Timestamp",
+      "changedBy": "Changed by",
+      "oldValue": "Old Value",
+      "newValue": "New Value",
+      "reason": "Reason",
+      "ipAddress": "IP Address",
+      "rollback": "Rollback",
+      "rollbackConfirm": "Are you sure you want to rollback to this value?",
+      "rollbackSuccess": "Configuration rolled back successfully",
+      "rollbackError": "Failed to rollback configuration",
+      "loadMore": "Load more"
+    },
+    "validation": {
+      "required": "This field is required",
+      "mustBeNumber": "Must be a number",
+      "mustBeBoolean": "Must be true or false",
+      "belowMin": "Value must be at least {min}",
+      "aboveMax": "Value must be at most {max}",
+      "invalidJson": "Invalid JSON format"
+    }
+  }
+}

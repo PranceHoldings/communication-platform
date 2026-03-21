@@ -26,6 +26,7 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   sessionRateLimitTable: dynamodb.Table; // Phase 1.6: Token Bucket rate limiting
   benchmarkCacheTable: dynamodb.Table; // Phase 4: Benchmark cache
   userSessionHistoryTable: dynamodb.Table; // Phase 4: User session history for growth tracking
+  elasticacheEndpoint: string; // Phase 5: Runtime Configuration Management
 }
 
 export class ApiLambdaStack extends cdk.Stack {
@@ -78,6 +79,12 @@ export class ApiLambdaStack extends cdk.Stack {
   // Phase 4: Benchmark System
   public readonly getBenchmarkFunction: nodejs.NodejsFunction;
   public readonly updateSessionHistoryFunction: nodejs.NodejsFunction;
+  // Phase 5: Runtime Configuration Management
+  public readonly getRuntimeConfigsFunction: nodejs.NodejsFunction;
+  public readonly getRuntimeConfigFunction: nodejs.NodejsFunction;
+  public readonly updateRuntimeConfigFunction: nodejs.NodejsFunction;
+  public readonly getRuntimeConfigHistoryFunction: nodejs.NodejsFunction;
+  public readonly rollbackRuntimeConfigFunction: nodejs.NodejsFunction;
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
     super(scope, id, props);
@@ -224,6 +231,8 @@ export class ApiLambdaStack extends cdk.Stack {
       // Phase 4: Benchmark System
       DYNAMODB_BENCHMARK_CACHE_TABLE: props.benchmarkCacheTable.tableName,
       DYNAMODB_USER_SESSION_HISTORY_TABLE: props.userSessionHistoryTable.tableName,
+      // Phase 5: Runtime Configuration Management
+      ELASTICACHE_ENDPOINT: props.elasticacheEndpoint,
     };
 
     // Lambda共通設定
@@ -1581,6 +1590,222 @@ export class ApiLambdaStack extends cdk.Stack {
     // Database access for UpdateSessionHistory
     props.databaseSecret.grantRead(this.updateSessionHistoryFunction);
 
+    // ==================== Phase 5: Runtime Configuration Management ====================
+
+    // GetRuntimeConfigs Lambda Function (GET /api/v1/admin/runtime-config)
+    this.getRuntimeConfigsFunction = new nodejs.NodejsFunction(this, 'GetRuntimeConfigsFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-admin-runtime-config-get-all-${props.environment}`,
+      description: 'Get all runtime configurations (Phase 5)',
+      entry: path.join(__dirname, '../lambda/admin/runtime-config/get-all.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: {
+        minify: props.environment === 'production',
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+        nodeModules: ['@prisma/client'],
+        commandHooks: {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            return [
+              // Copy Prisma generated client
+              `mkdir -p ${outputDir}/node_modules/.prisma`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+              // Copy Prisma schema
+              `mkdir -p ${outputDir}/prisma`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+            ];
+          },
+          beforeInstall(): string[] {
+            return [];
+          },
+        },
+      },
+    });
+
+    // GetRuntimeConfig Lambda Function (GET /api/v1/admin/runtime-config/:key)
+    this.getRuntimeConfigFunction = new nodejs.NodejsFunction(this, 'GetRuntimeConfigFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-admin-runtime-config-get-${props.environment}`,
+      description: 'Get runtime configuration by key (Phase 5)',
+      entry: path.join(__dirname, '../lambda/admin/runtime-config/get-one.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: {
+        minify: props.environment === 'production',
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+        nodeModules: ['@prisma/client'],
+        commandHooks: {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            return [
+              // Copy Prisma generated client
+              `mkdir -p ${outputDir}/node_modules/.prisma`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+              // Copy Prisma schema
+              `mkdir -p ${outputDir}/prisma`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+            ];
+          },
+          beforeInstall(): string[] {
+            return [];
+          },
+        },
+      },
+    });
+
+    // UpdateRuntimeConfig Lambda Function (PUT /api/v1/admin/runtime-config/:key)
+    this.updateRuntimeConfigFunction = new nodejs.NodejsFunction(
+      this,
+      'UpdateRuntimeConfigFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-admin-runtime-config-update-${props.environment}`,
+        description: 'Update runtime configuration value (Phase 5)',
+        entry: path.join(__dirname, '../lambda/admin/runtime-config/update.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: {
+          minify: props.environment === 'production',
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk', '@aws-sdk/*'],
+          nodeModules: ['@prisma/client', 'redis'],
+          commandHooks: {
+            beforeBundling(_inputDir: string, _outputDir: string): string[] {
+              return [];
+            },
+            afterBundling(inputDir: string, outputDir: string): string[] {
+              return [
+                // Copy Prisma generated client
+                `mkdir -p ${outputDir}/node_modules/.prisma`,
+                `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+                // Copy Prisma schema
+                `mkdir -p ${outputDir}/prisma`,
+                `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+              ];
+            },
+            beforeInstall(): string[] {
+              return [];
+            },
+          },
+        },
+      }
+    );
+
+    // GetRuntimeConfigHistory Lambda Function (GET /api/v1/admin/runtime-config/:key/history)
+    this.getRuntimeConfigHistoryFunction = new nodejs.NodejsFunction(
+      this,
+      'GetRuntimeConfigHistoryFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-admin-runtime-config-history-${props.environment}`,
+        description: 'Get runtime configuration change history (Phase 5)',
+        entry: path.join(__dirname, '../lambda/admin/runtime-config/get-history.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: {
+          minify: props.environment === 'production',
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk', '@aws-sdk/*'],
+          nodeModules: ['@prisma/client'],
+          commandHooks: {
+            beforeBundling(_inputDir: string, _outputDir: string): string[] {
+              return [];
+            },
+            afterBundling(inputDir: string, outputDir: string): string[] {
+              return [
+                // Copy Prisma generated client
+                `mkdir -p ${outputDir}/node_modules/.prisma`,
+                `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+                // Copy Prisma schema
+                `mkdir -p ${outputDir}/prisma`,
+                `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+              ];
+            },
+            beforeInstall(): string[] {
+              return [];
+            },
+          },
+        },
+      }
+    );
+
+    // RollbackRuntimeConfig Lambda Function (POST /api/v1/admin/runtime-config/:key/rollback)
+    this.rollbackRuntimeConfigFunction = new nodejs.NodejsFunction(
+      this,
+      'RollbackRuntimeConfigFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-admin-runtime-config-rollback-${props.environment}`,
+        description: 'Rollback runtime configuration to previous value (Phase 5)',
+        entry: path.join(__dirname, '../lambda/admin/runtime-config/rollback.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: {
+          minify: props.environment === 'production',
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk', '@aws-sdk/*'],
+          nodeModules: ['@prisma/client', 'redis'],
+          commandHooks: {
+            beforeBundling(_inputDir: string, _outputDir: string): string[] {
+              return [];
+            },
+            afterBundling(inputDir: string, outputDir: string): string[] {
+              return [
+                // Copy Prisma generated client
+                `mkdir -p ${outputDir}/node_modules/.prisma`,
+                `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+                // Copy Prisma schema
+                `mkdir -p ${outputDir}/prisma`,
+                `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+              ];
+            },
+            beforeInstall(): string[] {
+              return [];
+            },
+          },
+        },
+      }
+    );
+
+    // Database access for Runtime Config functions
+    props.databaseSecret.grantRead(this.getRuntimeConfigsFunction);
+    props.databaseSecret.grantRead(this.getRuntimeConfigFunction);
+    props.databaseSecret.grantRead(this.updateRuntimeConfigFunction);
+    props.databaseSecret.grantRead(this.getRuntimeConfigHistoryFunction);
+    props.databaseSecret.grantRead(this.rollbackRuntimeConfigFunction);
+
     // ==================== API Gateway統合 ====================
 
     const healthIntegration = new apigateway.LambdaIntegration(this.healthCheckFunction, {
@@ -1821,6 +2046,47 @@ export class ApiLambdaStack extends cdk.Stack {
       }
     );
 
+    // Phase 5: Runtime Configuration Management Integrations
+    const getRuntimeConfigsIntegration = new apigateway.LambdaIntegration(
+      this.getRuntimeConfigsFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const getRuntimeConfigIntegration = new apigateway.LambdaIntegration(
+      this.getRuntimeConfigFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const updateRuntimeConfigIntegration = new apigateway.LambdaIntegration(
+      this.updateRuntimeConfigFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const getRuntimeConfigHistoryIntegration = new apigateway.LambdaIntegration(
+      this.getRuntimeConfigHistoryFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const rollbackRuntimeConfigIntegration = new apigateway.LambdaIntegration(
+      this.rollbackRuntimeConfigFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
     // APIリソースの作成
     const apiV1 = this.restApi.root.resourceForPath('api/v1');
 
@@ -1946,6 +2212,50 @@ export class ApiLambdaStack extends cdk.Stack {
     // POST /api/v1/benchmark/update-history (Update session history)
     const updateHistoryResource = benchmarkResource.addResource('update-history');
     updateHistoryResource.addMethod('POST', updateSessionHistoryIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Phase 5: Admin Runtime Configuration endpoints
+    const adminResource = apiV1.addResource('admin');
+    const runtimeConfigResource = adminResource.addResource('runtime-config');
+
+    // GET /api/v1/admin/runtime-config (Get all runtime configurations)
+    runtimeConfigResource.addMethod('GET', getRuntimeConfigsIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Runtime Config by Key
+    const runtimeConfigKeyResource = runtimeConfigResource.addResource('{key}');
+
+    // GET /api/v1/admin/runtime-config/:key (Get runtime configuration by key)
+    runtimeConfigKeyResource.addMethod('GET', getRuntimeConfigIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // PUT /api/v1/admin/runtime-config/:key (Update runtime configuration)
+    runtimeConfigKeyResource.addMethod('PUT', updateRuntimeConfigIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // GET /api/v1/admin/runtime-config/:key/history (Get change history)
+    const runtimeConfigHistoryResource = runtimeConfigKeyResource.addResource('history');
+    runtimeConfigHistoryResource.addMethod('GET', getRuntimeConfigHistoryIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/admin/runtime-config/:key/rollback (Rollback to previous value)
+    const runtimeConfigRollbackResource = runtimeConfigKeyResource.addResource('rollback');
+    runtimeConfigRollbackResource.addMethod('POST', rollbackRuntimeConfigIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,

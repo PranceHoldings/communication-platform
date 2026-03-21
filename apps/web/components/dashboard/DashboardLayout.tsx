@@ -140,7 +140,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-4 space-y-1">
+        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
           {navigation.map(item => (
             <Link
               key={item.href}
@@ -155,6 +155,35 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <span className="ml-3">{item.name}</span>
             </Link>
           ))}
+
+          {/* Admin Section (SUPER_ADMIN and CLIENT_ADMIN only) */}
+          {user && (user.role === 'SUPER_ADMIN' || user.role === 'CLIENT_ADMIN') && (
+            <>
+              <div className="pt-4 pb-2 px-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Admin
+                </h3>
+              </div>
+              <Link
+                href="/dashboard/admin/runtime-config"
+                className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  isActive('/dashboard/admin/runtime-config')
+                    ? 'bg-indigo-50 text-indigo-600'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  />
+                </svg>
+                <span className="ml-3">{t('admin.runtimeConfig.title')}</span>
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* User Profile */}

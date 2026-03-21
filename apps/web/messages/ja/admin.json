@@ -1,0 +1,80 @@
+{
+  "runtimeConfig": {
+    "title": "ランタイム設定",
+    "description": "サーバー再起動なしでシステムパラメータを管理",
+    "categories": {
+      "QUERY_PROCESSING": "クエリ・処理",
+      "AI_PROCESSING": "AI処理",
+      "AUDIO_PROCESSING": "音声処理",
+      "SCORE_CALCULATION": "スコア計算",
+      "SECURITY": "セキュリティ",
+      "SYSTEM": "システム"
+    },
+    "dataTypes": {
+      "NUMBER": "数値",
+      "STRING": "文字列",
+      "BOOLEAN": "真偽値",
+      "JSON": "JSON"
+    },
+    "list": {
+      "title": "全設定",
+      "filterByCategory": "カテゴリでフィルタ",
+      "allCategories": "全カテゴリ",
+      "searchPlaceholder": "キーまたは説明で検索...",
+      "noResults": "設定が見つかりませんでした",
+      "totalConfigs": "{count}件の設定"
+    },
+    "card": {
+      "key": "キー",
+      "value": "値",
+      "dataType": "型",
+      "category": "カテゴリ",
+      "description": "説明",
+      "range": "範囲",
+      "defaultValue": "デフォルト",
+      "updatedAt": "更新日時",
+      "updatedBy": "更新者",
+      "edit": "編集",
+      "viewHistory": "履歴"
+    },
+    "edit": {
+      "title": "設定の編集",
+      "currentValue": "現在の値",
+      "newValue": "新しい値",
+      "reason": "変更理由（任意）",
+      "reasonPlaceholder": "変更理由を入力してください...",
+      "constraints": "制約",
+      "min": "最小値",
+      "max": "最大値",
+      "default": "デフォルト",
+      "cancel": "キャンセル",
+      "save": "変更を保存",
+      "saving": "保存中...",
+      "success": "設定を更新しました",
+      "error": "設定の更新に失敗しました"
+    },
+    "history": {
+      "title": "変更履歴",
+      "noHistory": "変更履歴がありません",
+      "timestamp": "日時",
+      "changedBy": "変更者",
+      "oldValue": "変更前",
+      "newValue": "変更後",
+      "reason": "理由",
+      "ipAddress": "IPアドレス",
+      "rollback": "ロールバック",
+      "rollbackConfirm": "この値にロールバックしますか？",
+      "rollbackSuccess": "ロールバックしました",
+      "rollbackError": "ロールバックに失敗しました",
+      "loadMore": "もっと読み込む"
+    },
+    "validation": {
+      "required": "この項目は必須です",
+      "mustBeNumber": "数値を入力してください",
+      "mustBeBoolean": "true または false を入力してください",
+      "belowMin": "値は{min}以上である必要があります",
+      "aboveMax": "値は{max}以下である必要があります",
+      "invalidJson": "無効なJSON形式です"
+    }
+  }
+}
