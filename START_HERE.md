@@ -1,10 +1,10 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-21 23:00 UTC (Day 30 - Phase 1.6 Avatar統合完了 ✅)
-**現在の Phase:** Phase 1.6 完了 → **Phase 1.6.1 録画機能信頼性向上開始** 🟡
-**重要な発見:** Phase 1.6 Avatar統合完全完了（100%）、テストページ作成完了
-**次のアクション:** Phase 1.6.1 Day 31 - WebSocket ACK確認・自動リトライ実装
-**ステータス:** ✅ **Phase 1.6完了** - 次は録画機能信頼性向上（ACK/リトライ）
+**最終更新:** 2026-03-22 (Day 31 - Phase 1.6.1 Day 31完了 ✅)
+**現在の Phase:** Phase 1.6.1 録画機能信頼性向上（Day 31完了）
+**重要な発見:** WebSocket ACK確認・自動リトライシステム実装完了
+**次のアクション:** Phase 1.6.1 Day 32 - 順序保証・重複排除実装
+**ステータス:** ✅ **Phase 1.6.1 Day 31完了** - ACK/リトライ実装済み
 
 ---
 
@@ -92,7 +92,7 @@ cat apps/web/components/session-player/index.tsx | grep -A5 "avatarCanvasRef"
 |-------|------|------|-----------------|
 | **Phase 1.5** | **リアルタイム会話** | **100%** | ✅ **完了** - STT/AI/TTSストリーミング実装済み |
 | **Phase 1.6 Avatar** | **アバターレンダリング** | **100%** | ✅ **完了** - SessionPlayer統合、3Dモデル配置、テスト完了 |
-| **Phase 1.6.1 Recording** | **録画機能信頼性** | **0%** | 🔴 **開始準備** - ACK/リトライ実装待ち |
+| **Phase 1.6.1 Recording** | **録画機能信頼性** | **25%** | ⏳ **進行中** - ACK/リトライ実装完了（Day 31） |
 | **Phase 1.6.1 Scenario** | **シナリオエンジン** | **50%** | ⚠️ **部分実装** - バリデーションなし |
 | Phase 2-2.5 | 録画・解析・ゲストユーザー | 100% | ✅ 完了 |
 | Phase 3.1-3.3 | Dev/Production環境・E2Eテスト | 100% | ✅ 完了 |
@@ -102,6 +102,38 @@ cat apps/web/components/session-player/index.tsx | grep -A5 "avatarCanvasRef"
 | Phase 5.4.1 | Score Preset Weights | 100% | ✅ 完了（2026-03-21 15:30 UTC）|
 
 ### 最新達成
+
+**🎉 Phase 1.6.1 Day 31完了 - ACK確認・自動リトライ実装（2026-03-22 - Day 31）:**
+
+**✅ 実装完了内容:**
+1. **ACK追跡システム** - PendingChunk型定義、Map管理
+2. **指数バックオフリトライ** - 1s→2s→4s、最大3回リトライ
+3. **ACK受信処理** - handleChunkAck()実装
+4. **チャンク送信追跡** - sendChunkWithRetry()実装
+5. **WebSocketルーティング** - chunk_ack メッセージハンドリング
+
+**コミット:**
+- `ae3c5df` - feat(phase1.6.1): implement WebSocket ACK confirmation & automatic retry system
+
+**実装詳細:**
+- ✅ Frontend: useAudioRecorder.ts - ACK追跡システム（Line 109-228）
+- ✅ Frontend: useWebSocket.ts - chunk_ack ルーティング（Line 300-307）
+- ✅ Backend: Lambda index.ts - ACK送信実装（既存実装確認）
+- ✅ Types: ChunkAckMessage型定義追加
+
+**Backend ACK実装:**
+- ✅ 成功時ACK送信（status: 'saved'）
+- ✅ 重複検出ACK（status: 'duplicate'）
+- ✅ エラーACK（status: 'error'、詳細エラー情報付き）
+- ✅ シーケンス追跡・gap検出
+
+**デプロイ:**
+- Lambda関数デプロイ: 117.73秒
+
+**所要時間:** 実装確認・コミット・デプロイ: 約30分
+**進捗:** Phase 1.6.1 Recording 0% → 25% ✅
+
+---
 
 **🎉 Phase 1.6 Avatar統合完全完了（2026-03-21 23:00 UTC - Day 30）:**
 
@@ -412,28 +444,34 @@ cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH3_COMPLETE
 
 ## 🎯 次のアクション
 
-### 🚨 最優先：Phase 1.6.1 録画機能信頼性向上（Day 31: ACK確認・自動リトライ）
+### 🚨 最優先：Phase 1.6.1 録画機能信頼性向上（Day 32: 順序保証・重複排除）
 
-**Phase 1.6 Avatar完了確認（2026-03-21 23:00 UTC）:**
+**Phase 1.6.1 Day 31完了確認（2026-03-22）:**
 
-Phase 1.6 Avatarが**完全完了**しました！SessionPlayer統合、WebSocket連携、3Dモデル配置、テストページ作成がすべて完了。
+Day 31のACK確認・自動リトライ実装が**完全完了**しました！
 
 **現在のステータス:**
 - ✅ Phase 1.5: リアルタイム会話 - **100%完了**
-- ✅ Phase 1.6: アバターレンダリング - **100%完了** 🎉
-- 🔴 Phase 1.6.1: 録画機能信頼性 - **0%** (ACK/リトライ未実装)
+- ✅ Phase 1.6: アバターレンダリング - **100%完了**
+- ⏳ Phase 1.6.1: 録画機能信頼性 - **25%完了** (Day 31: ACK/リトライ実装済み)
 - 🟡 Phase 1.6.1: シナリオエンジン - **50%** (バリデーション未実装)
 
-**次のタスク: Phase 1.6.1 Day 31**
-- WebSocket ACK確認機能実装
-- 指数バックオフ自動リトライ
-- チャンク送信追跡システム
-- タイムアウト処理
+**次のタスク: Phase 1.6.1 Day 32（2026-03-23予定）**
+- シーケンス番号検証強化
+- 重複チャンク検出
+- 順序外チャンクの処理
+- チャンク欠損検出
+- DynamoDB接続データ更新
 
 **実装計画:**
 ```bash
 cat docs/09-progress/archives/2026-03-21-phase1.6-analysis/PHASE_1.6.1_IMPLEMENTATION_PLAN.md
 ```
+
+**Day 32実装箇所:**
+- Backend: `infrastructure/lambda/websocket/default/index.ts`（一部実装済み）
+- シーケンス追跡: `receivedAudioChunks`, `expectedAudioSequence`
+- 欠損検出: `detectMissingChunks()` 関数
 
 ---
 
