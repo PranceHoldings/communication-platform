@@ -15,6 +15,7 @@ import type {
   ProcessingUpdateMessage,
   SessionCompleteMessage,
   ErrorMessage,
+  ChunkAckMessage,
   ServerToClientMessage,
 } from '@prance/shared';
 
@@ -51,6 +52,7 @@ interface UseWebSocketOptions {
   onError?: (message: ErrorMessage) => void;
   onNoSpeechDetected?: (message: { message: string; timestamp: number }) => void; // New: No speech detected guidance
   onAuthenticated?: (sessionId: string, initialGreeting?: string) => void;
+  onChunkAck?: (message: ChunkAckMessage) => void; // Phase 1.6.1: Chunk ACK tracking
   autoConnect?: boolean;
 }
 

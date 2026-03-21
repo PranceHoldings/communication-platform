@@ -21,7 +21,7 @@ import {
 } from '@/lib/logger/audio-recorder-logger';
 
 interface UseAudioRecorderOptions {
-  onAudioChunk?: (chunk: Blob, timestamp: number, sequenceNumber: number) => void;
+  onAudioChunk?: (chunk: Blob, timestamp: number, sequenceNumber: number, chunkId: string) => void; // Phase 1.6.1: Added chunkId
   onRecordingComplete?: (audioBlob: Blob) => void;
   onSpeechEnd?: () => void; // Called when silence is detected
   onError?: (error: Error) => void;
@@ -179,8 +179,11 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         // OR if speech detection is bypassed (for testing environments)
         if (enableRealtime && onAudioChunk) {
           if (!speechEndSentRef.current || bypassSpeechDetection) {
+            // Phase 1.6.1: Generate unique chunkId for ACK tracking
+            const chunkId = `audio-${sequence}-${timestamp}`;
+
             // Send chunks after speech detection OR if bypassed for testing
-            onAudioChunk(event.data, timestamp, sequence);
+            onAudioChunk(event.data, timestamp, sequence, chunkId);
           } else {
             logger.debug(
               LogPhase.RECORDING,

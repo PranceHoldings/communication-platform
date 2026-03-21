@@ -291,11 +291,37 @@ export interface AuthenticatedMessage extends WebSocketMessageBase {
 
 /**
  * 音声チャンクメッセージ（クライアント → サーバー）
+ * Legacy: Batch audio processing
  */
 export interface AudioChunkMessage extends WebSocketMessageBase {
   type: 'audio_chunk';
   data: string; // Base64 encoded
   timestamp: number;
+}
+
+/**
+ * リアルタイム音声チャンクメッセージ（クライアント → サーバー）
+ * Phase 1.5: Real-time audio streaming
+ * Phase 1.6.1: Added chunkId for ACK tracking
+ */
+export interface AudioChunkRealtimeMessage extends WebSocketMessageBase {
+  type: 'audio_chunk_realtime';
+  data: string; // Base64 encoded audio data
+  timestamp: number;
+  sequenceNumber: number;
+  chunkId: string; // Unique chunk ID for ACK tracking (e.g., "audio-42-1234567890")
+  contentType: string; // MIME type (e.g., "audio/webm;codecs=opus")
+}
+
+/**
+ * ビデオチャンクメッセージ（クライアント → サーバー）
+ * Phase 1.6.1: Simple video chunk with ACK tracking
+ */
+export interface VideoChunkMessage extends WebSocketMessageBase {
+  type: 'video_chunk';
+  data: string; // Base64 encoded video data
+  timestamp: number;
+  chunkId: string; // Unique chunk ID for ACK tracking (e.g., "video-5-1234567890")
 }
 
 /**
@@ -349,6 +375,22 @@ export interface VideoChunkErrorMessage extends WebSocketMessageBase {
   chunkId: string;
   error: 'HASH_MISMATCH' | 'SEQUENCE_ERROR' | 'STORAGE_ERROR';
   message: string;
+}
+
+/**
+ * チャンク確認メッセージ（サーバー → クライアント）
+ * Phase 1.6.1: Unified ACK message for audio/video chunks
+ */
+export interface ChunkAckMessage extends WebSocketMessageBase {
+  type: 'chunk_ack';
+  chunkId: string; // Unique chunk ID (e.g., "audio-42-1234567890" or "video-5-1234567890")
+  status: 'received' | 'saved' | 'error' | 'duplicate';
+  timestamp: number;
+  error?: {
+    code: string; // Error code (e.g., "S3_UPLOAD_FAILED", "INVALID_CHUNK")
+    message: string; // Human-readable error message
+    details?: any; // Optional error details
+  };
 }
 
 /**

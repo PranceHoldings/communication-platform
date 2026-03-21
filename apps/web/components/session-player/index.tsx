@@ -69,6 +69,39 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   // Error handling state (Phase 1.6)
   const [currentError, setCurrentError] = useState<ErrorDetails | null>(null);
 
+  // Phase 1.6.1: ACK tracking for reliable chunk transmission
+  interface PendingChunk {
+    chunkId: string;
+    data: ArrayBuffer;
+    timestamp: number;
+    sequenceNumber: number;
+    sentAt: number;
+    retryCount: number;
+    type: 'audio' | 'video';
+  }
+
+  interface ChunkStats {
+    audioSent: number;
+    audioAcked: number;
+    videoSent: number;
+    videoAcked: number;
+    failedChunks: string[];
+  }
+
+  const [pendingChunks, setPendingChunks] = useState<Map<string, PendingChunk>>(new Map());
+  const [chunkStats, setChunkStats] = useState<ChunkStats>({
+    audioSent: 0,
+    audioAcked: 0,
+    videoSent: 0,
+    videoAcked: 0,
+    failedChunks: [],
+  });
+  const ackTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  // ACK tracking constants
+  const ACK_TIMEOUT_MS = 5000; // 5 seconds
+  const MAX_RETRIES = 3;
+
   // Silence management state
   const [initialGreetingCompleted, setInitialGreetingCompleted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -650,6 +683,145 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     [t]
   );
 
+  // Phase 1.6.1: ACK timeout handler with exponential backoff retry
+  const handleAckTimeout = useCallback(
+    (chunkId: string) => {
+      console.log('[SessionPlayer] ACK timeout:', chunkId);
+
+      setPendingChunks(prev => {
+        const pending = prev.get(chunkId);
+
+        if (!pending) {
+          console.warn('[SessionPlayer] Timeout for unknown chunk:', chunkId);
+          return prev;
+        }
+
+        // Maximum retries exceeded
+        if (pending.retryCount >= MAX_RETRIES) {
+          console.error(
+            `[SessionPlayer] Chunk failed after ${MAX_RETRIES} retries:`,
+            chunkId
+          );
+
+          // Remove from pending
+          const next = new Map(prev);
+          next.delete(chunkId);
+
+          // Add to failed list
+          setChunkStats(stats => ({
+            ...stats,
+            failedChunks: [...stats.failedChunks, chunkId],
+          }));
+
+          // Error notification
+          toast.error(
+            `Failed to send ${pending.type} chunk after ${MAX_RETRIES} retries`,
+            { duration: 5000 }
+          );
+
+          return next;
+        }
+
+        // Retry with exponential backoff
+        const delayMs = Math.pow(2, pending.retryCount) * 100; // 100ms, 200ms, 400ms
+
+        console.log(
+          `[SessionPlayer] Retrying chunk ${chunkId} (attempt ${pending.retryCount + 1}/${MAX_RETRIES}) after ${delayMs}ms`
+        );
+
+        setTimeout(() => {
+          // Update retry count
+          setPendingChunks(chunks => {
+            const updated = new Map(chunks);
+            const chunk = updated.get(chunkId);
+            if (chunk) {
+              chunk.retryCount++;
+              chunk.sentAt = Date.now();
+            }
+            return updated;
+          });
+
+          // Resend chunk
+          if (pending.type === 'audio') {
+            audioBuffer.addChunk(pending.data, pending.timestamp);
+          } else {
+            // Video chunk resend
+            sendVideoChunkRef.current?.(
+              new Blob([pending.data]),
+              pending.timestamp
+            );
+          }
+
+          // Set new timeout
+          const timeoutId = setTimeout(() => {
+            handleAckTimeout(chunkId);
+          }, ACK_TIMEOUT_MS);
+
+          ackTimeoutsRef.current.set(chunkId, timeoutId);
+        }, delayMs);
+
+        return prev;
+      });
+    },
+    [MAX_RETRIES, ACK_TIMEOUT_MS, audioBuffer, toast]
+  );
+
+  // Phase 1.6.1: Handle chunk ACK from backend
+  const handleChunkAck = useCallback(
+    (message: any) => {
+      const { chunkId, status, error } = message;
+
+      console.log('[SessionPlayer] Chunk ACK received:', {
+        chunkId,
+        status,
+        error: error?.code,
+      });
+
+      setPendingChunks(prev => {
+        const pending = prev.get(chunkId);
+
+        if (!pending) {
+          console.warn('[SessionPlayer] ACK for unknown/processed chunk:', chunkId);
+          return prev;
+        }
+
+        // Clear timeout
+        const timeoutId = ackTimeoutsRef.current.get(chunkId);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          ackTimeoutsRef.current.delete(chunkId);
+        }
+
+        // Handle error status
+        if (status === 'error') {
+          console.error('[SessionPlayer] Chunk error:', error);
+          // Retry on error
+          handleAckTimeout(chunkId);
+          return prev;
+        }
+
+        // Handle duplicate (treat as success)
+        if (status === 'duplicate') {
+          console.warn('[SessionPlayer] Duplicate chunk detected:', chunkId);
+        }
+
+        // Remove from pending (success)
+        const next = new Map(prev);
+        next.delete(chunkId);
+
+        // Update statistics
+        setChunkStats(stats => ({
+          ...stats,
+          [pending.type === 'audio' ? 'audioAcked' : 'videoAcked']:
+            stats[pending.type === 'audio' ? 'audioAcked' : 'videoAcked'] + 1,
+        }));
+
+        return next;
+      });
+    },
+    [handleAckTimeout]
+  );
+
   const handleAuthenticated = useCallback(
     (sessionId: string, receivedInitialGreeting?: string) => {
       console.log('[SessionPlayer] WebSocket authenticated:', {
@@ -713,6 +885,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onError: handleError,
     onNoSpeechDetected: handleNoSpeechDetected, // New: No speech detected guidance
     onAuthenticated: handleAuthenticated,
+    onChunkAck: handleChunkAck, // Phase 1.6.1: Chunk ACK tracking
   });
 
   // Connection state for ConnectionStatus component (Phase 1.6)
@@ -828,35 +1001,63 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     }
   }, [shouldSendSessionEnd, isConnected, endSession, t, audioBuffer]);
 
-  // Audio Recorder統合 (Phase 1.6: Integrated with audio buffer)
+  // Audio Recorder統合 (Phase 1.6.1: ACK tracking with retry)
   const handleAudioChunk = useCallback(
-    async (chunk: Blob, timestamp: number, sequenceNumber: number) => {
-      console.log('[SessionPlayer] handleAudioChunk called (buffered mode):', {
+    async (chunk: Blob, timestamp: number, sequenceNumber: number, chunkId: string) => {
+      console.log('[SessionPlayer] handleAudioChunk called:', {
+        chunkId,
         chunkSize: chunk.size,
-        chunkType: chunk.type,
-        timestamp,
         sequenceNumber,
+        timestamp,
         isConnected,
         status,
       });
 
-      // Phase 1.6: Add chunk to buffer (batching reduces network requests by 80%)
       if (isConnectedRef.current && isAuthenticatedRef.current) {
         try {
           const arrayBuffer = await chunk.arrayBuffer();
+
+          // 1. Add to pending chunks
+          setPendingChunks(prev => {
+            const next = new Map(prev);
+            next.set(chunkId, {
+              chunkId,
+              data: arrayBuffer,
+              timestamp,
+              sequenceNumber,
+              sentAt: Date.now(),
+              retryCount: 0,
+              type: 'audio',
+            });
+            return next;
+          });
+
+          // 2. Send via WebSocket (through audioBuffer)
           audioBuffer.addChunk(arrayBuffer, timestamp);
 
-          console.log('[SessionPlayer] Audio chunk added to buffer:', {
-            sequenceNumber,
-            size: chunk.size,
+          // 3. Update statistics
+          setChunkStats(prev => ({
+            ...prev,
+            audioSent: prev.audioSent + 1,
+          }));
+
+          // 4. Set ACK timeout
+          const timeoutId = setTimeout(() => {
+            handleAckTimeout(chunkId);
+          }, ACK_TIMEOUT_MS);
+
+          ackTimeoutsRef.current.set(chunkId, timeoutId);
+
+          console.log('[SessionPlayer] Audio chunk sent:', {
+            chunkId,
             bufferStats: audioBuffer.getStats(),
           });
         } catch (error) {
-          console.error('[SessionPlayer] Failed to add audio chunk to buffer:', error);
+          console.error('[SessionPlayer] Failed to send audio chunk:', error);
         }
       }
     },
-    [isConnected, status, audioBuffer]
+    [isConnected, status, audioBuffer, handleAckTimeout, ACK_TIMEOUT_MS]
   );
 
   const handleSpeechEnd = useCallback(() => {
@@ -1412,9 +1613,15 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     };
   }, [status, handleStop]);
 
-  // 録画機能 - ビデオチャンクハンドラー
+  // 録画機能 - ビデオチャンクハンドラー (Phase 1.6.1: ACK tracking with retry)
   const handleVideoChunk = useCallback(
-    async (chunk: Blob, timestamp: number) => {
+    async (chunk: Blob, timestamp: number, chunkId: string) => {
+      console.log('[SessionPlayer] handleVideoChunk called:', {
+        chunkId,
+        chunkSize: chunk.size,
+        timestamp,
+      });
+
       // 認証完了後のみビデオチャンクを送信
       if (
         isConnectedRef.current &&
@@ -1423,12 +1630,42 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         sendVideoChunkRef.current
       ) {
         try {
-          // WebSocketでビデオチャンク送信
+          const arrayBuffer = await chunk.arrayBuffer();
+
+          // 1. Add to pending chunks
+          setPendingChunks(prev => {
+            const next = new Map(prev);
+            next.set(chunkId, {
+              chunkId,
+              data: arrayBuffer,
+              timestamp,
+              sequenceNumber: 0, // Video doesn't use sequence
+              sentAt: Date.now(),
+              retryCount: 0,
+              type: 'video',
+            });
+            return next;
+          });
+
+          // 2. Send via WebSocket
           await sendVideoChunkRef.current(chunk, timestamp);
+
+          // 3. Update statistics
+          setChunkStats(prev => ({
+            ...prev,
+            videoSent: prev.videoSent + 1,
+          }));
+
+          // 4. Set ACK timeout
+          const timeoutId = setTimeout(() => {
+            handleAckTimeout(chunkId);
+          }, ACK_TIMEOUT_MS);
+
+          ackTimeoutsRef.current.set(chunkId, timeoutId);
+
           console.log('[SessionPlayer] Video chunk sent:', {
+            chunkId,
             size: chunk.size,
-            timestamp,
-            type: chunk.type,
           });
         } catch (error) {
           console.error('[SessionPlayer] Failed to send video chunk:', error);
@@ -1437,7 +1674,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         console.warn('[SessionPlayer] Skipping video chunk - not authenticated yet');
       }
     },
-    [status, isAuthenticated]
+    [status, isAuthenticated, handleAckTimeout, ACK_TIMEOUT_MS]
   );
 
   const handleVideoRecordingComplete = useCallback(
@@ -1712,6 +1949,46 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 </div>
                 <div className="text-xl font-mono font-bold text-indigo-900 mt-0.5">
                   {silenceElapsedTime}s / {effectiveSilenceTimeout}s
+                </div>
+              </div>
+            )}
+
+            {/* Phase 1.6.1 Day 34: Recording Status Display */}
+            {(status === 'ACTIVE' || status === 'PAUSED') && (
+              <div
+                className="bg-green-50 border border-green-200 rounded-lg px-4 py-2 min-w-[160px]"
+                data-testid="recording-status"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  {status === 'ACTIVE' && (
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                  )}
+                  <div className="text-xs text-green-700 font-medium uppercase tracking-wide">
+                    {status === 'ACTIVE' ? 'Recording' : 'Paused'}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center justify-between text-xs text-green-600">
+                    <span>Audio:</span>
+                    <span className="font-mono font-medium">
+                      {chunkStats.audioAcked}/{chunkStats.audioSent}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-green-600">
+                    <span>Video:</span>
+                    <span className="font-mono font-medium">
+                      {chunkStats.videoAcked}/{chunkStats.videoSent}
+                    </span>
+                  </div>
+                  {chunkStats.failedChunks.length > 0 && (
+                    <div className="flex items-center justify-between text-xs text-red-600 font-medium">
+                      <span>Failed:</span>
+                      <span className="font-mono">{chunkStats.failedChunks.length}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
