@@ -156,10 +156,22 @@ export default function RuntimeConfigPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {/* Category badge */}
-                  <div>
+                  {/* Category and Access Level badges */}
+                  <div className="flex gap-2 flex-wrap">
                     <Badge variant="outline">
                       {t(`admin.runtimeConfig.categories.${config.category}`)}
+                    </Badge>
+                    <Badge
+                      variant={
+                        config.accessLevel === 'CLIENT_ADMIN_READ_WRITE'
+                          ? 'default'
+                          : config.accessLevel === 'SUPER_ADMIN_READ_WRITE'
+                          ? 'secondary'
+                          : 'destructive'
+                      }
+                      className="text-xs"
+                    >
+                      {t(`admin.runtimeConfig.accessLevels.${config.accessLevel}`)}
                     </Badge>
                   </div>
 

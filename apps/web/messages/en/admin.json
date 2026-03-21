@@ -10,6 +10,13 @@
       "SECURITY": "Security",
       "SYSTEM": "System"
     },
+    "accessLevels": {
+      "DEVELOPER_ONLY": "Developer Only",
+      "SUPER_ADMIN_READ_ONLY": "Read-Only (Security)",
+      "SUPER_ADMIN_READ_WRITE": "Admin Editable",
+      "CLIENT_ADMIN_READ_WRITE": "Editable",
+      "CLIENT_ADMIN_READ_ONLY": "Read-Only"
+    },
     "dataTypes": {
       "NUMBER": "Number",
       "STRING": "String",

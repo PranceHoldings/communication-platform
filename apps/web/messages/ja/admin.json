@@ -10,6 +10,13 @@
       "SECURITY": "セキュリティ",
       "SYSTEM": "システム"
     },
+    "accessLevels": {
+      "DEVELOPER_ONLY": "開発者専用",
+      "SUPER_ADMIN_READ_ONLY": "参照のみ（セキュリティ）",
+      "SUPER_ADMIN_READ_WRITE": "管理者編集可能",
+      "CLIENT_ADMIN_READ_WRITE": "編集可能",
+      "CLIENT_ADMIN_READ_ONLY": "参照のみ"
+    },
     "dataTypes": {
       "NUMBER": "数値",
       "STRING": "文字列",

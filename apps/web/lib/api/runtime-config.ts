@@ -5,11 +5,19 @@
 
 import { apiClient } from './client';
 
+export type RuntimeConfigAccessLevel =
+  | 'DEVELOPER_ONLY'
+  | 'SUPER_ADMIN_READ_ONLY'
+  | 'SUPER_ADMIN_READ_WRITE'
+  | 'CLIENT_ADMIN_READ_WRITE'
+  | 'CLIENT_ADMIN_READ_ONLY';
+
 export interface RuntimeConfig {
   key: string;
   value: any;
   dataType: 'NUMBER' | 'STRING' | 'BOOLEAN' | 'JSON';
   category: 'QUERY_PROCESSING' | 'AI_PROCESSING' | 'AUDIO_PROCESSING' | 'SCORE_CALCULATION' | 'SECURITY' | 'SYSTEM';
+  accessLevel: RuntimeConfigAccessLevel;
   defaultValue: any;
   minValue: number | null;
   maxValue: number | null;

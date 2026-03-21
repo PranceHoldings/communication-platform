@@ -350,3 +350,51 @@ export async function getScoreThresholdGood(): Promise<number> {
 export async function getScoreThresholdExcellent(): Promise<number> {
   return getRuntimeConfig<number>('SCORE_THRESHOLD_EXCELLENT');
 }
+
+// ============================================================
+// Score Preset Weights - Phase 5.4.1 Addition
+// ============================================================
+
+/**
+ * Get score preset weights for a specific preset
+ * @param preset - Scoring preset name (default, interview_practice, language_learning, presentation, custom)
+ * @returns ScoringWeights object with emotion, audio, content, delivery weights
+ */
+export async function getScorePresetWeights(preset: string): Promise<{
+  emotion: number;
+  audio: number;
+  content: number;
+  delivery: number;
+}> {
+  const presetUpper = preset.toUpperCase();
+
+  const [emotion, audio, content, delivery] = await Promise.all([
+    getRuntimeConfig<number>(`SCORE_PRESET_${presetUpper}_EMOTION`),
+    getRuntimeConfig<number>(`SCORE_PRESET_${presetUpper}_AUDIO`),
+    getRuntimeConfig<number>(`SCORE_PRESET_${presetUpper}_CONTENT`),
+    getRuntimeConfig<number>(`SCORE_PRESET_${presetUpper}_DELIVERY`),
+  ]);
+
+  return { emotion, audio, content, delivery };
+}
+
+// Individual preset weight getters
+export async function getScorePresetDefaultWeights() {
+  return getScorePresetWeights('default');
+}
+
+export async function getScorePresetInterviewWeights() {
+  return getScorePresetWeights('interview');
+}
+
+export async function getScorePresetLanguageWeights() {
+  return getScorePresetWeights('language');
+}
+
+export async function getScorePresetPresentationWeights() {
+  return getScorePresetWeights('presentation');
+}
+
+export async function getScorePresetCustomWeights() {
+  return getScorePresetWeights('custom');
+}

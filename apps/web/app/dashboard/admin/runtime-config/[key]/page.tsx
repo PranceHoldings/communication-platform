@@ -21,8 +21,15 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, History, RotateCcw, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, History, RotateCcw, AlertCircle, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
+import {
+  validateConfigChange,
+  isWeightField,
+  getWeightGroup,
+  type ValidationResult,
+} from '@/lib/utils/runtime-config-validation';
+import { WeightVisualization } from '@/components/runtime-config/WeightVisualization';
 
 export default function RuntimeConfigDetailPage() {
   const router = useRouter();
@@ -41,6 +48,8 @@ export default function RuntimeConfigDetailPage() {
   const [newValue, setNewValue] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [validationError, setValidationError] = useState<string>('');
+  const [validationWarning, setValidationWarning] = useState<string>('');
+  const [allConfigs, setAllConfigs] = useState<Record<string, any>>({});
 
   // Check authorization
   useEffect(() => {
@@ -50,7 +59,7 @@ export default function RuntimeConfigDetailPage() {
     }
   }, [isAuthenticated, user, router]);
 
-  // Load config
+  // Load config and all related configs (for validation)
   useEffect(() => {
     if (!isAuthenticated || !key) return;
 
@@ -64,6 +73,17 @@ export default function RuntimeConfigDetailPage() {
             ? JSON.stringify(response.data.value, null, 2)
             : String(response.data.value)
         );
+
+        // Load all configs for interdependency validation
+        if (isWeightField(key)) {
+          const { getRuntimeConfigs } = await import('@/lib/api/runtime-config');
+          const allConfigsResponse = await getRuntimeConfigs();
+          const configMap: Record<string, any> = {};
+          allConfigsResponse.data.configs.forEach((c) => {
+            configMap[c.key] = c.value;
+          });
+          setAllConfigs(configMap);
+        }
       } catch (error) {
         console.error('Failed to load config:', error);
         toast.error('Failed to load configuration');
@@ -98,11 +118,12 @@ export default function RuntimeConfigDetailPage() {
     }
   }, [isAuthenticated, key]);
 
-  // Validate value
+  // Validate value with interdependency checks
   const validateValue = (value: string): boolean => {
     if (!config) return false;
 
     setValidationError('');
+    setValidationWarning('');
 
     if (!value.trim()) {
       setValidationError(t('admin.runtimeConfig.validation.required'));
@@ -110,6 +131,8 @@ export default function RuntimeConfigDetailPage() {
     }
 
     try {
+      let parsedValue: any = value;
+
       switch (config.dataType) {
         case 'NUMBER': {
           const num = parseFloat(value);
@@ -129,6 +152,7 @@ export default function RuntimeConfigDetailPage() {
             );
             return false;
           }
+          parsedValue = num;
           break;
         }
         case 'BOOLEAN': {
@@ -148,6 +172,25 @@ export default function RuntimeConfigDetailPage() {
           break;
         }
       }
+
+      // Interdependency validation (weights, thresholds, business rules)
+      if (config.dataType === 'NUMBER') {
+        const validationResult = validateConfigChange(
+          config.key,
+          parsedValue,
+          config.dataType,
+          allConfigs
+        );
+
+        if (!validationResult.valid) {
+          setValidationError(validationResult.error || 'Validation failed');
+          return false;
+        }
+
+        if (validationResult.warning) {
+          setValidationWarning(validationResult.warning);
+        }
+      }
     } catch {
       return false;
     }
@@ -155,11 +198,18 @@ export default function RuntimeConfigDetailPage() {
     return true;
   };
 
+  // Real-time validation on value change
+  useEffect(() => {
+    if (config && newValue) {
+      validateValue(newValue);
+    }
+  }, [newValue, config, allConfigs]);
+
   // Handle save
   const handleSave = async () => {
-    if (!config || !validateValue(newValue) || user?.role !== 'SUPER_ADMIN') {
-      if (user?.role !== 'SUPER_ADMIN') {
-        toast.error('Only SUPER_ADMIN can update configurations');
+    if (!config || !validateValue(newValue) || !canEdit) {
+      if (!canEdit) {
+        toast.error('You do not have permission to update this configuration');
       }
       return;
     }
@@ -249,7 +299,18 @@ export default function RuntimeConfigDetailPage() {
     return null;
   }
 
-  const canEdit = user?.role === 'SUPER_ADMIN';
+  // Determine if user can edit based on access level and role
+  const canEdit =
+    config.accessLevel === 'CLIENT_ADMIN_READ_WRITE' &&
+    (user?.role === 'SUPER_ADMIN' || user?.role === 'CLIENT_ADMIN')
+      ? true
+      : config.accessLevel === 'SUPER_ADMIN_READ_WRITE' && user?.role === 'SUPER_ADMIN'
+      ? true
+      : false;
+
+  const isReadOnly =
+    config.accessLevel === 'SUPER_ADMIN_READ_ONLY' ||
+    config.accessLevel === 'CLIENT_ADMIN_READ_ONLY';
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -266,13 +327,27 @@ export default function RuntimeConfigDetailPage() {
         </Button>
 
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold font-mono">{config.key}</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">{config.description}</p>
           </div>
-          <Badge variant="outline" className="text-sm">
-            {t(`admin.runtimeConfig.categories.${config.category}`)}
-          </Badge>
+          <div className="flex gap-2">
+            <Badge variant="outline" className="text-sm">
+              {t(`admin.runtimeConfig.categories.${config.category}`)}
+            </Badge>
+            <Badge
+              variant={
+                config.accessLevel === 'CLIENT_ADMIN_READ_WRITE'
+                  ? 'default'
+                  : config.accessLevel === 'SUPER_ADMIN_READ_WRITE'
+                  ? 'secondary'
+                  : 'destructive'
+              }
+              className="text-sm"
+            >
+              {t(`admin.runtimeConfig.accessLevels.${config.accessLevel}`)}
+            </Badge>
+          </div>
         </div>
       </div>
 
@@ -281,10 +356,16 @@ export default function RuntimeConfigDetailPage() {
         <CardHeader>
           <CardTitle>{t('admin.runtimeConfig.edit.title')}</CardTitle>
           {!canEdit && (
-            <Alert>
+            <Alert variant={isReadOnly ? 'destructive' : 'default'}>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Only SUPER_ADMIN can update configurations. You have read-only access.
+                {isReadOnly
+                  ? config.accessLevel === 'SUPER_ADMIN_READ_ONLY'
+                    ? 'This configuration is read-only for security reasons. No one can edit it via UI.'
+                    : 'This configuration is read-only.'
+                  : config.accessLevel === 'SUPER_ADMIN_READ_WRITE'
+                  ? 'Only SUPER_ADMIN can update this configuration. You have read-only access.'
+                  : 'You do not have permission to update this configuration.'}
               </AlertDescription>
             </Alert>
           )}
@@ -322,9 +403,32 @@ export default function RuntimeConfigDetailPage() {
               />
             )}
             {validationError && (
-              <p className="mt-1 text-sm text-red-600">{validationError}</p>
+              <Alert variant="destructive" className="mt-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{validationError}</AlertDescription>
+              </Alert>
+            )}
+            {validationWarning && !validationError && (
+              <Alert className="mt-2">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{validationWarning}</AlertDescription>
+              </Alert>
             )}
           </div>
+
+          {/* Weight visualization */}
+          {config.dataType === 'NUMBER' && isWeightField(config.key) && (
+            <div>
+              <Label>Weight Distribution</Label>
+              <div className="mt-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-md">
+                <WeightVisualization
+                  currentKey={config.key}
+                  newValue={parseFloat(newValue) || 0}
+                  allWeights={allConfigs}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Constraints */}
           <div>
