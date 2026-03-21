@@ -1,4 +1,4 @@
-import { getDefaultSttConfidence } from '../utils/env-validator';
+import { getDefaultSttConfidence } from '../utils/runtime-config-loader';
 import { getSupportedSTTCodes } from '../config/language-config';
 import { retryWithBackoff } from '../utils/retry';
 /**
@@ -105,14 +105,14 @@ export class AzureSpeechToText {
       };
 
       // Handle recognized (final results)
-      this.recognizer.recognized = (_sender, event) => {
+      this.recognizer.recognized = async (_sender, event) => {
         if (event.result.reason === sdk.ResultReason.RecognizedSpeech) {
           // Extract confidence from detailed results
           const details = event.result.properties.getProperty(
             sdk.PropertyId.SpeechServiceResponse_JsonResult
           );
 
-          let confidence = getDefaultSttConfidence();
+          let confidence = await getDefaultSttConfidence();
 
           if (details) {
             try {

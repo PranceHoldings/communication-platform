@@ -291,6 +291,10 @@ export async function getOptimalPauseSec(): Promise<number> {
   return getRuntimeConfig<number>('OPTIMAL_PAUSE_SEC');
 }
 
+export async function getDefaultSttConfidence(): Promise<number> {
+  return getRuntimeConfig<number>('DEFAULT_STT_CONFIDENCE');
+}
+
 // Security
 export async function getRateLimitMaxAttempts(): Promise<number> {
   return getRuntimeConfig<number>('RATE_LIMIT_MAX_ATTEMPTS');
