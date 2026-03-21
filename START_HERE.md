@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-21 (Day 30 - Phase 5.4 Batch 1+2デプロイ完了)
-**現在の Phase:** Phase 5 - Runtime Configuration Management (15% 完了)
-**デプロイ:** ✅ Batch 1+2 (Security & Score & Rate Limiter) - 4ファイル移行完了
-**ステータス:** ✅ Batch 1+2デプロイ完了 - 次: Batch 3続行 or フロントエンド環境修復
+**最終更新:** 2026-03-21 (Day 30 - Phase 5.4 Batch 1+2+3デプロイ完了)
+**現在の Phase:** Phase 5 - Runtime Configuration Management (27% 完了)
+**デプロイ:** ✅ Batch 1+2+3 (Security & Score & Rate Limiter & Audio/AI) - 7ファイル移行完了
+**ステータス:** ✅ Batch 1+2+3デプロイ完了 - 次: Batch 4続行 or フロントエンド環境修復
 
 ---
 
@@ -57,11 +57,11 @@ cat docs/07-development/KNOWN_ISSUES.md
 | Phase 3.4 | 環境変数完全管理 | 100% | ✅ 完了（2026-03-20） |
 | Phase 4 | ベンチマークシステム | 100% | ✅ 完了（2026-03-20） |
 | Phase 5.1-5.3 | Runtime Config (Data/API/Loader) | 100% | ✅ 完了（2026-03-21） |
-| **Phase 5.4** | **Runtime Config Integration** | **15%** | ⏳ 進行中（Batch 1+2完了） |
+| **Phase 5.4** | **Runtime Config Integration** | **27%** | ⏳ 進行中（Batch 1+2+3完了） |
 
 ### 最新達成
 
-**🚀 Phase 5.4 Batch 1+2 デプロイ完了（2026-03-21 08:20 UTC - Day 30）:**
+**🚀 Phase 5.4 Batch 1+2+3 デプロイ完了（2026-03-21 09:30 UTC - Day 30）:**
 
 **実装内容:**
 
@@ -76,31 +76,43 @@ cat docs/07-development/KNOWN_ISSUES.md
 - 3関数にawait追加（checkRateLimit, recordAttempt, getRateLimitStats）
 - デプロイ: 134.54秒、46 Lambda関数更新
 
-**データベース検証完了:**
+**Batch 3 (Audio/AI):**
+- ✅ audio-analyzer.ts: MIN_PAUSE_DURATION_SEC → runtime-config-loader
+- ✅ tts-elevenlabs.ts: TTS_STABILITY, TTS_SIMILARITY_BOOST → runtime-config-loader (3関数)
+- ✅ bedrock.ts: CLAUDE_TEMPERATURE → runtime-config-loader (2関数)
+- ❌ report/ai-suggestions.ts: 除外（runtime config不使用）
+- デプロイ: 121.51秒、46 Lambda関数更新
+
+**データベース検証完了（8個のruntime configs）:**
 - BCRYPT_SALT_ROUNDS: 10 (SECURITY)
 - OPTIMAL_PAUSE_SEC: 2.0 (AUDIO_PROCESSING)
 - RATE_LIMIT_MAX_ATTEMPTS: 5 (SECURITY)
 - RATE_LIMIT_LOCKOUT_DURATION_MS: 900000 (15分)
 - RATE_LIMIT_ATTEMPT_WINDOW_MS: 300000 (5分)
+- MIN_PAUSE_DURATION_SEC: 0.5 (AUDIO_PROCESSING)
+- TTS_STABILITY: 0.5 (AUDIO_PROCESSING)
+- TTS_SIMILARITY_BOOST: 0.75 (AUDIO_PROCESSING)
+- CLAUDE_TEMPERATURE: 0.7 (AI_PROCESSING)
 
 **ドキュメント作成完了:**
 - PHASE_5.4_BATCH1_COMPLETE.md / BATCH1_DEPLOYMENT.md
 - PHASE_5.4_BATCH2_COMPLETE.md
-- PHASE_5.4_INTEGRATION_STATUS.md - 統合進捗（15%完了）
+- PHASE_5.4_BATCH3_COMPLETE.md
+- PHASE_5.4_INTEGRATION_STATUS.md - 統合進捗（27%完了）
 
 **技術的達成:**
 - 環境変数からデータベースベースの設定管理へ移行
 - 3層キャッシュ（Lambda Memory → ElastiCache → Aurora RDS）
 - Graceful degradation（環境変数フォールバック）
-- 4ファイル移行、5個の設定値をruntime-config化
+- 7ファイル移行、9個の設定値をruntime-config化
 - Breaking change: calculateScore() が async に変換（callers更新済み）
 
-**Phase 5.4 進捗:** 0% → 15% (4/26 files)
-**合計デプロイ時間:** 269.68秒（4分30秒）
+**Phase 5.4 進捗:** 0% → 27% (7/26 files)
+**合計デプロイ時間:** 391.19秒（6分31秒）
 
 **詳細レポート:**
 ```bash
-cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH1_DEPLOYMENT.md
+cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH3_COMPLETE.md
 ```
 
 ---
@@ -304,34 +316,36 @@ cat docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH1_DEPLOYME
 
 ## 🎯 次のアクション
 
-### ✅ 前回完了：Phase 5.4 Batch 1+2 - Security & Score & Rate Limiter デプロイ (2026-03-21)
+### ✅ 前回完了：Phase 5.4 Batch 1+2+3 - Security & Score & Rate Limiter & Audio/AI デプロイ (2026-03-21)
 
 **達成:**
-- ✅ 4ファイル移行完了（password.ts, score-calculator.ts, analysis-orchestrator.ts, rateLimiter.ts）
-- ✅ Lambda関数デプロイ完了（2回、合計269.68秒）
-- ✅ データベース検証完了（5個のruntime configs存在確認）
-- ✅ ドキュメント作成完了（4ファイル）
-- ✅ Phase 5.4進捗: 0% → 15% (4/26 files)
+- ✅ 7ファイル移行完了（password.ts, score-calculator.ts, analysis-orchestrator.ts, rateLimiter.ts, audio-analyzer.ts, tts-elevenlabs.ts, bedrock.ts）
+- ✅ Lambda関数デプロイ完了（3回、合計391.19秒）
+- ✅ データベース検証完了（9個のruntime configs存在確認）
+- ✅ ドキュメント作成完了（5ファイル）
+- ✅ Phase 5.4進捗: 0% → 27% (7/26 files)
 
 **詳細:**
 - `docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH1_DEPLOYMENT.md`
 - `docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH2_COMPLETE.md`
+- `docs/09-progress/archives/2026-03-21-phase5-status/PHASE_5.4_BATCH3_COMPLETE.md`
 
 ---
 
 ### 📋 次のステップ：2つの選択肢
 
-#### 選択肢1: Batch 3 続行（推奨）⭐
+#### 選択肢1: Batch 4 続行（推奨）⭐
 
-**次のファイル（4個）:**
-1. `shared/analysis/audio-analyzer.ts` - TTS_STABILITY, TTS_SIMILARITY_BOOST, SILENCE_THRESHOLD
-2. `shared/ai/bedrock.ts` - CLAUDE_TEMPERATURE, CLAUDE_MAX_TOKENS
-3. `report/ai-suggestions.ts` - CLAUDE_TEMPERATURE, CLAUDE_MAX_TOKENS
-4. `shared/audio/tts-elevenlabs.ts` (確認必要) - TTS_STABILITY, TTS_SIMILARITY_BOOST
+**次のファイル（5個）:**
+1. `websocket/default/index.ts` - WebSocket handler（runtime configs確認必要）
+2. `websocket/default/audio-processor.ts` - Audio processing
+3. `websocket/default/video-processor.ts` - Video processing
+4. `websocket/connect/index.ts` - Connection handler
+5. Other WebSocket-related files
 
 **推定時間:** 2-3時間
 
-**進捗予想:** 15% → 31% (8/26 files)
+**進捗予想:** 27% → 46% (12/26 files)
 
 #### 選択肢2: フロントエンド環境修復
 

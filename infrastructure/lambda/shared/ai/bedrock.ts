@@ -11,7 +11,7 @@ import {
   InvokeModelWithResponseStreamCommandInput,
 } from '@aws-sdk/client-bedrock-runtime';
 import { retryWithBackoff } from '../utils/retry';
-import { getClaudeTemperature } from '../utils/env-validator';
+import { getClaudeTemperature } from '../utils/runtime-config-loader';
 
 export interface BedrockConfig {
   region: string;
@@ -91,11 +91,14 @@ export class BedrockAI {
    * Internal generation method (without retry logic)
    */
   private async _generateResponseInternal(options: GenerateResponseOptions): Promise<AIResponse> {
+    // Load runtime config for Claude temperature
+    const defaultTemperature = await getClaudeTemperature();
+
     const {
       userMessage,
       conversationHistory = [],
       systemPrompt,
-      temperature = getClaudeTemperature(),
+      temperature = defaultTemperature,
       maxTokens = 2048,
     } = options;
 
@@ -224,11 +227,14 @@ Format your response as JSON with these fields: score, strengths, improvements, 
    * Yields text chunks as they arrive from Claude
    */
   async *streamResponse(options: GenerateResponseOptions): AsyncGenerator<string> {
+    // Load runtime config for Claude temperature
+    const defaultTemperature = await getClaudeTemperature();
+
     const {
       userMessage,
       conversationHistory = [],
       systemPrompt,
-      temperature = getClaudeTemperature(),
+      temperature = defaultTemperature,
       maxTokens = 2048,
     } = options;
 
