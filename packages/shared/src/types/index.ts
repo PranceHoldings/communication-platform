@@ -566,6 +566,7 @@ export type ServerToClientMessage =
   | VideoChunkAckMessage
   | VideoChunkMissingMessage
   | VideoChunkErrorMessage
+  | ChunkAckMessage
   | TranscriptMessage
   | AvatarResponseMessage
   | AudioResponseMessage

@@ -25,6 +25,7 @@ interface UseAudioRecorderOptions {
   onRecordingComplete?: (audioBlob: Blob) => void;
   onSpeechEnd?: () => void; // Called when silence is detected
   onError?: (error: Error) => void;
+  onChunkAck?: (chunkId: string, status: string) => void; // Phase 1.6.1: ACK callback
   mimeType?: string;
   enableRealtime?: boolean; // Enable real-time chunk sending (default: true)
   silenceThreshold?: number; // Silence detection threshold (0-1, default: 0.05)
@@ -44,6 +45,17 @@ interface UseAudioRecorderReturn {
   pauseRecording: () => void;
   resumeRecording: () => void;
   restartRecording: () => void; // Restart MediaRecorder for new EBML header
+  handleChunkAck: (chunkId: string, status: string) => void; // Phase 1.6.1: ACK handler
+}
+
+// Phase 1.6.1: ACK tracking for reliable chunk transmission
+interface PendingChunk {
+  chunkId: string;
+  data: Blob;
+  timestamp: number;
+  sequenceNumber: number;
+  sentAt: number;
+  retryCount: number;
 }
 
 export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudioRecorderReturn {
@@ -52,6 +64,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     onRecordingComplete,
     onSpeechEnd,
     onError,
+    onChunkAck, // Phase 1.6.1: ACK callback
     mimeType = 'audio/webm;codecs=opus',
     enableRealtime = true,
     silenceThreshold = 0.15, // Raised from 0.05 to avoid false positives from ambient noise
@@ -92,6 +105,127 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     loggerRef.current = new AudioRecorderLogger(`recorder-${Date.now()}`);
   }
   const logger = loggerRef.current;
+
+  // Phase 1.6.1: ACK tracking for reliable chunk transmission
+  const pendingChunksRef = useRef<Map<string, PendingChunk>>(new Map());
+  const ackTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const MAX_RETRIES = 3;
+  const ACK_TIMEOUT_MS = 5000; // 5 seconds
+
+  // ============================================================
+  // Phase 1.6.1: ACK Tracking & Retry System
+  // ============================================================
+
+  /**
+   * Handle ACK timeout - retry with exponential backoff
+   */
+  const handleAckTimeout = useCallback((chunkId: string) => {
+    const pendingChunk = pendingChunksRef.current.get(chunkId);
+    if (!pendingChunk) {
+      return; // Already acknowledged or removed
+    }
+
+    const { retryCount, data, timestamp, sequenceNumber } = pendingChunk;
+
+    if (retryCount >= MAX_RETRIES) {
+      // Max retries exceeded - give up
+      logger.error(LogPhase.ERROR, `Chunk ${chunkId} failed after ${MAX_RETRIES} retries`);
+      pendingChunksRef.current.delete(chunkId);
+      ackTimeoutRef.current.delete(chunkId);
+      onError?.(new Error(`Failed to send audio chunk ${chunkId} after ${MAX_RETRIES} retries`));
+      return;
+    }
+
+    // Retry with exponential backoff: 1s, 2s, 4s
+    const backoffMs = Math.pow(2, retryCount) * 1000;
+    logger.warn(
+      LogPhase.RECORDING,
+      `Chunk ${chunkId} ACK timeout - retrying in ${backoffMs}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`,
+      { chunkId, retryCount, backoffMs }
+    );
+
+    // Update retry count
+    pendingChunksRef.current.set(chunkId, {
+      ...pendingChunk,
+      retryCount: retryCount + 1,
+      sentAt: Date.now(),
+    });
+
+    // Schedule retry
+    setTimeout(() => {
+      if (onAudioChunk) {
+        onAudioChunk(data, timestamp, sequenceNumber, chunkId);
+      }
+
+      // Set new ACK timeout
+      const timeoutId = setTimeout(() => {
+        handleAckTimeout(chunkId);
+      }, ACK_TIMEOUT_MS);
+
+      ackTimeoutRef.current.set(chunkId, timeoutId);
+    }, backoffMs);
+  }, [onAudioChunk, onError, logger]);
+
+  /**
+   * Handle chunk ACK from server
+   */
+  const handleChunkAck = useCallback((chunkId: string, status: string) => {
+    const timeoutId = ackTimeoutRef.current.get(chunkId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      ackTimeoutRef.current.delete(chunkId);
+    }
+
+    const pendingChunk = pendingChunksRef.current.get(chunkId);
+    if (pendingChunk) {
+      pendingChunksRef.current.delete(chunkId);
+      logger.debug(
+        LogPhase.RECORDING,
+        `Chunk ${chunkId} acknowledged (status: ${status})`,
+        {
+          chunkId,
+          status,
+          latency: Date.now() - pendingChunk.sentAt,
+          retryCount: pendingChunk.retryCount,
+        }
+      );
+
+      // Notify parent via callback
+      onChunkAck?.(chunkId, status);
+    }
+  }, [logger, onChunkAck]);
+
+  /**
+   * Send chunk with ACK tracking and retry
+   */
+  const sendChunkWithRetry = useCallback((
+    data: Blob,
+    timestamp: number,
+    sequenceNumber: number,
+    chunkId: string
+  ) => {
+    // Add to pending chunks
+    pendingChunksRef.current.set(chunkId, {
+      chunkId,
+      data,
+      timestamp,
+      sequenceNumber,
+      sentAt: Date.now(),
+      retryCount: 0,
+    });
+
+    // Send chunk
+    if (onAudioChunk) {
+      onAudioChunk(data, timestamp, sequenceNumber, chunkId);
+    }
+
+    // Set ACK timeout
+    const timeoutId = setTimeout(() => {
+      handleAckTimeout(chunkId);
+    }, ACK_TIMEOUT_MS);
+
+    ackTimeoutRef.current.set(chunkId, timeoutId);
+  }, [onAudioChunk, handleAckTimeout]);
 
   // ============================================================
   // Restart Recording - MUST be defined before monitorAudioLevel
@@ -182,8 +316,8 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
             // Phase 1.6.1: Generate unique chunkId for ACK tracking
             const chunkId = `audio-${sequence}-${timestamp}`;
 
-            // Send chunks after speech detection OR if bypassed for testing
-            onAudioChunk(event.data, timestamp, sequence, chunkId);
+            // Send chunks with ACK tracking and automatic retry
+            sendChunkWithRetry(event.data, timestamp, sequence, chunkId);
           } else {
             logger.debug(
               LogPhase.RECORDING,
@@ -481,8 +615,11 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
           // OR if speech detection is bypassed (for testing environments)
           if (enableRealtime && onAudioChunk) {
             if (!speechEndSentRef.current || bypassSpeechDetection) {
-              // Send chunks after speech detection OR if bypassed for testing
-              onAudioChunk(event.data, timestamp, sequence);
+              // Phase 1.6.1: Generate unique chunkId for ACK tracking
+              const chunkId = `audio-${sequence}-${timestamp}`;
+
+              // Send chunks with ACK tracking and automatic retry
+              sendChunkWithRetry(event.data, timestamp, sequence, chunkId);
             } else {
               logger.debug(
                 LogPhase.RECORDING,
@@ -674,5 +811,6 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     pauseRecording,
     resumeRecording,
     restartRecording,
+    handleChunkAck, // Phase 1.6.1: ACK handler
   };
 }

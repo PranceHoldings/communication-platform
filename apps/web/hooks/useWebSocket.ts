@@ -93,6 +93,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onError,
     onNoSpeechDetected,
     onAuthenticated,
+    onChunkAck,
     autoConnect = false,
   } = options;
 
@@ -135,6 +136,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const onErrorRef = useRef(onError);
   const onNoSpeechDetectedRef = useRef(onNoSpeechDetected);
   const onAuthenticatedRef = useRef(onAuthenticated);
+  const onChunkAckRef = useRef(onChunkAck);
 
   // Update refs on every render so they always point to the latest callbacks
   useEffect(() => {
@@ -147,6 +149,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onNoSpeechDetectedRef.current = onNoSpeechDetected;
     onErrorRef.current = onError;
     onAuthenticatedRef.current = onAuthenticated;
+    onChunkAckRef.current = onChunkAck;
   });
 
   // WebSocket endpoint from environment variable
@@ -292,6 +295,15 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
                 console.warn(`[WebSocket] Received ACK for unknown chunk ${chunkId}`);
               }
             }
+            break;
+
+          case 'chunk_ack':
+            // Phase 1.6.1: Unified ACK for audio/video chunks
+            console.log('[WebSocket] Chunk ACK received:', {
+              chunkId: (message as ChunkAckMessage).chunkId,
+              status: (message as ChunkAckMessage).status,
+            });
+            onChunkAckRef.current?.(message as ChunkAckMessage);
             break;
 
           case 'video_chunk_missing':
