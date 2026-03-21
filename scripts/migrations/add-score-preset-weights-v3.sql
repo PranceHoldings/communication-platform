@@ -1,0 +1,26 @@
+INSERT INTO runtime_configs (key, value, data_type, category, access_level, default_value, description, updated_at) VALUES
+('SCORE_PRESET_DEFAULT_EMOTION', to_jsonb(0.35), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.35), 'Default preset: Emotion weight (must sum to 1.0 with other weights)', NOW()),
+('SCORE_PRESET_DEFAULT_AUDIO', to_jsonb(0.35), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.35), 'Default preset: Audio weight (must sum to 1.0 with other weights)', NOW()),
+('SCORE_PRESET_DEFAULT_CONTENT', to_jsonb(0.2), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.2), 'Default preset: Content weight (must sum to 1.0 with other weights)', NOW()),
+('SCORE_PRESET_DEFAULT_DELIVERY', to_jsonb(0.1), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.1), 'Default preset: Delivery weight (must sum to 1.0 with other weights)', NOW()),
+('SCORE_PRESET_INTERVIEW_EMOTION', to_jsonb(0.4), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.4), 'Interview practice preset: Emotion weight (emphasis on emotional control)', NOW()),
+('SCORE_PRESET_INTERVIEW_AUDIO', to_jsonb(0.3), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.3), 'Interview practice preset: Audio weight (clear communication)', NOW()),
+('SCORE_PRESET_INTERVIEW_CONTENT', to_jsonb(0.2), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.2), 'Interview practice preset: Content weight (relevant answers)', NOW()),
+('SCORE_PRESET_INTERVIEW_DELIVERY', to_jsonb(0.1), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.1), 'Interview practice preset: Delivery weight (professional presentation)', NOW()),
+('SCORE_PRESET_LANGUAGE_EMOTION', to_jsonb(0.15), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.15), 'Language learning preset: Emotion weight (less emphasis on emotion)', NOW()),
+('SCORE_PRESET_LANGUAGE_AUDIO', to_jsonb(0.5), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.5), 'Language learning preset: Audio weight (pronunciation and fluency focus)', NOW()),
+('SCORE_PRESET_LANGUAGE_CONTENT', to_jsonb(0.25), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.25), 'Language learning preset: Content weight (vocabulary and grammar)', NOW()),
+('SCORE_PRESET_LANGUAGE_DELIVERY', to_jsonb(0.1), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.1), 'Language learning preset: Delivery weight (natural speech)', NOW()),
+('SCORE_PRESET_PRESENTATION_EMOTION', to_jsonb(0.3), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.3), 'Presentation preset: Emotion weight (engaging delivery)', NOW()),
+('SCORE_PRESET_PRESENTATION_AUDIO', to_jsonb(0.3), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.3), 'Presentation preset: Audio weight (clear articulation)', NOW()),
+('SCORE_PRESET_PRESENTATION_CONTENT', to_jsonb(0.3), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.3), 'Presentation preset: Content weight (structured message)', NOW()),
+('SCORE_PRESET_PRESENTATION_DELIVERY', to_jsonb(0.1), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.1), 'Presentation preset: Delivery weight (confident presence)', NOW()),
+('SCORE_PRESET_CUSTOM_EMOTION', to_jsonb(0.35), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.35), 'Custom preset: Emotion weight (fully customizable by organization)', NOW()),
+('SCORE_PRESET_CUSTOM_AUDIO', to_jsonb(0.35), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.35), 'Custom preset: Audio weight (fully customizable by organization)', NOW()),
+('SCORE_PRESET_CUSTOM_CONTENT', to_jsonb(0.2), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.2), 'Custom preset: Content weight (fully customizable by organization)', NOW()),
+('SCORE_PRESET_CUSTOM_DELIVERY', to_jsonb(0.1), 'NUMBER', 'SCORE_CALCULATION', 'CLIENT_ADMIN_READ_WRITE', to_jsonb(0.1), 'Custom preset: Delivery weight (fully customizable by organization)', NOW())
+ON CONFLICT (key) DO UPDATE SET
+  value = EXCLUDED.value,
+  default_value = EXCLUDED.default_value,
+  description = EXCLUDED.description,
+  updated_at = NOW();

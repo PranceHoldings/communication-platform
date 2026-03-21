@@ -18,7 +18,7 @@ import type {
   ScoreAssessment,
   EmotionScore,
 } from '@prance/shared';
-import { getOptimalPauseSec } from '../utils/runtime-config-loader';
+import { getOptimalPauseSec, getScorePresetWeights } from '../utils/runtime-config-loader';
 
 // ============================================================
 // Scoring Presets
@@ -77,8 +77,8 @@ export class ScoreCalculator {
       criteria,
     });
 
-    // Get weights
-    const weights = this.getWeights(criteria);
+    // Get weights (now async - loads from runtime config)
+    const weights = await this.getWeights(criteria);
 
     // Calculate category scores
     const emotionResult = this.calculateEmotionScore(emotionAnalyses);
@@ -123,12 +123,24 @@ export class ScoreCalculator {
 
   /**
    * Get scoring weights
+   * Phase 5.4.1: Now loads from runtime_configs database
    */
-  private getWeights(criteria: ScoringCriteria): ScoringWeights {
+  private async getWeights(criteria: ScoringCriteria): Promise<ScoringWeights> {
+    // If custom weights are provided directly, use them
     if (criteria.preset === 'custom' && criteria.customWeights) {
       return criteria.customWeights;
     }
-    return SCORING_PRESETS[criteria.preset] || SCORING_PRESETS.default;
+
+    // Load weights from runtime_configs database
+    try {
+      const weights = await getScorePresetWeights(criteria.preset);
+      console.log(`[ScoreCalculator] Loaded weights for preset "${criteria.preset}":`, weights);
+      return weights;
+    } catch (error) {
+      console.error(`[ScoreCalculator] Failed to load weights for preset "${criteria.preset}", falling back to hardcoded default:`, error);
+      // Fallback to hardcoded default preset if database load fails
+      return SCORING_PRESETS[criteria.preset] || SCORING_PRESETS.default;
+    }
   }
 
   /**

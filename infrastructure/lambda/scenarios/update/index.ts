@@ -3,6 +3,7 @@ import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
 import { LANGUAGE_DEFAULTS } from '../../shared/config/defaults';
+import { invalidateScenarioCache } from '../../shared/scenario/cache';
 
 /**
  * PUT /api/v1/scenarios/{id}
@@ -148,6 +149,12 @@ export const handler: APIGatewayProxyHandler = async event => {
     });
 
     console.log(`Scenario updated: ${scenario.id} by user ${user.userId}`);
+
+    // Phase 1.6.1 Day 36: Invalidate cache after update
+    invalidateScenarioCache(scenarioId).catch(error => {
+      console.error('[Update] Failed to invalidate cache:', error);
+      // Non-blocking: cache invalidation failure should not fail the update
+    });
 
     return successResponse(scenario);
   } catch (error) {
