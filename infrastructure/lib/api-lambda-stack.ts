@@ -1350,11 +1350,10 @@ export class ApiLambdaStack extends cdk.Stack {
           ? logs.RetentionDays.ONE_MONTH
           : logs.RetentionDays.ONE_WEEK,
       functionName: `prance-websocket-default-v2-${props.environment}`,
-      description: 'WebSocket $default message handler (v2 - Phase 5.4 Batch 4: runtime-config-loader)',
+      description: 'WebSocket $default message handler (v2 - FIXED: schema.prisma in .prisma/client/)',
       entry: path.join(__dirname, '../lambda/websocket/default/index.ts'),
       handler: 'handler',
       depsLockFilePath: path.join(__dirname, '../lambda/websocket/default/package-lock.json'),
-      projectRoot: path.join(__dirname, '../lambda'),
       environment: {
         ENVIRONMENT: props.environment,
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
@@ -1399,74 +1398,35 @@ export class ApiLambdaStack extends cdk.Stack {
         minify: props.environment === 'production',
         sourceMap: true,
         target: 'es2020',
-        externalModules: [
-          'aws-sdk',
-          '@aws-sdk/*',
-          '@smithy/*',
-          'microsoft-cognitiveservices-speech-sdk',
-          'ffmpeg-static',
-        ],
-        nodeModules: [
-          'microsoft-cognitiveservices-speech-sdk',
-          'ffmpeg-static',
-          '@prisma/client',
-          'prisma',
-        ],
+        externalModules: ['aws-sdk', '@aws-sdk/*'], // Match prismaBundlingConfig pattern
+        nodeModules: ['@prisma/client', 'microsoft-cognitiveservices-speech-sdk', 'ffmpeg-static'],
         commandHooks: {
           beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
+            // Use absolute path from __dirname to avoid inputDir confusion
+            const projectRoot = path.join(__dirname, '../..');
             return [
-              // ROOT CAUSE ANALYSIS (2026-03-14):
-              // Previous design (commit fa84e6f, 2026-03-12) copied pre-compiled .js files from source directory.
-              // This was based on INCORRECT DIAGNOSIS: "index.js missing from Lambda zip"
-              // TRUTH: esbuild automatically transpiles index.ts and bundles imported modules into outputDir/index.js
-              // PROBLEM: Copying from source directory OVERWRITES esbuild output with stale code
-              // SOLUTION: Let esbuild handle all transpilation. Only copy shared modules and native dependencies.
-              //
-              // Why previous approach failed:
-              // 1. esbuild generates fresh index.js from index.ts → outputDir/index.js (correct code)
-              // 2. afterBundling copies old index.js from source → OVERWRITES with stale code (2026-03-11)
-              // 3. Even "clean build" (rm -rf cdk.out) doesn't remove source .js files
-              // 4. Old code gets deployed repeatedly
-              //
-              // Correct approach:
-              // - esbuild: Handles index.ts transpilation + bundling (audio-processor, video-processor, chunk-utils)
-              // - afterBundling: Only copies shared/ modules and native dependencies (ffmpeg-static, Azure SDK)
-              // Fix require paths in bundled file (../../shared -> ./shared)
-              // Note: esbuild bundles all TypeScript imports, but preserves dynamic require() for shared modules
-              `sed -i 's|require("../../shared/|require("./shared/|g' ${outputDir}/index.js || true`,
-              `sed -i "s|require('../../shared/|require('./shared/|g" ${outputDir}/index.js || true`,
-              // Copy ALL shared modules (CRITICAL: Without these, Lambda will fail with ImportModuleError)
-              `mkdir -p ${outputDir}/shared`,
-              `cp -r ${inputDir}/shared/ai ${outputDir}/shared/`,
-              `cp -r ${inputDir}/shared/audio ${outputDir}/shared/`,
-              `cp -r ${inputDir}/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
-              `cp -r ${inputDir}/shared/config ${outputDir}/shared/`, // CRITICAL: defaults.ts, language-config.ts
-              `cp -r ${inputDir}/shared/utils ${outputDir}/shared/`, // CRITICAL: error-logger.ts
-              `cp -r ${inputDir}/shared/types ${outputDir}/shared/`, // CRITICAL: Type definitions
-              `cp -r ${inputDir}/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
-              `cp -r ${inputDir}/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
-              // Copy Prisma Client (both @prisma/client package and .prisma/client generated code)
-              // Note: Both are required - @prisma/client is the package, .prisma/client is the generated code
-              `mkdir -p ${outputDir}/node_modules/@prisma`,
-              `cp -r ${inputDir}/websocket/default/node_modules/@prisma/client ${outputDir}/node_modules/@prisma/ 2>/dev/null || echo "Warning: @prisma/client package not found"`,
+              // Copy Prisma generated client
               `mkdir -p ${outputDir}/node_modules/.prisma`,
-              `cp -r ${inputDir}/../../packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Warning: .prisma/client generated code not found"`,
-              // Copy Prisma schema (CRITICAL: Required for Prisma Client initialization)
-              `cp ${inputDir}/../../packages/database/prisma/schema.prisma ${outputDir}/node_modules/.prisma/client/schema.prisma 2>/dev/null || echo "Warning: schema.prisma not found"`,
-              // Copy native dependencies (CRITICAL: ffmpeg-static for audio processing, Azure Speech SDK for STT)
-              `mkdir -p ${outputDir}/node_modules/ffmpeg-static`,
-              `cp -r ${inputDir}/websocket/default/node_modules/ffmpeg-static/. ${outputDir}/node_modules/ffmpeg-static/ 2>/dev/null || echo "Warning: ffmpeg-static not found"`,
-              `mkdir -p ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk`,
-              `cp -r ${inputDir}/websocket/default/node_modules/microsoft-cognitiveservices-speech-sdk/. ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk/ 2>/dev/null || echo "Warning: Azure Speech SDK not found"`,
-              // Copy ffmpeg/ffprobe binaries directly to root for direct access
-              `cp ${inputDir}/websocket/default/node_modules/ffmpeg-static/ffmpeg ${outputDir}/ffmpeg 2>/dev/null || echo "Warning: ffmpeg binary not found"`,
+              `cp -r ${projectRoot}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Warning: Prisma .prisma/client not found"`,
+              // Copy Prisma schema (CRITICAL: Must be in .prisma/client directory)
+              `cp ${projectRoot}/packages/database/prisma/schema.prisma ${outputDir}/node_modules/.prisma/client/schema.prisma 2>/dev/null || echo "Warning: schema.prisma not found at ${projectRoot}/packages/database/prisma/schema.prisma"`,
+              // Copy shared modules (CRITICAL: Required by WebSocket handler)
+              `mkdir -p ${outputDir}/shared`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/ai ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/audio ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/config ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/utils ${outputDir}/shared/ 2>/dev/null || true`,
+              // Note: shared/scenario is bundled by esbuild, NOT copied
+              // Copy ffmpeg binaries (use inputDir for node_modules access)
+              `cp ${projectRoot}/infrastructure/lambda/websocket/default/node_modules/ffmpeg-static/ffmpeg ${outputDir}/ffmpeg 2>/dev/null || echo "Warning: ffmpeg binary not found"`,
               `chmod +x ${outputDir}/ffmpeg 2>/dev/null || true`,
-              `cp ${inputDir}/websocket/default/node_modules/ffmpeg-static/ffprobe ${outputDir}/ffprobe 2>/dev/null || echo "Info: ffprobe not found in ffmpeg-static (optional)"`,
-              `chmod +x ${outputDir}/ffprobe 2>/dev/null || true`,
-              `echo "Shared modules and native dependencies copied successfully (esbuild handles TypeScript transpilation)"`,
             ];
           },
           beforeInstall(): string[] {

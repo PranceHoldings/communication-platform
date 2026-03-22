@@ -22,6 +22,17 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
       process.env.TEST_USER_EMAIL || 'admin@prance.com',
       process.env.TEST_USER_PASSWORD || 'Admin2026!Prance'
     );
+
+    // Debug: Check localStorage after login
+    const accessToken = await page.evaluate(() => localStorage.getItem('accessToken'));
+    const refreshToken = await page.evaluate(() => localStorage.getItem('refreshToken'));
+    const user = await page.evaluate(() => localStorage.getItem('user'));
+    console.log('[Test Debug] After login - localStorage:', {
+      hasAccessToken: !!accessToken,
+      accessTokenLength: accessToken?.length,
+      hasRefreshToken: !!refreshToken,
+      hasUser: !!user,
+    });
   });
 
   test('should track chunk ACKs during recording', async ({ page }) => {
@@ -33,17 +44,104 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     await newSessionPage.selectAvatar(0);
     await newSessionPage.clickNext();
 
+    // Debug: Check localStorage before session creation
+    const tokenBeforeCreate = await page.evaluate(() => localStorage.getItem('accessToken'));
+    console.log('[Test Debug] Before session creation - has token:', !!tokenBeforeCreate);
+
+    // Listen to network requests to debug API calls
+    page.on('request', (request) => {
+      if (request.url().includes('/sessions')) {
+        console.log('[Test Debug] Session API Request:', {
+          url: request.url(),
+          method: request.method(),
+          hasAuth: !!request.headers()['authorization'],
+        });
+      }
+    });
+
+    page.on('response', async (response) => {
+      if (response.url().includes('/sessions')) {
+        console.log('[Test Debug] Session API Response:', {
+          url: response.url(),
+          status: response.status(),
+          ok: response.ok(),
+        });
+        try {
+          const body = await response.json();
+          console.log('[Test Debug] Response body:', JSON.stringify(body, null, 2));
+        } catch (e) {
+          console.log('[Test Debug] Could not parse response as JSON');
+        }
+      }
+    });
+
     // Create session (Create button)
     await page.click('button:has-text("Create"), button:has-text("作成")');
+
+    // Check for any error messages on the page (with short timeout)
+    await page.waitForTimeout(1000); // Give page time to render
+    const errorElement = page.locator('[role="alert"], .text-red-500, .text-red-600, .text-red-700').first();
+    try {
+      if (await errorElement.isVisible({ timeout: 2000 })) {
+        const errorText = await errorElement.textContent({ timeout: 2000 });
+        console.log('[Test Debug] Error message on page:', errorText);
+      }
+    } catch {
+      // No error message found, continue
+      console.log('[Test Debug] No error message found');
+    }
+
     // Wait for session detail page to load
     await page.waitForURL('**/dashboard/sessions/**', { timeout: 30000 });
+    await page.waitForLoadState('networkidle', { timeout: 10000 });
 
-    // Wait for and click the Start button on session detail page
-    await page.waitForSelector('[data-testid="start-button"]', {
-      timeout: 15000,
-      state: 'visible'
+    // Critical: Wait for loading state to disappear
+    // The page shows "Loading session..." while fetching data
+    console.log('[Test Debug] Waiting for loading state to complete...');
+    const loadingIndicator = page.locator('text=/Loading session|読み込み中/');
+    try {
+      if (await loadingIndicator.isVisible({ timeout: 5000 })) {
+        console.log('[Test Debug] Loading indicator visible, waiting for it to disappear...');
+        await loadingIndicator.waitFor({ state: 'hidden', timeout: 30000 });
+        console.log('[Test Debug] Loading completed!');
+      }
+    } catch {
+      console.log('[Test Debug] No loading indicator found, page might already be loaded');
+    }
+
+    // Wait for breadcrumb to ensure page is fully rendered
+    console.log('[Test Debug] Waiting for breadcrumb (confirms page is rendered)...');
+    await page.waitForSelector('text=/Sessions|セッション/', { timeout: 15000 });
+    console.log('[Test Debug] Breadcrumb found!');
+
+    // Wait a bit more for React hydration to complete
+    await page.waitForTimeout(3000);
+
+    // Debug: Check page content after loading
+    const bodyText = await page.locator('body').textContent();
+    console.log('[Test Debug] Page body (first 300 chars):', bodyText?.substring(0, 300));
+
+    // Check if "Failed to fetch" appears
+    if (bodyText?.includes('Failed to fetch')) {
+      console.log('[Test Debug] ERROR: "Failed to fetch" found on page!');
+      throw new Error('Page shows "Failed to fetch" error');
+    }
+
+    // Wait for SessionPlayer container (more reliable than canvas)
+    console.log('[Test Debug] Waiting for SessionPlayer container...');
+    const sessionPlayerContainer = page.locator('.space-y-6, [data-testid="session-player-container"]').first();
+    await sessionPlayerContainer.waitFor({ state: 'attached', timeout: 15000 });
+    console.log('[Test Debug] SessionPlayer container found!');
+
+    // Now wait for Start button (use data-testid which should be available after hydration)
+    const startButton = page.locator('[data-testid="start-button"]');
+    await startButton.waitFor({
+      state: 'visible',
+      timeout: 15000
     });
-    await page.click('[data-testid="start-button"]');
+
+    console.log('[Test Debug] Start button found! Clicking...');
+    await startButton.click();
 
     // Wait for recording status to appear (session must be ACTIVE first)
     await page.waitForSelector('[data-testid="recording-status"]', {

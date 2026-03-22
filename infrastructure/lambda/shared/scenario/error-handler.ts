@@ -294,7 +294,7 @@ function getFallbackTerminationMessage(errorType: string, language: string = 'en
     ko: '오류로 인해 세션이 종료되었습니다.',
     es: 'Sesión terminada debido a errores.',
     pt: 'Sessão encerrada devido a erros.',
-    fr: 'Session terminée en raison d'erreurs.',
+    fr: 'Session terminée en raison des erreurs.',
     de: 'Sitzung aufgrund von Fehlern beendet.',
     it: 'Sessione terminata a causa di errori.',
   };
@@ -311,10 +311,10 @@ function getFallbackPrompt(language: string = 'en'): string {
     en: 'Please respond again in a different way.',
     'zh-CN': '请用不同的方式再次回应。',
     'zh-TW': '請用不同的方式再次回應。',
-    ko: '다른 방식으로 다시 응답해 주세요.',
+    ko: '다른 방식으로 다시 応답해 주세요.',
     es: 'Por favor, responde de nuevo de una manera diferente.',
     pt: 'Por favor, responda novamente de uma maneira diferente.',
-    fr: 'Veuillez répondre à nouveau d'une manière différente.',
+    fr: 'Veuillez repondre a nouveau de maniere differente.',
     de: 'Bitte antworten Sie erneut auf eine andere Weise.',
     it: 'Per favore, rispondi di nuovo in un modo diverso.',
   };

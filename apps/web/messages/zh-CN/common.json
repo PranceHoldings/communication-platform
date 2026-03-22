@@ -45,9 +45,6 @@
   "enabled": "Enabled",
   "disabled": "Disabled",
   "useDefault": "Use Default",
-  "contact": "Contact",
-  "privacyPolicy": "Privacy Policy",
-  "termsOfService": "Terms of Service",
   "languagesNative": {
     "en": "English",
     "ja": "日本語",
@@ -66,5 +63,13 @@
       "message": "无法加载头像，但会话将正常继续。",
       "errorDetails": "错误详情"
     }
+  },
+  "connectionStatus": {
+    "disconnected": "已断开",
+    "connecting": "连接中...",
+    "connected": "已连接",
+    "reconnecting": "重新连接中... ({attempt}/{maxAttempts})",
+    "reconnectFailed": "经过{attempts}次重试后连接失败。请刷新页面。",
+    "error": "连接错误"
   }
 }

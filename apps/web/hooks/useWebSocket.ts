@@ -493,13 +493,24 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       ws.onmessage = handleMessage;
 
       ws.onerror = event => {
-        console.error('WebSocket error:', event);
+        console.error('[useWebSocket] WebSocket error:', {
+          type: event.type,
+          target: event.target,
+          readyState: (event.target as WebSocket).readyState,
+          url: (event.target as WebSocket).url,
+        });
         setError('WebSocket connection error');
         setIsConnecting(false);
       };
 
       ws.onclose = event => {
-        console.log('WebSocket closed:', event.code, event.reason);
+        console.log('[useWebSocket] WebSocket closed:', {
+          code: event.code,
+          reason: event.reason || '(no reason provided)',
+          wasClean: event.wasClean,
+          attempt: reconnectAttempts.current,
+          maxAttempts: MAX_RECONNECT_ATTEMPTS,
+        });
         setIsConnected(false);
         setIsConnecting(false);
         wsRef.current = null;

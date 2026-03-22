@@ -8,7 +8,6 @@ import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { AudioFeatures, PauseInfo, FillerWordsInfo } from '@prance/shared';
-import { getMinPauseDurationSec } from '../utils/runtime-config-loader';
 
 const execAsync = promisify(exec);
 
@@ -56,11 +55,8 @@ export class AudioAnalyzer {
   ): Promise<AudioAnalysisResult> {
     const startTime = Date.now();
 
-    // Load runtime config for min pause duration
-    const defaultMinPauseDuration = await getMinPauseDurationSec();
-
     const {
-      minPauseDuration = defaultMinPauseDuration,
+      minPauseDuration = 0.5, // Default: 0.5 seconds
       silenceThreshold = -30,
       detectFillerWords = true,
     } = options;

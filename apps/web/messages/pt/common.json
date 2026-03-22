@@ -45,9 +45,6 @@
   "enabled": "Enabled",
   "disabled": "Disabled",
   "useDefault": "Use Default",
-  "contact": "Contact",
-  "privacyPolicy": "Privacy Policy",
-  "termsOfService": "Terms of Service",
   "languagesNative": {
     "en": "English",
     "ja": "日本語",
@@ -66,5 +63,13 @@
       "message": "Não foi possível carregar o avatar, mas a sessão continuará normalmente.",
       "errorDetails": "Detalhes do erro"
     }
+  },
+  "connectionStatus": {
+    "disconnected": "Desconectado",
+    "connecting": "Conectando...",
+    "connected": "Conectado",
+    "reconnecting": "Reconectando... ({attempt}/{maxAttempts})",
+    "reconnectFailed": "Falha na reconexão após {attempts} tentativas. Por favor, atualize a página.",
+    "error": "Erro de conexão"
   }
 }

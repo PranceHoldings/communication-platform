@@ -144,18 +144,34 @@ export function ThreeDAvatar({
 }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fallbackModelUrl, setFallbackModelUrl] = useState<string | null>(null);
+
+  // Use fallback model if primary model failed
+  const effectiveModelUrl = fallbackModelUrl || modelUrl;
 
   const handleModelReady = useCallback(() => {
-    console.log('[ThreeDAvatar] Model loaded successfully');
+    console.log('[ThreeDAvatar] Model loaded successfully:', effectiveModelUrl);
     setIsLoading(false);
     onReady?.();
-  }, [onReady]);
+  }, [onReady, effectiveModelUrl]);
 
-  const handleError = useCallback((err: Error) => {
-    console.error('[ThreeDAvatar] Failed to load model:', err);
-    setError(err.message);
-    setIsLoading(false);
-  }, []);
+  const handleError = useCallback(
+    (err: Error) => {
+      console.error('[ThreeDAvatar] Failed to load model:', effectiveModelUrl, err);
+
+      // Try fallback model if not already using it
+      if (!fallbackModelUrl && effectiveModelUrl !== '/models/avatars/test-model.glb') {
+        console.warn('[ThreeDAvatar] Falling back to local test model');
+        setFallbackModelUrl('/models/avatars/test-model.glb');
+        setError(null); // Clear error to allow retry
+      } else {
+        // Fallback also failed
+        setError(err.message);
+        setIsLoading(false);
+      }
+    },
+    [fallbackModelUrl, effectiveModelUrl]
+  );
 
   return (
     <div style={{ width, height, position: 'relative' }}>
@@ -209,7 +225,7 @@ export function ThreeDAvatar({
 
         {/* Avatar Model */}
         <AvatarModel
-          modelUrl={modelUrl}
+          modelUrl={effectiveModelUrl}
           lipSyncData={lipSyncData}
           emotion={emotion}
           onReady={handleModelReady}

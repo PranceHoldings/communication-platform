@@ -52,11 +52,60 @@ interface TranscriptItem {
   partial?: boolean;
 }
 
+/**
+ * Sanitize avatar model URL to prevent DNS resolution errors
+ * Falls back to local test model if external URL is unreachable
+ */
+function sanitizeModelUrl(modelUrl: string | undefined): string {
+  if (!modelUrl) {
+    return '/models/avatars/test-model.glb';
+  }
+
+  // If external URL (not starting with /), use fallback
+  // This prevents ERR_NAME_NOT_RESOLVED errors from unreachable external domains
+  if (modelUrl.startsWith('http://') || modelUrl.startsWith('https://')) {
+    console.warn('[SessionPlayer] External model URL detected, using fallback:', modelUrl);
+    return '/models/avatars/test-model.glb';
+  }
+
+  return modelUrl;
+}
+
+/**
+ * Sanitize thumbnail URL to prevent DNS resolution errors
+ */
+function sanitizeThumbnailUrl(thumbnailUrl: string | undefined): string | undefined {
+  if (!thumbnailUrl) {
+    return undefined; // AvatarRenderer will handle undefined
+  }
+
+  // If external URL, return undefined to avoid DNS errors
+  if (thumbnailUrl.startsWith('http://') || thumbnailUrl.startsWith('https://')) {
+    console.warn('[SessionPlayer] External thumbnail URL detected, using fallback:', thumbnailUrl);
+    return undefined;
+  }
+
+  return thumbnailUrl;
+}
+
 export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps) {
   const { t } = useI18n();
   const { getErrorMessage, getMicrophoneInstructions } = useErrorMessage();
   const [status, setStatus] = useState<SessionPlayerStatus>('IDLE');
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
+
+  // Debug: Log SessionPlayer initialization
+  useEffect(() => {
+    console.log('[SessionPlayer] Initializing with:', {
+      sessionId: session.id,
+      sessionStatus: session.status,
+      avatarName: avatar.name,
+      avatarType: avatar.type,
+      originalModelUrl: avatar.modelUrl,
+      sanitizedModelUrl: sanitizeModelUrl(avatar.modelUrl),
+      scenarioTitle: scenario.title,
+    });
+  }, [session.id, session.status, avatar, scenario]);
   const [currentTime, setCurrentTime] = useState(0);
   const [token, setToken] = useState<string | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -127,6 +176,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const disconnectRef = useRef<(() => void) | null>(null);
+  const audioBufferRef = useRef<any>(null);
 
   // Timeout detection
   const processingStartTimeRef = useRef<number | null>(null);
@@ -156,6 +206,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const accessToken = localStorage.getItem('accessToken');
+      console.log('[SessionPlayer] Retrieved access token:', {
+        hasToken: !!accessToken,
+        tokenLength: accessToken?.length,
+        tokenPrefix: accessToken?.substring(0, 20) + '...',
+      });
       setToken(accessToken);
     }
   }, []);
@@ -718,10 +773,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         }),
       });
 
-      // Disconnect WebSocket
-      disconnect();
+      // Disconnect WebSocket using ref to avoid TDZ error
+      setTimeout(() => {
+        if (disconnectRef.current) {
+          disconnectRef.current();
+        }
+      }, 1000);
     },
-    [t, disconnect]
+    [t]
   );
 
   // Phase 1.6.1 Day 36: Handle AI fallback response
@@ -818,7 +877,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
           // Resend chunk
           if (pending.type === 'audio') {
-            audioBuffer.addChunk(pending.data, pending.timestamp);
+            audioBufferRef.current?.addChunk(pending.data, pending.timestamp);
           } else {
             // Video chunk resend
             sendVideoChunkRef.current?.(
@@ -838,7 +897,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         return prev;
       });
     },
-    [MAX_RETRIES, ACK_TIMEOUT_MS, audioBuffer, toast]
+    [MAX_RETRIES, ACK_TIMEOUT_MS, toast]
   );
 
   // Phase 1.6.1: Handle chunk ACK from backend
@@ -1028,6 +1087,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   useEffect(() => {
     sendMessageRef.current = sendMessage;
   }, [sendMessage]);
+
+  useEffect(() => {
+    disconnectRef.current = disconnect;
+  }, [disconnect]);
+
+  useEffect(() => {
+    audioBufferRef.current = audioBuffer;
+  }, [audioBuffer]);
 
   // Load organization settings on mount for fallback values
   useEffect(() => {
@@ -1932,6 +1999,15 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   // Auto-connect when status becomes READY and not yet connecting
   useEffect(() => {
+    console.log('[SessionPlayer] Auto-connect useEffect triggered:', {
+      status,
+      isConnecting,
+      isConnected,
+      hasToken: !!token,
+      tokenLength: token?.length,
+      shouldConnect: status === 'READY' && !isConnecting && !isConnected && !!token,
+    });
+
     if (status === 'READY' && !isConnecting && !isConnected && token) {
       console.log('[SessionPlayer] Status is READY, initiating WebSocket connection...');
       connect();
@@ -2692,8 +2768,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         <AvatarRenderer
           ref={avatarRef}
           type={avatar.type}
-          modelUrl={avatar.modelUrl}
-          imageUrl={avatar.thumbnailUrl}
+          modelUrl={sanitizeModelUrl(avatar.modelUrl)}
+          imageUrl={sanitizeThumbnailUrl(avatar.thumbnailUrl)}
           width={1280}
           height={720}
           lipSyncIntensity={audioLevel}

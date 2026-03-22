@@ -41,13 +41,13 @@ import { checkRateLimit, RateLimitProfiles } from '../../shared/utils/rate-limit
 import { getAwsRegion, getBedrockRegion, getSttAutoDetectLanguages, getEnableAutoAnalysis } from '../../shared/config';
 
 // Lambda function version
-const LAMBDA_VERSION = '1.1.2'; // Phase 5.4 Batch 4: runtime-config-loader for chunk-utils.ts
+const LAMBDA_VERSION = '1.1.4'; // Day 36: Fixed CLOUDFRONT eager evaluation
 const LAMBDA_NAME = 'websocket-default-handler';
-const BUILD_TIMESTAMP = '2026-03-21T09:46:23Z'; // Force CDK rebuild - unique per build
-const FORCE_REBUILD_FLAG = true; // Phase 5.4 Batch 4 deployment marker
+const BUILD_TIMESTAMP = '2026-03-22T12:10:00Z'; // Force CDK rebuild - lazy CLOUDFRONT config
+const FORCE_REBUILD_FLAG = true; // Day 36: Prisma Client initialization fix
 
 // Build identifier - unique filename format
-const BUILD_ID = `build-2026-03-21T09:46:23Z.marker`;
+const BUILD_ID = `build-2026-03-22T11:32:00Z.marker`;
 
 // Supported languages (ISO 639-1 format: 'ja', 'en', 'zh-CN', 'zh-TW', etc.)
 // Source of truth: packages/shared/src/language/index.ts
@@ -77,10 +77,8 @@ const AZURE_SPEECH_REGION = getRequiredEnv('AZURE_SPEECH_REGION');
 const ELEVENLABS_API_KEY = getRequiredEnv('ELEVENLABS_API_KEY');
 const ELEVENLABS_VOICE_ID = getRequiredEnv('ELEVENLABS_VOICE_ID');
 
-// CloudFront configuration
+// CloudFront configuration (lazy evaluation - fetched when VideoProcessor is initialized)
 const CLOUDFRONT_DOMAIN = getCloudFrontDomain();
-const CLOUDFRONT_KEY_PAIR_ID = getRequiredEnv('CLOUDFRONT_KEY_PAIR_ID');
-const CLOUDFRONT_PRIVATE_KEY = getRequiredEnv('CLOUDFRONT_PRIVATE_KEY');
 
 const apiGateway = new ApiGatewayManagementApiClient({
   endpoint: ENDPOINT,
@@ -148,8 +146,8 @@ function getVideoProcessor(): VideoProcessor {
       s3Client,
       bucket: S3_BUCKET,
       cloudFrontDomain: CLOUDFRONT_DOMAIN,
-      cloudFrontKeyPairId: CLOUDFRONT_KEY_PAIR_ID,
-      cloudFrontPrivateKey: CLOUDFRONT_PRIVATE_KEY,
+      cloudFrontKeyPairId: getRequiredEnv('CLOUDFRONT_KEY_PAIR_ID'),
+      cloudFrontPrivateKey: getRequiredEnv('CLOUDFRONT_PRIVATE_KEY'),
     });
   }
   return videoProcessor;

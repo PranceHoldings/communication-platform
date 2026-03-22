@@ -62,6 +62,7 @@
     "connecting": "Connecting...",
     "connected": "Connected",
     "reconnecting": "Reconnecting... ({attempt}/{maxAttempts})",
+    "reconnectFailed": "Failed to reconnect after {attempts} attempts. Please refresh the page.",
     "error": "Connection Error"
   },
   "avatar": {

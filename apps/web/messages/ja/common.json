@@ -62,6 +62,7 @@
     "connecting": "接続中...",
     "connected": "接続済み",
     "reconnecting": "再接続中... ({attempt}/{maxAttempts})",
+    "reconnectFailed": "{attempts}回の再接続試行後に失敗しました。ページを更新してください。",
     "error": "接続エラー"
   },
   "avatar": {

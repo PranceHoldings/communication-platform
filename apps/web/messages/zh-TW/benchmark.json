@@ -48,7 +48,8 @@
     "declining": "Declining",
     "change": "Change from last session",
     "increase": "+{value}",
-    "decrease": "{value}"
+    "decrease": "{value}",
+    "showing": "[ZH-TW: showing]"
   },
   "insights": {
     "title": "AI-Powered Insights",

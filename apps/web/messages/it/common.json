@@ -63,5 +63,13 @@
       "message": "Impossibile caricare l'avatar, ma la sessione continuerà normalmente.",
       "errorDetails": "Dettagli errore"
     }
+  },
+  "connectionStatus": {
+    "disconnected": "Disconnesso",
+    "connecting": "Connessione in corso...",
+    "connected": "Connesso",
+    "reconnecting": "Riconnessione in corso... ({attempt}/{maxAttempts})",
+    "reconnectFailed": "Riconnessione fallita dopo {attempts} tentativi. Si prega di aggiornare la pagina.",
+    "error": "Errore di connessione"
   }
 }

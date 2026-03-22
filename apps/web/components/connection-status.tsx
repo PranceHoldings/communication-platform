@@ -137,6 +137,32 @@ export function ConnectionStatus({
 
   const config = stateConfig[state];
 
+  // Parse error message for user-friendly display
+  const displayError = error
+    ? (() => {
+        // Handle WEBSOCKET_RECONNECT_FAILED:5 format
+        const failedMatch = error.match(/WEBSOCKET_RECONNECT_FAILED:(\d+)/);
+        if (failedMatch) {
+          return t('connectionStatus.reconnectFailed', {
+            attempts: failedMatch[1] || '5',
+            defaultValue: `Failed to reconnect after ${failedMatch[1]} attempts. Please refresh the page.`,
+          });
+        }
+
+        // Handle WEBSOCKET_RECONNECTING:2:5 format
+        const reconnectingMatch = error.match(/WEBSOCKET_RECONNECTING:(\d+):(\d+)/);
+        if (reconnectingMatch) {
+          return t('connectionStatus.reconnecting', {
+            attempt: reconnectingMatch[1] || '1',
+            maxAttempts: reconnectingMatch[2] || '5',
+          });
+        }
+
+        // Return original error if no pattern matches
+        return error;
+      })()
+    : null;
+
   return (
     <div
       className={`fixed top-4 right-4 z-50 animate-in slide-in-from-top-5 ${className}`}
@@ -149,7 +175,7 @@ export function ConnectionStatus({
         <div className={config.iconColor}>{config.icon}</div>
         <div className="flex flex-col gap-1">
           <p className={`text-sm font-medium ${config.textColor}`}>{config.label}</p>
-          {error && <p className={`text-xs ${config.textColor} opacity-80`}>{error}</p>}
+          {displayError && <p className={`text-xs ${config.textColor} opacity-80`}>{displayError}</p>}
         </div>
         {state === 'reconnecting' && (
           <div className="ml-2">
