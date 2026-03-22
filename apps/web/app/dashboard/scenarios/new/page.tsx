@@ -17,6 +17,7 @@ export default function NewScenarioPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   // Form fields
   const [title, setTitle] = useState('');
@@ -52,6 +53,15 @@ export default function NewScenarioPage() {
     };
     loadOrgSettings();
   }, []);
+
+  // Check for warnings when system prompt changes
+  useEffect(() => {
+    if (systemPrompt.trim().length > 0 && systemPrompt.trim().length < 50) {
+      setWarning(t('scenarios.create.validation.shortSystemPrompt'));
+    } else {
+      setWarning(null);
+    }
+  }, [systemPrompt, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,8 +144,21 @@ export default function NewScenarioPage() {
 
       {/* Error Alert */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div
+          data-testid="validation-error"
+          className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded"
+        >
           {error}
+        </div>
+      )}
+
+      {/* Warning Alert */}
+      {warning && !error && (
+        <div
+          data-testid="validation-warning"
+          className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded"
+        >
+          ⚠️ {warning}
         </div>
       )}
 
@@ -152,6 +175,7 @@ export default function NewScenarioPage() {
           <input
             type="text"
             id="title"
+            data-testid="scenario-title"
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder={t('scenarios.create.form.titlePlaceholder')}
@@ -185,6 +209,7 @@ export default function NewScenarioPage() {
             </label>
             <select
               id="language"
+              data-testid="language-select"
               value={language}
               onChange={e => setLanguage(e.target.value)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -222,6 +247,7 @@ export default function NewScenarioPage() {
           </label>
           <textarea
             id="systemPrompt"
+            data-testid="system-prompt"
             value={systemPrompt}
             onChange={e => setSystemPrompt(e.target.value)}
             placeholder={t('scenarios.create.form.systemPromptPlaceholder')}
@@ -244,6 +270,7 @@ export default function NewScenarioPage() {
           <div>
             <textarea
               id="initialGreeting"
+              data-testid="initial-greeting"
               value={initialGreeting}
               onChange={e => setInitialGreeting(e.target.value)}
               placeholder={t('scenarios.create.form.initialGreetingPlaceholder')}
@@ -351,6 +378,7 @@ export default function NewScenarioPage() {
           </Link>
           <button
             type="submit"
+            data-testid="submit-scenario-button"
             disabled={isSubmitting}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >

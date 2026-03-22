@@ -2412,7 +2412,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                       ? 'bg-indigo-50 border border-indigo-200'
                       : 'bg-green-50 border border-green-200'
                   }`}
-                  data-testid="transcript-message"
+                  data-testid={item.speaker === 'AI' ? 'ai-message' : 'transcript-message'}
                   data-speaker={item.speaker}
                 >
                   <div className="flex items-center justify-between mb-1">
