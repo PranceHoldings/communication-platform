@@ -1413,20 +1413,20 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         );
 
         // Phase 1.6.1 Day 32: Detect missing chunks
-        const receivedAudioChunks = connectionData?.receivedAudioChunks || [];
-        const receivedVideoChunks = connectionData?.receivedVideoChunks || [];
+        const finalReceivedAudioChunks = connectionData?.receivedAudioChunks || [];
+        const finalReceivedVideoChunks = connectionData?.receivedVideoChunks || [];
         const totalAudioChunks = connectionData?.realtimeAudioChunkCount || 0;
         const totalVideoChunks = connectionData?.videoChunksCount || 0;
 
-        const missingAudio = detectMissingChunks(receivedAudioChunks, totalAudioChunks);
-        const missingVideo = detectMissingChunks(receivedVideoChunks, totalVideoChunks);
+        const missingAudio = detectMissingChunks(finalReceivedAudioChunks, totalAudioChunks);
+        const missingVideo = detectMissingChunks(finalReceivedVideoChunks, totalVideoChunks);
 
         if (missingAudio.length > 0) {
           console.warn('[session_end] Missing audio chunks detected:', {
             sessionId: connectionData?.sessionId,
             missingCount: missingAudio.length,
             missingSequences: missingAudio.slice(0, 10), // Log first 10
-            totalReceived: receivedAudioChunks.length,
+            totalReceived: finalReceivedAudioChunks.length,
             totalExpected: totalAudioChunks,
           });
         }
@@ -1436,7 +1436,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             sessionId: connectionData?.sessionId,
             missingCount: missingVideo.length,
             missingSequences: missingVideo.slice(0, 10), // Log first 10
-            totalReceived: receivedVideoChunks.length,
+            totalReceived: finalReceivedVideoChunks.length,
             totalExpected: totalVideoChunks,
           });
         }

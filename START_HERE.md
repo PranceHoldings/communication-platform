@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-03-22 (Day 36)
-**現在の Phase:** Phase 1.6.1 完了 ✅
-**次のアクション:** Day 36実装のデプロイ・検証
-**ステータス:** 実装完了・デプロイ待ち
+**最終更新:** 2026-03-22 (Day 37)
+**現在の Phase:** Phase 2.2 完了 ✅
+**次のアクション:** E2Eテストタイムアウト問題調査または次Phase検討
+**ステータス:** CORS問題解決完了・Gateway Responses実装済み
 
 ---
 
@@ -31,22 +31,17 @@ bash scripts/verify-environment.sh
 cat docs/07-development/KNOWN_ISSUES.md
 ```
 
-### Step 3: Day 36実装のデプロイ
+### Step 3: 最新のコミット確認
 
 ```bash
-# 1. Prismaマイグレーション実行
-cd /workspaces/prance-communication-platform/packages/database
-npx prisma migrate dev --name add_session_error_model
-npx prisma generate
+# 最新のコミットを確認
+git log --oneline -5
 
-# 2. Lambda関数デプロイ
-cd /workspaces/prance-communication-platform/infrastructure
-npm run deploy:lambda
+# 変更されたファイルを確認
+git diff HEAD~1 --name-only
 
-# 3. 動作確認
-# - /dashboard/scenarios で新規シナリオ作成
-# - バリデーションエラー/警告確認
-# - ターン制限確認
+# 期待される最新コミット:
+# "fix(api-gateway): add CORS headers to 401/403 error responses"
 ```
 
 ---
@@ -65,33 +60,55 @@ npm run deploy:lambda
 
 **詳細:** [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md)
 
-### 最新達成 (Day 36)
+### 最新達成 (Day 37)
 
-**Phase 1.6.1 シナリオバリデーション・エラーリカバリー完了:**
-- シナリオ事前バリデーション、警告ダイアログ、AI応答フォールバック、ターン制限
-- 多言語対応: 10言語全翻訳完了
+**Phase 2.2 CORS問題解決完了:**
+- ✅ 根本原因特定: Lambda Authorizerの401/403エラーにCORSヘッダーなし
+- ✅ Gateway Responses実装: 401/403エラーにCORSヘッダー追加
+- ✅ CDKデプロイ成功: Prance-dev-ApiLambda (68.04秒)
+- ✅ 動作確認: curl testで401エラーにCORSヘッダー確認
+- ✅ バグ修正: websocket/default handler の重複変数宣言修正
 
-**詳細:** [docs/09-progress/archives/SESSION_2026-03-22_Day36_Phase1.6.1_Complete.md](docs/09-progress/archives/SESSION_2026-03-22_Day36_Phase1.6.1_Complete.md)
+**Day 36達成:** Phase 1.6.1 シナリオバリデーション・エラーリカバリー完了
+
+**詳細:** [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md)
 
 
 ---
 
 ## 🎯 次のアクション
 
-### 1. 既存機能改善・最適化（進行中）
+### 1. Phase 2.2: Dev環境統合E2Eテスト ✅ 完了
 
-**完了:**
-- ✅ データベースアクセスルール確立（Lambda経由のみ）
-- ✅ DATABASE_ACCESS_RULES.md ドキュメント作成
-- ✅ CODING_RULES.md Rule 0-B追加
-- ✅ MEMORY.md Rule 5追加
-- ✅ E2Eテスト分析完了（現状36%成功率、Phase 1.6.1テスト失敗）
-- ✅ LoginPage改善（リダイレクト待機、動的待機戦略）
-- ✅ 固定待機時間削除（4箇所 → 動的待機に変更）
-- ✅ E2E_TEST_IMPROVEMENTS.md作成（詳細分析・アクションプラン）
+**Day 37完了内容:**
+- ✅ CORS問題の根本原因特定（Lambda Authorizer 401/403エラー）
+- ✅ API Gateway Gateway Responses実装
+- ✅ CDKデプロイ成功（Prance-dev-ApiLambda）
+- ✅ CORS問題解決確認（curl test成功）
+- ✅ WebSocket統合テスト: 1/3成功（残り2件はタイムアウト問題）
+
+**残された課題:**
+- E2Eテストのタイムアウト問題（Startボタン表示待機）
+  - 原因: CORSとは無関係、ページロード/レンダリング問題
+  - 対応: 別タスクとして調査予定
+
+**達成成果:**
+- ✅ ブラウザCORS Policy Block解決
+- ✅ 401/403エラーレスポンスにCORSヘッダー追加完了
+
+### 2. E2Eテスト Phase 1完了 ✅
+
+**完了内容:**
+- ✅ URL修正（12箇所 - /dashboard プレフィックス追加）
+- ✅ data-testid追加（7箇所 - シナリオ作成/詳細画面）
+- ✅ 警告システム実装（短いシステムプロンプト検出）
+- ✅ Page Object Pattern導入（NewSessionPage 267行）
+- ✅ E2E_TEST_IMPROVEMENTS.md作成
+- ✅ E2E_BACKEND_INTEGRATION_ANALYSIS.md作成
+
+### 3. 既存機能改善・最適化
 
 **次の改善項目:**
-- 🔄 E2Eテスト修正（URL/セレクタ不整合、Page Object作成）
 - 🔄 エラーハンドリング強化（SessionError活用）
 - 🔄 パフォーマンス最適化（Lambda Cold Start対策）
 

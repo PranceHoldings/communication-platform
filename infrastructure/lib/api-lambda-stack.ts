@@ -153,12 +153,46 @@ export class ApiLambdaStack extends cdk.Stack {
         }),
       },
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS, // TODO: 本番環境では特定ドメインに制限
+        // CORS設定: Dev環境ではlocalhost:3000を許可、Production環境では特定ドメインのみ
+        allowOrigins:
+          props.environment === 'production'
+            ? ['https://app.prance.jp']
+            : ['http://localhost:3000', 'https://app.prance.jp'],
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: ['Content-Type', 'Authorization', 'X-Api-Key'],
         allowCredentials: true,
       },
       cloudWatchRole: true,
+    });
+
+    // Gateway Responses - エラーレスポンスにもCORSヘッダーを追加
+    // CRITICAL: Lambda Authorizerが401/403を返す際にCORSヘッダーが必要
+    // Phase 2.2 WebSocket統合テスト失敗の根本原因解決
+    const allowedOrigins =
+      props.environment === 'production'
+        ? ['https://app.prance.jp']
+        : ['http://localhost:3000', 'https://app.prance.jp'];
+
+    this.restApi.addGatewayResponse('Unauthorized', {
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      statusCode: '401',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': `'${allowedOrigins.join(',')}'`,
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization,X-Api-Key'",
+        'Access-Control-Allow-Methods': "'GET,POST,PUT,DELETE,OPTIONS'",
+        'Access-Control-Allow-Credentials': "'true'",
+      },
+    });
+
+    this.restApi.addGatewayResponse('AccessDenied', {
+      type: apigateway.ResponseType.ACCESS_DENIED,
+      statusCode: '403',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': `'${allowedOrigins.join(',')}'`,
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization,X-Api-Key'",
+        'Access-Control-Allow-Methods': "'GET,POST,PUT,DELETE,OPTIONS'",
+        'Access-Control-Allow-Credentials': "'true'",
+      },
     });
 
     // WebSocket API (AWS IoT Core代替として、まずAPI Gateway WebSocketで実装)
