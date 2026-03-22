@@ -1,18 +1,8 @@
 /**
  * Sessions API
  *
- * 注意: このファイルの型定義はAPIレスポンスの形式に基づいています。
- *
- * なぜ packages/shared と異なる型定義が必要か:
- * 1. Date → string 変換: JSONシリアライズでDate型がstring型に変換される
- * 2. フィールドマッピング: Lambda関数が以下の変換を行う
- *    - durationSec → duration
- *    - metadataJson → metadata
- *    - startedAt → createdAt (互換性のため)
- *    - thumbnailUrl → imageUrl (Avatar)
- * 3. UI固有フィールド: フロントエンド専用の追加フィールド
- *
- * 詳細: CODING_RULES.md - Section 12「型定義の一元管理」
+ * Note: Uses Prisma schema field names directly (Schema-First principle)
+ * Date types are converted to strings for JSON serialization
  */
 
 import { apiClient } from './client';
@@ -39,11 +29,10 @@ export interface Session {
   scenarioId: string;
   avatarId: string;
   status: SessionStatus;
-  startedAt: string; // セッション開始日時
-  endedAt: string | null; // セッション終了日時
-  duration: number | null; // 所要時間（秒）- DBでは durationSec
-  metadata: Record<string, unknown>; // セッションメタデータ - DBでは metadataJson
-  createdAt: string; // startedAtのエイリアス（互換性のため）
+  startedAt: string;
+  endedAt: string | null;
+  durationSec: number | null; // Prisma schema field name
+  metadataJson: Record<string, unknown> | null; // Prisma schema field name
   scenario?: {
     id: string;
     title: string;
@@ -53,7 +42,6 @@ export interface Session {
     id: string;
     name: string;
     type?: string;
-    imageUrl?: string; // thumbnailUrlのエイリアス（互換性のため）
     thumbnailUrl?: string;
     modelUrl?: string;
   };

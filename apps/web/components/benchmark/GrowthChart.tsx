@@ -149,7 +149,7 @@ export function GrowthChart({ userId, scenarioId }: Props) {
                     {new Date(session.completedAt).toLocaleDateString()}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {Math.floor(session.duration / 60)}m {session.duration % 60}s
+                    {Math.floor(session.durationSec / 60)}m {session.durationSec % 60}s
                   </div>
                 </div>
               </div>

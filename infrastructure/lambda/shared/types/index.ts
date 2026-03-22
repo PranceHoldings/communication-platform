@@ -46,6 +46,26 @@ export type RuntimeConfigAccessLevel =
   | 'CLIENT_ADMIN_READ_ONLY';
 
 // ========================================
+// Analysis Types (copied from @prance/shared)
+// ========================================
+
+export interface EmotionScore {
+  type: string; // 'HAPPY', 'SAD', 'ANGRY', 'CONFUSED', 'DISGUSTED', 'SURPRISED', 'CALM', 'FEAR'
+  confidence: number; // 0-100
+}
+
+export interface AgeRange {
+  low: number;
+  high: number;
+}
+
+export interface Pose {
+  pitch: number; // 上下の傾き (-90 to 90)
+  roll: number; // 回転 (-180 to 180)
+  yaw: number; // 左右の向き (-90 to 90)
+}
+
+// ========================================
 // Error Types (copied from @prance/shared)
 // ========================================
 

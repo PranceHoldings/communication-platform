@@ -6,12 +6,13 @@
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { getAwsRegion, getConnectionsTableName } from '../../shared/config';
 
 const dynamoDb = DynamoDBDocumentClient.from(
-  new DynamoDBClient({ region: process.env.AWS_REGION })
+  new DynamoDBClient({ region: getAwsRegion() })
 );
 
-const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE_NAME!;
+const CONNECTIONS_TABLE = getConnectionsTableName();
 
 interface WebSocketEvent {
   requestContext: {

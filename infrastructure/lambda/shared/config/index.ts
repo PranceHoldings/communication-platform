@@ -129,6 +129,15 @@ export const STORAGE_CONFIG = {
 } as const;
 
 // ============================================================
+// Feature Flags
+// ============================================================
+
+export const FEATURE_FLAGS = {
+  ENABLE_AUTO_ANALYSIS: getEnv('ENABLE_AUTO_ANALYSIS', 'false') === 'true',
+  STT_AUTO_DETECT_LANGUAGES: getOptionalEnv('STT_AUTO_DETECT_LANGUAGES', ''),
+} as const;
+
+// ============================================================
 // すべての設定を統合
 // ============================================================
 
@@ -144,7 +153,36 @@ export const CONFIG = {
   APP: APP_CONFIG,
   WEBSOCKET: WEBSOCKET_CONFIG,
   STORAGE: STORAGE_CONFIG,
+  FEATURES: FEATURE_FLAGS,
 } as const;
+
+// ============================================================
+// Convenience Getters (duplication management - 2026-03-22)
+// ============================================================
+
+export function getAwsRegion(): string {
+  return AWS_CONFIG.REGION;
+}
+
+export function getBedrockRegion(): string {
+  return BEDROCK_CONFIG.REGION;
+}
+
+export function getConnectionsTableName(): string {
+  return WEBSOCKET_CONFIG.CONNECTIONS_TABLE_NAME;
+}
+
+export function getEnableAutoAnalysis(): boolean {
+  return FEATURE_FLAGS.ENABLE_AUTO_ANALYSIS;
+}
+
+export function getSttAutoDetectLanguages(): string[] {
+  const languages = FEATURE_FLAGS.STT_AUTO_DETECT_LANGUAGES;
+  if (!languages || languages.trim() === '') {
+    return [];
+  }
+  return languages.split(',').map(lang => lang.trim());
+}
 
 // ============================================================
 // エクスポート（後方互換性のため）

@@ -208,12 +208,22 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          {session.avatar?.imageUrl && (
+                          {session.avatar?.thumbnailUrl ? (
                             <img
-                              src={session.avatar.imageUrl}
+                              src={session.avatar.thumbnailUrl}
                               alt={session.avatar.name}
-                              className="h-8 w-8 rounded-full mr-2"
+                              className="h-8 w-8 rounded-full mr-2 object-cover"
+                              onError={(e) => {
+                                // Hide image on error
+                                e.currentTarget.style.display = 'none';
+                              }}
                             />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full mr-2 bg-indigo-100 flex items-center justify-center">
+                              <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
                           )}
                           <div className="text-sm text-gray-900">
                             {session.avatar?.name || t('sessions.table.unknownAvatar')}
@@ -239,8 +249,8 @@ export default function DashboardPage() {
                         {new Date(session.startedAt).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {session.duration
-                          ? `${Math.floor(session.duration / 60)}:${(session.duration % 60)
+                        {session.durationSec
+                          ? `${Math.floor(session.durationSec / 60)}:${(session.durationSec % 60)
                               .toString()
                               .padStart(2, '0')}`
                           : '-'}

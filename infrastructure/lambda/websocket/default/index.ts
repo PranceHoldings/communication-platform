@@ -38,6 +38,7 @@ import {
   getAwsEndpointSuffix,
 } from '../../shared/utils/env-validator';
 import { checkRateLimit, RateLimitProfiles } from '../../shared/utils/rate-limiter';
+import { getAwsRegion, getBedrockRegion, getSttAutoDetectLanguages, getEnableAutoAnalysis } from '../../shared/config';
 
 // Lambda function version
 const LAMBDA_VERSION = '1.1.2'; // Phase 5.4 Batch 4: runtime-config-loader for chunk-utils.ts
@@ -53,12 +54,12 @@ const BUILD_ID = `build-2026-03-21T09:46:23Z.marker`;
 const SUPPORTED_LANGUAGES = ['ja', 'en', 'zh-CN', 'zh-TW', 'ko', 'es', 'pt', 'fr', 'de', 'it'];
 
 // Environment variables (all values come from .env.local - single source of truth)
-const AWS_REGION = getRequiredEnv('AWS_REGION');
-const BEDROCK_REGION = process.env.BEDROCK_REGION || AWS_REGION;
+const AWS_REGION = getAwsRegion();
+const BEDROCK_REGION = getBedrockRegion();
 const BEDROCK_MODEL_ID = getRequiredEnv('BEDROCK_MODEL_ID');
 const ELEVENLABS_MODEL_ID = getRequiredEnv('ELEVENLABS_MODEL_ID');
 const STT_LANGUAGE = getRequiredEnv('STT_LANGUAGE');
-const STT_AUTO_DETECT_LANGUAGES = getRequiredEnv('STT_AUTO_DETECT_LANGUAGES').split(',');
+const STT_AUTO_DETECT_LANGUAGES = getSttAutoDetectLanguages();
 const SCENARIO_LANGUAGE = SUPPORTED_LANGUAGES[0]; // First supported language ('ja')
 const VIDEO_FORMAT = getRequiredEnv('VIDEO_FORMAT');
 const VIDEO_RESOLUTION = getRequiredEnv('VIDEO_RESOLUTION');
@@ -116,8 +117,8 @@ function getAudioProcessor(): AudioProcessor {
     // Phase 2以降の拡張:
     //   - データベースから組織設定を取得
     //   - 言語リソースファイルから動的生成
-    const autoDetectLanguages = process.env.STT_AUTO_DETECT_LANGUAGES
-      ? process.env.STT_AUTO_DETECT_LANGUAGES.split(',').map(lang => lang.trim())
+    const autoDetectLanguages = getSttAutoDetectLanguages().length > 0
+      ? getSttAutoDetectLanguages()
       : LANGUAGE_DEFAULTS.STT_AUTO_DETECT_LANGUAGES_DEFAULT;
 
     console.log('[AudioProcessor] Initializing with auto-detect languages:', autoDetectLanguages);
@@ -1699,7 +1700,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           }
 
           // 🆕 Trigger automatic analysis (if enabled)
-          if (process.env.ENABLE_AUTO_ANALYSIS === 'true' && connectionData?.sessionId) {
+          if (getEnableAutoAnalysis() && connectionData?.sessionId) {
             console.log('[session_end] Triggering automatic analysis', {
               sessionId: connectionData.sessionId,
             });

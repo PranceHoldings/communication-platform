@@ -31,6 +31,25 @@ export type Speaker = 'AI' | 'USER';
 
 export type Highlight = 'POSITIVE' | 'NEGATIVE' | 'IMPORTANT';
 
+export type GuestSessionStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'REVOKED';
+
+export type RuntimeConfigDataType = 'NUMBER' | 'STRING' | 'BOOLEAN' | 'JSON';
+
+export type RuntimeConfigCategory =
+  | 'QUERY_PROCESSING'
+  | 'AI_PROCESSING'
+  | 'AUDIO_PROCESSING'
+  | 'SCORE_CALCULATION'
+  | 'SECURITY'
+  | 'SYSTEM';
+
+export type RuntimeConfigAccessLevel =
+  | 'DEVELOPER_ONLY'
+  | 'SUPER_ADMIN_READ_ONLY'
+  | 'SUPER_ADMIN_READ_WRITE'
+  | 'CLIENT_ADMIN_READ_WRITE'
+  | 'CLIENT_ADMIN_READ_ONLY';
+
 // ============================================================
 // 組織・ユーザー
 // ============================================================
@@ -153,8 +172,8 @@ export interface Session {
   status: SessionStatus;
   startedAt: Date;
   endedAt?: Date;
-  durationSec?: number; // API では "duration" としてレスポンス
-  metadataJson?: Record<string, unknown>; // API では "metadata" としてレスポンス
+  durationSec?: number;
+  metadataJson?: Record<string, unknown>;
 }
 
 // ============================================================
@@ -989,7 +1008,7 @@ export interface SessionHistoryItem {
   audioScore: number;
   contentScore: number;
   deliveryScore: number;
-  duration: number;
+  durationSec: number;
 }
 
 export interface UserAttributes {

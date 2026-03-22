@@ -24,8 +24,18 @@ echo ""
 # Track overall status
 CHECKS_FAILED=0
 
+# Check 0: Schema-First Validation (CRITICAL - 2026-03-22)
+echo -e "${YELLOW}[0/6]${NC} Validating Schema-First principle (CRITICAL)..."
+if bash scripts/validate-schema-interface-implementation.sh > /dev/null 2>&1; then
+  echo -e "${GREEN}✅ Schema-First validation passed${NC}"
+else
+  echo -e "${RED}❌ Schema-First validation failed${NC}"
+  echo "Run: bash scripts/validate-schema-interface-implementation.sh"
+  CHECKS_FAILED=1
+fi
+
 # Check 1: Hardcoded Values
-echo -e "${YELLOW}[1/4]${NC} Checking for hardcoded values..."
+echo -e "${YELLOW}[1/6]${NC} Checking for hardcoded values..."
 if bash scripts/detect-hardcoded-values.sh > /dev/null 2>&1; then
   echo -e "${GREEN}✅ No hardcoded values detected${NC}"
 else
@@ -35,7 +45,7 @@ else
 fi
 
 # Check 2: Environment Variables Consistency
-echo -e "${YELLOW}[2/4]${NC} Validating environment variables consistency..."
+echo -e "${YELLOW}[2/6]${NC} Validating environment variables consistency..."
 if bash scripts/validate-env-consistency.sh > /dev/null 2>&1; then
   echo -e "${GREEN}✅ Environment variables are consistent${NC}"
 else
@@ -45,7 +55,7 @@ else
 fi
 
 # Check 3: Single Source of Truth (CRITICAL - 2026-03-20)
-echo -e "${YELLOW}[3/4]${NC} Validating Single Source of Truth (.env.local)..."
+echo -e "${YELLOW}[3/6]${NC} Validating Single Source of Truth (.env.local)..."
 if bash scripts/validate-env-single-source.sh > /dev/null 2>&1; then
   echo -e "${GREEN}✅ SSOT validation passed${NC}"
 else
@@ -55,8 +65,18 @@ else
   CHECKS_FAILED=1
 fi
 
-# Check 4: ESLint on staged files
-echo -e "${YELLOW}[4/4]${NC} Running ESLint on staged files..."
+# Check 4: Duplication Management (CRITICAL - 2026-03-22)
+echo -e "${YELLOW}[4/6]${NC} Validating duplication management..."
+if bash scripts/validate-duplication.sh > /dev/null 2>&1; then
+  echo -e "${GREEN}✅ Duplication validation passed${NC}"
+else
+  echo -e "${RED}❌ Duplication validation failed${NC}"
+  echo "Run: bash scripts/validate-duplication.sh"
+  CHECKS_FAILED=1
+fi
+
+# Check 5: ESLint on staged files
+echo -e "${YELLOW}[5/6]${NC} Running ESLint on staged files..."
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' || true)
 
 if [ -n "$STAGED_FILES" ]; then
@@ -68,6 +88,22 @@ if [ -n "$STAGED_FILES" ]; then
   fi
 else
   echo -e "${GREEN}✅ No files to lint${NC}"
+fi
+
+# Check 6: TypeScript Type Check (if TS files changed)
+echo -e "${YELLOW}[6/6]${NC} Running TypeScript type check..."
+STAGED_TS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' || true)
+
+if [ -n "$STAGED_TS_FILES" ]; then
+  if npm run type-check > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ TypeScript type check passed${NC}"
+  else
+    echo -e "${RED}❌ TypeScript type errors detected${NC}"
+    echo "Run: npm run type-check"
+    CHECKS_FAILED=1
+  fi
+else
+  echo -e "${GREEN}✅ No TypeScript files to check${NC}"
 fi
 
 echo ""

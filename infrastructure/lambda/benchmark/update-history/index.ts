@@ -24,7 +24,7 @@ interface SessionData {
     contentScore: number;
     deliveryScore: number;
   };
-  duration: number;
+  durationSec: number;
 }
 
 interface UpdateHistoryRequest {
@@ -102,7 +102,7 @@ export const handler = async (event: any): Promise<StandardAPIResponse<void>> =>
         contentScore: session.analysis.score.contentScore,
         deliveryScore: session.analysis.score.deliveryScore,
       },
-      duration: session.durationSec || 0,
+      durationSec: session.durationSec || 0,
     };
 
     console.log('[UpdateSessionHistory] Session data:', {
@@ -159,7 +159,7 @@ async function saveSessionHistory(data: SessionData): Promise<void> {
       audioScore: data.scores.audioScore,
       contentScore: data.scores.contentScore,
       deliveryScore: data.scores.deliveryScore,
-      duration: data.duration,
+      durationSec: data.durationSec,
       ttl,
     }),
   });

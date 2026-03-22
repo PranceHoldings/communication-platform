@@ -3,11 +3,11 @@ import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
-import { AWS_DEFAULTS } from '../../shared/config/defaults';
 import { getAnalysisLambdaFunctionName } from '../../shared/utils/env-validator';
+import { getAwsRegion } from '../../shared/config';
 
 // Environment variables
-const AWS_REGION = process.env.AWS_REGION || AWS_DEFAULTS.REGION;
+const AWS_REGION = getAwsRegion();
 const ANALYSIS_LAMBDA_FUNCTION_NAME = getAnalysisLambdaFunctionName();
 
 // Initialize Lambda client
