@@ -1,6 +1,7 @@
 # コーディングルール - クイックリファレンス
 
-**最終更新:** 2026-03-20
+**最終更新:** 2026-03-22
+**ステータス:** 基本ルール確立完了・今後も拡充予定
 
 このドキュメントはコード作成時に常に参照すべき重要ルールのクイックリファレンスです。
 
@@ -11,6 +12,60 @@
 - [scripts/CLAUDE.md](scripts/CLAUDE.md) - スクリプト使用ガイド
 - [docs/CLAUDE.md](docs/CLAUDE.md) - ドキュメント管理ガイド
 - [docs/07-development/HARDCODE_PREVENTION_SYSTEM.md](docs/07-development/HARDCODE_PREVENTION_SYSTEM.md) - ハードコード防止システム 🆕
+
+---
+
+## 🔴 Rule 0: スキーマ・ファースト原則（CRITICAL - 2026-03-22追加）
+
+**🎯 Three-Layer Architecture Rule**
+
+```
+Layer 1: Schema (Prismaスキーマ) → 唯一の真実の源
+Layer 2: Interface (packages/shared) → 型定義の中央管理
+Layer 3: Implementation (Lambda/Frontend) → 型定義に従う実装
+```
+
+**絶対厳守:** スキーマ・ファースト → インターフェース・セカンド → 実装・サード
+
+### ❌ 絶対禁止: 手動フィールドマッピング
+
+```typescript
+// Lambda関数で勝手にフィールド名変更（絶対禁止）
+avatar: {
+  ...session.avatar,
+  imageUrl: session.avatar.thumbnailUrl, // ❌ 手動マッピング禁止
+}
+```
+
+**理由:**
+1. Prismaスキーマと不一致（`thumbnailUrl` が正しい）
+2. packages/shared 型定義と不一致
+3. 型安全性が失われる
+4. 保守性が低下（複数箇所で同じマッピング）
+
+### ✅ 正しい方法
+
+```typescript
+// Lambda関数はPrismaの結果をそのまま返す
+avatar: session.avatar, // ✅ スキーマ通り
+
+// Frontend は packages/shared の型を使用
+import type { Avatar } from '@prance/shared';
+session.avatar?.thumbnailUrl // ✅ スキーマと一致
+```
+
+### 検証方法
+
+```bash
+# Schema-First validation実行（コミット前必須）
+bash scripts/validate-schema-interface-implementation.sh
+
+# 期待される結果:
+# ✅ All validations passed
+# ❌ Validation failed → 必ず修正してからコミット
+```
+
+**詳細:** この原則に従うことで、Prismaスキーマと実装の不一致を防ぎます。
 
 ---
 
@@ -1051,3 +1106,199 @@ import { User, Avatar, ValidationError, NotFoundError } from '../shared/types';
 **参考資料:**
 
 - [CHUNK_SORTING_REFACTORING.md](docs/development/CHUNK_SORTING_REFACTORING.md) - 実際のリファクタリング事例
+
+---
+
+## 🔴 Rule 10: 重複管理原則（CRITICAL - 2026-03-22追加）
+
+**🎯 基本原則: 設定・型・処理の重複を許さない**
+
+AIコード生成では、同じ設定・型・処理が複数ファイルに重複しやすい。重複は保守性を著しく低下させるため、厳格に管理する。
+
+### 自動検証（8段階チェック）
+
+**検証スクリプト:**
+
+```bash
+# 手動実行
+bash scripts/validate-duplication.sh
+
+# 自動実行（pre-commit hook）
+git commit -m "..."  # 自動的に検証
+
+# 自動実行（デプロイ前）
+npm run deploy:lambda  # 自動的に検証
+```
+
+**検証項目:**
+
+| Step | 検証内容                           | 検出対象                                   |
+| ---- | ---------------------------------- | ------------------------------------------ |
+| 1/8  | 環境変数の重複                     | 直接 `process.env` アクセス（9箇所検出）   |
+| 2/8  | 型定義の重複                       | EmotionScore, AgeRange, Pose等（4箇所検出） |
+| 3/8  | Enum同期                           | packages/shared ↔ Lambda の不一致検出      |
+| 4/8  | 定数・設定の重複                   | ハードコード定数（defaults.tsに集約）      |
+| 5/8  | ユーティリティ関数の重複           | shared/utils外の重複検出                   |
+| 6/8  | バリデーションロジックの重複       | 分散したバリデーション検出                 |
+| 7/8  | Frontend API呼び出しの重複         | 直接fetch()呼び出し検出（0件が正常）       |
+| 8/8  | Lambda関数の重複実装               | 共通処理の抽出漏れ検出                     |
+
+### 必須パターン
+
+#### ✅ 環境変数アクセス
+
+```typescript
+// ❌ 禁止（直接アクセス）
+const region = process.env.AWS_REGION || 'us-east-1';
+const table = process.env.CONNECTIONS_TABLE_NAME!;
+
+// ✅ 正しい（centralized config経由）
+import { getAwsRegion, getConnectionsTableName } from '../../shared/config';
+const region = getAwsRegion();
+const table = getConnectionsTableName();
+```
+
+#### ✅ 型定義
+
+```typescript
+// ❌ 禁止（Lambda側で再定義）
+export interface EmotionScore {
+  type: string;
+  confidence: number;
+}
+
+// ✅ 正しい（共有型からimport）
+import type { EmotionScore } from '../types';
+```
+
+#### ✅ Enum定義
+
+```typescript
+// ⚠️ 注意: Lambda bundling制約によりpackages/sharedから直接importできない
+// packages/shared と infrastructure/lambda/shared/types を完全一致させる
+
+// packages/shared/src/types/index.ts
+export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';
+
+// infrastructure/lambda/shared/types/index.ts
+export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';
+// ↑ 完全一致が必須（自動検証で確認）
+```
+
+#### ✅ 定数・設定
+
+```typescript
+// ❌ 禁止（ハードコード）
+const MAX_RETRIES = 3;
+const TIMEOUT_MS = 5000;
+
+// ✅ 正しい（defaults.tsに集約）
+import { RETRY_DEFAULTS, TIMEOUT_DEFAULTS } from '../../shared/config/defaults';
+const maxRetries = RETRY_DEFAULTS.MAX_RETRIES;
+const timeoutMs = TIMEOUT_DEFAULTS.DEFAULT_TIMEOUT;
+```
+
+#### ✅ ユーティリティ関数
+
+```typescript
+// ❌ 禁止（Lambda関数内で定義）
+function formatDate(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+// ✅ 正しい（shared/utilsに集約）
+import { formatDate } from '../../shared/utils/date-formatter';
+```
+
+#### ✅ Frontend API呼び出し
+
+```typescript
+// ❌ 禁止（直接fetch）
+const response = await fetch('/api/v1/sessions');
+const data = await response.json();
+
+// ✅ 正しい（API client経由）
+import { listSessions } from '@/lib/api/sessions';
+const response = await listSessions();
+```
+
+### エラー時の対処
+
+**Error: Environment variable duplication**
+
+```
+❌ Found 9 direct process.env accesses (should use centralized config)
+```
+
+**対処:**
+
+1. `infrastructure/lambda/shared/config/index.ts` に getter 追加
+2. Lambda関数で `import { getXxx }` して使用
+
+**Error: Type definition duplication**
+
+```
+❌ EmotionScore defined in rekognition.ts (should import from types/index.ts)
+```
+
+**対処:**
+
+1. Lambda側の定義を削除
+2. `import type { EmotionScore } from '../types'` 追加
+
+**Error: Enum mismatch**
+
+```
+❌ UserRole enum mismatch between packages/shared and infrastructure/lambda/shared
+```
+
+**対処:**
+
+1. packages/shared の定義を確認
+2. Lambda側を完全一致させる
+
+### コミット前チェックリスト
+
+```bash
+# 必須検証（自動実行）
+git commit -m "..."
+
+# エラー時の手動確認
+bash scripts/validate-duplication.sh
+```
+
+**検証結果:**
+
+```
+✅ All checks passed (0 errors, 0 warnings)
+```
+
+### 詳細ドキュメント
+
+- **[docs/07-development/DUPLICATION_MANAGEMENT.md](docs/07-development/DUPLICATION_MANAGEMENT.md)** - 重複管理詳細ガイド
+- **[memory/duplication-management.md](memory/duplication-management.md)** - AI用メモリ（検証方法、エラー対処）
+
+### 重複検出時の判断フロー
+
+```
+重複検出
+  ↓
+本当に重複か？
+  ↓ Yes
+機能特化の実装か？（例: WebSocket専用chunk-utils.ts）
+  ↓ No
+共通化可能か？
+  ↓ Yes
+共通化実施
+  ├─ 環境変数 → config/index.ts
+  ├─ 型定義 → shared/types/
+  ├─ 定数 → config/defaults.ts
+  ├─ 関数 → shared/utils/
+  └─ バリデーション → shared/utils/validation.ts
+```
+
+**原則:**
+
+- **疑わしきは共通化** - 2箇所で使われたら即共通化
+- **10行以上の類似コード** - 必ず共通関数化を検討
+- **30行以上の重複** - **絶対に**共通化（例外なし）

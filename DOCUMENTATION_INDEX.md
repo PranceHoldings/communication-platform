@@ -1,7 +1,7 @@
 # Prance Communication Platform - ドキュメント索引
 
-**最終更新:** 2026-03-20
-**ステータス:** ✅ ドキュメント構造整理完了・Phase 4完了反映
+**最終更新:** 2026-03-22
+**ステータス:** ✅ Phase 1-5 全完了・ドキュメント整理完了
 
 ---
 
@@ -148,7 +148,7 @@
 - **ANALYSIS_MODULE.md** - 解析モジュール
 - **AVATAR_MODULE.md** - アバター管理
 - **BENCHMARK_SYSTEM.md** - ベンチマークシステム（✅ Phase 4完了・Production稼働中）
-- **RUNTIME_CONFIGURATION.md** - ランタイム設定管理（📋 Phase 5計画）
+- **RUNTIME_CONFIGURATION.md** - ランタイム設定管理（✅ Phase 5完了）
 - **EXTERNAL_API.md** - 外部連携API
 - **MULTILINGUAL_SYSTEM.md** - 多言語対応
 - **その他11モジュール**
@@ -166,13 +166,16 @@
 - **LAMBDA_VERSION_MANAGEMENT.md** - Lambdaバージョン管理
 - **I18N_SYSTEM_GUIDELINES.md** - 多言語対応ガイドライン
 - **UI_SETTINGS_DATABASE_SYNC_RULES.md** - UI設定項目同期ルール
-- **HARDCODE_ELIMINATION_REPORT.md** - ハードコード値削除レポート 🆕
+- **HARDCODE_ELIMINATION_REPORT.md** - ハードコード値削除レポート
+- **HARDCODE_PREVENTION_SYSTEM.md** - ハードコード防止システム
+- **ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md** - 環境変数SSOT完全ガイド
 
 ### apps/web/tests/e2e/ - E2Eテスト（システム全体）
 - **README.md** - E2Eテストガイド（テストレベル、実行方法、デバッグ）
 - **Stage 0-1:** UI Component Tests（フロントエンドのみ）
 - **Stage 2:** Integration Tests（フロントエンド + Mock）
 - **Stage 3-5:** System E2E Tests（全スタック: Browser → API → Lambda → DB → S3）
+- **Phase 1.6.1:** Recording Reliability Tests（ACK/リトライ、統計表示）
 - **成功率:** 35/35 (100%) ✅
 - **詳細:** `apps/web/tests/e2e/README.md` 参照
 
@@ -191,7 +194,9 @@
 
 ### docs/09-progress/ - 進捗記録
 - **SESSION_HISTORY.md** - 全セッション詳細履歴
+- **DOCUMENTATION_CLEANUP_ANALYSIS.md** - ドキュメント整理分析（2026-03-22）
 - **archives/** - 個別セッション記録
+  - SESSION_2026-03-22_Day36_Phase1.6.1_Complete.md - Day 36完了記録
 - **phases/** - Phase計画
 - **tasks/** - タスク完了記録
 
@@ -277,17 +282,18 @@
 
 ## 🗑️ アーカイブ・削除済みファイル
 
+### 2026-03-22 ドキュメント整理
+**実施内容:**
+- START_HERE.md: 1215行 → 130行（89%削減）
+- 歴史的詳細をアーカイブに移動
+- SESSION_2026-03-22_Day36_Phase1.6.1_Complete.md 作成
+
 ### 2026-03-19 アーカイブ移動
 **場所:** `docs/09-progress/archives/2026-03-18-temporary-reports/`
-
 - ENUM_CONSISTENCY_REPORT.md
 - ENUM_UNIFICATION_COMPLETE.md
-- PROJECT_OVERVIEW.md
-- SILENCE_SETTINGS_FIX_VERIFICATION.md
-- TEST_PHASE_1.5_AUDIO.md
-- TEST_SESSION_FIX.md
-- TEST_SESSION_RECORDING.md
 - START_HERE.md.backup（旧版、2370行）
+- その他一時レポート
 
 ### 2026-03-19 削除
 - infrastructure/apps/CLAUDE.md（誤配置）
@@ -302,5 +308,5 @@
 
 ---
 
-**最終更新:** 2026-03-19
-**次回レビュー:** ドキュメント構造変更時
+**最終更新:** 2026-03-22
+**次回レビュー:** 次Phase開始時

@@ -1,9 +1,9 @@
 # Prance Communication Platform - プロジェクト概要
 
-**バージョン:** 3.1
+**バージョン:** 3.2
 **作成日:** 2026-02-26
-**最終更新:** 2026-03-20
-**ステータス:** 🚀 **Production稼働中** - Phase 4完了（100%）・全機能デプロイ済み ✅
+**最終更新:** 2026-03-22
+**ステータス:** 🚀 **Production稼働中** - Phase 1-5全完了・全機能デプロイ済み ✅
 
 ---
 
@@ -434,8 +434,6 @@ npm run env:consistency
 
 **教訓:** 繰り返し発生するエラーは設計上の問題を疑う。
 
-> 詳細・過去の失敗例: [memory/root-cause-analysis.md](memory/root-cause-analysis.md)
-
 #### Rule 4: テスト・実装確認の原則（CRITICAL - 2026-03-11追加）
 
 **🔴 最重要: 推測でテストを書かず、必ず実装を確認してから作成すること**
@@ -712,71 +710,31 @@ git push origin main
 - ApiGatewayStack - REST API、WebSocket API
 - ApiLambdaStack - Lambda関数（20+ functions）
 
-### Phase 1: MVP開発 🔴 技術的完了（70%）だが実用レベル未達 (2026-03-06)
+### Phase 1-1.6.1: MVP・リアルタイム会話 ✅ 完了 (2026-03-22)
 
-**実装完了機能:**
-
+**Phase 1: MVP開発 (2026-03-06)**
 - ✅ 認証システム (JWT, Register/Login/Me)
 - ✅ シナリオ管理 (CRUD + Clone)
 - ✅ アバター管理 (CRUD + Clone)
 - ✅ セッション管理 (Create/List/Detail)
-- ⚠️ 音声会話パイプライン (STT → AI → TTS) - **技術的に動作するが実用レベルではない**
-- ✅ リアルタイムWebSocket通信
-- ✅ 多言語対応 (英語・日本語)
 
-**🔴 致命的な問題:**
+**Phase 1.5: リアルタイム会話 (2026-03-21)**
+- ✅ リアルタイムSTT（1秒チャンク、無音検出）
+- ✅ ストリーミングAI応答（Bedrock Claude Streaming API）
+- ✅ ストリーミングTTS（ElevenLabs WebSocket Streaming API）
 
-現在の音声会話は**バッチ処理**のため、実際のユースケースでは使用不可：
+**Phase 1.6: アバターレンダリング (2026-03-21)**
+- ✅ Three.js + React Three Fiber統合
+- ✅ 3Dアバターモデル・リップシンク
+- ✅ SessionPlayer統合
 
-- ❌ ユーザーが話した後、**セッション終了まで**文字起こしが返ってこない
-- ❌ AIの応答も**セッション終了まで**返ってこない
-- ❌ リアルタイム会話ではなく、録画した後に一括処理される仕組み
+**Phase 1.6.1: 録画・シナリオ信頼性 (2026-03-22)**
+- ✅ WebSocket ACK確認・自動リトライ (Day 31)
+- ✅ Partial Recording通知システム (Day 34)
+- ✅ 録画統計リアルタイム表示 (Day 35)
+- ✅ シナリオバリデーション・エラーリカバリー (Day 36)
 
-**音声処理フロー（現在）:**
-
-```
-Browser → WebSocket → Lambda → セッション終了後に一括処理
-→ Azure STT → AWS Bedrock Claude → ElevenLabs TTS → 結果返却
-```
-
-**技術スタック:**
-
-- Azure Speech Services (STT)
-- AWS Bedrock Claude Sonnet 4.6 (AI)
-- ElevenLabs eleven_flash_v2_5 (TTS)
-- ffmpeg (WebM→WAV変換)
-
-> 詳細: [docs/09-progress/archives/ARCHIVE_2026-03-06_Phase1_Completion.md](docs/09-progress/archives/ARCHIVE_2026-03-06_Phase1_Completion.md)
-
-### 🔴 最優先対応: Phase 1.5-1.6 (実用レベル対応)
-
-**目標:** Phase 1を実用レベルに引き上げる
-
-**期間:** Week 0.5-3.5（2週間）
-
-**Phase 1.5（Week 0.5-2.5）：リアルタイム会話実装 - 98%完了 ⚠️**
-
-- ✅ リアルタイムSTT（1秒チャンク、無音検出） - 完了
-- ✅ ストリーミングAI応答（Bedrock Claude Streaming API） - 完了
-- ✅ ストリーミングTTS（ElevenLabs WebSocket Streaming API） - 完了
-- ⚠️ 音声再生機能 - テスト待ち（Day 12: バグ修正完了）
-- ⏳ パフォーマンステスト - 音声再生テスト後
-- 目標: 2-5秒の応答時間
-
-**Day 12完了内容（2026-03-10）:**
-- ✅ 環境ノイズ無限ループ修正（silenceThreshold 0.05 → 0.15、最小継続時間200ms）
-- ✅ ElevenLabs 0バイト音声バグ修正（async function署名修正）
-- ✅ AWS Bedrock ストリーミング権限追加
-- ✅ Lambda デプロイ完了（138.24秒）
-
-**Phase 1.6（Week 2.5-3.5）：既存機能の実用レベル化 - 未着手**
-
-- エラーハンドリング、リトライロジック
-- レート制限、パフォーマンス最適化
-- 監視、分析、アラート
-
-> 詳細: [docs/03-planning/releases/PRODUCTION_READY_ROADMAP.md](docs/03-planning/releases/PRODUCTION_READY_ROADMAP.md) 🔴最重要
-> 進捗: [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md) - Day 12セッション記録
+> 詳細: [docs/09-progress/archives/SESSION_2026-03-22_Day36_Phase1.6.1_Complete.md](docs/09-progress/archives/SESSION_2026-03-22_Day36_Phase1.6.1_Complete.md)
 
 ### Phase 2: 録画・解析・レポート ✅ 完了 (2026-03-17)
 
@@ -881,38 +839,32 @@ Browser → WebSocket → Lambda → セッション終了後に一括処理
 
 > 詳細: [docs/05-modules/BENCHMARK_SYSTEM.md](docs/05-modules/BENCHMARK_SYSTEM.md)
 
-### 将来のフェーズ: Phase 5 (ランタイム設定管理システム) 📋
+### Phase 5: ランタイム設定管理システム ✅ 完了 (2026-03-21)
 
-**目標:** スーパー管理者がUI上から設定値を変更し、サーバー再起動なしで即座に反映
+**実装完了機能:**
 
-**現状の課題:**
-- 設定値変更には Lambda 再デプロイが必要（5-10分）
-- A/Bテスト・緊急時のパラメータ調整が困難
-- 環境ごとの最適化にデプロイが必要
+1. ✅ **データモデル** - runtime_configs テーブル設計
+2. ✅ **Backend API** - GET/PUT /api/v1/runtime-configs
+3. ✅ **Runtime Config Loader** - 3層キャッシュ（Lambda Memory → ElastiCache → Aurora RDS）
+4. ✅ **統合実装** - 11ファイル移行完了（100% coverage）
+5. ✅ **Score Preset Weights** - 20設定値のDB移行（Phase 5.4.1）
 
-**提案機能:**
-```
-管理画面で設定変更 → 即座に全Lambda関数に反映
-MAX_RESULTS: 1000 → 500  (デプロイ不要)
-CLAUDE_TEMPERATURE: 0.7 → 0.5  (A/Bテスト)
-```
+**実装規模:**
+- 36 runtime configs（16 original + 20 score preset weights）
+- 11ファイル移行、23 Lambda関数更新
+- 6デプロイメント（合計 ~850秒）
+- 0 runtime errors
 
 **実装方式:**
 - Aurora RDS: 設定値の永続化
 - ElastiCache: 高速キャッシュ（TTL: 60秒）
 - Lambda メモリキャッシュ: 超高速アクセス（TTL: 10秒）
-- 3層キャッシュでパフォーマンスを維持（99%+ ヒット率）
+- Graceful degradation: 環境変数フォールバック
 
-**対象設定:**
-- Query & Processing（MAX_RESULTS等）
-- AI Processing（CLAUDE_TEMPERATURE等）
-- Audio Processing（TTS_STABILITY等）
-- Score Calculation（重み設定）
-- ※ 機密情報（APIキー等）は環境変数のまま
-
-**推定工数:** 5-7日（8フェーズ）
-
-**優先度:** Medium（Phase 4完了後）
+**効果:**
+- 設定値変更: Lambda再デプロイ不要（5-10分 → 即座）
+- A/Bテスト: 有効化（コード変更なし）
+- パフォーマンス影響: Negligible (~1ms初回, <0.1ms キャッシュヒット)
 
 > 詳細: [docs/05-modules/RUNTIME_CONFIGURATION.md](docs/05-modules/RUNTIME_CONFIGURATION.md)
 
@@ -1154,8 +1106,9 @@ cat docs/07-development/KNOWN_ISSUES.md
 
 ---
 
-**最終更新:** 2026-03-11 01:30 JST
-**次回レビュー予定:** Phase 1.5音声再生テスト完了時 🔴最優先
+**最終更新:** 2026-03-22
+**次回レビュー予定:** 次Phase開始時
 **変更履歴:**
+- 2026-03-22: Phase 1-5全完了反映、ドキュメント整理完了
+- 2026-03-20: Phase 4完了、環境変数完全管理システム確立
 - 2026-03-11: Day 12音声バグ修正完了、Phase 1.5進捗98%に更新
-- 2026-03-10: ドキュメント構造を番号付きカテゴリー（01-10）に再編成
