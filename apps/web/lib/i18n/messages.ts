@@ -26,6 +26,7 @@ import errorsEn from '@/messages/en/errors.json';
 import guestSessionsEn from '@/messages/en/guest-sessions.json';
 import navigationEn from '@/messages/en/navigation.json';
 import analysisEn from '@/messages/en/analysis.json';
+import adminEn from '@/messages/en/admin.json';
 
 // Import Japanese
 import commonJa from '@/messages/ja/common.json';
@@ -41,6 +42,7 @@ import errorsJa from '@/messages/ja/errors.json';
 import guestSessionsJa from '@/messages/ja/guest-sessions.json';
 import navigationJa from '@/messages/ja/navigation.json';
 import analysisJa from '@/messages/ja/analysis.json';
+import adminJa from '@/messages/ja/admin.json';
 
 // Import Chinese Simplified
 import commonZhCN from '@/messages/zh-CN/common.json';
@@ -81,6 +83,7 @@ const messages: Record<string, Record<string, any>> = {
     guestSessions: guestSessionsEn,
     navigation: navigationEn,
     analysis: analysisEn,
+    admin: adminEn,
   },
   ja: {
     common: commonJa,
@@ -96,6 +99,7 @@ const messages: Record<string, Record<string, any>> = {
     guestSessions: guestSessionsJa,
     navigation: navigationJa,
     analysis: analysisJa,
+    admin: adminJa,
   },
   'zh-CN': {
     common: commonZhCN,
@@ -112,6 +116,7 @@ const messages: Record<string, Record<string, any>> = {
     guestSessions: guestSessionsEn,
     navigation: navigationEn,
     analysis: analysisEn,
+    admin: adminEn,
   },
   'zh-TW': {
     common: commonZhTW,
@@ -127,6 +132,7 @@ const messages: Record<string, Record<string, any>> = {
     guestSessions: guestSessionsEn,
     navigation: navigationEn,
     analysis: analysisEn,
+    admin: adminEn,
   },
   ko: {
     common: commonKo,
@@ -142,6 +148,7 @@ const messages: Record<string, Record<string, any>> = {
     guestSessions: guestSessionsEn,
     navigation: navigationEn,
     analysis: analysisEn,
+    admin: adminEn,
   },
   es: {
     common: commonEs,
@@ -157,6 +164,7 @@ const messages: Record<string, Record<string, any>> = {
     guestSessions: guestSessionsEn,
     navigation: navigationEn,
     analysis: analysisEn,
+    admin: adminEn,
   },
   pt: {
     common: commonPt,
@@ -172,6 +180,7 @@ const messages: Record<string, Record<string, any>> = {
     guestSessions: guestSessionsEn,
     navigation: navigationEn,
     analysis: analysisEn,
+    admin: adminEn,
   },
   fr: {
     common: commonFr,
@@ -187,6 +196,7 @@ const messages: Record<string, Record<string, any>> = {
     guestSessions: guestSessionsEn,
     navigation: navigationEn,
     analysis: analysisEn,
+    admin: adminEn,
   },
   de: {
     common: commonDe,
@@ -202,6 +212,7 @@ const messages: Record<string, Record<string, any>> = {
     guestSessions: guestSessionsEn,
     navigation: navigationEn,
     analysis: analysisEn,
+    admin: adminEn,
   },
   it: {
     common: commonIt,
@@ -217,6 +228,7 @@ const messages: Record<string, Record<string, any>> = {
     guestSessions: guestSessionsEn,
     navigation: navigationEn,
     analysis: analysisEn,
+    admin: adminEn,
   },
 };
 

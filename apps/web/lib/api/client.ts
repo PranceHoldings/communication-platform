@@ -10,8 +10,10 @@ import { isSuccessResponse } from '@prance/shared';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-// デバッグ: API URL確認
-console.log('[API Client] Base URL:', API_BASE_URL);
+// デバッグ: API URL確認（開発環境のみ）
+if (process.env.NODE_ENV === 'development') {
+  console.log('[API Client] Base URL:', API_BASE_URL);
+}
 
 
 class ApiClient {
@@ -35,13 +37,15 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    // デバッグログ
-    console.log('[API Client] Request:', {
-      url,
-      method: options.method || 'GET',
-      hasToken: !!token,
-      headers: Object.keys(headers),
-    });
+    // デバッグログ（開発環境のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[API Client] Request:', {
+        url,
+        method: options.method || 'GET',
+        hasToken: !!token,
+        headers: Object.keys(headers),
+      });
+    }
 
     try {
       const response = await fetch(url, {
@@ -51,11 +55,13 @@ class ApiClient {
         credentials: 'omit',
       });
 
-      console.log('[API Client] Response:', {
-        url,
-        status: response.status,
-        ok: response.ok,
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[API Client] Response:', {
+          url,
+          status: response.status,
+          ok: response.ok,
+        });
+      }
 
       const data = (await response.json()) as StandardAPIResponse<T>;
 
@@ -71,7 +77,11 @@ class ApiClient {
 
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      // 開発環境でのみエラーログを出力（認証エラーは除く）
+      if (process.env.NODE_ENV === 'development' && !endpoint.includes('/users/me')) {
+        console.error('[API Client] Request failed:', error);
+      }
+
       return {
         success: false,
         error: {
