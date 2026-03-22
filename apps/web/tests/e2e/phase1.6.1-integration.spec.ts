@@ -14,16 +14,13 @@ import { DashboardPage } from './page-objects/dashboard-page';
 
 test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
   test.beforeEach(async ({ page }) => {
-    // Login
+    // Login with automatic dashboard navigation wait
     const loginPage = new LoginPage(page);
     await loginPage.goto();
-    await loginPage.login(
-      process.env.TEST_USER_EMAIL || 'test@example.com',
-      process.env.TEST_USER_PASSWORD || 'TestPassword123!'
+    await loginPage.loginAndWaitForDashboard(
+      process.env.TEST_USER_EMAIL || 'admin@prance.com',
+      process.env.TEST_USER_PASSWORD || 'Admin2026!Prance'
     );
-
-    // Wait for dashboard
-    await page.waitForURL('**/dashboard');
   });
 
   test('should track chunk ACKs during recording', async ({ page }) => {
@@ -54,14 +51,37 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     await expect(audioStats).toBeVisible();
     await expect(videoStats).toBeVisible();
 
-    // Simulate some time passing (chunks should be sent)
-    await page.waitForTimeout(5000);
+    // Get initial chunk counts
+    const initialAudioText = await audioStats.textContent();
+    const initialVideoText = await videoStats.textContent();
+
+    // Wait for chunk counts to increase (dynamic wait instead of fixed timeout)
+    await page.waitForFunction(
+      ({ audioSelector, videoSelector, initialAudio, initialVideo }) => {
+        const audioEl = document.querySelector(audioSelector);
+        const videoEl = document.querySelector(videoSelector);
+        const currentAudio = audioEl?.textContent || '';
+        const currentVideo = videoEl?.textContent || '';
+        // Wait for either audio or video chunks to increase
+        return currentAudio !== initialAudio || currentVideo !== initialVideo;
+      },
+      {
+        audioSelector: '[data-testid="recording-status"] >> text=/Audio:.*\\d+\\/\\d+/',
+        videoSelector: '[data-testid="recording-status"] >> text=/Video:.*\\d+\\/\\d+/',
+        initialAudio: initialAudioText,
+        initialVideo: initialVideoText,
+      },
+      { timeout: 15000 }
+    );
 
     // Verify chunk counts have increased
     const audioText = await audioStats.textContent();
-    const videoText = await videoStats.textContent();
+    const videoText = await audioStats.textContent();
 
-    console.log('[Recording Stats]', { audio: audioText, video: videoText });
+    console.log('[Recording Stats]', {
+      initial: { audio: initialAudioText, video: initialVideoText },
+      final: { audio: audioText, video: videoText }
+    });
 
     // End session
     await page.click('[data-testid="end-session-button"]');
@@ -106,7 +126,9 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     await page.click('[data-testid="start-session-button"]');
 
     await page.waitForSelector('[data-testid="session-active"]');
-    await page.waitForTimeout(3000);
+
+    // Wait for recording to start (recording-status should be visible)
+    await page.waitForSelector('[data-testid="recording-status"]', { timeout: 10000 });
 
     // End session
     await page.click('[data-testid="end-session-button"]');
@@ -191,8 +213,19 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     await expect(audioStats).toBeVisible();
     await expect(videoStats).toBeVisible();
 
-    // Wait for some chunks to be sent
-    await page.waitForTimeout(3000);
+    // Get initial values
+    const initialAudioText = await audioStats.textContent();
+
+    // Wait for chunks to be sent (dynamic wait for statistics to update)
+    await page.waitForFunction(
+      (selector, initial) => {
+        const el = document.querySelector(selector);
+        return el && el.textContent !== initial;
+      },
+      '[data-testid="recording-status"] >> text=/Audio:.*\\d+\\/\\d+/',
+      initialAudioText,
+      { timeout: 10000 }
+    );
 
     // Verify statistics update over time
     const audioText = await audioStats.textContent();
@@ -449,8 +482,11 @@ test.describe('Phase 1.6.1 - Performance Benchmarks', () => {
 
     await page.waitForSelector('[data-testid="session-active"]');
 
-    // Simulate conversation (wait for auto-greeting)
-    await page.waitForTimeout(5000);
+    // Wait for auto-greeting or first AI message (dynamic wait)
+    await page.waitForSelector('[data-testid="transcript-message"], [data-testid="ai-message"]', {
+      timeout: 15000,
+      state: 'visible'
+    });
 
     // End session
     await page.click('[data-testid="end-session-button"]');

@@ -69,6 +69,54 @@ bash scripts/validate-schema-interface-implementation.sh
 
 ---
 
+## 🔴 Rule 0-B: データベースアクセスはLambda経由のみ（CRITICAL - 2026-03-22追加）
+
+**最重要原則:** このプロジェクトでは、AWS RDS Aurora Serverless v2への直接接続は一切禁止されています。
+
+### ❌ 絶対禁止: 直接接続
+
+```bash
+# ❌ ローカルPostgreSQLへの接続
+DATABASE_URL="postgresql://postgres:password@localhost:5432/prance_dev"
+
+# ❌ RDSへの直接接続（VPCでブロック済み）
+psql postgresql://pranceadmin:xxx@xxx.rds.amazonaws.com:5432/prance
+
+# ❌ Prisma Migrateの直接実行
+cd packages/database && npx prisma migrate dev
+```
+
+**理由:**
+1. **セキュリティ**: RDSはVPC内に配置、外部からの直接接続は不可
+2. **監査**: すべてのクエリがLambda経由でログに記録される
+3. **アクセス制御**: IAMロールによる細かい権限管理
+
+### ✅ 正しい方法
+
+```bash
+# Lambda関数内でPrisma Client使用（推奨）
+import { prisma } from '../../shared/database/prisma';
+const scenarios = await prisma.scenario.findMany();
+
+# db-query.sh スクリプト使用（開発・検証時）
+bash scripts/db-query.sh "SELECT id, title FROM scenarios LIMIT 5"
+bash scripts/db-query.sh --file scripts/queries/verification.sql
+bash scripts/db-query.sh --write "UPDATE scenarios SET ..." # 確認プロンプト表示
+
+# 統合デプロイスクリプト使用（マイグレーション）
+cd infrastructure && npm run deploy:dev-migration
+```
+
+**セキュリティ機能:**
+- デフォルトはread-onlyモード（SELECT, WITH句のみ許可）
+- 書き込み操作は `--write` フラグが必須
+- 危険な操作（DROP TABLE等）は自動ブロック
+- すべてのクエリがCloudWatch Logsに記録
+
+**詳細:** [docs/07-development/DATABASE_ACCESS_RULES.md](docs/07-development/DATABASE_ACCESS_RULES.md)
+
+---
+
 ## 🔴 ハードコード完全防止（2026-03-20実装）
 
 **重要:** コーディング中にリアルタイムで警告、コミット時に自動ブロック
