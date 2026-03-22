@@ -174,7 +174,10 @@
       "authenticationTimeout": "Authentication timeout. Please try again.",
       "processingComplete": "Processing Complete",
       "lowVolumeWarning": "⚠️ Le volume du microphone est très faible. Veuillez parler plus fort ou vérifier les paramètres du microphone.",
-      "audioTooQuiet": "Le niveau audio est trop faible. Veuillez parler plus près du microphone."
+      "audioTooQuiet": "Le niveau audio est trop faible. Veuillez parler plus près du microphone.",
+      "partialRecording": "⚠️ Enregistrement Partiellement Sauvegardé",
+      "partialRecordingDescription": "Une erreur s'est produite pendant le traitement. {saved} fragments sur {total} ont été sauvegardés avec succès.",
+      "aiFallbackUsed": "L'IA utilise une réponse de secours en raison d'un problème temporaire."
     },
     "noSpeech": {
       "guidance": "Aucune parole détectée. Veuillez parler plus fort ou vous rapprocher du microphone.",
@@ -205,7 +208,8 @@
     "completed": {
       "title": "Session Completed",
       "duration": "Duration",
-      "messageCount": "{count} messages"
+      "messageCount": "{count} messages",
+      "turnLimitReached": "Conversation terminée après {turnCount} tours."
     },
     "info": {
       "scenario": "Scenario",
@@ -247,6 +251,20 @@
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
         "notSupported": "Recording is not supported in your browser"
       }
+    },
+    "validation": {
+      "cannotStart": "Impossible de démarrer la session",
+      "warningsDetected": "Avertissements de Scénario Détectés",
+      "warningsMessage": "Les avertissements suivants ont été détectés dans la configuration du scénario :",
+      "proceedAnyway": "Voulez-vous continuer quand même ?",
+      "sessionCancelled": "Démarrage de la session annulé",
+      "titleRequired": "Le titre du scénario est requis",
+      "languageRequired": "La langue du scénario est requise",
+      "systemPromptRequired": "Le prompt système est requis",
+      "initialGreetingMissing": "Le message d'accueil initial n'est pas défini. L'IA attendra que l'utilisateur parle en premier.",
+      "silenceTimeoutTooShort": "Le délai de silence est très court. Envisagez de l'augmenter.",
+      "systemPromptTooLong": "Le prompt système est très long. Cela peut affecter la qualité de la réponse de l'IA.",
+      "systemPromptTooShort": "Le prompt système est très court. Envisagez d'ajouter plus de contexte."
     }
   },
   "errors": {

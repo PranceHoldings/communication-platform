@@ -84,6 +84,7 @@ node_modules.broken-*
 console.log
 consolelog.log
 backups/
+tobedeleted/
 
 # next-intl migration - DEPRECATED, DO NOT USE
 # This directory was removed during migration to custom i18n system
@@ -108,3 +109,9 @@ infrastructure/*.broken-*
 package-lock\ *.json
 cdk\ *.out/
 test-results/
+
+# Any file or directory with space in name (comprehensive pattern)
+# This catches all files/directories with spaces that aren't already ignored
+*\ *.*
+*\ */
+*\ *\ *

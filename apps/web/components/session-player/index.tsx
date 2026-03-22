@@ -16,6 +16,7 @@ import {
   ProcessingUpdateMessage,
   SessionCompleteMessage,
   ErrorMessage,
+  RecordingPartialMessage,
 } from '@/hooks/useWebSocket';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useVideoRecorder } from '@/hooks/useVideoRecorder';
@@ -24,12 +25,14 @@ import { useAudioBuffer } from '@/hooks/useAudioBuffer';
 import { useErrorMessage, type ErrorDetails } from '@/hooks/useErrorMessage';
 import { useSilenceTimer } from '@/hooks/useSilenceTimer';
 import { checkBrowserCapabilities, getRecommendedBrowserMessage } from '@/lib/browser-check';
+import { validateScenario, formatValidationErrors, formatValidationWarnings } from '@/lib/scenario-validator';
 import { VideoComposer } from './video-composer';
 import { WaveformDisplay } from '@/components/audio-visualizer/WaveformDisplay';
 import { ProcessingIndicator, ProcessingStage } from './ProcessingIndicator';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { AvatarRenderer, type AvatarRendererRef } from '@/components/avatar';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 import { ConnectionStatus, ErrorGuidance, useConnectionState } from '@/components/error-handling';
 
@@ -69,6 +72,16 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   // Error handling state (Phase 1.6)
   const [currentError, setCurrentError] = useState<ErrorDetails | null>(null);
+
+  // Phase 1.6.1 Day 36: Scenario validation confirm dialog
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    warnings: string;
+  }>({
+    isOpen: false,
+    warnings: '',
+  });
+  const [validationConfirmed, setValidationConfirmed] = useState(false);
 
   // Phase 1.6.1: ACK tracking for reliable chunk transmission
   interface PendingChunk {
@@ -685,6 +698,66 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     [t]
   );
 
+  // Phase 1.6.1 Day 36: Handle session limit reached
+  const handleSessionLimitReached = useCallback(
+    (message: import('@prance/shared').SessionLimitReachedMessage) => {
+      console.log('[SessionPlayer] Session limit reached:', message);
+
+      // Stop all activity
+      setStatus('COMPLETED');
+      setIsProcessing(false);
+      setProcessingStage('idle');
+      setProcessingMessage('');
+
+      // Show toast notification
+      toast.info(message.message, {
+        duration: 10000,
+        description: t('sessions.player.completed.turnLimitReached', {
+          defaultValue: `Conversation completed after ${message.turnCount} turns.`,
+          turnCount: message.turnCount,
+        }),
+      });
+
+      // Disconnect WebSocket
+      disconnect();
+    },
+    [t, disconnect]
+  );
+
+  // Phase 1.6.1 Day 36: Handle AI fallback response
+  const handleAIFallback = useCallback(
+    (message: import('@prance/shared').AIFallbackMessage) => {
+      console.log('[SessionPlayer] AI fallback response:', message);
+
+      // Add fallback response to transcript
+      setTranscript(prev => [
+        ...prev,
+        {
+          id: `fallback-${Date.now()}`,
+          sessionId: session.id,
+          speaker: 'AI' as const,
+          text: message.message,
+          timestampStart: message.timestamp,
+          timestampEnd: message.timestamp,
+          confidence: 1.0,
+        },
+      ]);
+
+      // Show subtle warning that fallback was used
+      toast.warning(t('sessions.player.messages.aiFallbackUsed', {
+        defaultValue: 'AI is using a fallback response due to a temporary issue.',
+      }), {
+        duration: 3000,
+      });
+
+      // Reset processing flag
+      setIsProcessing(false);
+      setProcessingStage('idle');
+      setProcessingMessage('');
+    },
+    [session.id, t]
+  );
+
   // Phase 1.6.1: ACK timeout handler with exponential backoff retry
   const handleAckTimeout = useCallback(
     (chunkId: string) => {
@@ -853,6 +926,27 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     [t]
   );
 
+  // Phase 1.6.1: Handle partial recording notification
+  const handleRecordingPartial = useCallback(
+    (message: RecordingPartialMessage) => {
+      console.warn('[SessionPlayer] Partial recording notification:', {
+        savedChunks: message.savedChunks,
+        totalChunks: message.totalChunks,
+        sessionId: message.sessionId,
+      });
+
+      // Show toast notification to user
+      toast.warning(t('sessions.player.messages.partialRecording'), {
+        description: t('sessions.player.messages.partialRecordingDescription', {
+          saved: message.savedChunks,
+          total: message.totalChunks,
+        }),
+        duration: 10000, // 10 seconds
+      });
+    },
+    [t]
+  );
+
   // WebSocket統合
   const {
     isConnected,
@@ -888,6 +982,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onNoSpeechDetected: handleNoSpeechDetected, // New: No speech detected guidance
     onAuthenticated: handleAuthenticated,
     onChunkAck: handleChunkAck, // Phase 1.6.1: Chunk ACK tracking
+    onRecordingPartial: handleRecordingPartial, // Phase 1.6.1: Partial recording notification
+    onSessionLimitReached: handleSessionLimitReached, // Phase 1.6.1 Day 36: Max conversation turns
+    onAIFallback: handleAIFallback, // Phase 1.6.1 Day 36: AI response fallback
   });
 
   // Connection state for ConnectionStatus component (Phase 1.6)
@@ -1342,6 +1439,36 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     if (status === 'IDLE') {
       console.log('[SessionPlayer] Starting WebSocket connection...');
 
+      // Phase 1.6.1 Day 36: Scenario validation (skip if already confirmed)
+      if (!validationConfirmed) {
+        console.log('[SessionPlayer] Validating scenario before start...');
+        const validation = validateScenario(scenario);
+
+        if (!validation.isValid) {
+          // Validation errors - block session start
+          console.error('[SessionPlayer] Scenario validation failed:', validation.errors);
+          const errorMessage = formatValidationErrors(validation.errors);
+
+          toast.error(t('sessions.player.validation.cannotStart'), {
+            description: errorMessage,
+            duration: 10000,
+          });
+          return;
+        }
+
+        if (validation.warnings.length > 0) {
+          // Validation warnings - show confirmation dialog
+          console.warn('[SessionPlayer] Scenario validation warnings:', validation.warnings);
+          const warningMessage = formatValidationWarnings(validation.warnings);
+
+          setConfirmDialog({
+            isOpen: true,
+            warnings: warningMessage,
+          });
+          return; // Wait for user confirmation
+        }
+      }
+
       // ユーザーカメラを取得
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -1410,7 +1537,24 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       }
       toast.success(t('sessions.player.messages.sessionResumed'));
     }
-  }, [token, status, t, startVisualizer, resumeRecording]);
+  }, [token, status, t, startVisualizer, resumeRecording, validationConfirmed, scenario]);
+
+  // Phase 1.6.1 Day 36: Scenario validation confirmation handlers
+  const handleConfirmValidation = useCallback(() => {
+    console.log('[SessionPlayer] User confirmed scenario warnings, proceeding with session start');
+    setConfirmDialog({ isOpen: false, warnings: '' });
+    setValidationConfirmed(true);
+
+    // Re-trigger handleStart (will skip validation this time)
+    setTimeout(() => handleStart(), 100);
+  }, [handleStart]);
+
+  const handleCancelValidation = useCallback(() => {
+    console.log('[SessionPlayer] User cancelled session start due to warnings');
+    setConfirmDialog({ isOpen: false, warnings: '' });
+    setValidationConfirmed(false);
+    toast.info(t('sessions.player.validation.sessionCancelled'));
+  }, [t]);
 
   const handlePause = useCallback(() => {
     if (status === 'ACTIVE') {
@@ -2570,6 +2714,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           onCanvasReady={handleCanvasReady}
         />
       </div>
+
+      {/* Phase 1.6.1 Day 36: Scenario validation confirmation dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={t('sessions.player.validation.warningsDetected')}
+        message={`${t('sessions.player.validation.warningsMessage')}\n\n${confirmDialog.warnings}\n\n${t('sessions.player.validation.proceedAnyway')}`}
+        confirmLabel={t('sessions.player.actions.start')}
+        cancelLabel={t('sessions.player.actions.cancel')}
+        variant="warning"
+        onConfirm={handleConfirmValidation}
+        onCancel={handleCancelValidation}
+      />
     </div>
   );
 }

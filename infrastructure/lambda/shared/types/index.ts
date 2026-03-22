@@ -189,3 +189,48 @@ export enum Visibility {
   ORGANIZATION = 'ORGANIZATION',
   PUBLIC = 'PUBLIC',
 }
+
+// ========================================
+// Scenario Validation Types (Day 36)
+// ========================================
+
+export interface ValidationError {
+  field: string;
+  code: string;
+  message: string;
+}
+
+export interface ValidationWarning {
+  field: string;
+  code: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface ScenarioValidation {
+  isValid: boolean;
+  errors: ValidationError[];
+  warnings: ValidationWarning[];
+}
+
+// ========================================
+// WebSocket Message Types (Day 36)
+// ========================================
+
+export interface SessionLimitReachedMessage {
+  type: 'session_limit_reached';
+  message: string;
+  turnCount: number;
+  maxTurns: number;
+  sessionId: string;
+  timestamp: number;
+}
+
+export interface AIFallbackMessage {
+  type: 'ai_fallback';
+  message: string;
+  originalError: string;
+  usedFallback: boolean;
+  sessionId: string;
+  timestamp: number;
+}

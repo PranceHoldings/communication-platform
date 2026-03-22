@@ -1,7 +1,137 @@
 # Prance Alpha開発 - セッション進捗まとめ
 
-**最終更新:** 2026-03-21 22:30 UTC
-**セッション:** Day 30 - Three.js Avatar基盤実装完了 ✅
+**最終更新:** 2026-03-22
+**セッション:** Day 36 - Phase 1.6.1 シナリオバリデーション・エラーリカバリー実装完了 ✅
+
+---
+
+## 🎉 Day 36: Phase 1.6.1 シナリオバリデーション・エラーリカバリー実装完了（2026-03-22）
+
+### セッション概要
+
+- **実施内容:** シナリオ事前バリデーション、AI応答フォールバックシステム、ターン制限実装
+- **所要時間:** 約2時間
+- **状態:** ✅ **Phase 1.6.1 Scenario 100%完了** - 実装完了（デプロイ待ち）
+
+### 実装内容
+
+**Phase A: 型定義実装 (30分)**
+- ✅ `ValidationError` / `ValidationWarning` / `ScenarioValidation` 型
+- ✅ `SessionLimitReachedMessage` / `AIFallbackMessage` 型
+- ✅ `packages/shared/src/types/index.ts` 更新
+- ✅ `infrastructure/lambda/shared/types/index.ts` re-export
+
+**Phase B: Frontend実装 (45分)**
+- ✅ `apps/web/lib/scenario-validator.ts` (NEW - 162 lines)
+  - validateScenario() 関数
+  - 必須チェック: title, language, systemPrompt
+  - 警告チェック: initialGreeting, silenceTimeout, systemPrompt length
+- ✅ `apps/web/components/ConfirmDialog.tsx` (NEW - 100+ lines)
+  - variant: info/warning/danger
+  - 警告確認ダイアログUI
+- ✅ SessionPlayer統合
+  - セッション開始前バリデーション
+  - 警告ダイアログ表示
+  - ユーザー確認後に開始
+
+**Phase C: Backend実装 (45分)**
+- ✅ Prismaスキーマ: `SessionError` モデル追加
+  - errorType, errorMessage, errorStack
+  - attemptNumber, recoveryAction, fallbackUsed, resolved
+- ✅ `infrastructure/lambda/shared/scenario/fallback-responses.ts` (NEW - 120 lines)
+  - getFallbackResponse() - 3パターンローテーション × 10言語
+  - getMaxTurnsReachedMessage() - ターン制限メッセージ × 10言語
+- ✅ WebSocket Lambda エラーハンドリング強化
+  - MAX_TURNS チェック → session_limit_reached 送信
+  - AI応答エラー → SessionError記録 + フォールバック応答生成
+  - ai_fallback メッセージ送信
+- ✅ useWebSocket拡張
+  - SessionLimitReachedMessage / AIFallbackMessage 処理
+  - onSessionLimitReached / onAIFallback コールバック
+
+**Phase D: テスト・ドキュメント (30分)**
+- ✅ 多言語翻訳完了 - 10言語全対応
+  - aiFallbackUsed, turnLimitReached 追加
+  - Pythonスクリプトで効率的に更新
+- ✅ 検証スクリプト実行
+  - `npm run validate:languages` 成功（10/10 languages）
+- ✅ START_HERE.md更新
+  - Phase 1.6.1 Day 36完了記録
+  - 次回デプロイ手順記載
+- ✅ セッションアーカイブ作成
+  - `SESSION_2026-03-22_Day36_Phase1.6.1_Complete.md` (完全記録)
+
+### 実装詳細
+
+**シナリオバリデーション:**
+```typescript
+// 必須項目（ブロッキング）
+- title: 必須、空文字禁止
+- language: 必須、10言語のいずれか
+- systemPrompt: 必須、20-5000文字
+
+// 警告項目（非ブロッキング）
+- initialGreeting: 未設定 → ユーザーが先に話す必要がある
+- silenceTimeout: <3秒 → 短すぎる警告
+- systemPrompt: <50文字または>3000文字 → 長さ警告
+```
+
+**AI応答フォールバックシステム:**
+```typescript
+// 3パターンローテーション（日本語例）
+Pattern 0: "申し訳ございません。ただいま回答の準備に時間がかかっております。もう一度お願いできますでしょうか？"
+Pattern 1: "すみません、もう一度確認させてください。別の言い方で教えていただけますか？"
+Pattern 2: "申し訳ありません。もう一度お聞かせください。"
+
+// attemptNumber % 3 でローテーション
+```
+
+**ターン制限:**
+```typescript
+MAX_CONVERSATION_TURNS = 100
+turnCount >= 100 → session_limit_reached メッセージ
+→ セッション自動終了 + WebSocket切断
+```
+
+### 変更ファイル
+
+**新規作成 (4 files):**
+- `apps/web/lib/scenario-validator.ts` (162 lines)
+- `apps/web/components/ConfirmDialog.tsx` (100+ lines)
+- `infrastructure/lambda/shared/scenario/fallback-responses.ts` (120 lines)
+- `docs/09-progress/archives/SESSION_2026-03-22_Day36_Phase1.6.1_Complete.md`
+
+**更新 (17 files):**
+- `packages/shared/src/types/index.ts`
+- `infrastructure/lambda/shared/types/index.ts`
+- `packages/database/prisma/schema.prisma`
+- `infrastructure/lambda/websocket/default/index.ts`
+- `apps/web/hooks/useWebSocket.ts`
+- `apps/web/components/session-player/index.tsx`
+- `apps/web/messages/{en,ja,zh-CN,zh-TW,ko,es,pt,fr,de,it}/sessions.json` (10 files)
+- `START_HERE.md`
+
+### 統計
+
+- **実装時間:** 約2時間
+- **新規コード:** ~400 lines
+- **変更コード:** ~150 lines
+- **翻訳追加:** 20 keys × 10 languages = 200 entries
+- **検証:** ✅ 言語同期（10/10）
+
+### 次のアクション
+
+**⚠️ デプロイ待ち（必須）:**
+1. Prismaマイグレーション実行（SessionErrorテーブル作成）
+2. Lambda関数デプロイ（CDK統合デプロイ）
+3. 動作確認
+   - シナリオバリデーション
+   - 警告ダイアログ
+   - AI応答フォールバック
+   - ターン制限（MAX_CONVERSATION_TURNS=5でテスト）
+
+**詳細記録:**
+- `docs/09-progress/archives/SESSION_2026-03-22_Day36_Phase1.6.1_Complete.md`
 
 ---
 

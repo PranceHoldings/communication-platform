@@ -174,7 +174,10 @@
       "authenticationTimeout": "Authentication timeout. Please try again.",
       "processingComplete": "Processing Complete",
       "lowVolumeWarning": "⚠️ Die Mikrofonlautstärke ist sehr niedrig. Bitte sprechen Sie lauter oder überprüfen Sie die Mikrofoneinstellungen.",
-      "audioTooQuiet": "Der Audiopegel ist zu niedrig. Bitte sprechen Sie näher am Mikrofon."
+      "audioTooQuiet": "Der Audiopegel ist zu niedrig. Bitte sprechen Sie näher am Mikrofon.",
+      "partialRecording": "⚠️ Aufnahme Teilweise Gespeichert",
+      "partialRecordingDescription": "Während der Verarbeitung ist ein Fehler aufgetreten. {saved} von {total} Fragmenten wurden erfolgreich gespeichert.",
+      "aiFallbackUsed": "Die KI verwendet aufgrund eines vorübergehenden Problems eine Ausweichantwort."
     },
     "noSpeech": {
       "guidance": "Keine Sprache erkannt. Bitte sprechen Sie lauter oder kommen Sie näher an Ihr Mikrofon.",
@@ -205,7 +208,8 @@
     "completed": {
       "title": "Session Completed",
       "duration": "Duration",
-      "messageCount": "{count} messages"
+      "messageCount": "{count} messages",
+      "turnLimitReached": "Gespräch nach {turnCount} Runden abgeschlossen."
     },
     "info": {
       "scenario": "Scenario",
@@ -247,6 +251,20 @@
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
         "notSupported": "Recording is not supported in your browser"
       }
+    },
+    "validation": {
+      "cannotStart": "Sitzung kann nicht gestartet werden",
+      "warningsDetected": "Szenario-Warnungen Erkannt",
+      "warningsMessage": "Die folgenden Warnungen wurden in der Szenariokonfiguration erkannt:",
+      "proceedAnyway": "Möchten Sie trotzdem fortfahren?",
+      "sessionCancelled": "Sitzungsstart abgebrochen",
+      "titleRequired": "Der Szenario-Titel ist erforderlich",
+      "languageRequired": "Die Szenario-Sprache ist erforderlich",
+      "systemPromptRequired": "Die System-Eingabeaufforderung ist erforderlich",
+      "initialGreetingMissing": "Die anfängliche Begrüßung ist nicht festgelegt. Die KI wartet darauf, dass der Benutzer zuerst spricht.",
+      "silenceTimeoutTooShort": "Das Stille-Timeout ist sehr kurz. Erwägen Sie, es zu erhöhen.",
+      "systemPromptTooLong": "Die System-Eingabeaufforderung ist sehr lang. Dies kann die Qualität der KI-Antwort beeinträchtigen.",
+      "systemPromptTooShort": "Die System-Eingabeaufforderung ist sehr kurz. Erwägen Sie, mehr Kontext hinzuzufügen."
     }
   },
   "errors": {

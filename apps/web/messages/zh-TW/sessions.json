@@ -174,7 +174,10 @@
       "authenticationTimeout": "Authentication timeout. Please try again.",
       "processingComplete": "Processing Complete",
       "lowVolumeWarning": "⚠️ 麥克風音量過低。請大聲說話或檢查麥克風設定。",
-      "audioTooQuiet": "音訊電平過低。請靠近麥克風說話。"
+      "audioTooQuiet": "音訊電平過低。請靠近麥克風說話。",
+      "partialRecording": "⚠️ 錄製已部分儲存",
+      "partialRecordingDescription": "處理過程中發生錯誤。{total}個區塊中的{saved}個已成功儲存。",
+      "aiFallbackUsed": "由於臨時問題，AI正在使用備用回應。"
     },
     "noSpeech": {
       "guidance": "未偵測到語音。請大聲說話或靠近麥克風。",
@@ -205,7 +208,8 @@
     "completed": {
       "title": "Session Completed",
       "duration": "Duration",
-      "messageCount": "{count} messages"
+      "messageCount": "{count} messages",
+      "turnLimitReached": "對話在{turnCount}輪後完成。"
     },
     "info": {
       "scenario": "Scenario",
@@ -247,6 +251,20 @@
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
         "notSupported": "Recording is not supported in your browser"
       }
+    },
+    "validation": {
+      "cannotStart": "無法開始會話",
+      "warningsDetected": "偵測到情境警告",
+      "warningsMessage": "在情境配置中偵測到以下警告：",
+      "proceedAnyway": "是否繼續？",
+      "sessionCancelled": "已取消會話開始",
+      "titleRequired": "情境標題為必填項",
+      "languageRequired": "情境語言為必填項",
+      "systemPromptRequired": "系統提示為必填項",
+      "initialGreetingMissing": "未設定初始問候語。AI將等待使用者發言。",
+      "silenceTimeoutTooShort": "靜音逾時非常短。建議增加。",
+      "systemPromptTooLong": "系統提示非常長。這可能影響AI回應品質。",
+      "systemPromptTooShort": "系統提示非常短。建議新增更多上下文。"
     }
   },
   "errors": {

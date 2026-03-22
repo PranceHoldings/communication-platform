@@ -409,6 +409,29 @@ model SessionScore {
 }
 
 // ============================================================
+// セッションエラー記録
+// ============================================================
+
+model SessionError {
+  id        String   @id @default(uuid())
+  sessionId String   @map("session_id")
+  errorType String   @map("error_type") // 'ai_generation' | 'tts_generation' | 'stt_recognition' | 'timeout'
+  errorMessage String @map("error_message") @db.Text
+  errorStack String? @map("error_stack") @db.Text
+  attemptNumber Int   @map("attempt_number") // どのリトライ試行で発生したか
+  recoveryAction String? @map("recovery_action") // 'retry' | 'skip' | 'terminate' | 'fallback'
+  fallbackUsed Boolean @default(false) @map("fallback_used")
+  resolved Boolean @default(false) // エラーが解決されたか
+  metadata Json? // 追加コンテキスト情報
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([sessionId])
+  @@index([errorType])
+  @@index([createdAt])
+  @@map("session_errors")
+}
+
+// ============================================================
 // ゲストセッション管理
 // ============================================================
 

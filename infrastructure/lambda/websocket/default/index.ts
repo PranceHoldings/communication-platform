@@ -1940,16 +1940,44 @@ async function handleAudioProcessingStreaming(
     // If execution state is invalid (max turns/timeout), terminate
     if (!executionValidation.isValid) {
       const { formatValidationErrors } = await import('../../shared/scenario/validator');
+      const { getMaxTurnsReachedMessage } = await import('../../shared/scenario/fallback-responses');
       const errorMessage = formatValidationErrors(executionValidation);
+      const { getRequiredEnv } = await import('../../shared/utils/env-validator');
+      const MAX_CONVERSATION_TURNS = parseInt(getRequiredEnv('MAX_CONVERSATION_TURNS'), 10);
 
       console.error('[handleAudioProcessingStreaming] Execution state invalid:', errorMessage);
 
-      await sendToConnection(connectionId, {
-        type: 'session_terminated',
-        reason: 'execution_limit_exceeded',
-        details: executionValidation.errors,
-        timestamp: Date.now(),
-      });
+      // Check if this is a max turns error
+      const isMaxTurnsError = executionValidation.errors.some(
+        (error) => error.code === 'MAX_TURNS_EXCEEDED'
+      );
+
+      if (isMaxTurnsError) {
+        // Phase 1.6.1 Day 36: Send session_limit_reached message
+        const turnCount = connectionData?.turnCount || 0;
+        const terminationMessage = getMaxTurnsReachedMessage(
+          turnCount,
+          MAX_CONVERSATION_TURNS,
+          connectionData?.scenarioLanguage || 'en'
+        );
+
+        await sendToConnection(connectionId, {
+          type: 'session_limit_reached',
+          message: terminationMessage,
+          turnCount,
+          maxTurns: MAX_CONVERSATION_TURNS,
+          sessionId,
+          timestamp: Date.now(),
+        });
+      } else {
+        // Other execution errors (timeout, etc.)
+        await sendToConnection(connectionId, {
+          type: 'session_terminated',
+          reason: 'execution_limit_exceeded',
+          details: executionValidation.errors,
+          timestamp: Date.now(),
+        });
+      }
 
       return; // Terminate processing
     }
@@ -2191,6 +2219,36 @@ async function handleAudioProcessingStreaming(
         shouldTerminate: recoveryResult.shouldTerminate,
       });
 
+      // Phase 1.6.1 Day 36: Record error to database
+      try {
+        await prisma.sessionError.create({
+          data: {
+            sessionId: connectionData?.sessionId || 'unknown',
+            errorType,
+            errorMessage,
+            errorStack: errorDetails || null,
+            attemptNumber: currentAttempts,
+            recoveryAction: recoveryResult.shouldTerminate
+              ? 'terminate'
+              : recoveryResult.shouldSkip
+                ? 'skip'
+                : recoveryResult.shouldRetry
+                  ? 'retry'
+                  : 'fallback',
+            fallbackUsed: !!recoveryResult.fallbackResponse,
+            resolved: recoveryResult.shouldRetry || recoveryResult.shouldSkip,
+            metadata: {
+              connectionId,
+              language: connectionData?.scenarioLanguage,
+              hasScenarioPrompt: !!connectionData?.scenarioPrompt,
+            },
+          },
+        });
+        console.log('[handleAudioProcessingStreaming] Error recorded to database');
+      } catch (dbError) {
+        console.error('[handleAudioProcessingStreaming] Failed to record error to database:', dbError);
+      }
+
       // Update error attempt counter
       await updateConnectionData(connectionId, {
         lastErrorType: errorType,
@@ -2206,13 +2264,64 @@ async function handleAudioProcessingStreaming(
           timestamp: Date.now(),
         });
       } else if (recoveryResult.shouldSkip) {
-        // Skip this turn and continue
+        // Phase 1.6.1 Day 36: Use fallback response and send ai_fallback message
+        const { getFallbackResponse } = await import('../../shared/scenario/fallback-responses');
+        const fallbackText = getFallbackResponse(
+          currentAttempts,
+          connectionData?.scenarioLanguage || 'en'
+        );
+
+        // Send ai_fallback message to client
         await sendToConnection(connectionId, {
-          type: 'error_recovered',
-          message: recoveryResult.fallbackResponse,
-          errorType,
+          type: 'ai_fallback',
+          message: fallbackText,
+          originalError: errorMessage,
+          usedFallback: true,
+          sessionId,
           timestamp: Date.now(),
         });
+
+        // Generate TTS for fallback response
+        try {
+          const processor = getAudioProcessor();
+          const ttsAudio = await processor['tts'].synthesize(fallbackText); // Access private tts instance
+
+          // Upload fallback audio to S3
+          const audioTimestamp = Date.now();
+          const { getAudioKey } = await import('../../shared/config/s3-paths');
+          const { AudioFileType } = await import('../../shared/config/s3-paths');
+          const audioKey = getAudioKey(sessionId, AudioFileType.AI_RESPONSE, audioTimestamp, 'mp3');
+
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: S3_BUCKET,
+              Key: audioKey,
+              Body: ttsAudio,
+              ContentType: 'audio/mpeg',
+            })
+          );
+
+          const audioUrl = await getSignedUrl(
+            s3Client,
+            new GetObjectCommand({
+              Bucket: S3_BUCKET,
+              Key: audioKey,
+            }),
+            { expiresIn: 3600 }
+          );
+
+          // Send audio response
+          await sendToConnection(connectionId, {
+            type: 'audio_response',
+            audioUrl,
+            audioKey,
+            contentType: 'audio/mpeg',
+            timestamp: audioTimestamp,
+          });
+        } catch (ttsError) {
+          console.error('[handleAudioProcessingStreaming] Failed to generate fallback TTS:', ttsError);
+          // Continue without audio - client has text already
+        }
       } else if (recoveryResult.shouldRetry) {
         // Notify client that retry will occur
         await sendToConnection(connectionId, {

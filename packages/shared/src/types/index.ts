@@ -118,6 +118,29 @@ export interface Scenario {
 }
 
 // ============================================================
+// シナリオバリデーション (Day 36)
+// ============================================================
+
+export interface ValidationError {
+  field: string;
+  code: string;
+  message: string;
+}
+
+export interface ValidationWarning {
+  field: string;
+  code: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface ScenarioValidation {
+  isValid: boolean;
+  errors: ValidationError[];
+  warnings: ValidationWarning[];
+}
+
+// ============================================================
 // セッション
 // ============================================================
 
@@ -546,6 +569,42 @@ export interface VersionMessage extends WebSocketMessageBase {
 }
 
 /**
+ * 録画部分保存メッセージ（サーバー → クライアント）
+ * Phase 1.6.1 Day 34: Notify client about partial recording on processing error
+ */
+export interface RecordingPartialMessage extends WebSocketMessageBase {
+  type: 'recording_partial';
+  message: string;
+  savedChunks: number;
+  totalChunks: number;
+  sessionId: string;
+}
+
+/**
+ * セッション制限到達メッセージ（Day 36）
+ * 会話ターン数が最大値に到達した際に送信
+ */
+export interface SessionLimitReachedMessage extends WebSocketMessageBase {
+  type: 'session_limit_reached';
+  message: string;
+  turnCount: number;
+  maxTurns: number;
+  sessionId: string;
+}
+
+/**
+ * AIフォールバック応答メッセージ（Day 36）
+ * AI応答生成エラー時のフォールバック応答通知
+ */
+export interface AIFallbackMessage extends WebSocketMessageBase {
+  type: 'ai_fallback';
+  message: string;
+  originalError: string;
+  usedFallback: boolean;
+  sessionId: string;
+}
+
+/**
  * クライアントからサーバーへのメッセージ（Union型）
  */
 export type ClientToServerMessage =
@@ -577,7 +636,10 @@ export type ServerToClientMessage =
   | ErrorMessage
   | NoSpeechDetectedMessage
   | PongMessage
-  | VersionMessage;
+  | VersionMessage
+  | RecordingPartialMessage
+  | SessionLimitReachedMessage
+  | AIFallbackMessage;
 
 // ============================================================
 // 感情・表情解析

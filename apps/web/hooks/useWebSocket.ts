@@ -16,6 +16,9 @@ import type {
   SessionCompleteMessage,
   ErrorMessage,
   ChunkAckMessage,
+  RecordingPartialMessage,
+  SessionLimitReachedMessage,
+  AIFallbackMessage,
   ServerToClientMessage,
 } from '@prance/shared';
 
@@ -28,6 +31,7 @@ export type {
   ProcessingUpdateMessage,
   SessionCompleteMessage,
   ErrorMessage,
+  RecordingPartialMessage,
 };
 
 // All types are now imported from @prance/shared
@@ -53,6 +57,9 @@ interface UseWebSocketOptions {
   onNoSpeechDetected?: (message: { message: string; timestamp: number }) => void; // New: No speech detected guidance
   onAuthenticated?: (sessionId: string, initialGreeting?: string) => void;
   onChunkAck?: (message: ChunkAckMessage) => void; // Phase 1.6.1: Chunk ACK tracking
+  onRecordingPartial?: (message: RecordingPartialMessage) => void; // Phase 1.6.1 Day 34: Partial recording notification
+  onSessionLimitReached?: (message: SessionLimitReachedMessage) => void; // Phase 1.6.1 Day 36: Max conversation turns
+  onAIFallback?: (message: AIFallbackMessage) => void; // Phase 1.6.1 Day 36: AI response fallback
   autoConnect?: boolean;
 }
 
@@ -94,6 +101,9 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onNoSpeechDetected,
     onAuthenticated,
     onChunkAck,
+    onRecordingPartial,
+    onSessionLimitReached,
+    onAIFallback,
     autoConnect = false,
   } = options;
 
@@ -137,6 +147,9 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const onNoSpeechDetectedRef = useRef(onNoSpeechDetected);
   const onAuthenticatedRef = useRef(onAuthenticated);
   const onChunkAckRef = useRef(onChunkAck);
+  const onRecordingPartialRef = useRef(onRecordingPartial);
+  const onSessionLimitReachedRef = useRef(onSessionLimitReached);
+  const onAIFallbackRef = useRef(onAIFallback);
 
   // Update refs on every render so they always point to the latest callbacks
   useEffect(() => {
@@ -150,6 +163,9 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onErrorRef.current = onError;
     onAuthenticatedRef.current = onAuthenticated;
     onChunkAckRef.current = onChunkAck;
+    onRecordingPartialRef.current = onRecordingPartial;
+    onSessionLimitReachedRef.current = onSessionLimitReached;
+    onAIFallbackRef.current = onAIFallback;
   });
 
   // WebSocket endpoint from environment variable
@@ -304,6 +320,36 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
               status: (message as ChunkAckMessage).status,
             });
             onChunkAckRef.current?.(message as ChunkAckMessage);
+            break;
+
+          case 'recording_partial':
+            // Phase 1.6.1 Day 34: Partial recording notification
+            console.warn('[WebSocket] Partial recording notification:', {
+              savedChunks: (message as RecordingPartialMessage).savedChunks,
+              totalChunks: (message as RecordingPartialMessage).totalChunks,
+              message: (message as RecordingPartialMessage).message,
+            });
+            onRecordingPartialRef.current?.(message as RecordingPartialMessage);
+            break;
+
+          case 'session_limit_reached':
+            // Phase 1.6.1 Day 36: Max conversation turns reached
+            console.log('[WebSocket] Session limit reached:', {
+              turnCount: (message as SessionLimitReachedMessage).turnCount,
+              maxTurns: (message as SessionLimitReachedMessage).maxTurns,
+              message: (message as SessionLimitReachedMessage).message,
+            });
+            onSessionLimitReachedRef.current?.(message as SessionLimitReachedMessage);
+            break;
+
+          case 'ai_fallback':
+            // Phase 1.6.1 Day 36: AI response fallback
+            console.log('[WebSocket] AI fallback response:', {
+              message: (message as AIFallbackMessage).message,
+              originalError: (message as AIFallbackMessage).originalError,
+              usedFallback: (message as AIFallbackMessage).usedFallback,
+            });
+            onAIFallbackRef.current?.(message as AIFallbackMessage);
             break;
 
           case 'video_chunk_missing':

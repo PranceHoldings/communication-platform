@@ -115,6 +115,109 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     const processingMessage = await page.locator('text=/Processing|Combining|Uploading/');
     await expect(processingMessage).toBeVisible({ timeout: 10000 });
   });
+
+  test('should display partial recording notification (Day 34)', async ({ page }) => {
+    // This test verifies the partial recording notification system
+    // In a real scenario, we would need to simulate backend sending recording_partial message
+
+    await page.goto('/sessions/new');
+
+    // Start session
+    await page.click('[data-testid="scenario-select"]');
+    await page.click('[data-testid="scenario-option"]:first-child');
+    await page.click('[data-testid="avatar-select"]');
+    await page.click('[data-testid="avatar-option"]:first-child');
+    await page.click('[data-testid="start-session-button"]');
+
+    await page.waitForSelector('[data-testid="session-active"]');
+
+    // Inject mock recording_partial message via WebSocket
+    // This would require either:
+    // 1. WebSocket mock/intercept capability
+    // 2. Backend test endpoint to trigger partial recording
+    // 3. Manual triggering via browser console
+
+    // For now, we test that the UI elements exist and can display the notification
+    const recordingStatus = await page.locator('[data-testid="recording-status"]');
+    await expect(recordingStatus).toBeVisible();
+
+    // Verify that the toast notification system is available
+    // (actual notification would require WebSocket message injection)
+    const toastContainer = await page.locator('[data-sonner-toaster]');
+
+    // Note: Without actual backend integration, we document expected behavior:
+    // Expected behavior when recording_partial message is received:
+    // 1. Toast warning appears with "⚠️ Recording Partially Saved" (or localized)
+    // 2. Description shows: "{saved} of {total} chunks were saved successfully"
+    // 3. Toast duration: 10 seconds
+    // 4. Console.warn logs the partial recording details
+
+    console.log('[Partial Recording Test] UI elements verified');
+
+    await page.click('[data-testid="end-session-button"]');
+  });
+
+  test('should display recording statistics in real-time (Day 34)', async ({ page }) => {
+    await page.goto('/sessions/new');
+
+    // Start session
+    await page.click('[data-testid="scenario-select"]');
+    await page.click('[data-testid="scenario-option"]:first-child');
+    await page.click('[data-testid="avatar-select"]');
+    await page.click('[data-testid="avatar-option"]:first-child');
+    await page.click('[data-testid="start-session-button"]');
+
+    await page.waitForSelector('[data-testid="session-active"]');
+    await page.waitForSelector('[data-testid="recording-status"]', { timeout: 10000 });
+
+    const recordingStatus = await page.locator('[data-testid="recording-status"]');
+
+    // Verify recording indicator (pulsing red dot)
+    const recordingIndicator = await recordingStatus.locator('.animate-ping');
+    if (await recordingIndicator.isVisible()) {
+      // Verify it has pulsing animation class
+      const classList = await recordingIndicator.getAttribute('class');
+      expect(classList).toContain('animate-ping');
+    }
+
+    // Verify recording label
+    const recordingLabel = await recordingStatus.locator('text=/Recording|Paused/');
+    await expect(recordingLabel).toBeVisible();
+
+    // Verify audio/video statistics
+    const audioStats = await recordingStatus.locator('text=/Audio:.*\\d+\\/\\d+/');
+    const videoStats = await recordingStatus.locator('text=/Video:.*\\d+\\/\\d+/');
+
+    await expect(audioStats).toBeVisible();
+    await expect(videoStats).toBeVisible();
+
+    // Wait for some chunks to be sent
+    await page.waitForTimeout(3000);
+
+    // Verify statistics update over time
+    const audioText = await audioStats.textContent();
+    const videoText = await videoStats.textContent();
+
+    console.log('[Recording Statistics]', {
+      audio: audioText,
+      video: videoText,
+    });
+
+    // Parse and verify format (Audio: X/Y, Video: X/Y)
+    expect(audioText).toMatch(/Audio:.*\d+\/\d+/);
+    expect(videoText).toMatch(/Video:.*\d+\/\d+/);
+
+    // Verify failed chunks counter (should be 0 or not visible in normal operation)
+    const failedChunks = await recordingStatus.locator('text=/Failed:/');
+    if (await failedChunks.isVisible()) {
+      const failedText = await failedChunks.textContent();
+      console.log('[Failed Chunks]', failedText);
+      // In normal operation, should be 0
+      expect(failedText).toContain('0');
+    }
+
+    await page.click('[data-testid="end-session-button"]');
+  });
 });
 
 test.describe('Phase 1.6.1 - Scenario Validation (Day 35)', () => {

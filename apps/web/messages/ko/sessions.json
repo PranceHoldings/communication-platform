@@ -174,7 +174,10 @@
       "authenticationTimeout": "Authentication timeout. Please try again.",
       "processingComplete": "Processing Complete",
       "lowVolumeWarning": "⚠️ 마이크 볼륨이 매우 낮습니다. 더 크게 말하거나 마이크 설정을 확인하세요.",
-      "audioTooQuiet": "오디오 레벨이 너무 낮습니다. 마이크에 더 가까이 말하세요."
+      "audioTooQuiet": "오디오 레벨이 너무 낮습니다. 마이크에 더 가까이 말하세요.",
+      "partialRecording": "⚠️ 녹화가 부분적으로 저장됨",
+      "partialRecordingDescription": "처리 중 오류가 발생했습니다. {total}개 청크 중 {saved}개가 성공적으로 저장되었습니다.",
+      "aiFallbackUsed": "일시적인 문제로 인해 AI가 대체 응답을 사용하고 있습니다."
     },
     "noSpeech": {
       "guidance": "음성이 감지되지 않았습니다. 더 크게 말하거나 마이크에 가까이 가세요.",
@@ -205,7 +208,8 @@
     "completed": {
       "title": "Session Completed",
       "duration": "Duration",
-      "messageCount": "{count} messages"
+      "messageCount": "{count} messages",
+      "turnLimitReached": "대화가 {turnCount}턴 후에 완료되었습니다."
     },
     "info": {
       "scenario": "Scenario",
@@ -247,6 +251,20 @@
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
         "notSupported": "Recording is not supported in your browser"
       }
+    },
+    "validation": {
+      "cannotStart": "세션을 시작할 수 없습니다",
+      "warningsDetected": "시나리오 경고가 감지되었습니다",
+      "warningsMessage": "시나리오 구성에서 다음 경고가 감지되었습니다:",
+      "proceedAnyway": "계속하시겠습니까?",
+      "sessionCancelled": "세션 시작이 취소되었습니다",
+      "titleRequired": "시나리오 제목은 필수입니다",
+      "languageRequired": "시나리오 언어는 필수입니다",
+      "systemPromptRequired": "시스템 프롬프트는 필수입니다",
+      "initialGreetingMissing": "초기 인사말이 설정되지 않았습니다. AI는 사용자의 발언을 기다립니다.",
+      "silenceTimeoutTooShort": "침묵 시간 초과가 매우 짧습니다. 늘리는 것을 고려하세요.",
+      "systemPromptTooLong": "시스템 프롬프트가 매우 깁니다. AI 응답 품질에 영향을 줄 수 있습니다.",
+      "systemPromptTooShort": "시스템 프롬프트가 매우 짧습니다. 더 많은 컨텍스트를 추가하는 것을 고려하세요."
     }
   },
   "errors": {
