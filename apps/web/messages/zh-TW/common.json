@@ -59,5 +59,12 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "avatar": {
+    "fallback": {
+      "title": "頭像不可用",
+      "message": "無法載入頭像，但會話將正常繼續。",
+      "errorDetails": "錯誤詳情"
+    }
   }
 }

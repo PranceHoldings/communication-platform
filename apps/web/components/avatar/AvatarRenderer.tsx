@@ -1,7 +1,9 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { ThreeDAvatar } from './ThreeDAvatar';
+import { ThreeDAvatar } from './ThreeDAvatar.client';
+import { AvatarFallback } from './AvatarFallback';
+import { ErrorBoundary } from '../ErrorBoundary';
 import type { AvatarEmotion } from '@/lib/avatar/blendshape-controller';
 
 export type AvatarType = 'TWO_D' | 'THREE_D' | 'STATIC_IMAGE';
@@ -98,15 +100,33 @@ export const AvatarRenderer = forwardRef<AvatarRendererRef, AvatarRendererProps>
     if (type === 'THREE_D') {
       return (
         <div ref={containerRef} style={{ width, height }}>
-          <ThreeDAvatar
-            modelUrl={modelUrl || '/models/default-avatar.glb'}
-            width={width}
-            height={height}
-            lipSyncData={currentLipSync}
-            emotion={currentEmotion}
-            onReady={handleThreeDReady}
-            autoRotate={false}
-          />
+          <ErrorBoundary
+            fallback={(error) => (
+              <AvatarFallback
+                width={width}
+                height={height}
+                error={error}
+                showDetails={process.env.NODE_ENV === 'development'}
+              />
+            )}
+            onError={(error, errorInfo) => {
+              console.error('[AvatarRenderer] Three.js error caught:', {
+                error: error.message,
+                stack: error.stack,
+                componentStack: errorInfo.componentStack,
+              });
+            }}
+          >
+            <ThreeDAvatar
+              modelUrl={modelUrl || '/models/default-avatar.glb'}
+              width={width}
+              height={height}
+              lipSyncData={currentLipSync}
+              emotion={currentEmotion}
+              onReady={handleThreeDReady}
+              autoRotate={false}
+            />
+          </ErrorBoundary>
         </div>
       );
     }

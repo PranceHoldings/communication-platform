@@ -8,6 +8,6 @@
  */
 
 export { AvatarRenderer } from './AvatarRenderer';
-export { ThreeDAvatar } from './ThreeDAvatar';
+export { ThreeDAvatar } from './ThreeDAvatar.client';
 
 export type { AvatarRendererProps, AvatarRendererRef, AvatarType } from './AvatarRenderer';

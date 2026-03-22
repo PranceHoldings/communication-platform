@@ -59,5 +59,12 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "avatar": {
+    "fallback": {
+      "title": "아바타를 사용할 수 없습니다",
+      "message": "아바타를 로드할 수 없지만 세션은 정상적으로 계속됩니다.",
+      "errorDetails": "오류 세부 정보"
+    }
   }
 }

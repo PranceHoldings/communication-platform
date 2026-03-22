@@ -63,5 +63,12 @@
     "connected": "Connected",
     "reconnecting": "Reconnecting... ({attempt}/{maxAttempts})",
     "error": "Connection Error"
+  },
+  "avatar": {
+    "fallback": {
+      "title": "Avatar Unavailable",
+      "message": "The avatar could not be loaded, but the session will continue normally.",
+      "errorDetails": "Error Details"
+    }
   }
 }

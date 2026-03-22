@@ -59,5 +59,12 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "avatar": {
+    "fallback": {
+      "title": "Avatar nicht verfügbar",
+      "message": "Der Avatar konnte nicht geladen werden, aber die Sitzung wird normal fortgesetzt.",
+      "errorDetails": "Fehlerdetails"
+    }
   }
 }

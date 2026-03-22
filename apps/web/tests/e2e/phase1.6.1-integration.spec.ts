@@ -33,10 +33,17 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     await newSessionPage.selectAvatar(0);
     await newSessionPage.clickNext();
 
-    // Start session (Create button)
+    // Create session (Create button)
     await page.click('button:has-text("Create"), button:has-text("作成")');
-    // Wait for session to be active (check for recording status or page URL)
+    // Wait for session detail page to load
     await page.waitForURL('**/dashboard/sessions/**', { timeout: 30000 });
+
+    // Wait for and click the Start button on session detail page
+    await page.waitForSelector('[data-testid="start-button"]', {
+      timeout: 15000,
+      state: 'visible'
+    });
+    await page.click('[data-testid="start-button"]');
 
     // Wait for recording status to appear (session must be ACTIVE first)
     await page.waitForSelector('[data-testid="recording-status"]', {
@@ -104,12 +111,25 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     await newSessionPage.selectAvatar(0);
     await newSessionPage.clickNext();
 
-    // Start session (Create button)
+    // Create session (Create button)
     await page.click('button:has-text("Create"), button:has-text("作成")');
 
-    // Wait for session to be active (navigation + network idle)
+    // Wait for session detail page to load
     await page.waitForURL('**/dashboard/sessions/**', { timeout: 30000 });
     await page.waitForLoadState('networkidle', { timeout: 10000 });
+
+    // Wait for and click the Start button
+    await page.waitForSelector('[data-testid="start-button"]', {
+      timeout: 15000,
+      state: 'visible'
+    });
+    await page.click('[data-testid="start-button"]');
+
+    // Wait for recording to start
+    await page.waitForSelector('[data-testid="recording-status"]', {
+      timeout: 15000,
+      state: 'visible'
+    });
 
     // Check for any failed chunk indicators
     const failedChunks = await page.locator('[data-testid="recording-status"] >> text=/Failed:/');
@@ -131,15 +151,22 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     await newSessionPage.selectAvatar(0);
     await newSessionPage.clickNext();
 
-    // Start session (Create button)
+    // Create session (Create button)
     await page.click('button:has-text("Create"), button:has-text("作成")');
 
-    // Wait for session to be active (navigation + network idle)
+    // Wait for session detail page to load
     await page.waitForURL('**/dashboard/sessions/**', { timeout: 30000 });
     await page.waitForLoadState('networkidle', { timeout: 10000 });
 
+    // Wait for and click the Start button
+    await page.waitForSelector('[data-testid="start-button"]', {
+      timeout: 15000,
+      state: 'visible'
+    });
+    await page.click('[data-testid="start-button"]');
+
     // Wait for recording to start (recording-status should be visible)
-    await page.waitForSelector('[data-testid="recording-status"]', { timeout: 10000 });
+    await page.waitForSelector('[data-testid="recording-status"]', { timeout: 15000 });
 
     // End session
     await page.click('[data-testid="stop-button"]');
@@ -160,12 +187,25 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     await newSessionPage.selectAvatar(0);
     await newSessionPage.clickNext();
 
-    // Start session (Create button)
+    // Create session (Create button)
     await page.click('button:has-text("Create"), button:has-text("作成")');
 
-    // Wait for session to be active (navigation + network idle)
+    // Wait for session detail page to load
     await page.waitForURL('**/dashboard/sessions/**', { timeout: 30000 });
     await page.waitForLoadState('networkidle', { timeout: 10000 });
+
+    // Wait for and click the Start button
+    await page.waitForSelector('[data-testid="start-button"]', {
+      timeout: 15000,
+      state: 'visible'
+    });
+    await page.click('[data-testid="start-button"]');
+
+    // Wait for recording to start
+    await page.waitForSelector('[data-testid="recording-status"]', {
+      timeout: 15000,
+      state: 'visible'
+    });
 
     // Inject mock recording_partial message via WebSocket
     // This would require either:
@@ -201,13 +241,22 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     await newSessionPage.selectAvatar(0);
     await newSessionPage.clickNext();
 
-    // Start session (Create button)
+    // Create session (Create button)
     await page.click('button:has-text("Create"), button:has-text("作成")');
 
-    // Wait for session to be active (navigation + network idle)
+    // Wait for session detail page to load
     await page.waitForURL('**/dashboard/sessions/**', { timeout: 30000 });
     await page.waitForLoadState('networkidle', { timeout: 10000 });
-    await page.waitForSelector('[data-testid="recording-status"]', { timeout: 10000 });
+
+    // Wait for and click the Start button
+    await page.waitForSelector('[data-testid="start-button"]', {
+      timeout: 15000,
+      state: 'visible'
+    });
+    await page.click('[data-testid="start-button"]');
+
+    // Wait for recording to start
+    await page.waitForSelector('[data-testid="recording-status"]', { timeout: 15000 });
 
     const recordingStatus = await page.locator('[data-testid="recording-status"]');
 
@@ -493,12 +542,25 @@ test.describe('Phase 1.6.1 - Performance Benchmarks', () => {
     await newSessionPage.selectAvatar(0);
     await newSessionPage.clickNext();
 
-    // Start session (Create button)
+    // Create session (Create button)
     await page.click('button:has-text("Create"), button:has-text("作成")');
 
-    // Wait for session to be active (navigation + network idle)
+    // Wait for session detail page to load
     await page.waitForURL('**/dashboard/sessions/**', { timeout: 30000 });
     await page.waitForLoadState('networkidle', { timeout: 10000 });
+
+    // Wait for and click the Start button
+    await page.waitForSelector('[data-testid="start-button"]', {
+      timeout: 15000,
+      state: 'visible'
+    });
+    await page.click('[data-testid="start-button"]');
+
+    // Wait for session to become active
+    await page.waitForSelector('[data-testid="recording-status"]', {
+      timeout: 15000,
+      state: 'visible'
+    });
 
     // Wait for auto-greeting or first AI message (dynamic wait)
     await page.waitForSelector('[data-testid="transcript-message"], [data-testid="ai-message"]', {

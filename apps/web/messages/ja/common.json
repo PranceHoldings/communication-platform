@@ -63,5 +63,12 @@
     "connected": "接続済み",
     "reconnecting": "再接続中... ({attempt}/{maxAttempts})",
     "error": "接続エラー"
+  },
+  "avatar": {
+    "fallback": {
+      "title": "アバターが利用できません",
+      "message": "アバターを読み込めませんでしたが、セッションは正常に続行されます。",
+      "errorDetails": "エラーの詳細"
+    }
   }
 }

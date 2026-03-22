@@ -59,5 +59,12 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "avatar": {
+    "fallback": {
+      "title": "Avatar indisponível",
+      "message": "Não foi possível carregar o avatar, mas a sessão continuará normalmente.",
+      "errorDetails": "Detalhes do erro"
+    }
   }
 }
