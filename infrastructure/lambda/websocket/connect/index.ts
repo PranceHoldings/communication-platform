@@ -7,13 +7,14 @@ import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { verifyToken } from '../../shared/auth/jwt';
+import { getDynamoDbConnectionTtlSeconds } from '../../shared/utils/env-validator';
+import { getAwsRegion, getConnectionsTableName } from '../../shared/config';
 
 const dynamoDb = DynamoDBDocumentClient.from(
-  new DynamoDBClient({ region: process.env.AWS_REGION })
+  new DynamoDBClient({ region: getAwsRegion() })
 );
 
-const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE_NAME!;
-const CONNECTION_TTL = 3600 * 4; // 4 hours
+const CONNECTIONS_TABLE = getConnectionsTableName();
 
 // Extended event type with query string parameters
 interface WebSocketConnectEvent {
@@ -69,7 +70,7 @@ export const handler = async (event: WebSocketConnectEvent): Promise<APIGatewayP
           userId: userId,
           org_id: orgId,
           connected_at: timestamp,
-          ttl: Math.floor(timestamp / 1000) + CONNECTION_TTL,
+          ttl: Math.floor(timestamp / 1000) + getDynamoDbConnectionTtlSeconds(),
         },
       })
     );

@@ -8,12 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import { RekognitionAnalyzer } from './rekognition';
 import { AudioAnalyzer } from './audio-analyzer';
 import { ScoreCalculator } from './score-calculator';
-import type {
-  EmotionAnalysis,
-  AudioAnalysis,
-  SessionScore,
-  ScoringCriteria,
-} from '@prance/shared';
+import type { EmotionAnalysis, AudioAnalysis, SessionScore, ScoringCriteria } from '@prance/shared';
 
 export interface AnalysisOrchestratorConfig {
   s3Client: S3Client;
@@ -54,10 +49,7 @@ export class AnalysisOrchestrator {
   /**
    * Orchestrate full analysis pipeline for a session
    */
-  async analyzeSession(
-    sessionId: string,
-    criteria?: ScoringCriteria
-  ): Promise<AnalysisResult> {
+  async analyzeSession(sessionId: string, criteria?: ScoringCriteria): Promise<AnalysisResult> {
     const startTime = Date.now();
 
     console.log('[AnalysisOrchestrator] Starting full analysis', {
@@ -145,8 +137,7 @@ export class AnalysisOrchestrator {
 
       // Update session with error status
       await this.updateSessionStatus(sessionId, 'ERROR', {
-        analysisError:
-          error instanceof Error ? error.message : 'Unknown error',
+        analysisError: error instanceof Error ? error.message : 'Unknown error',
         analysisErrorAt: new Date().toISOString(),
       });
 
@@ -212,9 +203,7 @@ export class AnalysisOrchestrator {
       const audioAnalyses: AudioAnalysis[] = [];
 
       // Combine all USER transcripts into one text
-      const fullTranscript = transcripts
-        .map((t) => t.text)
-        .join(' ');
+      const fullTranscript = transcripts.map(t => t.text).join(' ');
 
       console.log('[AnalysisOrchestrator] Analyzing audio', {
         transcriptsCount: transcripts.length,
@@ -317,8 +306,8 @@ export class AnalysisOrchestrator {
     audioAnalyses: AudioAnalysis[],
     criteria?: ScoringCriteria
   ): Promise<SessionScore> {
-    // Calculate score
-    const scoreResult = this.scoreCalculator.calculateScore(
+    // Calculate score (now async to support runtime configuration)
+    const scoreResult = await this.scoreCalculator.calculateScore(
       emotionAnalyses,
       audioAnalyses,
       criteria || { preset: 'default' }

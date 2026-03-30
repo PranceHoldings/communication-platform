@@ -1,0 +1,26 @@
+version: 1
+applications:
+  - frontend:
+      phases:
+        preBuild:
+          commands:
+            - echo "Installing monorepo dependencies..."
+            - npm install
+            - echo "Dependencies installed successfully"
+        build:
+          commands:
+            - echo "Building Next.js app in apps/web..."
+            - cd apps/web
+            - npm run build
+      artifacts:
+        baseDirectory: apps/web/.next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+          - apps/web/.next/cache/**/*
+    env:
+      variables:
+        NODE_ENV: production
+        AMPLIFY_MONOREPO_APP_ROOT: apps/web

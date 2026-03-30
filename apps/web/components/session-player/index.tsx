@@ -16,19 +16,25 @@ import {
   ProcessingUpdateMessage,
   SessionCompleteMessage,
   ErrorMessage,
+  RecordingPartialMessage,
 } from '@/hooks/useWebSocket';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useVideoRecorder } from '@/hooks/useVideoRecorder';
 import { useAudioVisualizer } from '@/hooks/useAudioVisualizer';
-import { useErrorMessage } from '@/hooks/useErrorMessage';
+import { useAudioBuffer } from '@/hooks/useAudioBuffer';
+import { useErrorMessage, type ErrorDetails } from '@/hooks/useErrorMessage';
 import { useSilenceTimer } from '@/hooks/useSilenceTimer';
 import { checkBrowserCapabilities, getRecommendedBrowserMessage } from '@/lib/browser-check';
+import { validateScenario, formatValidationErrors, formatValidationWarnings } from '@/lib/scenario-validator';
 import { VideoComposer } from './video-composer';
 import { WaveformDisplay } from '@/components/audio-visualizer/WaveformDisplay';
 import { ProcessingIndicator, ProcessingStage } from './ProcessingIndicator';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
+import { AvatarRenderer, type AvatarRendererRef } from '@/components/avatar';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
+import { ConnectionStatus, ErrorGuidance, useConnectionState } from '@/components/error-handling';
 
 type SessionPlayerStatus = 'IDLE' | 'READY' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
 
@@ -46,11 +52,60 @@ interface TranscriptItem {
   partial?: boolean;
 }
 
+/**
+ * Sanitize avatar model URL to prevent DNS resolution errors
+ * Falls back to local test model if external URL is unreachable
+ */
+function sanitizeModelUrl(modelUrl: string | undefined): string {
+  if (!modelUrl) {
+    return '/models/avatars/test-model.glb';
+  }
+
+  // If external URL (not starting with /), use fallback
+  // This prevents ERR_NAME_NOT_RESOLVED errors from unreachable external domains
+  if (modelUrl.startsWith('http://') || modelUrl.startsWith('https://')) {
+    console.warn('[SessionPlayer] External model URL detected, using fallback:', modelUrl);
+    return '/models/avatars/test-model.glb';
+  }
+
+  return modelUrl;
+}
+
+/**
+ * Sanitize thumbnail URL to prevent DNS resolution errors
+ */
+function sanitizeThumbnailUrl(thumbnailUrl: string | undefined): string | undefined {
+  if (!thumbnailUrl) {
+    return undefined; // AvatarRenderer will handle undefined
+  }
+
+  // If external URL, return undefined to avoid DNS errors
+  if (thumbnailUrl.startsWith('http://') || thumbnailUrl.startsWith('https://')) {
+    console.warn('[SessionPlayer] External thumbnail URL detected, using fallback:', thumbnailUrl);
+    return undefined;
+  }
+
+  return thumbnailUrl;
+}
+
 export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps) {
   const { t } = useI18n();
   const { getErrorMessage, getMicrophoneInstructions } = useErrorMessage();
   const [status, setStatus] = useState<SessionPlayerStatus>('IDLE');
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
+
+  // Debug: Log SessionPlayer initialization
+  useEffect(() => {
+    console.log('[SessionPlayer] Initializing with:', {
+      sessionId: session.id,
+      sessionStatus: session.status,
+      avatarName: avatar.name,
+      avatarType: avatar.type,
+      originalModelUrl: avatar.modelUrl,
+      sanitizedModelUrl: sanitizeModelUrl(avatar.modelUrl),
+      scenarioTitle: scenario.title,
+    });
+  }, [session.id, session.status, avatar, scenario]);
   const [currentTime, setCurrentTime] = useState(0);
   const [token, setToken] = useState<string | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -64,6 +119,52 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [ariaLiveMessage, setAriaLiveMessage] = useState<string>('');
   const [isCameraActive, setIsCameraActive] = useState(false);
 
+  // Error handling state (Phase 1.6)
+  const [currentError, setCurrentError] = useState<ErrorDetails | null>(null);
+
+  // Phase 1.6.1 Day 36: Scenario validation confirm dialog
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    warnings: string;
+  }>({
+    isOpen: false,
+    warnings: '',
+  });
+  const [validationConfirmed, setValidationConfirmed] = useState(false);
+
+  // Phase 1.6.1: ACK tracking for reliable chunk transmission
+  interface PendingChunk {
+    chunkId: string;
+    data: ArrayBuffer;
+    timestamp: number;
+    sequenceNumber: number;
+    sentAt: number;
+    retryCount: number;
+    type: 'audio' | 'video';
+  }
+
+  interface ChunkStats {
+    audioSent: number;
+    audioAcked: number;
+    videoSent: number;
+    videoAcked: number;
+    failedChunks: string[];
+  }
+
+  const [pendingChunks, setPendingChunks] = useState<Map<string, PendingChunk>>(new Map());
+  const [chunkStats, setChunkStats] = useState<ChunkStats>({
+    audioSent: 0,
+    audioAcked: 0,
+    videoSent: 0,
+    videoAcked: 0,
+    failedChunks: [],
+  });
+  const ackTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  // ACK tracking constants
+  const ACK_TIMEOUT_MS = 5000; // 5 seconds
+  const MAX_RETRIES = 3;
+
   // Silence management state
   const [initialGreetingCompleted, setInitialGreetingCompleted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -75,6 +176,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sessionEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const disconnectRef = useRef<(() => void) | null>(null);
+  const audioBufferRef = useRef<any>(null);
 
   // Timeout detection
   const processingStartTimeRef = useRef<number | null>(null);
@@ -82,7 +184,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const PROCESSING_TIMEOUT_MS = 30000; // 30 seconds
 
   // 録画機能用のref
-  const avatarCanvasRef = useRef<HTMLCanvasElement>(null);
+  const avatarRef = useRef<AvatarRendererRef>(null);
+  const avatarCanvasRef = useRef<HTMLCanvasElement | null>(null); // AvatarRendererから取得したcanvasを保持
   const userVideoRef = useRef<HTMLVideoElement>(null);
   const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null); // VideoComposerから受け取ったcanvasを保持（useVideoRecorderに渡す）
 
@@ -103,6 +206,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const accessToken = localStorage.getItem('accessToken');
+      console.log('[SessionPlayer] Retrieved access token:', {
+        hasToken: !!accessToken,
+        tokenLength: accessToken?.length,
+        tokenPrefix: accessToken?.substring(0, 20) + '...',
+      });
       setToken(accessToken);
     }
   }, []);
@@ -197,7 +305,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         if (message.speaker === 'USER') {
           if (pendingSessionEnd) {
             // セッション停止後の文字起こし - AI処理はスキップ
-            console.log('[SessionPlayer] Transcript received after session stop, sending session_end');
+            console.log(
+              '[SessionPlayer] Transcript received after session stop, sending session_end'
+            );
             setIsProcessing(false);
             setProcessingStage('idle');
             setProcessingMessage('');
@@ -230,6 +340,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleAvatarResponse = useCallback(
     (message: AvatarResponseMessage) => {
+      const timestamp = new Date().toISOString();
+      console.log(`[WS_SEQ ${timestamp}] SessionPlayer.handleAvatarResponse: ${message.type}`, message.text?.substring(0, 50));
       // AIアバターの応答
       if (message.type === 'avatar_response_partial') {
         // Partial AI response - update transcript
@@ -265,9 +377,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         setProcessingMessage('');
       } else if (message.type === 'avatar_response_final') {
         // Final AI response
+        const timestamp2 = new Date().toISOString();
+        console.log(`[WS_SEQ ${timestamp2}] SessionPlayer: Adding avatar_response_final to transcript:`, message.text?.substring(0, 50));
         setTranscript(prev => {
+          console.log(`[WS_SEQ ${timestamp2}] SessionPlayer: Previous transcript length:`, prev.length);
           const filtered = prev.filter(item => !item.partial || item.speaker !== 'AI');
-          return [
+          console.log(`[WS_SEQ ${timestamp2}] SessionPlayer: After filtering partial AI, length:`, filtered.length);
+          const newTranscript = [
             ...filtered,
             {
               id: `ai-${message.timestamp}`,
@@ -277,6 +393,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               partial: false,
             },
           ];
+          console.log(`[WS_SEQ ${timestamp2}] SessionPlayer: NEW transcript length:`, newTranscript.length);
+          return newTranscript;
         });
 
         // Clear processing timeout (AI response received successfully)
@@ -521,6 +639,23 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleError = useCallback(
     (message: ErrorMessage) => {
+      // Phase 1.6: Handle rate limit errors with retry guidance
+      if (message.code === 'RATE_LIMIT_EXCEEDED') {
+        console.warn('[SessionPlayer] Rate limit exceeded:', message);
+        const details = message.details as any;
+        const retryAfter = (details?.retryAfter as number) || 1;
+        toast.warning(
+          t('errors.rateLimit.message', {
+            seconds: retryAfter,
+          }),
+          {
+            duration: 5000,
+            description: t('errors.rateLimit.guidance'),
+          }
+        );
+        return; // Don't treat as critical error
+      }
+
       // Filter non-critical errors (user silence is normal during AI responses)
       const isNonCritical =
         message.code === 'NO_AUDIO_DATA' ||
@@ -548,13 +683,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       }
       processingStartTimeRef.current = null;
 
-      // Get user-friendly error message
-      const errorMessage = getErrorMessage({
+      // Set error for ErrorGuidance component (Phase 1.6)
+      const errorDetails: ErrorDetails = {
         code: message.code || 'UNKNOWN_ERROR',
-        message: message.message,
-        originalError: message.details as string,
-      });
+        message: message.message || 'An unknown error occurred',
+        originalError: message.details ? JSON.stringify(message.details, null, 2) : undefined,
+      };
+      setCurrentError(errorDetails);
 
+      // Get user-friendly error message
+      const errorMessage = getErrorMessage(errorDetails);
+
+      // Show toast notification as well
       toast.error(errorMessage, {
         duration: 8000,
         action: message.code?.includes('MICROPHONE')
@@ -613,6 +753,209 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     [t]
   );
 
+  // Phase 1.6.1 Day 36: Handle session limit reached
+  const handleSessionLimitReached = useCallback(
+    (message: import('@prance/shared').SessionLimitReachedMessage) => {
+      console.log('[SessionPlayer] Session limit reached:', message);
+
+      // Stop all activity
+      setStatus('COMPLETED');
+      setIsProcessing(false);
+      setProcessingStage('idle');
+      setProcessingMessage('');
+
+      // Show toast notification
+      toast.info(message.message, {
+        duration: 10000,
+        description: t('sessions.player.completed.turnLimitReached', {
+          defaultValue: `Conversation completed after ${message.turnCount} turns.`,
+          turnCount: message.turnCount,
+        }),
+      });
+
+      // Disconnect WebSocket using ref to avoid TDZ error
+      setTimeout(() => {
+        if (disconnectRef.current) {
+          disconnectRef.current();
+        }
+      }, 1000);
+    },
+    [t]
+  );
+
+  // Phase 1.6.1 Day 36: Handle AI fallback response
+  const handleAIFallback = useCallback(
+    (message: import('@prance/shared').AIFallbackMessage) => {
+      console.log('[SessionPlayer] AI fallback response:', message);
+
+      // Add fallback response to transcript
+      setTranscript(prev => [
+        ...prev,
+        {
+          id: `fallback-${Date.now()}`,
+          sessionId: session.id,
+          speaker: 'AI' as const,
+          text: message.message,
+          timestampStart: message.timestamp,
+          timestampEnd: message.timestamp,
+          confidence: 1.0,
+        },
+      ]);
+
+      // Show subtle warning that fallback was used
+      toast.warning(t('sessions.player.messages.aiFallbackUsed', {
+        defaultValue: 'AI is using a fallback response due to a temporary issue.',
+      }), {
+        duration: 3000,
+      });
+
+      // Reset processing flag
+      setIsProcessing(false);
+      setProcessingStage('idle');
+      setProcessingMessage('');
+    },
+    [session.id, t]
+  );
+
+  // Phase 1.6.1: ACK timeout handler with exponential backoff retry
+  const handleAckTimeout = useCallback(
+    (chunkId: string) => {
+      console.log('[SessionPlayer] ACK timeout:', chunkId);
+
+      setPendingChunks(prev => {
+        const pending = prev.get(chunkId);
+
+        if (!pending) {
+          console.warn('[SessionPlayer] Timeout for unknown chunk:', chunkId);
+          return prev;
+        }
+
+        // Maximum retries exceeded
+        if (pending.retryCount >= MAX_RETRIES) {
+          console.error(
+            `[SessionPlayer] Chunk failed after ${MAX_RETRIES} retries:`,
+            chunkId
+          );
+
+          // Remove from pending
+          const next = new Map(prev);
+          next.delete(chunkId);
+
+          // Add to failed list
+          setChunkStats(stats => ({
+            ...stats,
+            failedChunks: [...stats.failedChunks, chunkId],
+          }));
+
+          // Error notification
+          toast.error(
+            `Failed to send ${pending.type} chunk after ${MAX_RETRIES} retries`,
+            { duration: 5000 }
+          );
+
+          return next;
+        }
+
+        // Retry with exponential backoff
+        const delayMs = Math.pow(2, pending.retryCount) * 100; // 100ms, 200ms, 400ms
+
+        console.log(
+          `[SessionPlayer] Retrying chunk ${chunkId} (attempt ${pending.retryCount + 1}/${MAX_RETRIES}) after ${delayMs}ms`
+        );
+
+        setTimeout(() => {
+          // Update retry count
+          setPendingChunks(chunks => {
+            const updated = new Map(chunks);
+            const chunk = updated.get(chunkId);
+            if (chunk) {
+              chunk.retryCount++;
+              chunk.sentAt = Date.now();
+            }
+            return updated;
+          });
+
+          // Resend chunk
+          if (pending.type === 'audio') {
+            audioBufferRef.current?.addChunk(pending.data, pending.timestamp);
+          } else {
+            // Video chunk resend
+            sendVideoChunkRef.current?.(
+              new Blob([pending.data]),
+              pending.timestamp
+            );
+          }
+
+          // Set new timeout
+          const timeoutId = setTimeout(() => {
+            handleAckTimeout(chunkId);
+          }, ACK_TIMEOUT_MS);
+
+          ackTimeoutsRef.current.set(chunkId, timeoutId);
+        }, delayMs);
+
+        return prev;
+      });
+    },
+    [MAX_RETRIES, ACK_TIMEOUT_MS, toast]
+  );
+
+  // Phase 1.6.1: Handle chunk ACK from backend
+  const handleChunkAck = useCallback(
+    (message: any) => {
+      const { chunkId, status, error } = message;
+
+      console.log('[SessionPlayer] Chunk ACK received:', {
+        chunkId,
+        status,
+        error: error?.code,
+      });
+
+      setPendingChunks(prev => {
+        const pending = prev.get(chunkId);
+
+        if (!pending) {
+          console.warn('[SessionPlayer] ACK for unknown/processed chunk:', chunkId);
+          return prev;
+        }
+
+        // Clear timeout
+        const timeoutId = ackTimeoutsRef.current.get(chunkId);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          ackTimeoutsRef.current.delete(chunkId);
+        }
+
+        // Handle error status
+        if (status === 'error') {
+          console.error('[SessionPlayer] Chunk error:', error);
+          // Retry on error
+          handleAckTimeout(chunkId);
+          return prev;
+        }
+
+        // Handle duplicate (treat as success)
+        if (status === 'duplicate') {
+          console.warn('[SessionPlayer] Duplicate chunk detected:', chunkId);
+        }
+
+        // Remove from pending (success)
+        const next = new Map(prev);
+        next.delete(chunkId);
+
+        // Update statistics
+        setChunkStats(stats => ({
+          ...stats,
+          [pending.type === 'audio' ? 'audioAcked' : 'videoAcked']:
+            stats[pending.type === 'audio' ? 'audioAcked' : 'videoAcked'] + 1,
+        }));
+
+        return next;
+      });
+    },
+    [handleAckTimeout]
+  );
+
   const handleAuthenticated = useCallback(
     (sessionId: string, receivedInitialGreeting?: string) => {
       console.log('[SessionPlayer] WebSocket authenticated:', {
@@ -638,6 +981,27 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       }
 
       toast.success(t('sessions.player.messages.authenticated'));
+    },
+    [t]
+  );
+
+  // Phase 1.6.1: Handle partial recording notification
+  const handleRecordingPartial = useCallback(
+    (message: RecordingPartialMessage) => {
+      console.warn('[SessionPlayer] Partial recording notification:', {
+        savedChunks: message.savedChunks,
+        totalChunks: message.totalChunks,
+        sessionId: message.sessionId,
+      });
+
+      // Show toast notification to user
+      toast.warning(t('sessions.player.messages.partialRecording'), {
+        description: t('sessions.player.messages.partialRecordingDescription', {
+          saved: message.savedChunks,
+          total: message.totalChunks,
+        }),
+        duration: 10000, // 10 seconds
+      });
     },
     [t]
   );
@@ -676,6 +1040,43 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onError: handleError,
     onNoSpeechDetected: handleNoSpeechDetected, // New: No speech detected guidance
     onAuthenticated: handleAuthenticated,
+    onChunkAck: handleChunkAck, // Phase 1.6.1: Chunk ACK tracking
+    onRecordingPartial: handleRecordingPartial, // Phase 1.6.1: Partial recording notification
+    onSessionLimitReached: handleSessionLimitReached, // Phase 1.6.1 Day 36: Max conversation turns
+    onAIFallback: handleAIFallback, // Phase 1.6.1 Day 36: AI response fallback
+  });
+
+  // Connection state for ConnectionStatus component (Phase 1.6)
+  const { connectionState, reconnectAttempt, maxReconnectAttempts } = useConnectionState({
+    isConnected,
+    isConnecting,
+    error: wsError,
+  });
+
+  // Phase 1.6: Audio buffer for batching chunks (reduces network requests by 80%)
+  const sendAudioChunkToWebSocket = useCallback((data: ArrayBuffer, timestamp: number) => {
+    if (sendMessageRef.current && isConnectedRef.current && isAuthenticatedRef.current) {
+      const bytes = new Uint8Array(data);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]!);
+      }
+      const base64 = btoa(binary);
+
+      sendMessageRef.current({
+        type: 'audio_chunk_realtime',
+        data: base64,
+        timestamp,
+        sequenceNumber: 0, // Batched chunks don't need individual sequence numbers
+        contentType: 'audio/webm;codecs=opus',
+      });
+    }
+  }, []);
+
+  const audioBuffer = useAudioBuffer(sendAudioChunkToWebSocket, {
+    maxBufferSize: 10, // Buffer 10 chunks
+    batchSize: 5, // Send 5 chunks at a time
+    flushInterval: 100, // Flush every 100ms
   });
 
   // Sync WebSocket values to refs (to break circular dependencies)
@@ -686,6 +1087,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   useEffect(() => {
     sendMessageRef.current = sendMessage;
   }, [sendMessage]);
+
+  useEffect(() => {
+    disconnectRef.current = disconnect;
+  }, [disconnect]);
+
+  useEffect(() => {
+    audioBufferRef.current = audioBuffer;
+  }, [audioBuffer]);
 
   // Load organization settings on mount for fallback values
   useEffect(() => {
@@ -736,6 +1145,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       // Small delay to ensure transcript is rendered
       setTimeout(() => {
+        // Phase 1.6: Flush audio buffer before ending session
+        console.log('[SessionPlayer] Flushing audio buffer before session end');
+        audioBuffer.flush();
+
         endSession();
 
         // Set timeout to disconnect after 30 seconds if no session_complete received
@@ -752,54 +1165,65 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         toast.info(t('sessions.player.messages.processingComplete'));
       }, 100);
     }
-  }, [shouldSendSessionEnd, isConnected, endSession, t]);
+  }, [shouldSendSessionEnd, isConnected, endSession, t, audioBuffer]);
 
-  // Audio Recorder統合
+  // Audio Recorder統合 (Phase 1.6.1: ACK tracking with retry)
   const handleAudioChunk = useCallback(
-    async (chunk: Blob, timestamp: number, sequenceNumber: number) => {
-      console.log('[SessionPlayer] handleAudioChunk called (real-time mode):', {
+    async (chunk: Blob, timestamp: number, sequenceNumber: number, chunkId: string) => {
+      console.log('[SessionPlayer] handleAudioChunk called:', {
+        chunkId,
         chunkSize: chunk.size,
-        chunkType: chunk.type,
-        timestamp,
         sequenceNumber,
+        timestamp,
         isConnected,
         status,
       });
 
-      // Send audio chunk in real-time via WebSocket
-      if (isConnectedRef.current && isAuthenticatedRef.current && sendMessageRef.current) {
+      if (isConnectedRef.current && isAuthenticatedRef.current) {
         try {
-          // Convert chunk to ArrayBuffer and send as Base64
           const arrayBuffer = await chunk.arrayBuffer();
-          const bytes = new Uint8Array(arrayBuffer);
 
-          // Convert to Base64
-          let binary = '';
-          for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]!);
-          }
-          const base64 = btoa(binary);
-
-          // Send via WebSocket
-          sendMessageRef.current({
-            type: 'audio_chunk_realtime',
-            data: base64,
-            timestamp,
-            sequenceNumber,
-            contentType: chunk.type,
+          // 1. Add to pending chunks
+          setPendingChunks(prev => {
+            const next = new Map(prev);
+            next.set(chunkId, {
+              chunkId,
+              data: arrayBuffer,
+              timestamp,
+              sequenceNumber,
+              sentAt: Date.now(),
+              retryCount: 0,
+              type: 'audio',
+            });
+            return next;
           });
 
-          console.log('[SessionPlayer] Real-time audio chunk sent:', {
-            sequenceNumber,
-            size: chunk.size,
-            base64Length: base64.length,
+          // 2. Send via WebSocket (through audioBuffer)
+          audioBuffer.addChunk(arrayBuffer, timestamp);
+
+          // 3. Update statistics
+          setChunkStats(prev => ({
+            ...prev,
+            audioSent: prev.audioSent + 1,
+          }));
+
+          // 4. Set ACK timeout
+          const timeoutId = setTimeout(() => {
+            handleAckTimeout(chunkId);
+          }, ACK_TIMEOUT_MS);
+
+          ackTimeoutsRef.current.set(chunkId, timeoutId);
+
+          console.log('[SessionPlayer] Audio chunk sent:', {
+            chunkId,
+            bufferStats: audioBuffer.getStats(),
           });
         } catch (error) {
-          console.error('[SessionPlayer] Failed to send real-time audio chunk:', error);
+          console.error('[SessionPlayer] Failed to send audio chunk:', error);
         }
       }
     },
-    [isConnected, status]
+    [isConnected, status, audioBuffer, handleAckTimeout, ACK_TIMEOUT_MS]
   );
 
   const handleSpeechEnd = useCallback(() => {
@@ -913,6 +1337,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     silenceThreshold: scenario.silenceThreshold ?? 0.12, // Use scenario setting or default 0.12 (raised to avoid ambient noise ~10%)
     silenceDuration: scenario.minSilenceDuration ?? 1000, // Use scenario setting or default 1000ms (increased from 500ms to avoid cutting off mid-speech)
     isAiRespondingRef: isPlayingAudioRef, // Ref for real-time AI audio state (fixes closure issue)
+    bypassSpeechDetection: process.env.NEXT_PUBLIC_BYPASS_SPEECH_DETECTION === 'true', // Bypass for E2E tests
   });
 
   // Audio Visualizer統合
@@ -954,15 +1379,24 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       ? false // Parent setting disabled -> force child setting to false
       : (orgSettings?.showSilenceTimer ?? DEFAULT_ORG_SETTINGS.showSilenceTimer));
 
+  console.log('[SessionPlayer] effectiveShowSilenceTimer calculation:', {
+    scenarioShowSilenceTimer: scenario.showSilenceTimer,
+    orgShowSilenceTimer: orgSettings?.showSilenceTimer,
+    effectiveShowSilenceTimer,
+  });
+
   const effectiveSilenceTimeout =
     scenario.silenceTimeout ?? orgSettings?.silenceTimeout ?? DEFAULT_ORG_SETTINGS.silenceTimeout;
 
   // Resolve silencePromptTimeout (AI silence prompt timeout for frontend timer)
   const effectiveSilencePromptTimeout =
-    scenario.silencePromptTimeout ?? orgSettings?.silencePromptTimeout ?? DEFAULT_ORG_SETTINGS.silencePromptTimeout;
+    scenario.silencePromptTimeout ??
+    orgSettings?.silencePromptTimeout ??
+    DEFAULT_ORG_SETTINGS.silencePromptTimeout;
 
   // Silence Timer統合
-  const silenceTimerEnabled = status === 'ACTIVE' && initialGreetingCompleted && effectiveEnableSilencePrompt;
+  const silenceTimerEnabled =
+    status === 'ACTIVE' && initialGreetingCompleted && effectiveEnableSilencePrompt;
 
   // Debug log for silence timer conditions (DETAILED)
   useEffect(() => {
@@ -977,17 +1411,27 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         isProcessing,
       },
       effectiveSilencePromptTimeout,
-      'TIMER SHOULD START': silenceTimerEnabled && !isPlayingAudio && !isMicRecording && !isProcessing,
+      'TIMER SHOULD START':
+        silenceTimerEnabled && !isPlayingAudio && !isMicRecording && !isProcessing,
     });
-  }, [status, initialGreetingCompleted, effectiveEnableSilencePrompt, silenceTimerEnabled, isPlayingAudio, isMicRecording, isProcessing, effectiveSilencePromptTimeout]);
+  }, [
+    status,
+    initialGreetingCompleted,
+    effectiveEnableSilencePrompt,
+    silenceTimerEnabled,
+    isPlayingAudio,
+    isMicRecording,
+    isProcessing,
+    effectiveSilencePromptTimeout,
+  ]);
 
   const { elapsedTime: silenceElapsedTime, resetTimer: _resetSilenceTimer } = useSilenceTimer({
     enabled: silenceTimerEnabled,
     timeoutSeconds: effectiveSilencePromptTimeout,
     isAIPlaying: isPlayingAudio,
     isUserSpeaking: false, // ❌ FIXED: isMicRecording は常に true（マイクは常に録音中）
-                            // ユーザーが話しているかは useAudioRecorder が自動検出して speech_end 送信
-                            // 沈黙タイマーは AI再生中と処理中のみ停止すればよい
+    // ユーザーが話しているかは useAudioRecorder が自動検出して speech_end 送信
+    // 沈黙タイマーは AI再生中と処理中のみ停止すればよい
     isProcessing: isProcessing,
     onTimeout: handleSilenceTimeout,
   });
@@ -1062,6 +1506,36 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     if (status === 'IDLE') {
       console.log('[SessionPlayer] Starting WebSocket connection...');
 
+      // Phase 1.6.1 Day 36: Scenario validation (skip if already confirmed)
+      if (!validationConfirmed) {
+        console.log('[SessionPlayer] Validating scenario before start...');
+        const validation = validateScenario(scenario);
+
+        if (!validation.isValid) {
+          // Validation errors - block session start
+          console.error('[SessionPlayer] Scenario validation failed:', validation.errors);
+          const errorMessage = formatValidationErrors(validation.errors);
+
+          toast.error(t('sessions.player.validation.cannotStart'), {
+            description: errorMessage,
+            duration: 10000,
+          });
+          return;
+        }
+
+        if (validation.warnings.length > 0) {
+          // Validation warnings - show confirmation dialog
+          console.warn('[SessionPlayer] Scenario validation warnings:', validation.warnings);
+          const warningMessage = formatValidationWarnings(validation.warnings);
+
+          setConfirmDialog({
+            isOpen: true,
+            warnings: warningMessage,
+          });
+          return; // Wait for user confirmation
+        }
+      }
+
       // ユーザーカメラを取得
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -1130,7 +1604,24 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       }
       toast.success(t('sessions.player.messages.sessionResumed'));
     }
-  }, [token, status, t, startVisualizer, resumeRecording]);
+  }, [token, status, t, startVisualizer, resumeRecording, validationConfirmed, scenario]);
+
+  // Phase 1.6.1 Day 36: Scenario validation confirmation handlers
+  const handleConfirmValidation = useCallback(() => {
+    console.log('[SessionPlayer] User confirmed scenario warnings, proceeding with session start');
+    setConfirmDialog({ isOpen: false, warnings: '' });
+    setValidationConfirmed(true);
+
+    // Re-trigger handleStart (will skip validation this time)
+    setTimeout(() => handleStart(), 100);
+  }, [handleStart]);
+
+  const handleCancelValidation = useCallback(() => {
+    console.log('[SessionPlayer] User cancelled session start due to warnings');
+    setConfirmDialog({ isOpen: false, warnings: '' });
+    setValidationConfirmed(false);
+    toast.info(t('sessions.player.validation.sessionCancelled'));
+  }, [t]);
 
   const handlePause = useCallback(() => {
     if (status === 'ACTIVE') {
@@ -1207,6 +1698,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         // 5. Send session end notification immediately if no audio to process
         if (isConnectedRef.current && endSessionRef.current) {
           console.log('[SessionPlayer] No audio recorded, sending session_end immediately');
+
+          // Phase 1.6: Flush audio buffer before ending session
+          console.log('[SessionPlayer] Flushing audio buffer before session end');
+          audioBuffer.flush();
+
           endSessionRef.current();
 
           // 6. Set timeout to disconnect after 30 seconds if no session_complete received
@@ -1330,9 +1826,15 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     };
   }, [status, handleStop]);
 
-  // 録画機能 - ビデオチャンクハンドラー
+  // 録画機能 - ビデオチャンクハンドラー (Phase 1.6.1: ACK tracking with retry)
   const handleVideoChunk = useCallback(
-    async (chunk: Blob, timestamp: number) => {
+    async (chunk: Blob, timestamp: number, chunkId: string) => {
+      console.log('[SessionPlayer] handleVideoChunk called:', {
+        chunkId,
+        chunkSize: chunk.size,
+        timestamp,
+      });
+
       // 認証完了後のみビデオチャンクを送信
       if (
         isConnectedRef.current &&
@@ -1341,12 +1843,42 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         sendVideoChunkRef.current
       ) {
         try {
-          // WebSocketでビデオチャンク送信
+          const arrayBuffer = await chunk.arrayBuffer();
+
+          // 1. Add to pending chunks
+          setPendingChunks(prev => {
+            const next = new Map(prev);
+            next.set(chunkId, {
+              chunkId,
+              data: arrayBuffer,
+              timestamp,
+              sequenceNumber: 0, // Video doesn't use sequence
+              sentAt: Date.now(),
+              retryCount: 0,
+              type: 'video',
+            });
+            return next;
+          });
+
+          // 2. Send via WebSocket
           await sendVideoChunkRef.current(chunk, timestamp);
+
+          // 3. Update statistics
+          setChunkStats(prev => ({
+            ...prev,
+            videoSent: prev.videoSent + 1,
+          }));
+
+          // 4. Set ACK timeout
+          const timeoutId = setTimeout(() => {
+            handleAckTimeout(chunkId);
+          }, ACK_TIMEOUT_MS);
+
+          ackTimeoutsRef.current.set(chunkId, timeoutId);
+
           console.log('[SessionPlayer] Video chunk sent:', {
+            chunkId,
             size: chunk.size,
-            timestamp,
-            type: chunk.type,
           });
         } catch (error) {
           console.error('[SessionPlayer] Failed to send video chunk:', error);
@@ -1355,7 +1887,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         console.warn('[SessionPlayer] Skipping video chunk - not authenticated yet');
       }
     },
-    [status, isAuthenticated]
+    [status, isAuthenticated, handleAckTimeout, ACK_TIMEOUT_MS]
   );
 
   const handleVideoRecordingComplete = useCallback(
@@ -1393,6 +1925,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     [t, getErrorMessage]
   );
 
+  // AvatarRenderer準備完了ハンドラー
+  const handleAvatarReady = useCallback(() => {
+    // AvatarRendererからcanvasを取得
+    const canvas = avatarRef.current?.getCanvas();
+    if (canvas) {
+      avatarCanvasRef.current = canvas;
+      console.log('[SessionPlayer] Avatar canvas ready:', {
+        width: canvas.width,
+        height: canvas.height,
+      });
+    }
+  }, []);
+
   // VideoComposer準備完了ハンドラー
   const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
     // VideoComposerから受け取ったcanvasをrefに保存
@@ -1402,6 +1947,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       height: canvas.height,
     });
   }, []);
+
+  // リアルタイムリップシンク更新
+  useEffect(() => {
+    if (avatarRef.current) {
+      avatarRef.current.setLipSync(audioLevel);
+    }
+  }, [audioLevel]);
 
   // useVideoRecorder統合
   const {
@@ -1447,6 +1999,15 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   // Auto-connect when status becomes READY and not yet connecting
   useEffect(() => {
+    console.log('[SessionPlayer] Auto-connect useEffect triggered:', {
+      status,
+      isConnecting,
+      isConnected,
+      hasToken: !!token,
+      tokenLength: token?.length,
+      shouldConnect: status === 'READY' && !isConnecting && !isConnected && !!token,
+    });
+
     if (status === 'READY' && !isConnecting && !isConnected && token) {
       console.log('[SessionPlayer] Status is READY, initiating WebSocket connection...');
       connect();
@@ -1566,11 +2127,36 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   return (
     <div
-      className="space-y-6"
+      className="relative space-y-6"
       data-testid="session-player"
       role="main"
       aria-label={t('sessions.player.info.scenario') + ': ' + scenario.title}
     >
+      {/* Connection Status (Phase 1.6) */}
+      <ConnectionStatus
+        state={connectionState}
+        error={wsError}
+        reconnectAttempt={reconnectAttempt}
+        maxReconnectAttempts={maxReconnectAttempts}
+      />
+
+      {/* Error Guidance (Phase 1.6) */}
+      {currentError && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md px-4">
+          <ErrorGuidance
+            error={currentError}
+            onRetry={() => {
+              setCurrentError(null);
+              if (!isConnected) {
+                connect();
+              }
+            }}
+            onDismiss={() => setCurrentError(null)}
+            showDetails={true}
+          />
+        </div>
+      )}
+
       {/* Screen reader announcements */}
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {ariaLiveMessage}
@@ -1605,6 +2191,46 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 </div>
                 <div className="text-xl font-mono font-bold text-indigo-900 mt-0.5">
                   {silenceElapsedTime}s / {effectiveSilenceTimeout}s
+                </div>
+              </div>
+            )}
+
+            {/* Phase 1.6.1 Day 34: Recording Status Display */}
+            {(status === 'ACTIVE' || status === 'PAUSED') && (
+              <div
+                className="bg-green-50 border border-green-200 rounded-lg px-4 py-2 min-w-[160px]"
+                data-testid="recording-status"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  {status === 'ACTIVE' && (
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                  )}
+                  <div className="text-xs text-green-700 font-medium uppercase tracking-wide">
+                    {status === 'ACTIVE' ? 'Recording' : 'Paused'}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center justify-between text-xs text-green-600">
+                    <span>Audio:</span>
+                    <span className="font-mono font-medium">
+                      {chunkStats.audioAcked}/{chunkStats.audioSent}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-green-600">
+                    <span>Video:</span>
+                    <span className="font-mono font-medium">
+                      {chunkStats.videoAcked}/{chunkStats.videoSent}
+                    </span>
+                  </div>
+                  {chunkStats.failedChunks.length > 0 && (
+                    <div className="flex items-center justify-between text-xs text-red-600 font-medium">
+                      <span>Failed:</span>
+                      <span className="font-mono">{chunkStats.failedChunks.length}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1750,7 +2376,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                 </svg>
                 <span>{t('sessions.player.avatar.camera')}:</span>
               </div>
-              <span className={`font-medium ${isCameraActive ? 'text-green-600' : 'text-gray-500'}`}>
+              <span
+                className={`font-medium ${isCameraActive ? 'text-green-600' : 'text-gray-500'}`}
+              >
                 {isCameraActive ? t('sessions.player.avatar.on') : t('sessions.player.avatar.off')}
               </span>
             </div>
@@ -1860,7 +2488,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
                       ? 'bg-indigo-50 border border-indigo-200'
                       : 'bg-green-50 border border-green-200'
                   }`}
-                  data-testid="transcript-message"
+                  data-testid={item.speaker === 'AI' ? 'ai-message' : 'transcript-message'}
                   data-speaker={item.speaker}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -2136,8 +2764,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       {/* Hidden要素: 録画用 */}
       <div className="hidden">
-        {/* アバター用Canvas（将来Three.js統合用） */}
-        <canvas ref={avatarCanvasRef} width={1280} height={720} />
+        {/* AvatarRenderer - Three.js/Live2D/静的画像対応 */}
+        <AvatarRenderer
+          ref={avatarRef}
+          type={avatar.type}
+          modelUrl={sanitizeModelUrl(avatar.modelUrl)}
+          imageUrl={sanitizeThumbnailUrl(avatar.thumbnailUrl)}
+          width={1280}
+          height={720}
+          lipSyncIntensity={audioLevel}
+          emotion="neutral"
+          onReady={handleAvatarReady}
+        />
 
         {/* ユーザーカメラ */}
         <video ref={userVideoRef} autoPlay playsInline muted />
@@ -2152,6 +2790,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           onCanvasReady={handleCanvasReady}
         />
       </div>
+
+      {/* Phase 1.6.1 Day 36: Scenario validation confirmation dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={t('sessions.player.validation.warningsDetected')}
+        message={`${t('sessions.player.validation.warningsMessage')}\n\n${confirmDialog.warnings}\n\n${t('sessions.player.validation.proceedAnyway')}`}
+        confirmLabel={t('sessions.player.actions.start')}
+        cancelLabel={t('sessions.player.actions.cancel')}
+        variant="warning"
+        onConfirm={handleConfirmValidation}
+        onCancel={handleCancelValidation}
+      />
     </div>
   );
 }

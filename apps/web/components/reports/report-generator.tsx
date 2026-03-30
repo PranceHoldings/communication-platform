@@ -51,7 +51,7 @@ export function ReportGenerator({ sessionId, sessionStatus }: ReportGeneratorPro
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow p-6" data-testid="report-generator">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-1">
@@ -75,13 +75,19 @@ export function ReportGenerator({ sessionId, sessionStatus }: ReportGeneratorPro
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+        <div
+          className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg"
+          data-testid="report-error-message"
+        >
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
       {lastReport && !generating && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+        <div
+          className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg"
+          data-testid="report-success-message"
+        >
           <p className="text-sm text-green-700 mb-2">{t('reports.generator.success')}</p>
           <p className="text-xs text-gray-600">
             {t('reports.generator.generatedAt')}:{' '}
@@ -94,6 +100,7 @@ export function ReportGenerator({ sessionId, sessionStatus }: ReportGeneratorPro
         <button
           onClick={handleGenerateReport}
           disabled={generating}
+          data-testid="report-generate-button"
           className="flex-1 inline-flex items-center justify-center px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {generating ? (
@@ -137,6 +144,7 @@ export function ReportGenerator({ sessionId, sessionStatus }: ReportGeneratorPro
         {lastReport && !generating && (
           <button
             onClick={handleDownloadAgain}
+            data-testid="report-download-button"
             className="inline-flex items-center px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             title={t('reports.generator.downloadAgain')}
           >
@@ -152,7 +160,10 @@ export function ReportGenerator({ sessionId, sessionStatus }: ReportGeneratorPro
         )}
       </div>
 
-      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+      <div
+        className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg"
+        data-testid="report-info"
+      >
         <div className="flex items-start">
           <svg
             className="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0"

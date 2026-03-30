@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       } catch (error) {
-        console.error('Failed to fetch current user:', error);
+        // 認証エラーは正常な動作なので、ログは出力しない
         // エラー時はローカルストレージの情報を使用
         const cachedUser = authApi.getCurrentUser();
         setUser(cachedUser);
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      // 認証エラーは正常な動作なので、ログは出力しない
     }
   };
 

@@ -48,7 +48,7 @@ export const handler: APIGatewayProxyHandler = async event => {
     }
 
     // Check if analysis has been completed
-    const metadata = session.metadataJson as any;
+    const metadata = session.metadataJson;
     if (!metadata?.analysisCompleted) {
       return errorResponse(
         400,
@@ -182,8 +182,7 @@ function calculateEmotionSummary(analyses: any[]) {
 
   for (const analysis of analyses) {
     if (analysis.dominantEmotion) {
-      emotionCounts[analysis.dominantEmotion] =
-        (emotionCounts[analysis.dominantEmotion] || 0) + 1;
+      emotionCounts[analysis.dominantEmotion] = (emotionCounts[analysis.dominantEmotion] || 0) + 1;
     }
     totalConfidence += analysis.confidence || 0;
   }

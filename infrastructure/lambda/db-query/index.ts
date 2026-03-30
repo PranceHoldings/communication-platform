@@ -20,10 +20,17 @@
 
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { prisma } from '../shared/database/prisma';
+import { getMaxResults } from '../shared/utils/runtime-config-loader';
+import { getRequiredEnv, getAwsRegion } from '../shared/utils/env-validator';
 
-const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
-const S3_BUCKET = process.env.DB_QUERIES_BUCKET || 'prance-db-queries-dev';
-const MAX_RESULTS = 1000; // Maximum rows to return
+const s3Client = new S3Client({ region: getAwsRegion() });
+const S3_BUCKET = getRequiredEnv('DB_QUERIES_BUCKET');
+
+// Fix: Enable BigInt serialization to JSON
+// BigInt.prototype.toJSON を定義して、JSON.stringify() で自動的に文字列に変換
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
 
 interface QueryEvent {
   queryId?: string; // S3 key for SQL file
@@ -51,7 +58,17 @@ function isReadOnlyQuery(sql: string): boolean {
   // Allow only SELECT queries (including WITH clause)
   if (normalized.startsWith('SELECT') || normalized.startsWith('WITH')) {
     // Disallow dangerous keywords
-    const dangerous = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE', 'GRANT', 'REVOKE'];
+    const dangerous = [
+      'INSERT',
+      'UPDATE',
+      'DELETE',
+      'DROP',
+      'CREATE',
+      'ALTER',
+      'TRUNCATE',
+      'GRANT',
+      'REVOKE',
+    ];
     for (const keyword of dangerous) {
       if (normalized.includes(keyword)) {
         return false;
@@ -83,14 +100,20 @@ async function loadSqlFromS3(queryId: string): Promise<string> {
     return sql;
   } catch (error) {
     console.error('[DB Query] Failed to load SQL from S3:', error);
-    throw new Error(`Failed to load SQL from S3: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to load SQL from S3: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
 /**
  * Execute SQL query
  */
-async function executeQuery(sql: string, readOnly: boolean, maxResults: number): Promise<QueryResult> {
+async function executeQuery(
+  sql: string,
+  readOnly: boolean,
+  maxResults: number
+): Promise<QueryResult> {
   const startTime = Date.now();
 
   try {
@@ -188,7 +211,7 @@ export const handler = async (event: QueryEvent): Promise<QueryResult> => {
 
     // Default to read-only mode for safety
     const readOnly = event.readOnly !== false;
-    const maxResults = event.maxResults || MAX_RESULTS;
+    const maxResults = event.maxResults || (await getMaxResults());
 
     // Execute query
     const result = await executeQuery(sql, readOnly, maxResults);

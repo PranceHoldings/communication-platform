@@ -141,7 +141,7 @@ main()
     console.log('[populate-defaults] Done.');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('[populate-defaults] Uncaught error:', error);
     process.exit(1);
   });

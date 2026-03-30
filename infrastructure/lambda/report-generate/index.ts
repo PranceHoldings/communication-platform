@@ -216,9 +216,7 @@ async function saveReportMetadata(
 /**
  * Lambda handler
  */
-export async function handler(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   console.log('[ReportGenerate] Request received:', {
     path: event.path,
     method: event.httpMethod,

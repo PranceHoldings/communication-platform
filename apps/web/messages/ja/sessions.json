@@ -174,7 +174,10 @@
       "authenticationTimeout": "認証タイムアウト。再度お試しください。",
       "processingComplete": "処理完了",
       "lowVolumeWarning": "⚠️ マイクの音量が非常に低いです。もっと大きな声で話すか、マイクの設定を確認してください。",
-      "audioTooQuiet": "音声レベルが低すぎます。マイクに近づいて話してください。"
+      "audioTooQuiet": "音声レベルが低すぎます。マイクに近づいて話してください。",
+      "partialRecording": "⚠️ 録画が部分的に保存されました",
+      "partialRecordingDescription": "処理中にエラーが発生しました。{total}チャンク中{saved}チャンクが正常に保存されました。",
+      "aiFallbackUsed": "一時的な問題により、AIがフォールバック応答を使用しています。"
     },
     "noSpeech": {
       "guidance": "音声が検出されませんでした。もっと大きな声で話すか、マイクに近づいてください。",
@@ -205,7 +208,8 @@
     "completed": {
       "title": "セッション完了",
       "duration": "所要時間",
-      "messageCount": "{count}件のメッセージ"
+      "messageCount": "{count}件のメッセージ",
+      "turnLimitReached": "会話が{turnCount}ターンで完了しました。"
     },
     "info": {
       "scenario": "シナリオ",
@@ -247,6 +251,20 @@
         "processingDescription": "動画の処理が完了するまでお待ちください。数分かかる場合があります。",
         "notSupported": "お使いのブラウザは録画に対応していません"
       }
+    },
+    "validation": {
+      "cannotStart": "セッションを開始できません",
+      "warningsDetected": "シナリオ警告が検出されました",
+      "warningsMessage": "シナリオ設定で以下の警告が検出されました：",
+      "proceedAnyway": "続行しますか？",
+      "sessionCancelled": "セッション開始をキャンセルしました",
+      "titleRequired": "シナリオタイトルは必須です",
+      "languageRequired": "シナリオ言語は必須です",
+      "systemPromptRequired": "システムプロンプトは必須です",
+      "initialGreetingMissing": "初回挨拶が設定されていません。AIはユーザーの発話を待ちます。",
+      "silenceTimeoutTooShort": "無音タイムアウトが非常に短いです。増やすことをお勧めします。",
+      "systemPromptTooLong": "システムプロンプトが非常に長いです。AI応答の品質に影響する可能性があります。",
+      "systemPromptTooShort": "システムプロンプトが非常に短いです。コンテキストを追加することをお勧めします。"
     }
   },
   "errors": {

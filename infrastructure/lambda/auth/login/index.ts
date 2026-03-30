@@ -13,7 +13,7 @@ import {
   validateEmail,
   validateRequired,
 } from '../../shared/utils/validation';
-import { AuthenticationError, JWTPayload } from '../../shared/types';
+import { AuthenticationError, JWTPayload, UserRole } from '../../shared/types';
 
 /**
  * リクエストボディの型定義
@@ -112,7 +112,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const jwtPayload: JWTPayload = {
       userId: user.id,
       email: user.email,
-      role: user.role as 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER',
+      role: user.role as UserRole,
       orgId: user.orgId,
     };
 

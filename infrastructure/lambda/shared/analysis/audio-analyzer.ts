@@ -54,8 +54,9 @@ export class AudioAnalyzer {
     options: AudioAnalysisOptions = {}
   ): Promise<AudioAnalysisResult> {
     const startTime = Date.now();
+
     const {
-      minPauseDuration = 0.5,
+      minPauseDuration = 0.5, // Default: 0.5 seconds
       silenceThreshold = -30,
       detectFillerWords = true,
     } = options;
@@ -95,9 +96,8 @@ export class AudioAnalyzer {
 
       // 6. Calculate pause statistics
       const pauseCount = pauses.length;
-      const pauseDuration = pauses.length > 0
-        ? pauses.reduce((sum, p) => sum + p.duration, 0) / pauses.length
-        : 0;
+      const pauseDuration =
+        pauses.length > 0 ? pauses.reduce((sum, p) => sum + p.duration, 0) / pauses.length : 0;
 
       const processingTime = Date.now() - startTime;
 

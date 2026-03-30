@@ -181,7 +181,7 @@ export default function ScenarioDetailPage() {
       </div>
 
       {/* Basic Info */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6" data-testid="scenario-detail">
         <h2 className="text-xl font-semibold mb-4">{t('scenarios.detail.basicInfo')}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>

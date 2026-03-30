@@ -1,0 +1,79 @@
+{
+  "title": "Benchmark Comparison",
+  "description": "Compare your performance with users in similar conditions",
+  "loading": "Loading benchmark data...",
+  "insufficientData": "Not enough data for comparison. Complete more sessions to see your benchmark.",
+  "sampleSize": "Compared with {count} users in similar conditions",
+  "noData": "No benchmark data available yet",
+  "yourScore": "Your Score",
+  "average": "Average",
+  "median": "Median",
+  "percentile": "Percentile",
+  "zScore": "Z-Score",
+  "deviationValue": "Deviation Value",
+  "excellent": "Excellent",
+  "good": "Good",
+  "average_level": "Average",
+  "belowAverage": "Below Average",
+  "needsImprovement": "Needs Improvement",
+  "metrics": {
+    "overallScore": "Overall Score",
+    "emotionScore": "Emotion Control",
+    "audioScore": "Voice Quality",
+    "contentScore": "Content Quality",
+    "deliveryScore": "Delivery Skills"
+  },
+  "statistics": {
+    "min": "Minimum",
+    "max": "Maximum",
+    "stdDev": "Standard Deviation",
+    "quartile25": "25th Percentile",
+    "quartile75": "75th Percentile"
+  },
+  "comparison": {
+    "title": "Comparison Analysis",
+    "description": "Your score compared to similar users",
+    "aboveAverage": "You are performing above average",
+    "atAverage": "You are performing at the average level",
+    "belowAverage": "There is room for improvement"
+  },
+  "growth": {
+    "title": "Growth Tracking",
+    "description": "Your progress over time",
+    "sessionNumber": "Session #",
+    "noHistory": "Complete more sessions to see your growth",
+    "trend": "Trend",
+    "improving": "Improving",
+    "stable": "Stable",
+    "declining": "Declining",
+    "change": "Change from last session",
+    "increase": "+{value}",
+    "decrease": "{value}",
+    "showing": "[ZH-CN: showing]"
+  },
+  "insights": {
+    "title": "AI-Powered Insights",
+    "description": "Personalized recommendations based on your performance",
+    "noIssues": "Great job! You're performing well across all metrics.",
+    "lowPerformance": "{metric} is below average",
+    "belowAverage": "{metric} needs improvement",
+    "priority": {
+      "high": "High Priority",
+      "medium": "Medium Priority",
+      "low": "Low Priority"
+    },
+    "suggestions": {
+      "overallScore": "Focus on improving your overall communication skills. Practice regularly to build confidence.",
+      "emotionScore": "Work on emotional expression and control. Try to convey appropriate emotions during conversations.",
+      "audioScore": "Improve your voice clarity and tone. Speak clearly and at a moderate pace.",
+      "contentScore": "Enhance your content quality by organizing your thoughts before speaking.",
+      "deliveryScore": "Improve your delivery by practicing pronunciation and intonation."
+    }
+  },
+  "actions": {
+    "viewDetails": "View Details",
+    "refresh": "Refresh Data",
+    "export": "Export Report",
+    "share": "Share Results"
+  }
+}

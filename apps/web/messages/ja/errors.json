@@ -1,71 +1,76 @@
 {
-  "title": "Error",
-  "generic": "An error occurred. Please try again.",
-  "networkError": "Network error. Please check your connection.",
-  "serverError": "Server error. Please try again later.",
-  "unauthorized": "Unauthorized. Please log in again.",
-  "notFound": "Resource not found.",
-  "validationError": "Invalid input. Please check your data.",
-  "timeout": "Request timed out. Please try again.",
+  "title": "エラー",
+  "generic": "エラーが発生しました。もう一度お試しください。",
+  "networkError": "ネットワークエラーです。接続を確認してください。",
+  "serverError": "サーバーエラーです。しばらくしてからもう一度お試しください。",
+  "unauthorized": "認証が必要です。再度ログインしてください。",
+  "notFound": "リソースが見つかりません。",
+  "validationError": "入力内容に誤りがあります。データを確認してください。",
+  "timeout": "リクエストがタイムアウトしました。もう一度お試しください。",
   "microphone": {
-    "title": "Microphone Error",
-    "permissionDenied": "Microphone access was denied. Please allow microphone access in your browser settings.",
-    "notFound": "No microphone found. Please connect a microphone and try again.",
-    "notReadable": "Microphone is already in use by another application. Please close other apps using the microphone.",
-    "constraintsError": "Unable to satisfy audio constraints. Please try a different microphone.",
-    "abortError": "Microphone access was aborted. Please try again.",
-    "securityError": "Microphone access is not allowed due to security restrictions. Please use HTTPS or localhost.",
-    "notSupported": "Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Safari.",
-    "lowVolume": "Your microphone volume is very low. Please speak louder or adjust your microphone settings.",
-    "noAudio": "No audio detected. Please check your microphone.",
+    "title": "マイクエラー",
+    "permissionDenied": "マイクへのアクセスが拒否されました。ブラウザの設定でマイクの使用を許可してください。",
+    "notFound": "マイクが見つかりません。マイクを接続してもう一度お試しください。",
+    "notReadable": "マイクは既に他のアプリケーションで使用中です。他のアプリを閉じてください。",
+    "constraintsError": "音声制約を満たすことができません。別のマイクをお試しください。",
+    "abortError": "マイクへのアクセスが中断されました。もう一度お試しください。",
+    "securityError": "セキュリティ制限によりマイクへのアクセスが許可されていません。HTTPSまたはlocalhostを使用してください。",
+    "notSupported": "お使いのブラウザは音声録音に対応していません。Chrome、Firefox、またはSafariなどの最新ブラウザをご利用ください。",
+    "lowVolume": "マイクの音量が非常に小さいです。大きな声で話すか、マイク設定を調整してください。",
+    "noAudio": "音声が検出されません。マイクを確認してください。",
     "instructions": {
-      "chrome": "In Chrome: Click the lock icon in the address bar → Site settings → Microphone → Allow",
-      "firefox": "In Firefox: Click the lock icon in the address bar → Permissions → Microphone → Allow",
-      "safari": "In Safari: Safari menu → Settings for This Website → Microphone → Allow",
-      "edge": "In Edge: Click the lock icon in the address bar → Site permissions → Microphone → Allow"
+      "chrome": "Chromeの場合：アドレスバーの鍵アイコンをクリック → サイトの設定 → マイク → 許可",
+      "firefox": "Firefoxの場合：アドレスバーの鍵アイコンをクリック → 権限 → マイク → 許可",
+      "safari": "Safariの場合：Safariメニュー → このWebサイトの設定 → マイク → 許可",
+      "edge": "Edgeの場合：アドレスバーの鍵アイコンをクリック → サイトの権限 → マイク → 許可"
     }
   },
   "websocket": {
-    "title": "Connection Error",
-    "connectionFailed": "Failed to connect to server. Please check your internet connection.",
-    "connectionLost": "Connection lost. Attempting to reconnect...",
-    "reconnecting": "Reconnecting... (Attempt {attempt} of {maxAttempts})",
-    "reconnectFailed": "Failed to reconnect after {maxAttempts} attempts. Please refresh the page.",
-    "authenticationFailed": "Authentication failed. Please log in again.",
-    "timeout": "Connection timed out. Please try again."
+    "title": "接続エラー",
+    "connectionFailed": "サーバーへの接続に失敗しました。インターネット接続を確認してください。",
+    "connectionLost": "接続が切断されました。再接続を試みています...",
+    "reconnecting": "再接続中... ({attempt}/{maxAttempts}回目)",
+    "reconnectFailed": "{maxAttempts}回の再接続試行に失敗しました。ページを更新してください。",
+    "authenticationFailed": "認証に失敗しました。再度ログインしてください。",
+    "timeout": "接続がタイムアウトしました。もう一度お試しください。"
   },
   "audio": {
-    "title": "Audio Error",
-    "processingFailed": "Audio processing failed. Please try again.",
-    "recordingFailed": "Failed to start recording. Please check your microphone.",
-    "playbackFailed": "Failed to play audio. Please try again.",
-    "encodingFailed": "Audio encoding failed. Please try again.",
-    "decodingFailed": "Audio decoding failed. Please try again.",
-    "noSpeechDetected": "No speech detected. Please speak into the microphone."
+    "title": "音声エラー",
+    "processingFailed": "音声処理に失敗しました。もう一度お試しください。",
+    "recordingFailed": "録音の開始に失敗しました。マイクを確認してください。",
+    "playbackFailed": "音声の再生に失敗しました。もう一度お試しください。",
+    "encodingFailed": "音声のエンコードに失敗しました。もう一度お試しください。",
+    "decodingFailed": "音声のデコードに失敗しました。もう一度お試しください。",
+    "noSpeechDetected": "音声が検出されませんでした。マイクに向かって話してください。"
   },
   "api": {
-    "title": "API Error",
-    "sttFailed": "Speech-to-text failed. Please try again.",
-    "aiFailed": "AI response generation failed. Please try again.",
-    "ttsFailed": "Text-to-speech failed. Please try again.",
-    "retrying": "Processing failed. Retrying... (Attempt {attempt} of {maxAttempts})",
-    "timeout": "Processing is taking longer than expected. Please wait..."
+    "title": "API エラー",
+    "sttFailed": "音声認識に失敗しました。もう一度お試しください。",
+    "aiFailed": "AI応答の生成に失敗しました。もう一度お試しください。",
+    "ttsFailed": "音声合成に失敗しました。もう一度お試しください。",
+    "retrying": "処理に失敗しました。再試行中... ({attempt}/{maxAttempts}回目)",
+    "timeout": "処理に時間がかかっています。お待ちください..."
   },
   "session": {
-    "title": "Session Error",
-    "notFound": "Session not found.",
-    "expired": "Session has expired. Please start a new session.",
-    "alreadyActive": "A session is already active. Please end the current session first.",
-    "startFailed": "Failed to start session. Please try again.",
-    "endFailed": "Failed to end session. Please try again."
+    "title": "セッションエラー",
+    "notFound": "セッションが見つかりません。",
+    "expired": "セッションの有効期限が切れました。新しいセッションを開始してください。",
+    "alreadyActive": "セッションは既にアクティブです。現在のセッションを終了してください。",
+    "startFailed": "セッションの開始に失敗しました。もう一度お試しください。",
+    "endFailed": "セッションの終了に失敗しました。もう一度お試しください。"
+  },
+  "rateLimit": {
+    "title": "送信速度制限",
+    "message": "音声の送信が速すぎます。{seconds}秒お待ちください。",
+    "guidance": "システムが音声を処理するために時間が必要です。これにより高品質な応答を確保しています。"
   },
   "actions": {
-    "retry": "Retry",
-    "cancel": "Cancel",
-    "goBack": "Go Back",
-    "reload": "Reload Page",
-    "contactSupport": "Contact Support",
-    "viewDetails": "View Details",
-    "dismiss": "Dismiss"
+    "retry": "再試行",
+    "cancel": "キャンセル",
+    "goBack": "戻る",
+    "reload": "ページを更新",
+    "contactSupport": "サポートに問い合わせ",
+    "viewDetails": "詳細を表示",
+    "dismiss": "閉じる"
   }
 }

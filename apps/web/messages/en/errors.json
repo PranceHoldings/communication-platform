@@ -59,6 +59,11 @@
     "startFailed": "Failed to start session. Please try again.",
     "endFailed": "Failed to end session. Please try again."
   },
+  "rateLimit": {
+    "title": "Rate Limit Exceeded",
+    "message": "You're sending audio too quickly. Please wait {seconds} seconds.",
+    "guidance": "The system needs time to process your audio. This helps ensure high-quality responses."
+  },
   "actions": {
     "retry": "Retry",
     "cancel": "Cancel",

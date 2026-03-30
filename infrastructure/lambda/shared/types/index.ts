@@ -19,6 +19,52 @@
 // Export organization types
 export * from './organization';
 
+// Export API response types (ENFORCED)
+export * from './api-response';
+
+// ========================================
+// Enum Types (Prisma Schema aligned)
+// ========================================
+
+export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';
+export type AvatarType = 'TWO_D' | 'THREE_D';
+export type AvatarStyle = 'ANIME' | 'REALISTIC';
+export type AvatarSource = 'PRESET' | 'GENERATED' | 'ORG_CUSTOM';
+export type Visibility = 'PRIVATE' | 'ORGANIZATION' | 'PUBLIC';
+export type SessionStatus = 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
+export type RecordingType = 'USER' | 'AVATAR' | 'COMBINED';
+export type ProcessingStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
+export type Speaker = 'AI' | 'USER';
+export type Highlight = 'POSITIVE' | 'NEGATIVE' | 'IMPORTANT';
+
+// Runtime Configuration Access Levels
+export type RuntimeConfigAccessLevel =
+  | 'DEVELOPER_ONLY'
+  | 'SUPER_ADMIN_READ_ONLY'
+  | 'SUPER_ADMIN_READ_WRITE'
+  | 'CLIENT_ADMIN_READ_WRITE'
+  | 'CLIENT_ADMIN_READ_ONLY';
+
+// ========================================
+// Analysis Types (copied from @prance/shared)
+// ========================================
+
+export interface EmotionScore {
+  type: string; // 'HAPPY', 'SAD', 'ANGRY', 'CONFUSED', 'DISGUSTED', 'SURPRISED', 'CALM', 'FEAR'
+  confidence: number; // 0-100
+}
+
+export interface AgeRange {
+  low: number;
+  high: number;
+}
+
+export interface Pose {
+  pitch: number; // 上下の傾き (-90 to 90)
+  roll: number; // 回転 (-180 to 180)
+  yaw: number; // 左右の向き (-90 to 90)
+}
+
 // ========================================
 // Error Types (copied from @prance/shared)
 // ========================================
@@ -79,13 +125,13 @@ export class InternalServerError extends AppError {
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';  // ✅ GUEST追加
+  role: UserRole; // Enum type from Prisma schema
   orgId: string; // Aligned with Prisma schema
 
   // ✅ ゲストユーザー対応フィールド（オプション）
-  type?: 'user' | 'guest';  // ユーザータイプ識別
-  guestSessionId?: string;  // ゲストセッションID
-  sessionId?: string;       // 紐づくセッションID
+  type?: 'user' | 'guest'; // ユーザータイプ識別
+  guestSessionId?: string; // ゲストセッションID
+  sessionId?: string; // 紐づくセッションID
 
   iat?: number;
   exp?: number;
@@ -162,4 +208,49 @@ export enum Visibility {
   PRIVATE = 'PRIVATE',
   ORGANIZATION = 'ORGANIZATION',
   PUBLIC = 'PUBLIC',
+}
+
+// ========================================
+// Scenario Validation Types (Day 36)
+// ========================================
+
+export interface ValidationError {
+  field: string;
+  code: string;
+  message: string;
+}
+
+export interface ValidationWarning {
+  field: string;
+  code: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface ScenarioValidation {
+  isValid: boolean;
+  errors: ValidationError[];
+  warnings: ValidationWarning[];
+}
+
+// ========================================
+// WebSocket Message Types (Day 36)
+// ========================================
+
+export interface SessionLimitReachedMessage {
+  type: 'session_limit_reached';
+  message: string;
+  turnCount: number;
+  maxTurns: number;
+  sessionId: string;
+  timestamp: number;
+}
+
+export interface AIFallbackMessage {
+  type: 'ai_fallback';
+  message: string;
+  originalError: string;
+  usedFallback: boolean;
+  sessionId: string;
+  timestamp: number;
 }

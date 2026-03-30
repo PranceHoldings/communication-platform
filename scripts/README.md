@@ -67,6 +67,10 @@ npm run deploy:stack <StackName>
 | スクリプト | 目的 | 実行タイミング |
 |-----------|------|---------------|
 | `validate-env.sh` | 環境変数の存在・形式確認 | デプロイ前（必須） |
+| `validate-env-single-source.sh` | SSOT検証（.env.local） 🆕 | コミット前（必須） |
+| `validate-env-consistency.sh` | 環境変数整合性チェック 🆕 | コミット前（必須） |
+| `detect-hardcoded-values.sh` | ハードコード検出（9パターン） 🆕 | コミット前（必須） |
+| `sync-env-vars.sh` | 環境変数自動同期 🆕 | 環境変数変更時 |
 | `validate-i18n-system.sh` | next-intl使用禁止チェック | コミット前（必須） |
 | `validate-lambda-dependencies.sh` | Lambda依存関係の完全性 | デプロイ前（必須） |
 | `validate-lambda-zip.sh` | ZIPファイル構造検証 | デプロイ前 |
@@ -234,4 +238,41 @@ npm run deploy:websocket
 
 ---
 
-**最終更新:** 2026-03-14
+## 🆕 環境変数管理スクリプト（2026-03-20実装）
+
+### Single Source of Truth (SSOT) システム
+
+```bash
+# 環境変数同期（.env.local → infrastructure/.env）
+bash scripts/sync-env-vars.sh
+
+# SSOT検証（.env.localが唯一の定義源か確認）
+bash scripts/validate-env-single-source.sh
+
+# 整合性チェック（8項目検証）
+bash scripts/validate-env-consistency.sh
+
+# ハードコード検出（9パターン）
+bash scripts/detect-hardcoded-values.sh
+```
+
+### Pre-commit Hook（4段階検証）
+
+```bash
+# Pre-commit hookが自動実行する検証
+# 1. ハードコード値検出
+# 2. 環境変数整合性チェック
+# 3. SSOT検証（.env.local）
+# 4. ESLint実行
+
+# Hook設定
+ln -s ../../scripts/git-hooks/pre-commit .git/hooks/pre-commit
+```
+
+**詳細:**
+- [../docs/07-development/ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md](../docs/07-development/ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md)
+- [../docs/07-development/HARDCODE_PREVENTION_SYSTEM.md](../docs/07-development/HARDCODE_PREVENTION_SYSTEM.md)
+
+---
+
+**最終更新:** 2026-03-20

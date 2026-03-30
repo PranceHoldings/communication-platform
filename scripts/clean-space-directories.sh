@@ -42,7 +42,6 @@ SEARCH_PATHS=(
   "apps/web/.next"
   "infrastructure/cdk.out"
   "apps/web/.turbo"
-  "node_modules/.cache"
 )
 
 for search_path in "${SEARCH_PATHS[@]}"; do

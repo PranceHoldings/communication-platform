@@ -14,10 +14,11 @@ import { PrismaClient } from '@prisma/client';
 import { generateToken, generatePin, validateCustomPin } from '../../shared/utils/tokenGenerator';
 import { hashPin } from '../../shared/utils/pinHash';
 import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
+import { getFrontendUrl } from '../../shared/utils/env-validator';
 
 const prisma = new PrismaClient();
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = getFrontendUrl();
 
 interface BatchGuestSessionItem {
   scenarioId: string;
@@ -62,9 +63,7 @@ interface BatchCreateGuestSessionsResponse {
 /**
  * Lambda handler for batch creating guest sessions
  */
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[BatchCreateGuestSessions] Event:', JSON.stringify(event, null, 2));
 
   try {
@@ -96,7 +95,8 @@ export const handler = async (
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can create guest sessions',
+          error:
+            'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can create guest sessions',
         }),
       };
     }

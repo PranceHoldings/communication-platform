@@ -45,9 +45,6 @@
   "enabled": "Enabled",
   "disabled": "Disabled",
   "useDefault": "Use Default",
-  "contact": "Contact",
-  "privacyPolicy": "Privacy Policy",
-  "termsOfService": "Terms of Service",
   "languagesNative": {
     "en": "English",
     "ja": "日本語",
@@ -59,5 +56,20 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "avatar": {
+    "fallback": {
+      "title": "Avatar nicht verfügbar",
+      "message": "Der Avatar konnte nicht geladen werden, aber die Sitzung wird normal fortgesetzt.",
+      "errorDetails": "Fehlerdetails"
+    }
+  },
+  "connectionStatus": {
+    "disconnected": "Getrennt",
+    "connecting": "Verbindung wird hergestellt...",
+    "connected": "Verbunden",
+    "reconnecting": "Erneut verbinden... ({attempt}/{maxAttempts})",
+    "reconnectFailed": "Verbindung nach {attempts} Versuchen fehlgeschlagen. Bitte aktualisieren Sie die Seite.",
+    "error": "Verbindungsfehler"
   }
 }

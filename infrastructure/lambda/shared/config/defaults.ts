@@ -10,7 +10,7 @@
 // ============================================================
 
 export const AWS_DEFAULTS = {
-  REGION: 'us-east-1',
+  REGION: process.env.AWS_REGION || 'us-east-1',
   ACCOUNT_ID: '',
 } as const;
 
@@ -19,7 +19,7 @@ export const AWS_DEFAULTS = {
 // ============================================================
 
 export const BEDROCK_DEFAULTS = {
-  REGION: 'us-east-1',
+  REGION: process.env.BEDROCK_REGION || process.env.AWS_REGION || 'us-east-1',
   MODEL_ID: 'us.anthropic.claude-sonnet-4-6',
 } as const;
 
@@ -28,7 +28,7 @@ export const BEDROCK_DEFAULTS = {
 // ============================================================
 
 export const REKOGNITION_DEFAULTS = {
-  REGION: 'us-east-1',
+  REGION: process.env.REKOGNITION_REGION || process.env.AWS_REGION || 'us-east-1',
 } as const;
 
 // ============================================================
@@ -36,7 +36,7 @@ export const REKOGNITION_DEFAULTS = {
 // ============================================================
 
 export const POLLY_DEFAULTS = {
-  REGION: 'us-east-1',
+  REGION: process.env.POLLY_REGION || process.env.AWS_REGION || 'us-east-1',
   VOICE_ID: 'Mizuki',
   ENGINE: 'neural',
 } as const;
@@ -174,6 +174,83 @@ export const DYNAMODB_DEFAULTS = {
 } as const;
 
 // ============================================================
+// Query & Processing Defaults
+// ============================================================
+
+export const QUERY_DEFAULTS = {
+  // Database query limits
+  MAX_RESULTS: 1000, // Maximum rows to return from database queries
+
+  // Batch processing sizes
+  VIDEO_CHUNK_BATCH_SIZE: 5, // Batch size for video chunk processing
+  ANALYSIS_BATCH_SIZE: 10, // Batch size for analysis operations
+} as const;
+
+// ============================================================
+// Security Defaults
+// ============================================================
+
+export const SECURITY_DEFAULTS = {
+  // Password hashing
+  BCRYPT_SALT_ROUNDS: 10, // bcrypt salt rounds for password/PIN hashing
+
+  // Rate limiting (defined in rateLimiter.ts, values here for reference)
+  RATE_LIMIT_MAX_ATTEMPTS: 5,
+  RATE_LIMIT_LOCKOUT_DURATION_MS: 600000, // 10 minutes
+  RATE_LIMIT_ATTEMPT_WINDOW_MS: 600000, // 10 minutes
+} as const;
+
+// ============================================================
+// Audio Processing Defaults
+// ============================================================
+
+export const AUDIO_PROCESSING_DEFAULTS = {
+  // Speech analysis
+  MIN_PAUSE_DURATION_SEC: 0.5, // Minimum pause duration to detect
+  OPTIMAL_PAUSE_SEC: 0.8, // Optimal pause duration for scoring
+
+  // TTS voice settings (ElevenLabs)
+  TTS_STABILITY: 0.5, // Voice stability (0.0 - 1.0)
+  TTS_SIMILARITY_BOOST: 0.75, // Voice similarity boost (0.0 - 1.0)
+
+  // STT confidence
+  DEFAULT_STT_CONFIDENCE: 0.95, // Default confidence when not provided
+
+  // Sample rates
+  AUDIO_SAMPLE_RATE: 16000, // 16kHz for speech
+  SILENCE_THRESHOLD: 0.15, // Silence detection threshold (0.0 - 1.0)
+} as const;
+
+// ============================================================
+// AI Processing Defaults
+// ============================================================
+
+export const AI_DEFAULTS = {
+  // Claude AI settings
+  CLAUDE_TEMPERATURE: 0.7, // Temperature for text generation (0.0 - 1.0)
+  CLAUDE_MAX_TOKENS: 1024, // Maximum tokens for completion
+
+  // Language detection
+  MAX_AUTO_DETECT_LANGUAGES: 4, // Maximum number of languages for auto-detection
+} as const;
+
+// ============================================================
+// Score Calculation Defaults
+// ============================================================
+
+export const SCORE_DEFAULTS = {
+  // Score weights
+  EMOTION_WEIGHT: 0.25,
+  AUDIO_WEIGHT: 0.25,
+  CONTENT_WEIGHT: 0.3,
+  DELIVERY_WEIGHT: 0.2,
+
+  // Quality thresholds
+  MIN_CONFIDENCE_THRESHOLD: 70, // Minimum confidence for valid analysis (0-100)
+  MIN_QUALITY_THRESHOLD: 85, // Minimum quality threshold (0-100)
+} as const;
+
+// ============================================================
 // すべてのデフォルト値を統合
 // ============================================================
 
@@ -190,6 +267,11 @@ export const ALL_DEFAULTS = {
   LANGUAGE: LANGUAGE_DEFAULTS,
   MEDIA: MEDIA_DEFAULTS,
   DYNAMODB: DYNAMODB_DEFAULTS,
+  QUERY: QUERY_DEFAULTS,
+  SECURITY: SECURITY_DEFAULTS,
+  AUDIO_PROCESSING: AUDIO_PROCESSING_DEFAULTS,
+  AI: AI_DEFAULTS,
+  SCORE: SCORE_DEFAULTS,
 } as const;
 
 // ============================================================

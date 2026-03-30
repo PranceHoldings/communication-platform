@@ -10,9 +10,11 @@ import { DefaultReportTemplate } from './templates/default-template';
 import { ReportData, ReportGenerationOptions } from './types';
 // import { generateRadarChart, generateTimelineChart } from './charts'; // Disabled: canvas dependency
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getAwsRegion, getS3Bucket } from '../shared/utils/env-validator';
+import { generateProtectedUrl } from '../shared/utils/url-generator';
 
-const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
-const BUCKET_NAME = process.env.STORAGE_BUCKET_NAME || 'prance-storage-dev';
+const s3Client = new S3Client({ region: getAwsRegion() });
+const BUCKET_NAME = getS3Bucket();
 
 /**
  * Generate charts and prepare report data
@@ -57,7 +59,9 @@ export async function generateReport(
     return pdfBuffer;
   } catch (error) {
     console.error('[ReportGenerator] PDF generation failed:', error);
-    throw new Error(`Failed to generate PDF report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to generate PDF report: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -89,7 +93,7 @@ export async function generateAndUploadReport(
     })
   );
 
-  const pdfUrl = `https://${BUCKET_NAME}.s3.amazonaws.com/${pdfKey}`;
+  const pdfUrl = await generateProtectedUrl(pdfKey, 7200);
   console.log('[ReportGenerator] PDF uploaded to S3:', pdfUrl);
 
   return {

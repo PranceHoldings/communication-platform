@@ -27,27 +27,40 @@ const DEFAULT_SETTINGS = DEFAULT_ORGANIZATION_SETTINGS;
  * 設定のバリデーション
  */
 function validateSettings(settings: Partial<OrganizationSettings>): void {
-  if (settings.enableSilencePrompt !== undefined && typeof settings.enableSilencePrompt !== 'boolean') {
+  if (
+    settings.enableSilencePrompt !== undefined &&
+    typeof settings.enableSilencePrompt !== 'boolean'
+  ) {
     throw new ValidationError('enableSilencePrompt must be a boolean');
   }
 
   if (settings.silenceTimeout !== undefined) {
     const { min, max } = VALIDATION_RANGES.silenceTimeout;
-    if (typeof settings.silenceTimeout !== 'number' || settings.silenceTimeout < min || settings.silenceTimeout > max) {
+    if (
+      typeof settings.silenceTimeout !== 'number' ||
+      settings.silenceTimeout < min ||
+      settings.silenceTimeout > max
+    ) {
       throw new ValidationError(`silenceTimeout must be a number between ${min} and ${max}`);
     }
   }
 
   if (settings.silencePromptTimeout !== undefined) {
     const { min, max } = VALIDATION_RANGES.silencePromptTimeout;
-    if (typeof settings.silencePromptTimeout !== 'number' || settings.silencePromptTimeout < min || settings.silencePromptTimeout > max) {
+    if (
+      typeof settings.silencePromptTimeout !== 'number' ||
+      settings.silencePromptTimeout < min ||
+      settings.silencePromptTimeout > max
+    ) {
       throw new ValidationError(`silencePromptTimeout must be a number between ${min} and ${max}`);
     }
   }
 
   if (settings.silencePromptStyle !== undefined) {
     if (!ALLOWED_VALUES.silencePromptStyle.includes(settings.silencePromptStyle as any)) {
-      throw new ValidationError(`silencePromptStyle must be one of: ${ALLOWED_VALUES.silencePromptStyle.join(', ')}`);
+      throw new ValidationError(
+        `silencePromptStyle must be one of: ${ALLOWED_VALUES.silencePromptStyle.join(', ')}`
+      );
     }
   }
 
@@ -57,22 +70,36 @@ function validateSettings(settings: Partial<OrganizationSettings>): void {
 
   if (settings.silenceThreshold !== undefined) {
     const { min, max } = VALIDATION_RANGES.silenceThreshold;
-    if (typeof settings.silenceThreshold !== 'number' || settings.silenceThreshold < min || settings.silenceThreshold > max) {
+    if (
+      typeof settings.silenceThreshold !== 'number' ||
+      settings.silenceThreshold < min ||
+      settings.silenceThreshold > max
+    ) {
       throw new ValidationError(`silenceThreshold must be a number between ${min} and ${max}`);
     }
   }
 
   if (settings.minSilenceDuration !== undefined) {
     const { min, max } = VALIDATION_RANGES.minSilenceDuration;
-    if (typeof settings.minSilenceDuration !== 'number' || settings.minSilenceDuration < min || settings.minSilenceDuration > max) {
+    if (
+      typeof settings.minSilenceDuration !== 'number' ||
+      settings.minSilenceDuration < min ||
+      settings.minSilenceDuration > max
+    ) {
       throw new ValidationError(`minSilenceDuration must be a number between ${min} and ${max}`);
     }
   }
 
   if (settings.initialSilenceTimeout !== undefined) {
     const { min, max } = VALIDATION_RANGES.initialSilenceTimeout;
-    if (typeof settings.initialSilenceTimeout !== 'number' || settings.initialSilenceTimeout < min || settings.initialSilenceTimeout > max) {
-      throw new ValidationError(`initialSilenceTimeout must be a number between ${min} and ${max} ms`);
+    if (
+      typeof settings.initialSilenceTimeout !== 'number' ||
+      settings.initialSilenceTimeout < min ||
+      settings.initialSilenceTimeout > max
+    ) {
+      throw new ValidationError(
+        `initialSilenceTimeout must be a number between ${min} and ${max} ms`
+      );
     }
   }
 }

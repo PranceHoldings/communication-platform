@@ -57,7 +57,8 @@
       "titleRequired": "タイトルは必須です",
       "categoryRequired": "カテゴリは必須です",
       "configRequired": "設定は必須です",
-      "invalidJson": "JSON形式が無効です"
+      "invalidJson": "JSON形式が無効です",
+      "shortSystemPrompt": "システムプロンプトが短すぎます（50文字未満）。AIの動作を向上させるために、より詳細な内容を追加することをお勧めします。"
     },
     "success": "シナリオが正常に作成されました",
     "error": "シナリオの作成に失敗しました"

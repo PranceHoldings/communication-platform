@@ -35,8 +35,8 @@ export interface GuestTokenPayload {
  */
 export const generateGuestToken = (payload: GuestTokenPayload): string => {
   const fullPayload: JWTPayload = {
-    userId: 'guest',  // プレースホルダー（ゲストユーザーはユーザーIDを持たない）
-    email: 'guest@system',  // プレースホルダー
+    userId: 'guest', // プレースホルダー（ゲストユーザーはユーザーIDを持たない）
+    email: 'guest@system', // プレースホルダー
     role: 'GUEST',
     type: 'guest',
     orgId: payload.orgId,

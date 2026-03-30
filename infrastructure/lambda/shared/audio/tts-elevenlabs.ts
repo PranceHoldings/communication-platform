@@ -6,6 +6,7 @@
 import { Readable } from 'stream';
 import WebSocket from 'ws';
 import { retryWithBackoff } from '../utils/retry';
+import { getTtsStability, getTtsSimilarityBoost } from '../utils/runtime-config-loader';
 
 export interface ElevenLabsTTSConfig {
   apiKey: string;
@@ -47,30 +48,20 @@ export class ElevenLabsTextToSpeech {
    */
   async generateSpeech(options: TTSOptions): Promise<TTSResult> {
     // Wrap in retry logic
-    const result = await retryWithBackoff(
-      () => this._generateSpeechInternal(options),
-      {
-        maxAttempts: 3,
-        initialDelay: 1000,
-        maxDelay: 5000,
-        backoffFactor: 2,
-        retryableErrors: [
-          'timeout',
-          'connection',
-          'quota',
-          'rate limit',
-          '429',
-          '503',
-        ],
-        onRetry: (error, attempt, delay) => {
-          console.warn('[ElevenLabsTTS] Retrying TTS request:', {
-            error: error.message,
-            attempt,
-            nextRetryIn: delay,
-          });
-        },
-      }
-    );
+    const result = await retryWithBackoff(() => this._generateSpeechInternal(options), {
+      maxAttempts: 3,
+      initialDelay: 1000,
+      maxDelay: 5000,
+      backoffFactor: 2,
+      retryableErrors: ['timeout', 'connection', 'quota', 'rate limit', '429', '503'],
+      onRetry: (error, attempt, delay) => {
+        console.warn('[ElevenLabsTTS] Retrying TTS request:', {
+          error: error.message,
+          attempt,
+          nextRetryIn: delay,
+        });
+      },
+    });
 
     console.log('[ElevenLabsTTS] Speech generation completed:', {
       attempts: result.attempts,
@@ -85,10 +76,14 @@ export class ElevenLabsTextToSpeech {
    * Internal speech generation method (without retry logic)
    */
   private async _generateSpeechInternal(options: TTSOptions): Promise<TTSResult> {
+    // Load runtime configs for TTS settings
+    const defaultStability = await getTtsStability();
+    const defaultSimilarityBoost = await getTtsSimilarityBoost();
+
     const {
       text,
-      stability = 0.5,
-      similarityBoost = 0.75,
+      stability = defaultStability,
+      similarityBoost = defaultSimilarityBoost,
       style = 0,
       useSpeakerBoost = true,
     } = options;
@@ -144,10 +139,14 @@ export class ElevenLabsTextToSpeech {
    * Returns a readable stream of audio chunks
    */
   async generateSpeechStream(options: TTSOptions): Promise<Readable> {
+    // Load runtime configs for TTS settings
+    const defaultStability = await getTtsStability();
+    const defaultSimilarityBoost = await getTtsSimilarityBoost();
+
     const {
       text,
-      stability = 0.5,
-      similarityBoost = 0.75,
+      stability = defaultStability,
+      similarityBoost = defaultSimilarityBoost,
       style = 0,
       useSpeakerBoost = true,
     } = options;
@@ -289,13 +288,17 @@ export class ElevenLabsTextToSpeech {
    * @param options - TTS options
    * @returns AsyncGenerator yielding base64-encoded audio chunks (MP3)
    */
-  generateSpeechWebSocketStream(
+  async generateSpeechWebSocketStream(
     options: TTSOptions
   ): Promise<AsyncGenerator<{ audio: string; isFinal: boolean }>> {
+    // Load runtime configs for TTS settings
+    const defaultStability = await getTtsStability();
+    const defaultSimilarityBoost = await getTtsSimilarityBoost();
+
     const {
       text,
-      stability = 0.5,
-      similarityBoost = 0.75,
+      stability = defaultStability,
+      similarityBoost = defaultSimilarityBoost,
       style = 0,
       useSpeakerBoost = true,
     } = options;
@@ -384,15 +387,17 @@ export class ElevenLabsTextToSpeech {
         console.log('[ElevenLabsTTS] WebSocket closed');
         if (!hasError) {
           // Resolve with generator that yields collected chunks
-          resolve((async function* () {
-            for (const chunk of chunks) {
-              yield chunk;
-            }
-          })());
+          resolve(
+            (async function* () {
+              for (const chunk of chunks) {
+                yield chunk;
+              }
+            })()
+          );
         }
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         console.error('[ElevenLabsTTS] WebSocket error:', error);
         hasError = true;
         reject(error);

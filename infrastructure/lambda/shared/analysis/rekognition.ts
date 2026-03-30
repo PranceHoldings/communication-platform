@@ -11,27 +11,12 @@ import {
   Emotion,
   FaceDetail,
 } from '@aws-sdk/client-rekognition';
-import { REKOGNITION_DEFAULTS } from '../config/defaults';
-
-export interface EmotionScore {
-  type: string; // 'HAPPY', 'SAD', 'ANGRY', 'CONFUSED', 'DISGUSTED', 'SURPRISED', 'CALM', 'FEAR'
-  confidence: number; // 0-100
-}
+import { getAwsRegion } from '../utils/env-validator';
+import type { EmotionScore, AgeRange, Pose } from '../types';
 
 export interface FaceQuality {
   brightness: number;
   sharpness: number;
-}
-
-export interface Pose {
-  pitch: number; // 上下の傾き (-90 to 90)
-  roll: number; // 回転 (-180 to 180)
-  yaw: number; // 左右の向き (-90 to 90)
-}
-
-export interface AgeRange {
-  low: number;
-  high: number;
 }
 
 export interface EmotionAnalysisResult {
@@ -71,7 +56,7 @@ export class RekognitionAnalyzer {
   private region: string;
 
   constructor(config: { region?: string } = {}) {
-    this.region = config.region || process.env.AWS_REGION || REKOGNITION_DEFAULTS.REGION;
+    this.region = config.region || getAwsRegion();
     this.client = new RekognitionClient({ region: this.region });
 
     console.log('[RekognitionAnalyzer] Initialized', {

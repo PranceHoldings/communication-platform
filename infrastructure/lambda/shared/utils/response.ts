@@ -1,8 +1,16 @@
 /**
  * APIレスポンス生成ユーティリティ
+ *
+ * CRITICAL: ALL Lambda functions MUST use these utilities.
+ * Direct response construction is FORBIDDEN.
  */
 
 import { APIResponse, SuccessResponse, ErrorResponse, AppError, PaginationMeta } from '../types';
+import {
+  StandardLambdaResponse,
+  StandardSuccessResponse,
+  validateResponseStructure,
+} from '../types/api-response';
 
 /**
  * 共通ヘッダー
@@ -17,12 +25,20 @@ const DEFAULT_HEADERS = {
 
 /**
  * 成功レスポンスを生成
+ *
+ * ENFORCED: Returns StandardLambdaResponse<T> type
+ * Runtime validation in dev mode
  */
-export const successResponse = <T>(data: T, statusCode = 200): APIResponse<SuccessResponse<T>> => {
-  const response: SuccessResponse<T> = {
+export const successResponse = <T>(data: T, statusCode = 200): StandardLambdaResponse<T> => {
+  const response: StandardSuccessResponse<T> = {
     success: true,
     data,
   };
+
+  // Runtime validation in dev mode
+  if (process.env.ENVIRONMENT === 'dev' || process.env.NODE_ENV === 'development') {
+    validateResponseStructure(response);
+  }
 
   return {
     statusCode,

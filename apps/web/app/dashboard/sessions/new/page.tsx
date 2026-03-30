@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/provider';
 import { listScenarios, type Scenario } from '@/lib/api/scenarios';
-import type { Avatar } from '@prance/shared';
+import type { Avatar, AvatarType, AvatarStyle } from '@prance/shared';
 import { listAvatars } from '@/lib/api/avatars';
 import { createSession } from '@/lib/api/sessions';
 import Toast from '@/components/Toast';
@@ -35,8 +35,8 @@ export default function NewSessionPage() {
   // Filters
   const [scenarioSearch, setScenarioSearch] = useState('');
   const [avatarSearch, setAvatarSearch] = useState('');
-  const [avatarTypeFilter, setAvatarTypeFilter] = useState<'TWO_D' | 'THREE_D' | ''>('');
-  const [avatarStyleFilter, setAvatarStyleFilter] = useState<'ANIME' | 'REALISTIC' | ''>('');
+  const [avatarTypeFilter, setAvatarTypeFilter] = useState<AvatarType | ''>('');
+  const [avatarStyleFilter, setAvatarStyleFilter] = useState<AvatarStyle | ''>('');
 
   // Load scenarios
   useEffect(() => {
@@ -323,7 +323,7 @@ export default function NewSessionPage() {
             />
             <select
               value={avatarTypeFilter}
-              onChange={e => setAvatarTypeFilter(e.target.value as 'TWO_D' | 'THREE_D' | '')}
+              onChange={e => setAvatarTypeFilter(e.target.value as AvatarType | '')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">{t('sessions.new.avatar.filter.all_types')}</option>
@@ -332,7 +332,7 @@ export default function NewSessionPage() {
             </select>
             <select
               value={avatarStyleFilter}
-              onChange={e => setAvatarStyleFilter(e.target.value as 'ANIME' | 'REALISTIC' | '')}
+              onChange={e => setAvatarStyleFilter(e.target.value as AvatarStyle | '')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">{t('sessions.new.avatar.filter.all_styles')}</option>

@@ -27,17 +27,47 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // REST API（デプロイは手動で制御 - Lambda統合後に実行）
+    // CORS設定: Dev環境ではlocalhost:3000を許可、Production環境では特定ドメインのみ
+    const allowedOrigins =
+      props.environment === 'production'
+        ? ['https://app.prance.jp']
+        : ['http://localhost:3000', 'https://app.prance.jp'];
+
     this.restApi = new apigateway.RestApi(this, 'RestApi', {
       restApiName: `prance-api-${props.environment}`,
       description: `Prance Platform REST API - ${props.environment}`,
       deploy: false, // Lambda統合後に手動でデプロイ
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS, // TODO: 本番環境では特定ドメインに制限
+        allowOrigins: allowedOrigins,
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: ['Content-Type', 'Authorization', 'X-Api-Key'],
         allowCredentials: true,
       },
       cloudWatchRole: true,
+    });
+
+    // Gateway Responses - エラーレスポンスにもCORSヘッダーを追加
+    // CRITICAL: Lambda Authorizerが401/403を返す際にCORSヘッダーが必要
+    this.restApi.addGatewayResponse('Unauthorized', {
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      statusCode: '401',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': `'${allowedOrigins.join(',')}'`,
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization,X-Api-Key'",
+        'Access-Control-Allow-Methods': "'GET,POST,PUT,DELETE,OPTIONS'",
+        'Access-Control-Allow-Credentials': "'true'",
+      },
+    });
+
+    this.restApi.addGatewayResponse('AccessDenied', {
+      type: apigateway.ResponseType.ACCESS_DENIED,
+      statusCode: '403',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': `'${allowedOrigins.join(',')}'`,
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization,X-Api-Key'",
+        'Access-Control-Allow-Methods': "'GET,POST,PUT,DELETE,OPTIONS'",
+        'Access-Control-Allow-Credentials': "'true'",
+      },
     });
 
     // Note: Lambda Authorizer (JWT) は LambdaStack で作成されます

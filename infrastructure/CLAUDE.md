@@ -93,7 +93,24 @@ bash scripts/validate-deployment-method.sh
 
 **条件:** `packages/database/prisma/schema.prisma` を変更した場合
 
-**✅ 必須実行手順（この順序で実行）:**
+**🔴 最重要: 統合デプロイスクリプト使用（推奨）**
+
+```bash
+# Dev環境（マイグレーション統合デプロイ）
+npm run deploy:dev-migration
+
+# Production環境（マイグレーション統合デプロイ）
+npm run deploy:production-migration
+```
+
+**統合スクリプトが自動実行する内容:**
+1. Prismaスキーマ変更検出
+2. Prisma Client再生成
+3. Lambda関数デプロイ
+4. データベースマイグレーション実行（スキーマ変更時のみ）
+5. デプロイ検証
+
+**手動実行する場合（この順序で実行）:**
 
 ```bash
 # Step 1: マイグレーションファイル生成

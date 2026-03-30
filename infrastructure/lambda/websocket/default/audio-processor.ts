@@ -3,7 +3,6 @@
  * Handles STT -> AI -> TTS flow
  */
 
-import { LANGUAGE_DEFAULTS, MEDIA_DEFAULTS } from '../../shared/config/defaults';
 import { AzureSpeechToText } from '../../shared/audio/stt-azure';
 import { ElevenLabsTextToSpeech } from '../../shared/audio/tts-elevenlabs';
 import { BedrockAI } from '../../shared/ai/bedrock';
@@ -11,7 +10,12 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3
 import { logError, logWarning } from '../../shared/utils/error-logger';
 import { markdownToPlainText } from '../../shared/utils/markdown';
 import { getFFmpegPath } from '../../shared/utils/ffmpeg-helper';
+import { getRequiredEnv } from '../../shared/utils/env-validator';
 import * as crypto from 'crypto';
+
+// Environment variables (single source of truth: .env.local)
+const AUDIO_CONTENT_TYPE = getRequiredEnv('AUDIO_CONTENT_TYPE');
+const AUDIO_FORMAT = getRequiredEnv('VIDEO_FORMAT'); // Use VIDEO_FORMAT as audio also uses webm
 
 export interface AudioProcessorConfig {
   azureSpeechKey: string;
@@ -125,12 +129,17 @@ export class AudioProcessor {
       // Verify first chunk has EBML header (1a 45 df a3)
       const firstChunk = chunks[0];
       if (!firstChunk || firstChunk.length < 4) {
-        throw new Error('First chunk is missing or too small - cannot process fragmented WebM without header');
+        throw new Error(
+          'First chunk is missing or too small - cannot process fragmented WebM without header'
+        );
       }
 
       const headerBytes = firstChunk.slice(0, 4);
       const hasEBMLHeader =
-        headerBytes[0] === 0x1a && headerBytes[1] === 0x45 && headerBytes[2] === 0xdf && headerBytes[3] === 0xa3;
+        headerBytes[0] === 0x1a &&
+        headerBytes[1] === 0x45 &&
+        headerBytes[2] === 0xdf &&
+        headerBytes[3] === 0xa3;
 
       if (!hasEBMLHeader) {
         throw new Error(
@@ -272,10 +281,10 @@ export class AudioProcessor {
     // Search for "data" chunk (0x64617461 = "data" in ASCII)
     for (let i = 12; i < wavBuffer.length - 8; i++) {
       if (
-        wavBuffer[i] === 0x64 &&     // 'd'
-        wavBuffer[i + 1] === 0x61 &&  // 'a'
-        wavBuffer[i + 2] === 0x74 &&  // 't'
-        wavBuffer[i + 3] === 0x61      // 'a'
+        wavBuffer[i] === 0x64 && // 'd'
+        wavBuffer[i + 1] === 0x61 && // 'a'
+        wavBuffer[i + 2] === 0x74 && // 't'
+        wavBuffer[i + 3] === 0x61 // 'a'
       ) {
         dataOffset = i + 8; // Data starts 8 bytes after "data" (4 bytes ID + 4 bytes size)
         dataSize = wavBuffer.readUInt32LE(i + 4);
@@ -334,10 +343,7 @@ export class AudioProcessor {
   /**
    * Transcribe audio using Azure Speech Services
    */
-  private async transcribeAudio(
-    audioData: Buffer,
-    scenarioLanguage?: string
-  ): Promise<string> {
+  private async transcribeAudio(audioData: Buffer, scenarioLanguage?: string): Promise<string> {
     const fs = await import('fs');
 
     // Detect audio format from buffer header
@@ -457,12 +463,12 @@ export class AudioProcessor {
     audioData: Buffer,
     sessionId: string,
     type: 'input' | 'output',
-    contentType: string = MEDIA_DEFAULTS.AUDIO_CONTENT_TYPE
+    contentType: string = AUDIO_CONTENT_TYPE
   ): Promise<string> {
     const timestamp = Date.now();
 
     // Determine file extension based on content type
-    let extension: string = MEDIA_DEFAULTS.AUDIO_FORMAT;
+    let extension: string = AUDIO_FORMAT;
     if (contentType.includes('mpeg') || contentType.includes('mp3')) {
       extension = 'mp3';
     } else if (contentType.includes('wav')) {

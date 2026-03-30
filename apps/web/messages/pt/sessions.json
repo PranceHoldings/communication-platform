@@ -174,7 +174,10 @@
       "authenticationTimeout": "Authentication timeout. Please try again.",
       "processingComplete": "Processing Complete",
       "lowVolumeWarning": "⚠️ O volume do microfone está muito baixo. Por favor, fale mais alto ou verifique as configurações do microfone.",
-      "audioTooQuiet": "O nível de áudio está muito baixo. Por favor, fale mais perto do microfone."
+      "audioTooQuiet": "O nível de áudio está muito baixo. Por favor, fale mais perto do microfone.",
+      "partialRecording": "⚠️ Gravação Salva Parcialmente",
+      "partialRecordingDescription": "Ocorreu um erro durante o processamento. {saved} de {total} fragmentos foram salvos com sucesso.",
+      "aiFallbackUsed": "A IA está usando uma resposta alternativa devido a um problema temporário."
     },
     "noSpeech": {
       "guidance": "Nenhuma fala detectada. Por favor, fale mais alto ou aproxime-se do microfone.",
@@ -205,7 +208,8 @@
     "completed": {
       "title": "Session Completed",
       "duration": "Duration",
-      "messageCount": "{count} messages"
+      "messageCount": "{count} messages",
+      "turnLimitReached": "Conversa concluída após {turnCount} turnos."
     },
     "info": {
       "scenario": "Scenario",
@@ -247,6 +251,20 @@
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
         "notSupported": "Recording is not supported in your browser"
       }
+    },
+    "validation": {
+      "cannotStart": "Não é possível iniciar a sessão",
+      "warningsDetected": "Avisos de Cenário Detectados",
+      "warningsMessage": "Os seguintes avisos foram detectados na configuração do cenário:",
+      "proceedAnyway": "Deseja prosseguir mesmo assim?",
+      "sessionCancelled": "Início da sessão cancelado",
+      "titleRequired": "O título do cenário é obrigatório",
+      "languageRequired": "O idioma do cenário é obrigatório",
+      "systemPromptRequired": "O prompt do sistema é obrigatório",
+      "initialGreetingMissing": "A saudação inicial não foi definida. A IA aguardará o usuário falar primeiro.",
+      "silenceTimeoutTooShort": "O tempo limite de silêncio é muito curto. Considere aumentá-lo.",
+      "systemPromptTooLong": "O prompt do sistema é muito longo. Isso pode afetar a qualidade da resposta da IA.",
+      "systemPromptTooShort": "O prompt do sistema é muito curto. Considere adicionar mais contexto."
     }
   },
   "errors": {

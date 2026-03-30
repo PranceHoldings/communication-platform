@@ -23,6 +23,10 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   websocketConnectionsTable: dynamodb.Table;
   recordingsBucket: s3.Bucket;
   guestRateLimitTable: dynamodb.Table;
+  sessionRateLimitTable: dynamodb.Table; // Phase 1.6: Token Bucket rate limiting
+  benchmarkCacheTable: dynamodb.Table; // Phase 4: Benchmark cache
+  userSessionHistoryTable: dynamodb.Table; // Phase 4: User session history for growth tracking
+  elasticacheEndpoint: string; // Phase 5: Runtime Configuration Management
 }
 
 export class ApiLambdaStack extends cdk.Stack {
@@ -36,6 +40,7 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly organizationSettingsFunction: nodejs.NodejsFunction;
   public readonly migrationFunction: nodejs.NodejsFunction;
   public readonly dbQueryFunction: nodejs.NodejsFunction;
+  public readonly dbMutationFunction: nodejs.NodejsFunction;
   public readonly populateScenarioDefaultsFunction: nodejs.NodejsFunction;
   public readonly listSessionsFunction: nodejs.NodejsFunction;
   public readonly createSessionFunction: nodejs.NodejsFunction;
@@ -69,6 +74,17 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly authGuestFunction: nodejs.NodejsFunction;
   public readonly getGuestSessionDataFunction: nodejs.NodejsFunction;
   public readonly authorizer: apigateway.TokenAuthorizer;
+  // WebSocket Functions
+  public readonly websocketDefaultFunction: nodejs.NodejsFunction;
+  // Phase 4: Benchmark System
+  public readonly getBenchmarkFunction: nodejs.NodejsFunction;
+  public readonly updateSessionHistoryFunction: nodejs.NodejsFunction;
+  // Phase 5: Runtime Configuration Management
+  public readonly getRuntimeConfigsFunction: nodejs.NodejsFunction;
+  public readonly getRuntimeConfigFunction: nodejs.NodejsFunction;
+  public readonly updateRuntimeConfigFunction: nodejs.NodejsFunction;
+  public readonly getRuntimeConfigHistoryFunction: nodejs.NodejsFunction;
+  public readonly rollbackRuntimeConfigFunction: nodejs.NodejsFunction;
 
   constructor(scope: Construct, id: string, props: ApiLambdaStackProps) {
     super(scope, id, props);
@@ -137,12 +153,46 @@ export class ApiLambdaStack extends cdk.Stack {
         }),
       },
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS, // TODO: 本番環境では特定ドメインに制限
+        // CORS設定: Dev環境ではlocalhost:3000を許可、Production環境では特定ドメインのみ
+        allowOrigins:
+          props.environment === 'production'
+            ? ['https://app.prance.jp']
+            : ['http://localhost:3000', 'https://app.prance.jp'],
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: ['Content-Type', 'Authorization', 'X-Api-Key'],
         allowCredentials: true,
       },
       cloudWatchRole: true,
+    });
+
+    // Gateway Responses - エラーレスポンスにもCORSヘッダーを追加
+    // CRITICAL: Lambda Authorizerが401/403を返す際にCORSヘッダーが必要
+    // Phase 2.2 WebSocket統合テスト失敗の根本原因解決
+    const allowedOrigins =
+      props.environment === 'production'
+        ? ['https://app.prance.jp']
+        : ['http://localhost:3000', 'https://app.prance.jp'];
+
+    this.restApi.addGatewayResponse('Unauthorized', {
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      statusCode: '401',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': `'${allowedOrigins.join(',')}'`,
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization,X-Api-Key'",
+        'Access-Control-Allow-Methods': "'GET,POST,PUT,DELETE,OPTIONS'",
+        'Access-Control-Allow-Credentials': "'true'",
+      },
+    });
+
+    this.restApi.addGatewayResponse('AccessDenied', {
+      type: apigateway.ResponseType.ACCESS_DENIED,
+      statusCode: '403',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': `'${allowedOrigins.join(',')}'`,
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization,X-Api-Key'",
+        'Access-Control-Allow-Methods': "'GET,POST,PUT,DELETE,OPTIONS'",
+        'Access-Control-Allow-Credentials': "'true'",
+      },
     });
 
     // WebSocket API (AWS IoT Core代替として、まずAPI Gateway WebSocketで実装)
@@ -177,10 +227,11 @@ export class ApiLambdaStack extends cdk.Stack {
         JWT_SECRET: jwtSecret.secretValueFromJson('secret').unsafeUnwrap(),
       },
       bundling: {
-        minify: props.environment === 'production',
+        minify: false, // Temporarily disable minification for debugging
         sourceMap: true,
         target: 'es2020',
-        externalModules: ['aws-sdk'],
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+        nodeModules: ['jsonwebtoken'],
       },
       // VPC接続不要（DB接続なし）
     });
@@ -200,6 +251,8 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // Lambda共通環境変数
     const commonEnvironment = {
+      // AWS_REGION is automatically provided by Lambda runtime - do not set manually
+      AWS_ENDPOINT_SUFFIX: process.env.AWS_ENDPOINT_SUFFIX!, // AWS endpoint suffix (can be changed for AWS China, GovCloud, etc.)
       ENVIRONMENT: props.environment,
       LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
       NODE_ENV: props.environment === 'production' ? 'production' : 'development',
@@ -208,7 +261,12 @@ export class ApiLambdaStack extends cdk.Stack {
       FRONTEND_URL: `https://${config.domain.fullDomain}`,
       GUEST_RATE_LIMIT_TABLE_NAME: props.guestRateLimitTable.tableName,
       BEDROCK_REGION: this.region,
-      STORAGE_BUCKET_NAME: props.recordingsBucket.bucketName,
+      S3_BUCKET: props.recordingsBucket.bucketName,
+      // Phase 4: Benchmark System
+      DYNAMODB_BENCHMARK_CACHE_TABLE: props.benchmarkCacheTable.tableName,
+      DYNAMODB_USER_SESSION_HISTORY_TABLE: props.userSessionHistoryTable.tableName,
+      // Phase 5: Runtime Configuration Management
+      ELASTICACHE_ENDPOINT: props.elasticacheEndpoint,
     };
 
     // Lambda共通設定
@@ -453,7 +511,8 @@ export class ApiLambdaStack extends cdk.Stack {
     this.dbQueryFunction = new nodejs.NodejsFunction(this, 'DbQueryFunction', {
       ...commonLambdaProps,
       functionName: `prance-db-query-${props.environment}`,
-      description: 'Execute database queries from local development environment (read-only by default)',
+      description:
+        'Execute database queries from local development environment (read-only by default)',
       entry: path.join(__dirname, '../lambda/db-query/index.ts'),
       handler: 'handler',
       timeout: cdk.Duration.seconds(60), // 1分
@@ -464,6 +523,7 @@ export class ApiLambdaStack extends cdk.Stack {
       environment: {
         ...commonLambdaProps.environment,
         DB_QUERIES_BUCKET: `prance-db-queries-${props.environment}`,
+        MAX_RESULTS: process.env.MAX_RESULTS!, // Maximum results for queries
       },
       bundling: {
         minify: false,
@@ -499,6 +559,46 @@ export class ApiLambdaStack extends cdk.Stack {
       `prance-db-queries-${props.environment}`
     );
     dbQueriesBucket.grantRead(this.dbQueryFunction);
+
+    // Database Mutation Lambda関数（開発用データベース書き込み操作）
+    this.dbMutationFunction = new nodejs.NodejsFunction(this, 'DbMutationFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-db-mutation-${props.environment}`,
+      description:
+        'Execute database mutations (INSERT/UPDATE/DELETE) - dev environment only for direct SQL',
+      entry: path.join(__dirname, '../lambda/db-mutation/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(60), // 1分
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: {
+        minify: false,
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+        nodeModules: ['@prisma/client'],
+        commandHooks: {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            return [
+              // Copy Prisma generated client
+              `mkdir -p ${outputDir}/node_modules/.prisma`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+              // Copy Prisma schema
+              `mkdir -p ${outputDir}/prisma`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+            ];
+          },
+          beforeInstall(): string[] {
+            return [];
+          },
+        },
+      },
+    });
 
     // データベース保守Lambda関数（Scenario Default Values設定）
     this.populateScenarioDefaultsFunction = new nodejs.NodejsFunction(
@@ -812,7 +912,7 @@ export class ApiLambdaStack extends cdk.Stack {
       environment: {
         ...commonEnvironment,
         RECORDINGS_BUCKET_NAME: props.recordingsBucket.bucketName,
-        ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS || 'true',
+        ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS!,
       },
     });
 
@@ -899,6 +999,8 @@ export class ApiLambdaStack extends cdk.Stack {
         minify: props.environment === 'production',
         sourceMap: true,
         target: 'es2020',
+        // 🔧 FIX: Use Docker bundling to avoid ENOTEMPTY errors with deep node_modules
+        forceDockerBundling: true,
         externalModules: ['aws-sdk', '@aws-sdk/*'],
         nodeModules: [
           '@prisma/client',
@@ -1166,11 +1268,13 @@ export class ApiLambdaStack extends cdk.Stack {
       entry: path.join(__dirname, '../lambda/websocket/connect/index.ts'),
       handler: 'handler',
       environment: {
+        // AWS_REGION is automatically provided by Lambda runtime
         ENVIRONMENT: props.environment,
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
         NODE_ENV: props.environment === 'production' ? 'production' : 'development',
         JWT_SECRET: jwtSecret.secretValueFromJson('secret').unsafeUnwrap(),
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
+        DYNAMODB_CONNECTION_TTL_SECONDS: process.env.DYNAMODB_CONNECTION_TTL_SECONDS!,
       },
       bundling: {
         minify: props.environment === 'production',
@@ -1215,6 +1319,7 @@ export class ApiLambdaStack extends cdk.Stack {
         entry: path.join(__dirname, '../lambda/websocket/disconnect/index.ts'),
         handler: 'handler',
         environment: {
+          // AWS_REGION is automatically provided by Lambda runtime
           ENVIRONMENT: props.environment,
           LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
           NODE_ENV: props.environment === 'production' ? 'production' : 'development',
@@ -1233,7 +1338,7 @@ export class ApiLambdaStack extends cdk.Stack {
     // Note: We now use ffmpeg-static npm package instead of Lambda Layer
     // This provides better compatibility with ARM64 architecture and simplifies deployment
 
-    const websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefaultFunction', {
+    this.websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefaultFunction', {
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64, // Using ARM64 for Graviton2 cost savings + dev env compatibility
       timeout: cdk.Duration.seconds(300), // Increased for video processing (5 minutes)
@@ -1244,19 +1349,20 @@ export class ApiLambdaStack extends cdk.Stack {
         props.environment === 'production'
           ? logs.RetentionDays.ONE_MONTH
           : logs.RetentionDays.ONE_WEEK,
-      functionName: `prance-websocket-default-${props.environment}`,
-      description: 'WebSocket $default message handler with STT/AI/TTS/Video processing',
+      functionName: `prance-websocket-default-v2-${props.environment}`,
+      description: 'WebSocket $default message handler (v2 - FIXED: schema.prisma in .prisma/client/)',
       entry: path.join(__dirname, '../lambda/websocket/default/index.ts'),
       handler: 'handler',
       depsLockFilePath: path.join(__dirname, '../lambda/websocket/default/package-lock.json'),
-      projectRoot: path.join(__dirname, '../lambda'),
       environment: {
         ENVIRONMENT: props.environment,
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
         NODE_ENV: props.environment === 'production' ? 'production' : 'development',
         // AWS_REGION is automatically set by Lambda runtime - do not override
+        AWS_ENDPOINT_SUFFIX: process.env.AWS_ENDPOINT_SUFFIX!,
         WEBSOCKET_ENDPOINT: `https://${this.webSocketApi.ref}.execute-api.${this.region}.amazonaws.com/${props.environment}`,
         CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
+        DYNAMODB_RATE_LIMIT_TABLE: props.sessionRateLimitTable.tableName, // Phase 1.6: Token Bucket rate limiting
         S3_BUCKET: props.recordingsBucket.bucketName,
         DATABASE_URL,
         // JWT Secret for authentication
@@ -1271,95 +1377,56 @@ export class ApiLambdaStack extends cdk.Stack {
         ELEVENLABS_API_KEY: elevenLabsSecret.secretValueFromJson('apiKey').unsafeUnwrap(),
         ELEVENLABS_VOICE_ID: elevenLabsSecret.secretValueFromJson('voiceId').unsafeUnwrap(),
         ELEVENLABS_MODEL_ID: elevenLabsSecret.secretValueFromJson('modelId').unsafeUnwrap(),
-        BEDROCK_REGION: process.env.BEDROCK_REGION || 'us-east-1',
-        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6',
+        BEDROCK_REGION: process.env.BEDROCK_REGION!,
+        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID!,
         // CloudFront Configuration (for signed URLs)
-        // Using hardcoded value for dev environment (see CDK_CLOUDFRONT_DOMAIN_FIX.md)
-        CLOUDFRONT_DOMAIN: 'd3mx0sug5s3a6x.cloudfront.net',
-        CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID || '',
-        CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY || '',
-        // Language and Media Configuration (デフォルト値はLambda内で管理)
-        STT_LANGUAGE: process.env.STT_LANGUAGE || '',
-        VIDEO_FORMAT: process.env.VIDEO_FORMAT || '',
-        VIDEO_RESOLUTION: process.env.VIDEO_RESOLUTION || '',
-        AUDIO_CONTENT_TYPE: process.env.AUDIO_CONTENT_TYPE || '',
-        VIDEO_CONTENT_TYPE: process.env.VIDEO_CONTENT_TYPE || '',
+        CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN!,
+        CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID!,
+        CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY!,
+        // Language and Media Configuration
+        STT_LANGUAGE: process.env.STT_LANGUAGE!,
+        STT_AUTO_DETECT_LANGUAGES: process.env.STT_AUTO_DETECT_LANGUAGES!,
+        VIDEO_FORMAT: process.env.VIDEO_FORMAT!,
+        VIDEO_RESOLUTION: process.env.VIDEO_RESOLUTION!,
+        AUDIO_CONTENT_TYPE: process.env.AUDIO_CONTENT_TYPE!,
+        VIDEO_CONTENT_TYPE: process.env.VIDEO_CONTENT_TYPE!,
         // Analysis Configuration
         ANALYSIS_FUNCTION_NAME: `prance-sessions-analysis-${props.environment}`,
-        ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS || 'true',
+        ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS!,
       },
       bundling: {
         minify: props.environment === 'production',
         sourceMap: true,
         target: 'es2020',
-        externalModules: [
-          'aws-sdk',
-          '@aws-sdk/*',
-          '@smithy/*',
-          'microsoft-cognitiveservices-speech-sdk',
-          'ffmpeg-static',
-        ],
-        nodeModules: [
-          'microsoft-cognitiveservices-speech-sdk',
-          'ffmpeg-static',
-          '@prisma/client',
-          'prisma',
-        ],
+        externalModules: ['aws-sdk', '@aws-sdk/*'], // Match prismaBundlingConfig pattern
+        nodeModules: ['@prisma/client', 'microsoft-cognitiveservices-speech-sdk', 'ffmpeg-static'],
         commandHooks: {
           beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
           afterBundling(inputDir: string, outputDir: string): string[] {
+            // Use absolute path from __dirname to avoid inputDir confusion
+            const projectRoot = path.join(__dirname, '../..');
             return [
-              // ROOT CAUSE ANALYSIS (2026-03-14):
-              // Previous design (commit fa84e6f, 2026-03-12) copied pre-compiled .js files from source directory.
-              // This was based on INCORRECT DIAGNOSIS: "index.js missing from Lambda zip"
-              // TRUTH: esbuild automatically transpiles index.ts and bundles imported modules into outputDir/index.js
-              // PROBLEM: Copying from source directory OVERWRITES esbuild output with stale code
-              // SOLUTION: Let esbuild handle all transpilation. Only copy shared modules and native dependencies.
-              //
-              // Why previous approach failed:
-              // 1. esbuild generates fresh index.js from index.ts → outputDir/index.js (correct code)
-              // 2. afterBundling copies old index.js from source → OVERWRITES with stale code (2026-03-11)
-              // 3. Even "clean build" (rm -rf cdk.out) doesn't remove source .js files
-              // 4. Old code gets deployed repeatedly
-              //
-              // Correct approach:
-              // - esbuild: Handles index.ts transpilation + bundling (audio-processor, video-processor, chunk-utils)
-              // - afterBundling: Only copies shared/ modules and native dependencies (ffmpeg-static, Azure SDK)
-              // Fix require paths in bundled file (../../shared -> ./shared)
-              // Note: esbuild bundles all TypeScript imports, but preserves dynamic require() for shared modules
-              `sed -i 's|require("../../shared/|require("./shared/|g' ${outputDir}/index.js || true`,
-              `sed -i "s|require('../../shared/|require('./shared/|g" ${outputDir}/index.js || true`,
-              // Copy ALL shared modules (CRITICAL: Without these, Lambda will fail with ImportModuleError)
-              `mkdir -p ${outputDir}/shared`,
-              `cp -r ${inputDir}/shared/ai ${outputDir}/shared/`,
-              `cp -r ${inputDir}/shared/audio ${outputDir}/shared/`,
-              `cp -r ${inputDir}/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
-              `cp -r ${inputDir}/shared/config ${outputDir}/shared/`, // CRITICAL: defaults.ts, language-config.ts
-              `cp -r ${inputDir}/shared/utils ${outputDir}/shared/`, // CRITICAL: error-logger.ts
-              `cp -r ${inputDir}/shared/types ${outputDir}/shared/`, // CRITICAL: Type definitions
-              `cp -r ${inputDir}/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
-              `cp -r ${inputDir}/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
-              // Copy Prisma Client (both @prisma/client package and .prisma/client generated code)
-              // Note: Both are required - @prisma/client is the package, .prisma/client is the generated code
-              `mkdir -p ${outputDir}/node_modules/@prisma`,
-              `cp -r ${inputDir}/websocket/default/node_modules/@prisma/client ${outputDir}/node_modules/@prisma/ 2>/dev/null || echo "Warning: @prisma/client package not found"`,
+              // Copy Prisma generated client
               `mkdir -p ${outputDir}/node_modules/.prisma`,
-              `cp -r ${inputDir}/../../packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Warning: .prisma/client generated code not found"`,
-              // Copy Prisma schema (CRITICAL: Required for Prisma Client initialization)
-              `cp ${inputDir}/../../packages/database/prisma/schema.prisma ${outputDir}/node_modules/.prisma/client/schema.prisma 2>/dev/null || echo "Warning: schema.prisma not found"`,
-              // Copy native dependencies (CRITICAL: ffmpeg-static for audio processing, Azure Speech SDK for STT)
-              `mkdir -p ${outputDir}/node_modules/ffmpeg-static`,
-              `cp -r ${inputDir}/websocket/default/node_modules/ffmpeg-static/. ${outputDir}/node_modules/ffmpeg-static/ 2>/dev/null || echo "Warning: ffmpeg-static not found"`,
-              `mkdir -p ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk`,
-              `cp -r ${inputDir}/websocket/default/node_modules/microsoft-cognitiveservices-speech-sdk/. ${outputDir}/node_modules/microsoft-cognitiveservices-speech-sdk/ 2>/dev/null || echo "Warning: Azure Speech SDK not found"`,
-              // Copy ffmpeg/ffprobe binaries directly to root for direct access
-              `cp ${inputDir}/websocket/default/node_modules/ffmpeg-static/ffmpeg ${outputDir}/ffmpeg 2>/dev/null || echo "Warning: ffmpeg binary not found"`,
+              `cp -r ${projectRoot}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Warning: Prisma .prisma/client not found"`,
+              // Copy Prisma schema (CRITICAL: Must be in .prisma/client directory)
+              `cp ${projectRoot}/packages/database/prisma/schema.prisma ${outputDir}/node_modules/.prisma/client/schema.prisma 2>/dev/null || echo "Warning: schema.prisma not found at ${projectRoot}/packages/database/prisma/schema.prisma"`,
+              // Copy shared modules (CRITICAL: Required by WebSocket handler)
+              `mkdir -p ${outputDir}/shared`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/ai ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/audio ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/analysis ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/auth ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/config ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/database ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
+              `cp -r ${projectRoot}/infrastructure/lambda/shared/utils ${outputDir}/shared/ 2>/dev/null || true`,
+              // Note: shared/scenario is bundled by esbuild, NOT copied
+              // Copy ffmpeg binaries (use inputDir for node_modules access)
+              `cp ${projectRoot}/infrastructure/lambda/websocket/default/node_modules/ffmpeg-static/ffmpeg ${outputDir}/ffmpeg 2>/dev/null || echo "Warning: ffmpeg binary not found"`,
               `chmod +x ${outputDir}/ffmpeg 2>/dev/null || true`,
-              `cp ${inputDir}/websocket/default/node_modules/ffmpeg-static/ffprobe ${outputDir}/ffprobe 2>/dev/null || echo "Info: ffprobe not found in ffmpeg-static (optional)"`,
-              `chmod +x ${outputDir}/ffprobe 2>/dev/null || true`,
-              `echo "Shared modules and native dependencies copied successfully (esbuild handles TypeScript transpilation)"`,
             ];
           },
           beforeInstall(): string[] {
@@ -1372,7 +1439,10 @@ export class ApiLambdaStack extends cdk.Stack {
     // DynamoDB permissions for WebSocket handlers
     props.websocketConnectionsTable.grantReadWriteData(websocketConnectFunction);
     props.websocketConnectionsTable.grantReadWriteData(websocketDisconnectFunction);
-    props.websocketConnectionsTable.grantReadWriteData(websocketDefaultFunction);
+    props.websocketConnectionsTable.grantReadWriteData(this.websocketDefaultFunction);
+
+    // Phase 1.6: Token Bucket rate limiting table permissions
+    props.sessionRateLimitTable.grantReadWriteData(this.websocketDefaultFunction);
 
     // DynamoDB permissions for Guest User functions
     // Auth function needs read/write for rate limiting
@@ -1381,15 +1451,15 @@ export class ApiLambdaStack extends cdk.Stack {
     props.guestRateLimitTable.grantReadData(this.verifyGuestTokenFunction);
 
     // S3 permissions for default handler (audio/video storage)
-    props.recordingsBucket.grantReadWrite(websocketDefaultFunction);
+    props.recordingsBucket.grantReadWrite(this.websocketDefaultFunction);
 
     // Secrets Manager permissions for WebSocket handlers
     // Connect handler needs JWT secret for authentication
     jwtSecret.grantRead(websocketConnectFunction);
     // Default handler needs all secrets for AI/Audio/Video processing
-    elevenLabsSecret.grantRead(websocketDefaultFunction);
-    azureSpeechSecret.grantRead(websocketDefaultFunction);
-    props.databaseSecret.grantRead(websocketDefaultFunction);
+    elevenLabsSecret.grantRead(this.websocketDefaultFunction);
+    azureSpeechSecret.grantRead(this.websocketDefaultFunction);
+    props.databaseSecret.grantRead(this.websocketDefaultFunction);
 
     // Secrets Manager permissions for Authorizer
     jwtSecret.grantRead(authorizerFunction);
@@ -1403,7 +1473,7 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseSecret.grantRead(this.getCurrentUserFunction);
 
     // PostToConnection permission for default handler
-    websocketDefaultFunction.addToRolePolicy(
+    this.websocketDefaultFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['execute-api:ManageConnections'],
@@ -1415,7 +1485,7 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // AWS Bedrock permissions for AI responses
     // Note: Bedrock cross-region inference profiles may redirect to different regions
-    websocketDefaultFunction.addToRolePolicy(
+    this.websocketDefaultFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: [
@@ -1430,7 +1500,305 @@ export class ApiLambdaStack extends cdk.Stack {
     );
 
     // Lambda invoke permission for session analysis (auto-trigger on session_end)
-    this.sessionAnalysisFunction.grantInvoke(websocketDefaultFunction);
+    this.sessionAnalysisFunction.grantInvoke(this.websocketDefaultFunction);
+
+    // ==================== Phase 4: Benchmark System ====================
+
+    // GetBenchmark Lambda Function
+    this.getBenchmarkFunction = new nodejs.NodejsFunction(this, 'GetBenchmarkFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-benchmark-get-${props.environment}`,
+      description: 'Get benchmark data for user score comparison (Phase 4)',
+      entry: path.join(__dirname, '../lambda/benchmark/get/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      environment: {
+        ...commonEnvironment,
+        DYNAMODB_BENCHMARK_CACHE_TABLE: props.benchmarkCacheTable.tableName,
+        MIN_SAMPLE_SIZE: process.env.MIN_SAMPLE_SIZE!,
+      },
+      bundling: {
+        minify: props.environment === 'production',
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+      },
+    });
+
+    // UpdateSessionHistory Lambda Function
+    this.updateSessionHistoryFunction = new nodejs.NodejsFunction(
+      this,
+      'UpdateSessionHistoryFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-benchmark-update-history-${props.environment}`,
+        description: 'Update session history and benchmark cache (Phase 4)',
+        entry: path.join(__dirname, '../lambda/benchmark/update-history/index.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        environment: {
+          ...commonEnvironment,
+          DYNAMODB_BENCHMARK_CACHE_TABLE: props.benchmarkCacheTable.tableName,
+          DYNAMODB_USER_SESSION_HISTORY_TABLE: props.userSessionHistoryTable.tableName,
+          SESSION_HISTORY_TTL_DAYS: process.env.SESSION_HISTORY_TTL_DAYS!,
+          BENCHMARK_CACHE_TTL_DAYS: process.env.BENCHMARK_CACHE_TTL_DAYS!,
+        },
+        bundling: {
+          minify: props.environment === 'production',
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk', '@aws-sdk/*'],
+          nodeModules: ['@prisma/client'],
+          commandHooks: {
+            beforeBundling(_inputDir: string, _outputDir: string): string[] {
+              return [];
+            },
+            afterBundling(inputDir: string, outputDir: string): string[] {
+              return [
+                // Copy Prisma generated client
+                `mkdir -p ${outputDir}/node_modules/.prisma`,
+                `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+                // Copy Prisma schema
+                `mkdir -p ${outputDir}/prisma`,
+                `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+              ];
+            },
+            beforeInstall(): string[] {
+              return [];
+            },
+          },
+        },
+      }
+    );
+
+    // DynamoDB permissions for Benchmark functions
+    props.benchmarkCacheTable.grantReadData(this.getBenchmarkFunction);
+    props.benchmarkCacheTable.grantReadWriteData(this.updateSessionHistoryFunction);
+    props.userSessionHistoryTable.grantReadWriteData(this.updateSessionHistoryFunction);
+
+    // Database access for UpdateSessionHistory
+    props.databaseSecret.grantRead(this.updateSessionHistoryFunction);
+
+    // ==================== Phase 5: Runtime Configuration Management ====================
+
+    // GetRuntimeConfigs Lambda Function (GET /api/v1/admin/runtime-config)
+    this.getRuntimeConfigsFunction = new nodejs.NodejsFunction(this, 'GetRuntimeConfigsFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-admin-runtime-config-get-all-${props.environment}`,
+      description: 'Get all runtime configurations (Phase 5)',
+      entry: path.join(__dirname, '../lambda/admin/runtime-config/get-all.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: {
+        minify: props.environment === 'production',
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+        nodeModules: ['@prisma/client'],
+        commandHooks: {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            return [
+              // Copy Prisma generated client
+              `mkdir -p ${outputDir}/node_modules/.prisma`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+              // Copy Prisma schema
+              `mkdir -p ${outputDir}/prisma`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+            ];
+          },
+          beforeInstall(): string[] {
+            return [];
+          },
+        },
+      },
+    });
+
+    // GetRuntimeConfig Lambda Function (GET /api/v1/admin/runtime-config/:key)
+    this.getRuntimeConfigFunction = new nodejs.NodejsFunction(this, 'GetRuntimeConfigFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-admin-runtime-config-get-${props.environment}`,
+      description: 'Get runtime configuration by key (Phase 5)',
+      entry: path.join(__dirname, '../lambda/admin/runtime-config/get-one.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: {
+        minify: props.environment === 'production',
+        sourceMap: true,
+        target: 'es2020',
+        externalModules: ['aws-sdk', '@aws-sdk/*'],
+        nodeModules: ['@prisma/client'],
+        commandHooks: {
+          beforeBundling(_inputDir: string, _outputDir: string): string[] {
+            return [];
+          },
+          afterBundling(inputDir: string, outputDir: string): string[] {
+            return [
+              // Copy Prisma generated client
+              `mkdir -p ${outputDir}/node_modules/.prisma`,
+              `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+              // Copy Prisma schema
+              `mkdir -p ${outputDir}/prisma`,
+              `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+            ];
+          },
+          beforeInstall(): string[] {
+            return [];
+          },
+        },
+      },
+    });
+
+    // UpdateRuntimeConfig Lambda Function (PUT /api/v1/admin/runtime-config/:key)
+    this.updateRuntimeConfigFunction = new nodejs.NodejsFunction(
+      this,
+      'UpdateRuntimeConfigFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-admin-runtime-config-update-${props.environment}`,
+        description: 'Update runtime configuration value (Phase 5)',
+        entry: path.join(__dirname, '../lambda/admin/runtime-config/update.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: {
+          minify: props.environment === 'production',
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk', '@aws-sdk/*'],
+          nodeModules: ['@prisma/client', 'redis'],
+          commandHooks: {
+            beforeBundling(_inputDir: string, _outputDir: string): string[] {
+              return [];
+            },
+            afterBundling(inputDir: string, outputDir: string): string[] {
+              return [
+                // Copy Prisma generated client
+                `mkdir -p ${outputDir}/node_modules/.prisma`,
+                `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+                // Copy Prisma schema
+                `mkdir -p ${outputDir}/prisma`,
+                `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+              ];
+            },
+            beforeInstall(): string[] {
+              return [];
+            },
+          },
+        },
+      }
+    );
+
+    // GetRuntimeConfigHistory Lambda Function (GET /api/v1/admin/runtime-config/:key/history)
+    this.getRuntimeConfigHistoryFunction = new nodejs.NodejsFunction(
+      this,
+      'GetRuntimeConfigHistoryFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-admin-runtime-config-history-${props.environment}`,
+        description: 'Get runtime configuration change history (Phase 5)',
+        entry: path.join(__dirname, '../lambda/admin/runtime-config/get-history.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: {
+          minify: props.environment === 'production',
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk', '@aws-sdk/*'],
+          nodeModules: ['@prisma/client'],
+          commandHooks: {
+            beforeBundling(_inputDir: string, _outputDir: string): string[] {
+              return [];
+            },
+            afterBundling(inputDir: string, outputDir: string): string[] {
+              return [
+                // Copy Prisma generated client
+                `mkdir -p ${outputDir}/node_modules/.prisma`,
+                `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+                // Copy Prisma schema
+                `mkdir -p ${outputDir}/prisma`,
+                `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+              ];
+            },
+            beforeInstall(): string[] {
+              return [];
+            },
+          },
+        },
+      }
+    );
+
+    // RollbackRuntimeConfig Lambda Function (POST /api/v1/admin/runtime-config/:key/rollback)
+    this.rollbackRuntimeConfigFunction = new nodejs.NodejsFunction(
+      this,
+      'RollbackRuntimeConfigFunction',
+      {
+        ...commonLambdaProps,
+        functionName: `prance-admin-runtime-config-rollback-${props.environment}`,
+        description: 'Rollback runtime configuration to previous value (Phase 5)',
+        entry: path.join(__dirname, '../lambda/admin/runtime-config/rollback.ts'),
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
+        bundling: {
+          minify: props.environment === 'production',
+          sourceMap: true,
+          target: 'es2020',
+          externalModules: ['aws-sdk', '@aws-sdk/*'],
+          nodeModules: ['@prisma/client', 'redis'],
+          commandHooks: {
+            beforeBundling(_inputDir: string, _outputDir: string): string[] {
+              return [];
+            },
+            afterBundling(inputDir: string, outputDir: string): string[] {
+              return [
+                // Copy Prisma generated client
+                `mkdir -p ${outputDir}/node_modules/.prisma`,
+                `cp -r ${inputDir}/packages/database/node_modules/.prisma/client ${outputDir}/node_modules/.prisma/ 2>/dev/null || echo "Prisma client will be generated at runtime"`,
+                // Copy Prisma schema
+                `mkdir -p ${outputDir}/prisma`,
+                `cp ${inputDir}/packages/database/prisma/schema.prisma ${outputDir}/prisma/ 2>/dev/null || true`,
+              ];
+            },
+            beforeInstall(): string[] {
+              return [];
+            },
+          },
+        },
+      }
+    );
+
+    // Database access for Runtime Config functions
+    props.databaseSecret.grantRead(this.getRuntimeConfigsFunction);
+    props.databaseSecret.grantRead(this.getRuntimeConfigFunction);
+    props.databaseSecret.grantRead(this.updateRuntimeConfigFunction);
+    props.databaseSecret.grantRead(this.getRuntimeConfigHistoryFunction);
+    props.databaseSecret.grantRead(this.rollbackRuntimeConfigFunction);
 
     // ==================== API Gateway統合 ====================
 
@@ -1658,6 +2026,61 @@ export class ApiLambdaStack extends cdk.Stack {
       }
     );
 
+    // Phase 4: Benchmark System Integrations
+    const getBenchmarkIntegration = new apigateway.LambdaIntegration(this.getBenchmarkFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
+    const updateSessionHistoryIntegration = new apigateway.LambdaIntegration(
+      this.updateSessionHistoryFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    // Phase 5: Runtime Configuration Management Integrations
+    const getRuntimeConfigsIntegration = new apigateway.LambdaIntegration(
+      this.getRuntimeConfigsFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const getRuntimeConfigIntegration = new apigateway.LambdaIntegration(
+      this.getRuntimeConfigFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const updateRuntimeConfigIntegration = new apigateway.LambdaIntegration(
+      this.updateRuntimeConfigFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const getRuntimeConfigHistoryIntegration = new apigateway.LambdaIntegration(
+      this.getRuntimeConfigHistoryFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
+    const rollbackRuntimeConfigIntegration = new apigateway.LambdaIntegration(
+      this.rollbackRuntimeConfigFunction,
+      {
+        proxy: true,
+        allowTestInvoke: props.environment !== 'production',
+      }
+    );
+
     // APIリソースの作成
     const apiV1 = this.restApi.root.resourceForPath('api/v1');
 
@@ -1765,6 +2188,68 @@ export class ApiLambdaStack extends cdk.Stack {
     // POST /api/v1/sessions/{id}/report (Generate PDF report)
     const reportResource = sessionIdResource.addResource('report');
     reportResource.addMethod('POST', generateReportIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Phase 4: Benchmark endpoints
+    const benchmarkResource = apiV1.addResource('benchmark');
+
+    // POST /api/v1/benchmark (Get benchmark data)
+    benchmarkResource.addMethod('POST', getBenchmarkIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/benchmark/update-history (Update session history)
+    const updateHistoryResource = benchmarkResource.addResource('update-history');
+    updateHistoryResource.addMethod('POST', updateSessionHistoryIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Phase 5: Admin Runtime Configuration endpoints
+    const adminResource = apiV1.addResource('admin');
+    const runtimeConfigResource = adminResource.addResource('runtime-config');
+
+    // GET /api/v1/admin/runtime-config (Get all runtime configurations)
+    runtimeConfigResource.addMethod('GET', getRuntimeConfigsIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // Runtime Config by Key
+    const runtimeConfigKeyResource = runtimeConfigResource.addResource('{key}');
+
+    // GET /api/v1/admin/runtime-config/:key (Get runtime configuration by key)
+    runtimeConfigKeyResource.addMethod('GET', getRuntimeConfigIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // PUT /api/v1/admin/runtime-config/:key (Update runtime configuration)
+    runtimeConfigKeyResource.addMethod('PUT', updateRuntimeConfigIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // GET /api/v1/admin/runtime-config/:key/history (Get change history)
+    const runtimeConfigHistoryResource = runtimeConfigKeyResource.addResource('history');
+    runtimeConfigHistoryResource.addMethod('GET', getRuntimeConfigHistoryIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // POST /api/v1/admin/runtime-config/:key/rollback (Rollback to previous value)
+    const runtimeConfigRollbackResource = runtimeConfigKeyResource.addResource('rollback');
+    runtimeConfigRollbackResource.addMethod('POST', rollbackRuntimeConfigIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
@@ -1988,7 +2473,7 @@ export class ApiLambdaStack extends cdk.Stack {
     const defaultIntegration = new apigatewayv2.CfnIntegration(this, 'DefaultIntegration', {
       apiId: this.webSocketApi.ref,
       integrationType: 'AWS_PROXY',
-      integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${websocketDefaultFunction.functionArn}/invocations`,
+      integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${this.websocketDefaultFunction.functionArn}/invocations`,
     });
 
     // WebSocket Routes
@@ -2049,7 +2534,7 @@ export class ApiLambdaStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`,
     });
 
-    websocketDefaultFunction.addPermission('WebSocketDefaultPermission', {
+    this.websocketDefaultFunction.addPermission('WebSocketDefaultPermission', {
       principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
       action: 'lambda:InvokeFunction',
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`,
@@ -2175,6 +2660,7 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseCluster.connections.allowDefaultPortFrom(this.deleteAvatarFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.cloneAvatarFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.generateReportFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.updateSessionHistoryFunction);
 
     new cdk.CfnOutput(this, 'MigrationFunctionName', {
       value: this.migrationFunction.functionName,

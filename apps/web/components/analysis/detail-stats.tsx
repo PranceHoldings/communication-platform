@@ -71,11 +71,11 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow p-6" data-testid="detail-stats">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('analysis.stats.title')}</h2>
 
       {/* Audio Statistics */}
-      <div className="mb-8">
+      <div className="mb-8" data-testid="audio-stats-section">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           {t('analysis.stats.audioAnalysis')}
         </h3>
@@ -84,6 +84,7 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
             <div
               key={index}
               className="flex flex-col items-center p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg"
+              data-testid={`audio-stat-${index}`}
             >
               <div className="text-indigo-600 mb-2">{stat.icon}</div>
               <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
@@ -94,13 +95,16 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
       </div>
 
       {/* Emotion Statistics */}
-      <div>
+      <div data-testid="emotion-stats-section">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           {t('analysis.stats.emotionAnalysis')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Dominant Emotion */}
-          <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
+          <div
+            className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg"
+            data-testid="dominant-emotion"
+          >
             <div className="flex items-center mb-2">
               <svg className="w-5 h-5 text-purple-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path
@@ -117,7 +121,10 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
           </div>
 
           {/* Average Confidence */}
-          <div className="p-4 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg">
+          <div
+            className="p-4 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg"
+            data-testid="average-confidence"
+          >
             <div className="flex items-center mb-2">
               <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path
@@ -136,7 +143,7 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
 
         {/* Emotion Distribution */}
         {Object.keys(emotionSummary.emotionDistribution).length > 0 && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg" data-testid="emotion-distribution">
             <h4 className="text-sm font-semibold text-gray-700 mb-3">
               {t('analysis.stats.emotionDistribution')}
             </h4>
@@ -144,7 +151,11 @@ export function DetailStats({ audioSummary, emotionSummary }: DetailStatsProps) 
               {Object.entries(emotionSummary.emotionDistribution)
                 .sort(([, a], [, b]) => b - a)
                 .map(([emotion, percentage]) => (
-                  <div key={emotion} className="flex items-center">
+                  <div
+                    key={emotion}
+                    className="flex items-center"
+                    data-testid={`emotion-bar-${emotion}`}
+                  >
                     <div className="w-24 text-sm text-gray-600 capitalize">{emotion}</div>
                     <div className="flex-1 mx-3">
                       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">

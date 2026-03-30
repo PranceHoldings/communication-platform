@@ -216,18 +216,11 @@ export function makeRetryable<T extends any[], R>(
  * Note: TypeScript decorators are experimental
  */
 export function Retryable(options: RetryOptions = {}) {
-  return function (
-    target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor
-  ) {
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
-      const result = await retryWithBackoff(
-        () => originalMethod.apply(this, args),
-        options
-      );
+      const result = await retryWithBackoff(() => originalMethod.apply(this, args), options);
       return result.result;
     };
 

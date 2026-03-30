@@ -15,6 +15,10 @@ import type {
   ProcessingUpdateMessage,
   SessionCompleteMessage,
   ErrorMessage,
+  ChunkAckMessage,
+  RecordingPartialMessage,
+  SessionLimitReachedMessage,
+  AIFallbackMessage,
   ServerToClientMessage,
 } from '@prance/shared';
 
@@ -27,6 +31,7 @@ export type {
   ProcessingUpdateMessage,
   SessionCompleteMessage,
   ErrorMessage,
+  RecordingPartialMessage,
 };
 
 // All types are now imported from @prance/shared
@@ -51,6 +56,10 @@ interface UseWebSocketOptions {
   onError?: (message: ErrorMessage) => void;
   onNoSpeechDetected?: (message: { message: string; timestamp: number }) => void; // New: No speech detected guidance
   onAuthenticated?: (sessionId: string, initialGreeting?: string) => void;
+  onChunkAck?: (message: ChunkAckMessage) => void; // Phase 1.6.1: Chunk ACK tracking
+  onRecordingPartial?: (message: RecordingPartialMessage) => void; // Phase 1.6.1 Day 34: Partial recording notification
+  onSessionLimitReached?: (message: SessionLimitReachedMessage) => void; // Phase 1.6.1 Day 36: Max conversation turns
+  onAIFallback?: (message: AIFallbackMessage) => void; // Phase 1.6.1 Day 36: AI response fallback
   autoConnect?: boolean;
 }
 
@@ -91,6 +100,10 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onError,
     onNoSpeechDetected,
     onAuthenticated,
+    onChunkAck,
+    onRecordingPartial,
+    onSessionLimitReached,
+    onAIFallback,
     autoConnect = false,
   } = options;
 
@@ -133,6 +146,10 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const onErrorRef = useRef(onError);
   const onNoSpeechDetectedRef = useRef(onNoSpeechDetected);
   const onAuthenticatedRef = useRef(onAuthenticated);
+  const onChunkAckRef = useRef(onChunkAck);
+  const onRecordingPartialRef = useRef(onRecordingPartial);
+  const onSessionLimitReachedRef = useRef(onSessionLimitReached);
+  const onAIFallbackRef = useRef(onAIFallback);
 
   // Update refs on every render so they always point to the latest callbacks
   useEffect(() => {
@@ -145,6 +162,10 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onNoSpeechDetectedRef.current = onNoSpeechDetected;
     onErrorRef.current = onError;
     onAuthenticatedRef.current = onAuthenticated;
+    onChunkAckRef.current = onChunkAck;
+    onRecordingPartialRef.current = onRecordingPartial;
+    onSessionLimitReachedRef.current = onSessionLimitReached;
+    onAIFallbackRef.current = onAIFallback;
   });
 
   // WebSocket endpoint from environment variable
@@ -158,9 +179,11 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
+      const timestamp = new Date().toISOString();
+      console.log(`[WS_SEQ ${timestamp}] <<<< RECEIVED RAW:`, event.data);
       try {
         const message = JSON.parse(event.data) as ServerToClientMessage;
-        console.log('WebSocket message received:', message);
+        console.log(`[WS_SEQ ${timestamp}] <<<< PARSED:`, message.type, JSON.stringify(message).substring(0, 100));
 
         // Ignore empty messages
         if (!message || typeof message !== 'object' || Object.keys(message).length === 0) {
@@ -191,16 +214,19 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         switch (message.type) {
           case 'transcript_partial':
           case 'transcript_final':
+            console.log(`[WS_SEQ] → Calling onTranscript callback`);
             onTranscriptRef.current?.(message as unknown as TranscriptMessage);
             break;
 
           case 'avatar_response':
           case 'avatar_response_partial':
           case 'avatar_response_final':
+            console.log(`[WS_SEQ] → Calling onAvatarResponse callback for: ${message.type}`);
             onAvatarResponseRef.current?.(message as unknown as AvatarResponseMessage);
             break;
 
           case 'audio_response':
+            console.log(`[WS_SEQ] → Calling onAudioResponse callback`);
             onAudioResponseRef.current?.(message as unknown as AudioResponseMessage);
             break;
 
@@ -239,12 +265,19 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             break;
 
           case 'authenticated':
-            console.log('Authentication confirmed:', message);
+            console.log('[useWebSocket] Entered authenticated case');
+            console.log('[useWebSocket] Authentication confirmed:', message);
             const authMessage = message as any;
             const authSessionId = authMessage.sessionId;
             const authInitialGreeting = authMessage.initialGreeting;
+            console.log('[useWebSocket] authSessionId:', authSessionId);
+            console.log('[useWebSocket] authInitialGreeting:', authInitialGreeting);
+            console.log('[useWebSocket] onAuthenticatedRef.current exists:', !!onAuthenticatedRef.current);
             if (authSessionId) {
+              console.log('[useWebSocket] Calling onAuthenticatedRef.current with sessionId:', authSessionId);
               onAuthenticatedRef.current?.(authSessionId, authInitialGreeting);
+            } else {
+              console.warn('[useWebSocket] No authSessionId, skipping callback');
             }
             break;
 
@@ -278,6 +311,45 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
                 console.warn(`[WebSocket] Received ACK for unknown chunk ${chunkId}`);
               }
             }
+            break;
+
+          case 'chunk_ack':
+            // Phase 1.6.1: Unified ACK for audio/video chunks
+            console.log('[WebSocket] Chunk ACK received:', {
+              chunkId: (message as ChunkAckMessage).chunkId,
+              status: (message as ChunkAckMessage).status,
+            });
+            onChunkAckRef.current?.(message as ChunkAckMessage);
+            break;
+
+          case 'recording_partial':
+            // Phase 1.6.1 Day 34: Partial recording notification
+            console.warn('[WebSocket] Partial recording notification:', {
+              savedChunks: (message as RecordingPartialMessage).savedChunks,
+              totalChunks: (message as RecordingPartialMessage).totalChunks,
+              message: (message as RecordingPartialMessage).message,
+            });
+            onRecordingPartialRef.current?.(message as RecordingPartialMessage);
+            break;
+
+          case 'session_limit_reached':
+            // Phase 1.6.1 Day 36: Max conversation turns reached
+            console.log('[WebSocket] Session limit reached:', {
+              turnCount: (message as SessionLimitReachedMessage).turnCount,
+              maxTurns: (message as SessionLimitReachedMessage).maxTurns,
+              message: (message as SessionLimitReachedMessage).message,
+            });
+            onSessionLimitReachedRef.current?.(message as SessionLimitReachedMessage);
+            break;
+
+          case 'ai_fallback':
+            // Phase 1.6.1 Day 36: AI response fallback
+            console.log('[WebSocket] AI fallback response:', {
+              message: (message as AIFallbackMessage).message,
+              originalError: (message as AIFallbackMessage).originalError,
+              usedFallback: (message as AIFallbackMessage).usedFallback,
+            });
+            onAIFallbackRef.current?.(message as AIFallbackMessage);
             break;
 
           case 'video_chunk_missing':
@@ -421,13 +493,24 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       ws.onmessage = handleMessage;
 
       ws.onerror = event => {
-        console.error('WebSocket error:', event);
+        console.error('[useWebSocket] WebSocket error:', {
+          type: event.type,
+          target: event.target,
+          readyState: (event.target as WebSocket).readyState,
+          url: (event.target as WebSocket).url,
+        });
         setError('WebSocket connection error');
         setIsConnecting(false);
       };
 
       ws.onclose = event => {
-        console.log('WebSocket closed:', event.code, event.reason);
+        console.log('[useWebSocket] WebSocket closed:', {
+          code: event.code,
+          reason: event.reason || '(no reason provided)',
+          wasClean: event.wasClean,
+          attempt: reconnectAttempts.current,
+          maxAttempts: MAX_RECONNECT_ATTEMPTS,
+        });
         setIsConnected(false);
         setIsConnecting(false);
         wsRef.current = null;

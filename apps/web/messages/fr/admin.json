@@ -1,0 +1,87 @@
+{
+  "runtimeConfig": {
+    "title": "Configuration d'Exécution",
+    "description": "Gérer les paramètres système sans redémarrer le serveur",
+    "categories": {
+      "QUERY_PROCESSING": "Requête et Traitement",
+      "AI_PROCESSING": "Traitement IA",
+      "AUDIO_PROCESSING": "Traitement Audio",
+      "SCORE_CALCULATION": "Calcul de Score",
+      "SECURITY": "Sécurité",
+      "SYSTEM": "Système"
+    },
+    "accessLevels": {
+      "DEVELOPER_ONLY": "Développeurs Uniquement",
+      "SUPER_ADMIN_READ_ONLY": "Lecture Seule (Sécurité)",
+      "SUPER_ADMIN_READ_WRITE": "Modifiable par Admin",
+      "CLIENT_ADMIN_READ_WRITE": "Modifiable",
+      "CLIENT_ADMIN_READ_ONLY": "Lecture Seule"
+    },
+    "dataTypes": {
+      "NUMBER": "Nombre",
+      "STRING": "Chaîne",
+      "BOOLEAN": "Booléen",
+      "JSON": "JSON"
+    },
+    "list": {
+      "title": "Toutes les Configurations",
+      "filterByCategory": "Filtrer par catégorie",
+      "allCategories": "Toutes les Catégories",
+      "searchPlaceholder": "Rechercher par clé ou description...",
+      "noResults": "Aucune configuration trouvée",
+      "totalConfigs": "{count} configuration(s)"
+    },
+    "card": {
+      "key": "Clé",
+      "value": "Valeur",
+      "dataType": "Type",
+      "category": "Catégorie",
+      "description": "Description",
+      "range": "Plage",
+      "defaultValue": "Par défaut",
+      "updatedAt": "Mis à jour",
+      "updatedBy": "Mis à jour par",
+      "edit": "Modifier",
+      "viewHistory": "Historique"
+    },
+    "edit": {
+      "title": "Modifier la Configuration",
+      "currentValue": "Valeur Actuelle",
+      "newValue": "Nouvelle Valeur",
+      "reason": "Raison du changement (optionnel)",
+      "reasonPlaceholder": "Décrivez pourquoi vous effectuez ce changement...",
+      "constraints": "Contraintes",
+      "min": "Min",
+      "max": "Max",
+      "default": "Par défaut",
+      "cancel": "Annuler",
+      "save": "Enregistrer les Modifications",
+      "saving": "Enregistrement...",
+      "success": "Configuration mise à jour avec succès",
+      "error": "Échec de la mise à jour de la configuration"
+    },
+    "history": {
+      "title": "Historique des Modifications",
+      "noHistory": "Aucun historique disponible",
+      "timestamp": "Horodatage",
+      "changedBy": "Modifié par",
+      "oldValue": "Ancienne Valeur",
+      "newValue": "Nouvelle Valeur",
+      "reason": "Raison",
+      "ipAddress": "Adresse IP",
+      "rollback": "Restaurer",
+      "rollbackConfirm": "Êtes-vous sûr de vouloir restaurer cette valeur ?",
+      "rollbackSuccess": "Configuration restaurée avec succès",
+      "rollbackError": "Échec de la restauration de la configuration",
+      "loadMore": "Charger plus"
+    },
+    "validation": {
+      "required": "Ce champ est obligatoire",
+      "mustBeNumber": "Doit être un nombre",
+      "mustBeBoolean": "Doit être true ou false",
+      "belowMin": "La valeur doit être au moins {min}",
+      "aboveMax": "La valeur doit être au plus {max}",
+      "invalidJson": "Format JSON invalide"
+    }
+  }
+}

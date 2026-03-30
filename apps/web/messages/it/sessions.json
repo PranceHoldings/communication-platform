@@ -174,7 +174,10 @@
       "authenticationTimeout": "Authentication timeout. Please try again.",
       "processingComplete": "Processing Complete",
       "lowVolumeWarning": "⚠️ Il volume del microfono è molto basso. Si prega di parlare più forte o controllare le impostazioni del microfono.",
-      "audioTooQuiet": "Il livello audio è troppo basso. Si prega di parlare più vicino al microfono."
+      "audioTooQuiet": "Il livello audio è troppo basso. Si prega di parlare più vicino al microfono.",
+      "partialRecording": "⚠️ Registrazione Salvata Parzialmente",
+      "partialRecordingDescription": "Si è verificato un errore durante l'elaborazione. {saved} su {total} frammenti sono stati salvati con successo.",
+      "aiFallbackUsed": "L'IA sta usando una risposta alternativa a causa di un problema temporaneo."
     },
     "noSpeech": {
       "guidance": "Nessun parlato rilevato. Si prega di parlare più forte o avvicinarsi al microfono.",
@@ -205,7 +208,8 @@
     "completed": {
       "title": "Session Completed",
       "duration": "Duration",
-      "messageCount": "{count} messages"
+      "messageCount": "{count} messages",
+      "turnLimitReached": "Conversazione completata dopo {turnCount} turni."
     },
     "info": {
       "scenario": "Scenario",
@@ -247,6 +251,20 @@
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
         "notSupported": "Recording is not supported in your browser"
       }
+    },
+    "validation": {
+      "cannotStart": "Impossibile avviare la sessione",
+      "warningsDetected": "Avvisi di Scenario Rilevati",
+      "warningsMessage": "I seguenti avvisi sono stati rilevati nella configurazione dello scenario:",
+      "proceedAnyway": "Vuoi procedere comunque?",
+      "sessionCancelled": "Avvio della sessione annullato",
+      "titleRequired": "Il titolo dello scenario è obbligatorio",
+      "languageRequired": "La lingua dello scenario è obbligatoria",
+      "systemPromptRequired": "Il prompt di sistema è obbligatorio",
+      "initialGreetingMissing": "Il saluto iniziale non è impostato. L'IA attenderà che l'utente parli per primo.",
+      "silenceTimeoutTooShort": "Il timeout di silenzio è molto breve. Considera di aumentarlo.",
+      "systemPromptTooLong": "Il prompt di sistema è molto lungo. Questo potrebbe influenzare la qualità della risposta dell'IA.",
+      "systemPromptTooShort": "Il prompt di sistema è molto breve. Considera di aggiungere più contesto."
     }
   },
   "errors": {

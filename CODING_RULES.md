@@ -1,6 +1,7 @@
 # コーディングルール - クイックリファレンス
 
-**最終更新:** 2026-03-15
+**最終更新:** 2026-03-22
+**ステータス:** 基本ルール確立完了・今後も拡充予定
 
 このドキュメントはコード作成時に常に参照すべき重要ルールのクイックリファレンスです。
 
@@ -10,6 +11,273 @@
 - [infrastructure/CLAUDE.md](infrastructure/CLAUDE.md) - インフラ・Lambda開発ガイド
 - [scripts/CLAUDE.md](scripts/CLAUDE.md) - スクリプト使用ガイド
 - [docs/CLAUDE.md](docs/CLAUDE.md) - ドキュメント管理ガイド
+- [docs/07-development/HARDCODE_PREVENTION_SYSTEM.md](docs/07-development/HARDCODE_PREVENTION_SYSTEM.md) - ハードコード防止システム 🆕
+
+---
+
+## 🔴 Rule 0: スキーマ・ファースト原則（CRITICAL - 2026-03-22追加）
+
+**🎯 Three-Layer Architecture Rule**
+
+```
+Layer 1: Schema (Prismaスキーマ) → 唯一の真実の源
+Layer 2: Interface (packages/shared) → 型定義の中央管理
+Layer 3: Implementation (Lambda/Frontend) → 型定義に従う実装
+```
+
+**絶対厳守:** スキーマ・ファースト → インターフェース・セカンド → 実装・サード
+
+### ❌ 絶対禁止: 手動フィールドマッピング
+
+```typescript
+// Lambda関数で勝手にフィールド名変更（絶対禁止）
+avatar: {
+  ...session.avatar,
+  imageUrl: session.avatar.thumbnailUrl, // ❌ 手動マッピング禁止
+}
+```
+
+**理由:**
+1. Prismaスキーマと不一致（`thumbnailUrl` が正しい）
+2. packages/shared 型定義と不一致
+3. 型安全性が失われる
+4. 保守性が低下（複数箇所で同じマッピング）
+
+### ✅ 正しい方法
+
+```typescript
+// Lambda関数はPrismaの結果をそのまま返す
+avatar: session.avatar, // ✅ スキーマ通り
+
+// Frontend は packages/shared の型を使用
+import type { Avatar } from '@prance/shared';
+session.avatar?.thumbnailUrl // ✅ スキーマと一致
+```
+
+### 検証方法
+
+```bash
+# Schema-First validation実行（コミット前必須）
+bash scripts/validate-schema-interface-implementation.sh
+
+# 期待される結果:
+# ✅ All validations passed
+# ❌ Validation failed → 必ず修正してからコミット
+```
+
+**詳細:** この原則に従うことで、Prismaスキーマと実装の不一致を防ぎます。
+
+---
+
+## 🔴 Rule 0-B: データベースアクセスはLambda経由のみ（CRITICAL - 2026-03-22追加）
+
+**最重要原則:** このプロジェクトでは、AWS RDS Aurora Serverless v2への直接接続は一切禁止されています。
+
+### ❌ 絶対禁止: 直接接続
+
+```bash
+# ❌ ローカルPostgreSQLへの接続
+DATABASE_URL="postgresql://postgres:password@localhost:5432/prance_dev"
+
+# ❌ RDSへの直接接続（VPCでブロック済み）
+psql postgresql://pranceadmin:xxx@xxx.rds.amazonaws.com:5432/prance
+
+# ❌ Prisma Migrateの直接実行
+cd packages/database && npx prisma migrate dev
+```
+
+**理由:**
+1. **セキュリティ**: RDSはVPC内に配置、外部からの直接接続は不可
+2. **監査**: すべてのクエリがLambda経由でログに記録される
+3. **アクセス制御**: IAMロールによる細かい権限管理
+
+### ✅ 正しい方法
+
+```bash
+# Lambda関数内でPrisma Client使用（推奨）
+import { prisma } from '../../shared/database/prisma';
+const scenarios = await prisma.scenario.findMany();
+
+# db-query.sh スクリプト使用（開発・検証時）
+bash scripts/db-query.sh "SELECT id, title FROM scenarios LIMIT 5"
+bash scripts/db-query.sh --file scripts/queries/verification.sql
+bash scripts/db-query.sh --write "UPDATE scenarios SET ..." # 確認プロンプト表示
+
+# 統合デプロイスクリプト使用（マイグレーション）
+cd infrastructure && npm run deploy:dev-migration
+```
+
+**セキュリティ機能:**
+- デフォルトはread-onlyモード（SELECT, WITH句のみ許可）
+- 書き込み操作は `--write` フラグが必須
+- 危険な操作（DROP TABLE等）は自動ブロック
+- すべてのクエリがCloudWatch Logsに記録
+
+**詳細:** [docs/07-development/DATABASE_ACCESS_RULES.md](docs/07-development/DATABASE_ACCESS_RULES.md)
+
+---
+
+## 🔴 ハードコード完全防止（2026-03-20実装）
+
+**重要:** コーディング中にリアルタイムで警告、コミット時に自動ブロック
+
+### ESLint Custom Rules（7つのルール）
+
+#### ❌ 禁止パターン
+
+```typescript
+// 1. AWS リージョンのハードコード
+const region = 'us-east-1'; // ❌
+
+// 2. 言語コードのハードコード
+const language = 'en-US'; // ❌
+
+// 3. メディアフォーマットのハードコード
+const format = 'webm'; // ❌
+const contentType = 'audio/webm'; // ❌
+
+// 4. AWS ドメインのハードコード
+const url = 'https://bucket.s3.amazonaws.com/key'; // ❌
+
+// 5. フォールバックパターン
+const maxResults = process.env.MAX_RESULTS || 1000; // ❌
+
+// 6. 直接的な process.env アクセス
+const apiKey = process.env.ELEVENLABS_API_KEY; // ❌
+
+// 7. 数値定数のハードコード
+const MAX_RESULTS = 1000; // ❌
+```
+
+#### ✅ 正しいパターン
+
+```typescript
+// env-validator.ts を使用（唯一の方法）
+import { getRequiredEnv, getAwsRegion, getAwsEndpointSuffix } from '../../shared/utils/env-validator';
+
+const region = getAwsRegion();
+const language = getRequiredEnv('STT_LANGUAGE');
+const format = getRequiredEnv('VIDEO_FORMAT');
+const url = `https://bucket.s3.${getAwsRegion()}.${getAwsEndpointSuffix()}/key`;
+const maxResults = getMaxResults(); // defaults.ts から
+```
+
+### VSCode Snippets
+
+**使い方:** コード内で prefix をタイプ → Tab
+
+| Prefix           | 展開内容                   |
+| ---------------- | -------------------------- |
+| `import-env`     | getRequiredEnv インポート  |
+| `env-get`        | 環境変数取得               |
+| `env-region`     | AWS リージョン取得         |
+| `lambda-full`    | Lambda関数テンプレート     |
+| `s3-client`      | S3 Client初期化            |
+| `dynamodb-client`| DynamoDB Client初期化      |
+
+**例:**
+```typescript
+// タイプ: lambda-full → Tab
+// → 完全なLambda関数テンプレートが展開される（env-validator統合済み）
+```
+
+### Pre-commit Hook
+
+**自動実行:** `git commit` 時に自動検証
+
+```bash
+git commit -m "feat: add feature"
+# → 自動実行:
+#   [1/3] Checking for hardcoded values...
+#   [2/3] Validating environment variables...
+#   [3/3] Running ESLint on staged files...
+#
+# エラーがあればコミット拒否
+```
+
+**詳細:** [docs/07-development/HARDCODE_PREVENTION_SYSTEM.md](docs/07-development/HARDCODE_PREVENTION_SYSTEM.md)
+
+---
+
+## 🔴 環境変数 - Single Source of Truth（2026-03-20実装）🆕
+
+**最重要原則:** `.env.local`のみが環境変数を定義、`infrastructure/.env`は自動生成
+
+### ❌ 禁止事項
+
+```bash
+# 1. infrastructure/.env を直接編集
+# ❌ 絶対にやってはいけない
+vim infrastructure/.env  # 手動編集禁止
+
+# 2. 環境変数の重複定義
+# ❌ .env.local に同じ変数を2回定義
+MAX_RESULTS=1000
+MAX_RESULTS=2000  # 重複
+
+# 3. 機密情報を infrastructure/.env に含める
+# ❌ Secrets は Secrets Manager で管理
+ELEVENLABS_API_KEY=***  # infrastructure/.env に含めない
+```
+
+### ✅ 正しい手順
+
+```bash
+# 1. 環境変数を追加
+echo "MY_NEW_VAR=value" >> .env.local
+
+# 2. 自動同期
+bash scripts/sync-env-vars.sh
+
+# 3. 検証
+bash scripts/validate-env-single-source.sh
+
+# 4. コミット（自動でSSOT検証）
+git add .
+git commit -m "feat: add MY_NEW_VAR"
+```
+
+### 自動同期システム
+
+**同期:** `.env.local` → `infrastructure/.env`（非機密情報のみ）
+
+```bash
+# 同期実行
+bash scripts/sync-env-vars.sh
+
+# 同期状態確認
+bash scripts/sync-env-vars.sh --check-only
+
+# SSOT検証（Pre-commit hookで自動実行）
+bash scripts/validate-env-single-source.sh
+```
+
+### Pre-commit Hook（4段階検証）
+
+```bash
+git commit -m "feat: add feature"
+# → 自動実行:
+#   [1/4] Checking for hardcoded values...
+#   [2/4] Validating environment variables consistency...
+#   [3/4] Validating Single Source of Truth (.env.local)...  🆕
+#   [4/4] Running ESLint on staged files...
+```
+
+### 機密情報の管理
+
+| 情報タイプ       | 開発環境                | 本番環境                |
+| ---------------- | ----------------------- | ----------------------- |
+| 非機密情報       | `.env.local`            | `.env.local` または環境変数 |
+| 機密情報         | `.env.local`（ダミー値） | AWS Secrets Manager     |
+
+**機密情報の命名規則（自動除外）:**
+- `*_SECRET`
+- `*_KEY`
+- `*_PASSWORD`
+- `*_TOKEN`
+- `*_CREDENTIALS`
+
+**詳細:** [docs/07-development/ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md](docs/07-development/ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md)
 
 ---
 
@@ -886,3 +1154,199 @@ import { User, Avatar, ValidationError, NotFoundError } from '../shared/types';
 **参考資料:**
 
 - [CHUNK_SORTING_REFACTORING.md](docs/development/CHUNK_SORTING_REFACTORING.md) - 実際のリファクタリング事例
+
+---
+
+## 🔴 Rule 10: 重複管理原則（CRITICAL - 2026-03-22追加）
+
+**🎯 基本原則: 設定・型・処理の重複を許さない**
+
+AIコード生成では、同じ設定・型・処理が複数ファイルに重複しやすい。重複は保守性を著しく低下させるため、厳格に管理する。
+
+### 自動検証（8段階チェック）
+
+**検証スクリプト:**
+
+```bash
+# 手動実行
+bash scripts/validate-duplication.sh
+
+# 自動実行（pre-commit hook）
+git commit -m "..."  # 自動的に検証
+
+# 自動実行（デプロイ前）
+npm run deploy:lambda  # 自動的に検証
+```
+
+**検証項目:**
+
+| Step | 検証内容                           | 検出対象                                   |
+| ---- | ---------------------------------- | ------------------------------------------ |
+| 1/8  | 環境変数の重複                     | 直接 `process.env` アクセス（9箇所検出）   |
+| 2/8  | 型定義の重複                       | EmotionScore, AgeRange, Pose等（4箇所検出） |
+| 3/8  | Enum同期                           | packages/shared ↔ Lambda の不一致検出      |
+| 4/8  | 定数・設定の重複                   | ハードコード定数（defaults.tsに集約）      |
+| 5/8  | ユーティリティ関数の重複           | shared/utils外の重複検出                   |
+| 6/8  | バリデーションロジックの重複       | 分散したバリデーション検出                 |
+| 7/8  | Frontend API呼び出しの重複         | 直接fetch()呼び出し検出（0件が正常）       |
+| 8/8  | Lambda関数の重複実装               | 共通処理の抽出漏れ検出                     |
+
+### 必須パターン
+
+#### ✅ 環境変数アクセス
+
+```typescript
+// ❌ 禁止（直接アクセス）
+const region = process.env.AWS_REGION || 'us-east-1';
+const table = process.env.CONNECTIONS_TABLE_NAME!;
+
+// ✅ 正しい（centralized config経由）
+import { getAwsRegion, getConnectionsTableName } from '../../shared/config';
+const region = getAwsRegion();
+const table = getConnectionsTableName();
+```
+
+#### ✅ 型定義
+
+```typescript
+// ❌ 禁止（Lambda側で再定義）
+export interface EmotionScore {
+  type: string;
+  confidence: number;
+}
+
+// ✅ 正しい（共有型からimport）
+import type { EmotionScore } from '../types';
+```
+
+#### ✅ Enum定義
+
+```typescript
+// ⚠️ 注意: Lambda bundling制約によりpackages/sharedから直接importできない
+// packages/shared と infrastructure/lambda/shared/types を完全一致させる
+
+// packages/shared/src/types/index.ts
+export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';
+
+// infrastructure/lambda/shared/types/index.ts
+export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';
+// ↑ 完全一致が必須（自動検証で確認）
+```
+
+#### ✅ 定数・設定
+
+```typescript
+// ❌ 禁止（ハードコード）
+const MAX_RETRIES = 3;
+const TIMEOUT_MS = 5000;
+
+// ✅ 正しい（defaults.tsに集約）
+import { RETRY_DEFAULTS, TIMEOUT_DEFAULTS } from '../../shared/config/defaults';
+const maxRetries = RETRY_DEFAULTS.MAX_RETRIES;
+const timeoutMs = TIMEOUT_DEFAULTS.DEFAULT_TIMEOUT;
+```
+
+#### ✅ ユーティリティ関数
+
+```typescript
+// ❌ 禁止（Lambda関数内で定義）
+function formatDate(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+// ✅ 正しい（shared/utilsに集約）
+import { formatDate } from '../../shared/utils/date-formatter';
+```
+
+#### ✅ Frontend API呼び出し
+
+```typescript
+// ❌ 禁止（直接fetch）
+const response = await fetch('/api/v1/sessions');
+const data = await response.json();
+
+// ✅ 正しい（API client経由）
+import { listSessions } from '@/lib/api/sessions';
+const response = await listSessions();
+```
+
+### エラー時の対処
+
+**Error: Environment variable duplication**
+
+```
+❌ Found 9 direct process.env accesses (should use centralized config)
+```
+
+**対処:**
+
+1. `infrastructure/lambda/shared/config/index.ts` に getter 追加
+2. Lambda関数で `import { getXxx }` して使用
+
+**Error: Type definition duplication**
+
+```
+❌ EmotionScore defined in rekognition.ts (should import from types/index.ts)
+```
+
+**対処:**
+
+1. Lambda側の定義を削除
+2. `import type { EmotionScore } from '../types'` 追加
+
+**Error: Enum mismatch**
+
+```
+❌ UserRole enum mismatch between packages/shared and infrastructure/lambda/shared
+```
+
+**対処:**
+
+1. packages/shared の定義を確認
+2. Lambda側を完全一致させる
+
+### コミット前チェックリスト
+
+```bash
+# 必須検証（自動実行）
+git commit -m "..."
+
+# エラー時の手動確認
+bash scripts/validate-duplication.sh
+```
+
+**検証結果:**
+
+```
+✅ All checks passed (0 errors, 0 warnings)
+```
+
+### 詳細ドキュメント
+
+- **[docs/07-development/DUPLICATION_MANAGEMENT.md](docs/07-development/DUPLICATION_MANAGEMENT.md)** - 重複管理詳細ガイド
+- **[memory/duplication-management.md](memory/duplication-management.md)** - AI用メモリ（検証方法、エラー対処）
+
+### 重複検出時の判断フロー
+
+```
+重複検出
+  ↓
+本当に重複か？
+  ↓ Yes
+機能特化の実装か？（例: WebSocket専用chunk-utils.ts）
+  ↓ No
+共通化可能か？
+  ↓ Yes
+共通化実施
+  ├─ 環境変数 → config/index.ts
+  ├─ 型定義 → shared/types/
+  ├─ 定数 → config/defaults.ts
+  ├─ 関数 → shared/utils/
+  └─ バリデーション → shared/utils/validation.ts
+```
+
+**原則:**
+
+- **疑わしきは共通化** - 2箇所で使われたら即共通化
+- **10行以上の類似コード** - 必ず共通関数化を検討
+- **30行以上の重複** - **絶対に**共通化（例外なし）

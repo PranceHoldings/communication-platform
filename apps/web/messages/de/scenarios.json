@@ -57,7 +57,8 @@
       "titleRequired": "Title is required",
       "categoryRequired": "Category is required",
       "configRequired": "Configuration is required",
-      "invalidJson": "Invalid JSON format"
+      "invalidJson": "Invalid JSON format",
+      "shortSystemPrompt": "Der System-Prompt ist recht kurz (weniger als 50 Zeichen). Erwägen Sie, mehr Details für ein besseres KI-Verhalten hinzuzufügen."
     },
     "success": "Scenario created successfully",
     "error": "Failed to create scenario"

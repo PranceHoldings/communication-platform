@@ -106,20 +106,17 @@ export const handler: APIGatewayProxyHandler = async event => {
       scenarioId: session.scenarioId,
       scenario: session.scenario,
       avatarId: session.avatarId,
-      avatar: session.avatar
-        ? {
-            ...session.avatar,
-            imageUrl: session.avatar.thumbnailUrl, // Map thumbnailUrl to imageUrl for frontend compatibility
-          }
-        : null,
+      avatar: session.avatar || null,
       status: session.status,
       startedAt: session.startedAt,
       endedAt: session.endedAt,
-      duration: session.durationSec,
-      recordings: session.recordings,
+      durationSec: session.durationSec,
+      recordings: (session.recordings || []).map((recording: any) => ({
+        ...recording,
+        fileSizeBytes: Number(recording.fileSizeBytes), // Convert BigInt to Number for JSON serialization
+      })),
       transcripts: session.transcripts,
-      metadata: session.metadataJson,
-      createdAt: session.startedAt, // Use startedAt as createdAt for frontend compatibility
+      metadataJson: session.metadataJson,
     });
   } catch (error) {
     console.error('Error getting session:', error);

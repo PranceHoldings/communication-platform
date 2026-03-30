@@ -18,8 +18,9 @@ interface UseVideoRecorderOptions {
    * 動画チャンクのコールバック（WebSocket送信用）
    * @param chunk - 動画データのBlob
    * @param timestamp - タイムスタンプ（ミリ秒）
+   * @param chunkId - チャンクID（ACK追跡用）Phase 1.6.1
    */
-  onChunk?: (chunk: Blob, timestamp: number) => void;
+  onChunk?: (chunk: Blob, timestamp: number, chunkId: string) => void;
 
   /**
    * 録画完了時のコールバック
@@ -96,6 +97,7 @@ export function useVideoRecorder({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const startTimeRef = useRef<number>(0);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const chunkSequenceRef = useRef<number>(0); // Phase 1.6.1: Track chunk sequence for chunkId
 
   /**
    * 録画開始
@@ -146,7 +148,10 @@ export function useVideoRecorder({
           // チャンクコールバック
           if (onChunk) {
             const timestamp = Date.now() - startTimeRef.current;
-            onChunk(event.data, timestamp);
+            // Phase 1.6.1: Generate unique chunkId for ACK tracking
+            const chunkId = `video-${chunkSequenceRef.current}-${timestamp}`;
+            chunkSequenceRef.current++;
+            onChunk(event.data, timestamp, chunkId);
           }
         }
       };
@@ -180,6 +185,7 @@ export function useVideoRecorder({
       mediaRecorder.start(chunkInterval);
       mediaRecorderRef.current = mediaRecorder;
       startTimeRef.current = Date.now();
+      chunkSequenceRef.current = 0; // Phase 1.6.1: Reset sequence
       setStatus('recording');
       setError(null);
       setRecordedChunks([]);

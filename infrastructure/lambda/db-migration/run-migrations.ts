@@ -42,7 +42,10 @@ async function runMigrations() {
     // Sort by filename (chronological order)
     migrationFiles.sort((a, b) => a.name.localeCompare(b.name));
 
-    console.log('[Migration] Migration files to run:', migrationFiles.map(m => m.name));
+    console.log(
+      '[Migration] Migration files to run:',
+      migrationFiles.map(m => m.name)
+    );
 
     // Run each migration
     for (const migration of migrationFiles) {

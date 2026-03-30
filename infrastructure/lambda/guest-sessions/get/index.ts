@@ -73,9 +73,7 @@ interface GuestSessionDetail {
 /**
  * Lambda handler for getting guest session detail
  */
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[GetGuestSession] Event:', JSON.stringify(event, null, 2));
 
   try {
@@ -107,7 +105,8 @@ export const handler = async (
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can view guest sessions',
+          error:
+            'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can view guest sessions',
         }),
       };
     }
@@ -262,7 +261,7 @@ export const handler = async (
         id: guestSession.organization.id,
         name: guestSession.organization.name,
       },
-      recentLogs: guestSession.logs.map((log) => ({
+      recentLogs: guestSession.logs.map(log => ({
         id: log.id,
         eventType: log.eventType,
         ipAddress: log.ipAddress,

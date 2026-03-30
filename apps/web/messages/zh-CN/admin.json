@@ -1,0 +1,87 @@
+{
+  "runtimeConfig": {
+    "title": "运行时配置",
+    "description": "无需重启服务器即可管理系统参数",
+    "categories": {
+      "QUERY_PROCESSING": "查询与处理",
+      "AI_PROCESSING": "AI处理",
+      "AUDIO_PROCESSING": "音频处理",
+      "SCORE_CALCULATION": "分数计算",
+      "SECURITY": "安全",
+      "SYSTEM": "系统"
+    },
+    "accessLevels": {
+      "DEVELOPER_ONLY": "仅开发者",
+      "SUPER_ADMIN_READ_ONLY": "只读（安全）",
+      "SUPER_ADMIN_READ_WRITE": "管理员可编辑",
+      "CLIENT_ADMIN_READ_WRITE": "可编辑",
+      "CLIENT_ADMIN_READ_ONLY": "只读"
+    },
+    "dataTypes": {
+      "NUMBER": "数字",
+      "STRING": "字符串",
+      "BOOLEAN": "布尔值",
+      "JSON": "JSON"
+    },
+    "list": {
+      "title": "所有配置",
+      "filterByCategory": "按类别筛选",
+      "allCategories": "所有类别",
+      "searchPlaceholder": "按键或描述搜索...",
+      "noResults": "未找到配置",
+      "totalConfigs": "{count}个配置"
+    },
+    "card": {
+      "key": "键",
+      "value": "值",
+      "dataType": "类型",
+      "category": "类别",
+      "description": "描述",
+      "range": "范围",
+      "defaultValue": "默认",
+      "updatedAt": "更新时间",
+      "updatedBy": "更新者",
+      "edit": "编辑",
+      "viewHistory": "历史"
+    },
+    "edit": {
+      "title": "编辑配置",
+      "currentValue": "当前值",
+      "newValue": "新值",
+      "reason": "更改原因（可选）",
+      "reasonPlaceholder": "描述您进行此更改的原因...",
+      "constraints": "约束",
+      "min": "最小值",
+      "max": "最大值",
+      "default": "默认",
+      "cancel": "取消",
+      "save": "保存更改",
+      "saving": "保存中...",
+      "success": "配置更新成功",
+      "error": "配置更新失败"
+    },
+    "history": {
+      "title": "更改历史",
+      "noHistory": "无可用的更改历史",
+      "timestamp": "时间戳",
+      "changedBy": "更改者",
+      "oldValue": "旧值",
+      "newValue": "新值",
+      "reason": "原因",
+      "ipAddress": "IP地址",
+      "rollback": "回滚",
+      "rollbackConfirm": "您确定要回滚到此值吗？",
+      "rollbackSuccess": "配置回滚成功",
+      "rollbackError": "配置回滚失败",
+      "loadMore": "加载更多"
+    },
+    "validation": {
+      "required": "此字段为必填项",
+      "mustBeNumber": "必须是数字",
+      "mustBeBoolean": "必须是true或false",
+      "belowMin": "值必须至少为{min}",
+      "aboveMax": "值必须最多为{max}",
+      "invalidJson": "无效的JSON格式"
+    }
+  }
+}

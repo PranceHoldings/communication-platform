@@ -1,28 +1,38 @@
 /**
  * Sessions API
  *
- * 注意: このファイルの型定義はAPIレスポンスの形式に基づいています。
- * Lambda関数が以下のマッピングを行っています:
- * - durationSec → duration
- * - metadataJson → metadata
- * - startedAt → createdAt (互換性のため)
- * - thumbnailUrl → imageUrl (Avatar)
+ * Note: Uses Prisma schema field names directly (Schema-First principle)
+ * Date types are converted to strings for JSON serialization
  */
 
 import { apiClient } from './client';
 import { buildQueryString } from './utils';
-import type { SessionStatus, PaginationMeta, Speaker, Highlight } from '@prance/shared';
+import type {
+  SessionStatus,
+  PaginationMeta,
+  Recording as SharedRecording,
+  Transcript as SharedTranscript,
+} from '@prance/shared';
+
+// API response types (Date -> string conversion for JSON)
+export type RecordingResponse = Omit<SharedRecording, 'createdAt' | 'processedAt'> & {
+  createdAt: string;
+  processedAt?: string;
+};
+
+export type TranscriptResponse = Omit<SharedTranscript, 'createdAt'> & {
+  createdAt?: string;
+};
 
 export interface Session {
   id: string;
   scenarioId: string;
   avatarId: string;
   status: SessionStatus;
-  startedAt: string; // セッション開始日時
-  endedAt: string | null; // セッション終了日時
-  duration: number | null; // 所要時間（秒）- DBでは durationSec
-  metadata: Record<string, unknown>; // セッションメタデータ - DBでは metadataJson
-  createdAt: string; // startedAtのエイリアス（互換性のため）
+  startedAt: string;
+  endedAt: string | null;
+  durationSec: number | null; // Prisma schema field name
+  metadataJson: Record<string, unknown> | null; // Prisma schema field name
   scenario?: {
     id: string;
     title: string;
@@ -32,28 +42,11 @@ export interface Session {
     id: string;
     name: string;
     type?: string;
-    imageUrl?: string; // thumbnailUrlのエイリアス（互換性のため）
     thumbnailUrl?: string;
     modelUrl?: string;
   };
-  recordings?: Array<{
-    id: string;
-    type: string;
-    s3Url: string;
-    cdnUrl: string | null;
-    thumbnailUrl: string | null;
-    fileSizeBytes: number;
-    createdAt: string;
-  }>;
-  transcripts?: Array<{
-    id: string;
-    speaker: Speaker;
-    text: string;
-    timestampStart: number;
-    timestampEnd: number;
-    confidence: number | null;
-    highlight: Highlight | null;
-  }>;
+  recordings?: RecordingResponse[];
+  transcripts?: TranscriptResponse[];
 }
 
 export interface CreateSessionRequest {

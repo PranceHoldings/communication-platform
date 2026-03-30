@@ -1,0 +1,87 @@
+{
+  "runtimeConfig": {
+    "title": "執行階段組態",
+    "description": "無需重新啟動伺服器即可管理系統參數",
+    "categories": {
+      "QUERY_PROCESSING": "查詢與處理",
+      "AI_PROCESSING": "AI處理",
+      "AUDIO_PROCESSING": "音訊處理",
+      "SCORE_CALCULATION": "分數計算",
+      "SECURITY": "安全性",
+      "SYSTEM": "系統"
+    },
+    "accessLevels": {
+      "DEVELOPER_ONLY": "僅限開發者",
+      "SUPER_ADMIN_READ_ONLY": "唯讀（安全性）",
+      "SUPER_ADMIN_READ_WRITE": "管理員可編輯",
+      "CLIENT_ADMIN_READ_WRITE": "可編輯",
+      "CLIENT_ADMIN_READ_ONLY": "唯讀"
+    },
+    "dataTypes": {
+      "NUMBER": "數字",
+      "STRING": "字串",
+      "BOOLEAN": "布林值",
+      "JSON": "JSON"
+    },
+    "list": {
+      "title": "所有組態",
+      "filterByCategory": "依類別篩選",
+      "allCategories": "所有類別",
+      "searchPlaceholder": "依鍵或描述搜尋...",
+      "noResults": "找不到組態",
+      "totalConfigs": "{count}個組態"
+    },
+    "card": {
+      "key": "鍵",
+      "value": "值",
+      "dataType": "類型",
+      "category": "類別",
+      "description": "描述",
+      "range": "範圍",
+      "defaultValue": "預設",
+      "updatedAt": "更新時間",
+      "updatedBy": "更新者",
+      "edit": "編輯",
+      "viewHistory": "歷史記錄"
+    },
+    "edit": {
+      "title": "編輯組態",
+      "currentValue": "目前值",
+      "newValue": "新值",
+      "reason": "變更原因（選填）",
+      "reasonPlaceholder": "描述您進行此變更的原因...",
+      "constraints": "限制",
+      "min": "最小值",
+      "max": "最大值",
+      "default": "預設",
+      "cancel": "取消",
+      "save": "儲存變更",
+      "saving": "儲存中...",
+      "success": "組態更新成功",
+      "error": "組態更新失敗"
+    },
+    "history": {
+      "title": "變更歷史記錄",
+      "noHistory": "無可用的變更歷史記錄",
+      "timestamp": "時間戳記",
+      "changedBy": "變更者",
+      "oldValue": "舊值",
+      "newValue": "新值",
+      "reason": "原因",
+      "ipAddress": "IP位址",
+      "rollback": "復原",
+      "rollbackConfirm": "您確定要復原到此值嗎？",
+      "rollbackSuccess": "組態復原成功",
+      "rollbackError": "組態復原失敗",
+      "loadMore": "載入更多"
+    },
+    "validation": {
+      "required": "此欄位為必填",
+      "mustBeNumber": "必須是數字",
+      "mustBeBoolean": "必須是true或false",
+      "belowMin": "值必須至少為{min}",
+      "aboveMax": "值必須最多為{max}",
+      "invalidJson": "無效的JSON格式"
+    }
+  }
+}

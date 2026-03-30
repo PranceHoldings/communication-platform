@@ -174,7 +174,10 @@
       "authenticationTimeout": "Authentication timeout. Please try again.",
       "processingComplete": "Processing Complete",
       "lowVolumeWarning": "⚠️ 麦克风音量过低。请大声说话或检查麦克风设置。",
-      "audioTooQuiet": "音频电平过低。请靠近麦克风说话。"
+      "audioTooQuiet": "音频电平过低。请靠近麦克风说话。",
+      "partialRecording": "⚠️ 录制已部分保存",
+      "partialRecordingDescription": "处理过程中发生错误。{total}个区块中的{saved}个已成功保存。",
+      "aiFallbackUsed": "由于临时问题，AI正在使用备用响应。"
     },
     "noSpeech": {
       "guidance": "未检测到语音。请大声说话或靠近麦克风。",
@@ -205,7 +208,8 @@
     "completed": {
       "title": "Session Completed",
       "duration": "Duration",
-      "messageCount": "{count} messages"
+      "messageCount": "{count} messages",
+      "turnLimitReached": "对话在{turnCount}轮后完成。"
     },
     "info": {
       "scenario": "Scenario",
@@ -247,6 +251,20 @@
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
         "notSupported": "Recording is not supported in your browser"
       }
+    },
+    "validation": {
+      "cannotStart": "无法开始会话",
+      "warningsDetected": "检测到情景警告",
+      "warningsMessage": "在情景配置中检测到以下警告：",
+      "proceedAnyway": "是否继续？",
+      "sessionCancelled": "已取消会话开始",
+      "titleRequired": "情景标题为必填项",
+      "languageRequired": "情景语言为必填项",
+      "systemPromptRequired": "系统提示为必填项",
+      "initialGreetingMissing": "未设置初始问候语。AI将等待用户发言。",
+      "silenceTimeoutTooShort": "静音超时非常短。建议增加。",
+      "systemPromptTooLong": "系统提示非常长。这可能影响AI响应质量。",
+      "systemPromptTooShort": "系统提示非常短。建议添加更多上下文。"
     }
   },
   "errors": {

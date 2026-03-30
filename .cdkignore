@@ -1,0 +1,42 @@
+# CDK Asset Bundling Ignore File
+# Exclude corrupted and unnecessary directories from CDK bundling
+
+# Corrupted Next.js build directory
+apps/web/.next/
+apps/web/.next
+
+# Node modules (will be installed in Docker)
+node_modules/
+**/node_modules/
+
+# Git
+.git/
+.gitignore
+
+# CDK
+infrastructure/cdk.out/
+*.d.ts
+
+# Build artifacts
+**/dist/
+**/build/
+
+# Cache
+.cache/
+**/.cache/
+
+# Test
+**/__tests__/
+**/test/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+*.log
+*.map
+.DS_Store

@@ -7,7 +7,7 @@ interface Session {
   id: string;
   scenario: string;
   avatar: string;
-  duration: string;
+  durationSec: number | string; // Prisma schema field name
   score?: number;
   date: string;
   status: 'completed' | 'processing' | 'failed';
@@ -148,7 +148,7 @@ export default function RecentSessions({ sessions }: RecentSessionsProps) {
                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </svg>
-                    {session.duration}
+                    {session.durationSec}
                   </span>
                   <span>{session.date}</span>
                 </div>

@@ -59,6 +59,11 @@
     "startFailed": "Failed to start session. Please try again.",
     "endFailed": "Failed to end session. Please try again."
   },
+  "rateLimit": {
+    "title": "发送速度限制",
+    "message": "您的音频发送速度过快，请等待 {seconds} 秒。",
+    "guidance": "系统需要时间处理您的音频。这有助于确保高质量的响应。"
+  },
   "actions": {
     "retry": "Retry",
     "cancel": "Cancel",

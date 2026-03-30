@@ -174,7 +174,10 @@
       "authenticationTimeout": "Authentication timeout. Please try again.",
       "processingComplete": "Processing Complete",
       "lowVolumeWarning": "⚠️ El volumen del micrófono es muy bajo. Por favor, hable más alto o verifique la configuración del micrófono.",
-      "audioTooQuiet": "El nivel de audio es demasiado bajo. Por favor, hable más cerca del micrófono."
+      "audioTooQuiet": "El nivel de audio es demasiado bajo. Por favor, hable más cerca del micrófono.",
+      "partialRecording": "⚠️ Grabación Guardada Parcialmente",
+      "partialRecordingDescription": "Ocurrió un error durante el procesamiento. {saved} de {total} fragmentos se guardaron correctamente.",
+      "aiFallbackUsed": "La IA está usando una respuesta alternativa debido a un problema temporal."
     },
     "noSpeech": {
       "guidance": "No se detectó habla. Por favor, hable más alto o acérquese al micrófono.",
@@ -205,7 +208,8 @@
     "completed": {
       "title": "Session Completed",
       "duration": "Duration",
-      "messageCount": "{count} messages"
+      "messageCount": "{count} messages",
+      "turnLimitReached": "Conversación completada después de {turnCount} turnos."
     },
     "info": {
       "scenario": "Scenario",
@@ -247,6 +251,20 @@
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
         "notSupported": "Recording is not supported in your browser"
       }
+    },
+    "validation": {
+      "cannotStart": "No se puede iniciar la sesión",
+      "warningsDetected": "Advertencias de Escenario Detectadas",
+      "warningsMessage": "Se detectaron las siguientes advertencias en la configuración del escenario:",
+      "proceedAnyway": "¿Desea continuar de todos modos?",
+      "sessionCancelled": "Inicio de sesión cancelado",
+      "titleRequired": "El título del escenario es obligatorio",
+      "languageRequired": "El idioma del escenario es obligatorio",
+      "systemPromptRequired": "El prompt del sistema es obligatorio",
+      "initialGreetingMissing": "No se estableció el saludo inicial. La IA esperará a que el usuario hable primero.",
+      "silenceTimeoutTooShort": "El tiempo de espera de silencio es muy corto. Considere aumentarlo.",
+      "systemPromptTooLong": "El prompt del sistema es muy largo. Esto puede afectar la calidad de respuesta de la IA.",
+      "systemPromptTooShort": "El prompt del sistema es muy corto. Considere agregar más contexto."
     }
   },
   "errors": {

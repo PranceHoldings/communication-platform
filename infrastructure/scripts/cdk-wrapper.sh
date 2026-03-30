@@ -51,7 +51,7 @@ if [ "$IS_DEPLOY" = true ]; then
   cd "$ROOT_DIR"
 
   # 1. Space-containing directories check
-  echo -e "${BLUE}[1/3]${NC} Checking for space-containing directories..."
+  echo -e "${BLUE}[1/4]${NC} Checking for space-containing directories..."
   if npm run clean:spaces > /dev/null 2>&1; then
     echo -e "${GREEN}  ✓ No space-containing directories${NC}"
   else
@@ -62,9 +62,21 @@ if [ "$IS_DEPLOY" = true ]; then
   fi
   echo ""
 
-  # 2. Lambda dependencies check (if deploying Lambda stack)
+  # 2. Duplication management check (CRITICAL - 2026-03-22)
+  echo -e "${BLUE}[2/4]${NC} Validating duplication management..."
+  if bash scripts/validate-duplication.sh > /dev/null 2>&1; then
+    echo -e "${GREEN}  ✓ Duplication validation passed${NC}"
+  else
+    echo -e "${RED}  ✗ Duplication validation failed${NC}"
+    echo ""
+    echo -e "${YELLOW}Run: bash scripts/validate-duplication.sh${NC}"
+    exit 1
+  fi
+  echo ""
+
+  # 3. Lambda dependencies check (if deploying Lambda stack)
   if [[ "$*" == *"ApiLambda"* ]] || [[ "$*" == *"--all"* ]] || [[ -z "$*" ]]; then
-    echo -e "${BLUE}[2/3]${NC} Validating Lambda dependencies..."
+    echo -e "${BLUE}[3/4]${NC} Validating Lambda dependencies..."
     if npm run lambda:validate > /dev/null 2>&1; then
       echo -e "${GREEN}  ✓ Lambda dependencies valid${NC}"
     else
@@ -75,13 +87,13 @@ if [ "$IS_DEPLOY" = true ]; then
     fi
     echo ""
   else
-    echo -e "${BLUE}[2/3]${NC} Skipping Lambda validation (not deploying Lambda stack)"
+    echo -e "${BLUE}[3/4]${NC} Skipping Lambda validation (not deploying Lambda stack)"
     echo ""
   fi
 
-  # 3. CDK bundling configuration check (if deploying Lambda stack)
+  # 4. CDK bundling configuration check (if deploying Lambda stack)
   if [[ "$*" == *"ApiLambda"* ]] || [[ "$*" == *"--all"* ]] || [[ -z "$*" ]]; then
-    echo -e "${BLUE}[3/3]${NC} Validating CDK bundling configuration..."
+    echo -e "${BLUE}[4/4]${NC} Validating CDK bundling configuration..."
     cd "$INFRA_DIR"
     if npm run validate:bundling > /dev/null 2>&1; then
       echo -e "${GREEN}  ✓ CDK bundling configuration valid${NC}"
@@ -93,7 +105,7 @@ if [ "$IS_DEPLOY" = true ]; then
     fi
     echo ""
   else
-    echo -e "${BLUE}[3/3]${NC} Skipping bundling validation (not deploying Lambda stack)"
+    echo -e "${BLUE}[4/4]${NC} Skipping bundling validation (not deploying Lambda stack)"
     echo ""
   fi
 

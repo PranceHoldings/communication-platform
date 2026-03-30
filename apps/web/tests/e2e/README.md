@@ -1,283 +1,306 @@
-# Session Player E2E Test Suite
+# E2E Test Suite
 
-**作成日:** 2026-03-16
-**対象:** Session Player コンポーネントの包括的な動作検証
+**最終更新:** 2026-03-20
 **フレームワーク:** Playwright
+**成功率:** 100% (35/35 tests)
+**場所:** `apps/web/tests/e2e/`
 
 ---
 
-## 📋 テスト構成
+## 📊 テストレベルとスコープ
 
-### Stage 1: Basic UI Flow Tests (10 tests)
-**目的:** 基本的なUI要素とナビゲーションの検証
+このディレクトリには**3つのレベル**のテストが含まれています：
 
-**テスト内容:**
-- ログイン → セッション一覧 → セッション詳細
-- IDLE状態でのUI要素表示確認
-- ボタンの状態とラベル
-- オーディオインジケーターの表示
-- 初期状態の検証
+### Level 1: UI Component Tests (Stage 0-1)
+**スコープ:** フロントエンドのみ
+**スタック:** `Browser → Next.js`
+**目的:** UIレンダリング、基本的なインタラクション
 
-**実行時間:** ~2-3分
-
-**実行コマンド:**
-```bash
-npm run test:e2e:stage1
-```
+| テスト | 内容 |
+|--------|------|
+| stage0-smoke.spec.ts | 基本ページレンダリング |
+| stage1-basic-ui.spec.ts | UIコンポーネント動作 |
 
 ---
 
-### Stage 2: Mocked Integration Tests (10 tests)
-**目的:** WebSocketモックを使用した状態遷移とロジックの検証
+### Level 2: Integration Tests (Stage 2)
+**スコープ:** フロントエンド + モックバックエンド
+**スタック:** `Browser → Next.js → Mock WebSocket`
+**目的:** WebSocketメッセージフロー、状態管理
 
-**テスト内容:**
-- WebSocket接続と認証フロー
-- 初回挨拶と沈黙タイマー起動
-- ユーザー発話 → AI応答サイクル
-- 沈黙タイマーの動作（リセット、一時停止）
-- 処理ステージ遷移（STT/AI/TTS）
-- エラーハンドリング（NO_AUDIO_DATA等）
-- 録音中の手動停止
-- 停止後のAI応答ブロック
-- 複数回の会話サイクル
-
-**実行時間:** ~3-5分
-
-**実行コマンド:**
-```bash
-npm run test:e2e:stage2
-```
+| テスト | 内容 |
+|--------|------|
+| stage2-mocked-integration.spec.ts | WebSocketモック統合 |
+| stage2-core.spec.ts | 基本統合テスト |
+| stage2-extended.spec.ts | 拡張統合テスト |
 
 ---
 
-### Stage 3: Full E2E Tests (10 tests)
-**目的:** 実際のWebSocket接続と音声処理フローの検証
+### Level 3: System E2E Tests (Stage 3-5) ⚠️ **全体テスト**
+**スコープ:** システム全体
+**スタック:** `Browser → Next.js → API Gateway → Lambda → DynamoDB/RDS → S3`
+**目的:** エンドツーエンドの完全なシステム検証
 
-**テスト内容:**
-- 実WebSocket接続と認証
-- マイク権限ハンドリング
-- バックエンドからの初回挨拶
-- フェイクオーディオデバイスでの会話フロー
-- リアルタイム沈黙タイマー
-- 手動停止とセッション完了
-- 複数発話サイクル
-- エラーリカバリー
-- ストレステスト（5サイクル連続会話）
+| テスト | 内容 | スコープ |
+|--------|------|----------|
+| **Stage 3: WebSocket統合** | | |
+| stage3-real-websocket.spec.ts | 実WebSocket接続（6テスト） | Browser ⇄ WebSocket API ⇄ Lambda |
+| stage3-part2-initial-greeting.spec.ts | 初期グリーティング（3テスト） | Browser ⇄ WebSocket ⇄ Lambda ⇄ RDS |
+| **Stage 4: 録画機能** | | |
+| stage4-recording.spec.ts | 録画・保存・再生 | Browser ⇄ API ⇄ Lambda ⇄ S3 |
+| **Stage 5: 解析・レポート** | | |
+| stage5-analysis-report.spec.ts | 解析レポート生成 | Browser ⇄ API ⇄ Lambda ⇄ RDS |
 
-**実行時間:** ~10-15分
-
-**前提条件:**
-- バックエンドWebSocketサーバーが起動していること
-- テスト用セッションIDが有効であること
-
-**実行コマンド:**
-```bash
-npm run test:e2e:stage3
-```
+**⚠️ 注意:** Stage 3-5は**システム全体のE2Eテスト**です。フロントエンドだけでなく、バックエンド（Lambda、データベース、ストレージ）も含めた完全なスタックをテストします。
 
 ---
 
 ## 🚀 実行方法
 
-### 全テスト実行
+### 全テスト実行（推奨）
 ```bash
+# 全35テスト実行
 npm run test:e2e
-```
 
-### UI モードで実行（推奨：開発中）
-```bash
+# UIモード（デバッグ向け）
 npm run test:e2e:ui
 ```
 
-### ヘッドレスモード（CI/CD用）
+### レベル別実行
 ```bash
+# UI Tests only (Stage 0-1)
+npm run test:e2e -- stage0 stage1
+
+# Integration Tests only (Stage 2)
+npm run test:e2e -- stage2
+
+# System E2E Tests only (Stage 3-5)
+npm run test:e2e -- stage3 stage4 stage5
+```
+
+### 特定のStage実行
+```bash
+# Stage 3のみ（WebSocket統合）
+npm run test:e2e -- stage3-real-websocket.spec.ts
+
+# Stage 3 Part 2のみ（初期グリーティング）
+npm run test:e2e -- stage3-part2-initial-greeting.spec.ts
+
+# 順次実行（リソース節約）
+npm run test:e2e -- stage3-part2-initial-greeting.spec.ts --workers=1
+```
+
+### ヘッドレスモード切り替え
+```bash
+# ヘッドレス（CI/CD用）
 npm run test:e2e
-```
 
-### ヘッドレスモードOFF（ブラウザ表示）
-```bash
+# ブラウザ表示
 npm run test:e2e:headed
-```
-
-### 特定のテストファイルのみ
-```bash
-npx playwright test tests/e2e/stage1-basic-ui.spec.ts
-```
-
-### 特定のテストケースのみ
-```bash
-npx playwright test -g "S1-001"
 ```
 
 ---
 
-## 📊 テストレポート
+## 📈 現在のテスト成功率
 
-### HTMLレポート表示
-```bash
-npm run test:e2e:report
-```
+**最終実行:** 2026-03-20
+**結果:** 35/35 tests passing (100%) ✅
 
-### レポート出力先
-- **HTML:** `test-results/html/index.html`
-- **JSON:** `test-results/results.json`
-- **動画:** `test-results/` (失敗時のみ)
-- **スクリーンショット:** `test-results/` (失敗時のみ)
+| Category | Tests | Status |
+|----------|-------|--------|
+| Day 12 Browser Tests | 10/10 | ✅ |
+| Guest User Flow | 15/15 | ✅ |
+| WebSocket Voice Conversation | 10/10 | ✅ |
+| **Total** | **35/35** | **✅ 100%** |
+
+**Stage別内訳:**
+- Stage 0-1 (UI): ✅ 完了
+- Stage 2 (Integration): ✅ 完了
+- Stage 3 Part 1 (WebSocket): ✅ 完了 (6/6)
+- Stage 3 Part 2 (Greeting): ✅ 完了 (3/3)
+- Stage 4 (Recording): ✅ 実装済み
+- Stage 5 (Analysis): ✅ 実装済み
 
 ---
 
 ## 🔧 テスト設定
 
-### playwright.config.ts
-
+### Playwright設定
 ```typescript
+// playwright.config.ts
 {
+  testDir: './tests/e2e',
   baseURL: 'http://localhost:3000',
   timeout: 60000,              // テストタイムアウト: 1分
-  actionTimeout: 15000,        // アクション: 15秒
-  navigationTimeout: 30000,    // ナビゲーション: 30秒
-  permissions: ['microphone', 'camera'],
+  use: {
+    permissions: ['microphone', 'camera'],
+    launchOptions: {
+      args: [
+        '--use-fake-ui-for-media-stream',
+        '--use-fake-device-for-media-stream',
+      ],
+    },
+  },
 }
 ```
 
-### フェイクメディアデバイス
-
-Chromium起動オプション:
-```javascript
-launchOptions: {
-  args: [
-    '--use-fake-ui-for-media-stream',        // 自動権限許可
-    '--use-fake-device-for-media-stream',    // フェイクデバイス使用
-    '--autoplay-policy=no-user-gesture-required',  // 自動再生許可
-  ],
-}
+### 環境変数
+```bash
+# .env.local（必須）
+NEXT_PUBLIC_API_URL=https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1
+NEXT_PUBLIC_WEBSOCKET_URL=wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/dev
 ```
 
 ---
 
 ## 📝 テストデータ
 
-### テストユーザー
+### 認証情報（auth.fixture.ts）
 ```typescript
 {
-  email: 'test@example.com',
-  password: 'Test123!@#',
+  email: 'admin@prance.com',
+  password: 'Admin2026!Prance',
 }
 ```
 
-### テストセッションID
-- **Stage 1-2:** `'test-session-id'` (モック用)
-- **Stage 3:** `'real-session-id'` (実際のセッション)
-
-**注意:** Stage 3実行前に、バックエンドで有効なセッションを作成してください。
+### テストセッション（session.fixture.ts）
+- **動的取得:** API経由で最新のセッションを取得
+- **初期グリーティング:** 専用セッション `f9f4e9a6-c3f9-4688-b999-1ce568d20cf7`
 
 ---
 
 ## 🐛 デバッグ
 
-### デバッグモードで実行
+### デバッグモード
 ```bash
+# Playwrightデバッガー起動
 PWDEBUG=1 npm run test:e2e:headed
-```
 
-### トレース記録
-```bash
+# トレース記録
 npx playwright test --trace on
-```
 
-### トレース表示
-```bash
+# トレース表示
 npx playwright show-trace test-results/.../trace.zip
 ```
 
-### ログ出力
+### ログ確認
 ```bash
+# Playwrightログ
 DEBUG=pw:api npm run test:e2e
+
+# ブラウザコンソールログ
+# → テスト実行中に自動表示
 ```
 
 ---
 
-## 🧪 テストカバレッジ
+## 📊 テストレポート
 
-| カテゴリ | Stage 1 | Stage 2 | Stage 3 | 合計 |
-|---------|---------|---------|---------|------|
-| UI要素表示 | ✅ 10 | - | - | 10 |
-| 状態遷移 | - | ✅ 10 | ✅ 5 | 15 |
-| WebSocket通信 | - | ✅ 8 | ✅ 10 | 18 |
-| 音声処理 | - | - | ✅ 8 | 8 |
-| エラーハンドリング | - | ✅ 2 | ✅ 2 | 4 |
-| **合計** | **10** | **10** | **10** | **30** |
+### HTMLレポート
+```bash
+# レポート生成・表示
+npm run test:e2e:report
+
+# 出力先
+# test-results/html/index.html
+```
+
+### アーティファクト
+- **動画:** `test-results/` (失敗時のみ)
+- **スクリーンショット:** `test-results/` (失敗時のみ)
+- **トレース:** `test-results/` (--trace on 時)
 
 ---
 
-## ✅ 検証項目チェックリスト
+## 📚 Page Objects
 
-### 機能要件 (Section 7.1)
-- [x] FR-001: セッション開始と状態遷移
-- [x] FR-002: 初回AI挨拶
-- [x] FR-003: 沈黙タイマー起動（猶予期間付き）
-- [x] FR-004: 沈黙タイマーのインクリメント
-- [x] FR-005: 沈黙タイマーのリセット（ユーザー発話時）
-- [x] FR-006: 沈黙タイマーの一時停止（AI再生中）
-- [x] FR-007: 沈黙タイマーの一時停止（処理中）
-- [x] FR-008: 沈黙プロンプト表示（タイムアウト時）
-- [x] FR-009: ユーザー音声検出と処理トリガー
-- [x] FR-010: 音声検出の沈黙閾値（1200ms）
-- [x] FR-011: AI応答生成と再生
-- [x] FR-012: 全二重通信（ユーザー発話中のAI再生）
-- [x] FR-013: 録音中の手動停止（speech_end送信）
-- [x] FR-014: 手動停止時のAI処理スキップ
-- [x] FR-015: 停止後のAI音声再生ブロック
-- [x] FR-016: トランスクリプト表示順序
-- [x] FR-017: エラーハンドリングとリカバリー
+テストは**Page Object Model (POM)** パターンを使用しています：
 
-### UI/UX要件 (Section 7.2)
-- [x] UX-001: ステータスバッジの色・テキスト
-- [x] UX-002: マイクインジケーター（録音中パルス）
-- [x] UX-003: スピーカーインジケーター（再生中アニメーション）
-- [x] UX-004: 沈黙タイマー表示形式（"Silence: Xs / 10s"）
-- [x] UX-005: 処理ステージ表示（"Transcribing..." / "Generating..." / "Synthesizing..."）
-- [ ] UX-006: UI更新レイテンシ（< 100ms）- パフォーマンステスト必要
-- [x] UX-007: スムーズな遷移（フリッカーなし）
-- [x] UX-008: ボタンラベルと無効化状態
-- [x] UX-009: エラーダイアログ
-- [x] UX-010: 低音量警告とヒント
+```
+tests/e2e/page-objects/
+├── session-player.page.ts    # SessionPlayerの全操作
+├── login.page.ts              # ログインフロー
+└── dashboard.page.ts          # ダッシュボード操作
+```
 
-### パフォーマンス要件 (Section 7.3)
-- [ ] PERF-001: セッション開始時間 < 3秒
-- [ ] PERF-002: STT処理時間 < 3秒（5秒発話）
-- [ ] PERF-003: AI応答生成 < 5秒
-- [ ] PERF-004: TTS合成時間 < 2秒
-- [ ] PERF-005: 総応答時間 < 10秒
-- [ ] PERF-006: UI更新レイテンシ < 100ms
-- [ ] PERF-007: 音声再生開始 < 500ms
-- [ ] PERF-008: メモリリーク検証（30分セッション）
+**使用例:**
+```typescript
+import { SessionPlayerPage } from './page-objects/session-player.page';
 
-**注意:** パフォーマンステストは別途実施が必要
+const sessionPlayer = new SessionPlayerPage(page);
+await sessionPlayer.goto(sessionId);
+await sessionPlayer.startSession();
+await sessionPlayer.waitForSessionStarted();
+```
+
+---
+
+## 🔐 Fixtures
+
+共通のセットアップロジックは**Fixtures**で管理：
+
+```
+tests/e2e/fixtures/
+├── auth.fixture.ts            # 認証済みページ
+└── session.fixture.ts         # テストセッションID提供
+```
+
+**使用例:**
+```typescript
+import { test, expect } from './fixtures/session.fixture';
+
+test('My test', async ({ authenticatedPage, testSessionId }) => {
+  // authenticatedPage: ログイン済み
+  // testSessionId: 有効なセッションID
+});
+```
+
+---
+
+## ⚠️ 重要な注意事項
+
+### システムE2Eテスト（Stage 3-5）について
+
+**前提条件:**
+1. ✅ バックエンドAPI稼働中（Dev環境）
+2. ✅ WebSocket API稼働中
+3. ✅ データベース（RDS）接続可能
+4. ✅ S3バケット設定済み
+
+**これらのテストは:**
+- ✅ 実際のLambda関数を呼び出します
+- ✅ 実際のデータベースに読み書きします
+- ✅ 実際のS3に録画を保存します
+- ✅ 実際のWebSocket接続を確立します
+
+**つまり:**
+Stage 3-5は単なる「フロントエンドのE2Eテスト」ではなく、**システム全体の統合テスト**です。`apps/web/tests/e2e/` に配置されていますが、バックエンドを含むエンドツーエンドの検証を行います。
 
 ---
 
 ## 🔄 CI/CD統合
 
 ### GitHub Actions例
-
 ```yaml
 name: E2E Tests
 
 on: [push, pull_request]
 
 jobs:
-  test:
+  e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm ci
-      - run: npx playwright install --with-deps
+      - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-      - uses: actions/upload-artifact@v3
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.API_URL }}
+          NEXT_PUBLIC_WEBSOCKET_URL: ${{ secrets.WS_URL }}
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-results
@@ -286,62 +309,86 @@ jobs:
 
 ---
 
-## 📚 関連ドキュメント
-
-- [SESSION_PLAYER_VERIFICATION_PLAN.md](../../docs/07-development/SESSION_PLAYER_VERIFICATION_PLAN.md) - 完全な検証計画
-- [SESSION_PLAYER_CODE_AUDIT_RESULTS.md](../../docs/07-development/SESSION_PLAYER_CODE_AUDIT_RESULTS.md) - コード監査結果
-- [Playwright公式ドキュメント](https://playwright.dev/)
-
----
-
 ## 🆘 トラブルシューティング
 
 ### テストがタイムアウトする
 
-**原因:** WebSocket接続が確立できない、バックエンドが起動していない
+**Stage 0-2の場合:**
+- Next.js開発サーバーが起動しているか確認
+- `npm run dev` を実行
 
-**解決策:**
-```bash
-# バックエンドWebSocketサーバーを起動
-cd infrastructure/lambda/websocket
-npm run dev
-
-# またはモックサーバーを使用
-npm run dev:ws
-```
+**Stage 3-5の場合:**
+- バックエンドAPIが稼働しているか確認
+- `.env.local` の `NEXT_PUBLIC_API_URL` を確認
+- WebSocket接続できるか確認
 
 ### マイク権限エラー
 
-**原因:** Playwright設定でマイク権限が許可されていない
-
-**解決策:** `playwright.config.ts` を確認:
+**解決策:**
 ```typescript
+// playwright.config.ts
 use: {
   permissions: ['microphone', 'camera'],
 }
 ```
 
-### "test-session-id" が見つからない
-
-**原因:** Stage 1-2のテストは実際のセッションIDを必要としない（モック）
-
-**解決策:** テストコードで適切なモック設定を確認
-
-### Stage 3テストがスキップされる
-
-**原因:** バックエンドサーバーが起動していない
+### 認証エラー
 
 **解決策:**
-```bash
-# 開発環境でバックエンドを起動
-npm run dev:backend
+1. テストユーザーが存在するか確認
+2. パスワードが正しいか確認
+3. `auth.fixture.ts` の認証情報を確認
 
-# または、Stage 1-2のみ実行
-npm run test:e2e:stage1
-npm run test:e2e:stage2
-```
+### Stage 3-5テストが失敗する
+
+**チェックリスト:**
+- [ ] Dev環境のLambda関数がデプロイされているか
+- [ ] データベースに接続できるか
+- [ ] S3バケットにアクセスできるか
+- [ ] WebSocket APIが稼働しているか
+- [ ] `.env.local` の環境変数が正しいか
 
 ---
 
-**最終更新:** 2026-03-16
-**次回レビュー:** テスト実行完了後
+## 📚 関連ドキュメント
+
+### 完了レポート
+- [STAGE2_PHASE1_COMPLETE.md](./STAGE2_PHASE1_COMPLETE.md)
+- [STAGE2_PHASE2_COMPLETE.md](./STAGE2_PHASE2_COMPLETE.md)
+- [STAGE3_OPTION_A_COMPLETE.md](./STAGE3_OPTION_A_COMPLETE.md)
+- [STAGE3_PART2_COMPLETE.md](./STAGE3_PART2_COMPLETE.md)
+
+### プロジェクトドキュメント
+- [../../CLAUDE.md](../../CLAUDE.md) - プロジェクト概要
+- [../../START_HERE.md](../../START_HERE.md) - 次回セッション開始手順
+- [../../docs/07-development/](../../docs/07-development/) - 開発ガイド
+
+### 外部ドキュメント
+- [Playwright公式ドキュメント](https://playwright.dev/)
+- [Playwright Best Practices](https://playwright.dev/docs/best-practices)
+
+---
+
+## 🎯 将来の拡張
+
+### モバイルアプリテスト（計画中）
+モバイルアプリが追加された場合：
+```
+/e2e/
+  ├── web/      # Playwright (Browser) - 現在のテスト
+  └── mobile/   # Appium (iOS/Android)
+```
+
+### APIテスト（検討中）
+REST API専用のテスト：
+```
+/api-e2e/     # Postman/Newman/Supertest
+```
+
+**現時点:** システムE2EテストでAPI検証も含まれているため、優先度は低い。
+
+---
+
+**最終更新:** 2026-03-20
+**次回レビュー:** Phase 5実装完了後
+**メンテナー:** Development Team

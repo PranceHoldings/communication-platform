@@ -114,16 +114,13 @@ export const handler: APIGatewayProxyHandler = async event => {
         scenarioId: session.scenarioId,
         scenario: session.scenario,
         avatarId: session.avatarId,
-        avatar: {
-          ...session.avatar,
-          imageUrl: session.avatar.thumbnailUrl, // Map thumbnailUrl to imageUrl for frontend compatibility
-        },
+        avatar: session.avatar,
         status: session.status,
         startedAt: session.startedAt,
         endedAt: session.endedAt,
-        duration: session.durationSec,
-        metadata: session.metadataJson,
-        createdAt: session.startedAt, // Use startedAt as createdAt for frontend compatibility
+        durationSec: session.durationSec,
+        metadataJson: session.metadataJson,
+        startedAt: session.startedAt
       },
       201
     );

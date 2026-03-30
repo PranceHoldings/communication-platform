@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
 import { sessionsApi, Session } from '@/lib/api/sessions';
+import type { SessionStatus } from '@prance/shared';
 import Link from 'next/link';
 
 export default function SessionsPage() {
@@ -10,9 +11,7 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR'>(
-    'all'
-  );
+  const [filter, setFilter] = useState<'all' | SessionStatus>('all');
   const [pagination, setPagination] = useState({
     total: 0,
     limit: 20,
@@ -174,14 +173,21 @@ export default function SessionsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      {session.avatar?.imageUrl ? (
+                      {session.avatar?.thumbnailUrl ? (
                         <img
-                          src={session.avatar.imageUrl}
+                          src={session.avatar.thumbnailUrl}
                           alt={session.avatar.name}
-                          className="h-8 w-8 rounded-full"
+                          className="h-8 w-8 rounded-full mr-2 object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       ) : (
-                        <div className="h-8 w-8 rounded-full bg-gray-200"></div>
+                        <div className="h-8 w-8 rounded-full mr-2 bg-indigo-100 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
                       )}
                       <div className="ml-3 text-sm font-medium text-gray-900">
                         {session.avatar?.name || 'N/A'}
@@ -201,7 +207,7 @@ export default function SessionsPage() {
                     {formatDate(session.startedAt)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDuration(session.duration)}
+                    {formatDuration(session.durationSec)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link

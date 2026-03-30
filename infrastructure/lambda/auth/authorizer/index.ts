@@ -11,6 +11,7 @@ import {
 } from 'aws-lambda';
 import { verifyToken } from '../../shared/auth/jwt';
 import { JWTPayload } from '../../shared/types';
+import { getRequiredEnv } from '../../shared/utils/env-validator';
 
 /**
  * IAMポリシードキュメントを生成
@@ -51,7 +52,7 @@ export const handler = async (
   });
 
   // デバッグ: JWT_SECRETの最初と最後の5文字をログ出力
-  const jwtSecret = process.env.JWT_SECRET || 'not-set';
+  const jwtSecret = getRequiredEnv('JWT_SECRET');
   console.log(
     'JWT_SECRET (masked):',
     jwtSecret.substring(0, 5) + '...' + jwtSecret.substring(jwtSecret.length - 5)

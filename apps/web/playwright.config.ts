@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-// Load environment variables from .env.local
-dotenv.config({ path: path.resolve(__dirname, '.env.local') });
+// Load environment variables from .env.local (root directory)
+dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
 /**
  * Playwright Configuration for Prance Session Player E2E Tests
@@ -20,8 +20,8 @@ export default defineConfig({
   // Test execution settings
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? 2 : 1, // Local: 1 retry for flaky tests
+  workers: 1, // Sequential execution to avoid connection issues
 
   // Reporter configuration
   reporter: [

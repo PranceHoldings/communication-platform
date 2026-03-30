@@ -11,7 +11,7 @@
 // Enums（Prismaスキーマと完全一致）
 // ============================================================
 
-export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER';
+export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';
 
 export type AvatarType = 'TWO_D' | 'THREE_D';
 
@@ -25,9 +25,30 @@ export type SessionStatus = 'ACTIVE' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
 
 export type RecordingType = 'USER' | 'AVATAR' | 'COMBINED';
 
+export type ProcessingStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
+
 export type Speaker = 'AI' | 'USER';
 
 export type Highlight = 'POSITIVE' | 'NEGATIVE' | 'IMPORTANT';
+
+export type GuestSessionStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'REVOKED';
+
+export type RuntimeConfigDataType = 'NUMBER' | 'STRING' | 'BOOLEAN' | 'JSON';
+
+export type RuntimeConfigCategory =
+  | 'QUERY_PROCESSING'
+  | 'AI_PROCESSING'
+  | 'AUDIO_PROCESSING'
+  | 'SCORE_CALCULATION'
+  | 'SECURITY'
+  | 'SYSTEM';
+
+export type RuntimeConfigAccessLevel =
+  | 'DEVELOPER_ONLY'
+  | 'SUPER_ADMIN_READ_ONLY'
+  | 'SUPER_ADMIN_READ_WRITE'
+  | 'CLIENT_ADMIN_READ_WRITE'
+  | 'CLIENT_ADMIN_READ_ONLY';
 
 // ============================================================
 // 組織・ユーザー
@@ -116,6 +137,29 @@ export interface Scenario {
 }
 
 // ============================================================
+// シナリオバリデーション (Day 36)
+// ============================================================
+
+export interface ValidationError {
+  field: string;
+  code: string;
+  message: string;
+}
+
+export interface ValidationWarning {
+  field: string;
+  code: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface ScenarioValidation {
+  isValid: boolean;
+  errors: ValidationError[];
+  warnings: ValidationWarning[];
+}
+
+// ============================================================
 // セッション
 // ============================================================
 
@@ -128,8 +172,8 @@ export interface Session {
   status: SessionStatus;
   startedAt: Date;
   endedAt?: Date;
-  durationSec?: number; // API では "duration" としてレスポンス
-  metadataJson?: Record<string, unknown>; // API では "metadata" としてレスポンス
+  durationSec?: number;
+  metadataJson?: Record<string, unknown>;
 }
 
 // ============================================================
@@ -140,10 +184,18 @@ export interface Recording {
   id: string;
   sessionId: string;
   type: RecordingType;
+  s3Key: string;
   s3Url: string;
   cdnUrl?: string;
   thumbnailUrl?: string;
-  fileSizeBytes: bigint;
+  fileSizeBytes: number; // Changed from bigint to number for JSON serialization
+  durationSec?: number;
+  format?: string;
+  resolution?: string;
+  videoChunksCount?: number;
+  processingStatus: ProcessingStatus;
+  processedAt?: Date;
+  errorMessage?: string;
   createdAt: Date;
 }
 
@@ -160,6 +212,7 @@ export interface Transcript {
   timestampEnd: number;
   confidence?: number;
   highlight?: Highlight;
+  createdAt?: Date;
 }
 
 // ============================================================
@@ -280,11 +333,37 @@ export interface AuthenticatedMessage extends WebSocketMessageBase {
 
 /**
  * 音声チャンクメッセージ（クライアント → サーバー）
+ * Legacy: Batch audio processing
  */
 export interface AudioChunkMessage extends WebSocketMessageBase {
   type: 'audio_chunk';
   data: string; // Base64 encoded
   timestamp: number;
+}
+
+/**
+ * リアルタイム音声チャンクメッセージ（クライアント → サーバー）
+ * Phase 1.5: Real-time audio streaming
+ * Phase 1.6.1: Added chunkId for ACK tracking
+ */
+export interface AudioChunkRealtimeMessage extends WebSocketMessageBase {
+  type: 'audio_chunk_realtime';
+  data: string; // Base64 encoded audio data
+  timestamp: number;
+  sequenceNumber: number;
+  chunkId: string; // Unique chunk ID for ACK tracking (e.g., "audio-42-1234567890")
+  contentType: string; // MIME type (e.g., "audio/webm;codecs=opus")
+}
+
+/**
+ * ビデオチャンクメッセージ（クライアント → サーバー）
+ * Phase 1.6.1: Simple video chunk with ACK tracking
+ */
+export interface VideoChunkMessage extends WebSocketMessageBase {
+  type: 'video_chunk';
+  data: string; // Base64 encoded video data
+  timestamp: number;
+  chunkId: string; // Unique chunk ID for ACK tracking (e.g., "video-5-1234567890")
 }
 
 /**
@@ -338,6 +417,22 @@ export interface VideoChunkErrorMessage extends WebSocketMessageBase {
   chunkId: string;
   error: 'HASH_MISMATCH' | 'SEQUENCE_ERROR' | 'STORAGE_ERROR';
   message: string;
+}
+
+/**
+ * チャンク確認メッセージ（サーバー → クライアント）
+ * Phase 1.6.1: Unified ACK message for audio/video chunks
+ */
+export interface ChunkAckMessage extends WebSocketMessageBase {
+  type: 'chunk_ack';
+  chunkId: string; // Unique chunk ID (e.g., "audio-42-1234567890" or "video-5-1234567890")
+  status: 'received' | 'saved' | 'error' | 'duplicate';
+  timestamp: number;
+  error?: {
+    code: string; // Error code (e.g., "S3_UPLOAD_FAILED", "INVALID_CHUNK")
+    message: string; // Human-readable error message
+    details?: any; // Optional error details
+  };
 }
 
 /**
@@ -493,6 +588,42 @@ export interface VersionMessage extends WebSocketMessageBase {
 }
 
 /**
+ * 録画部分保存メッセージ（サーバー → クライアント）
+ * Phase 1.6.1 Day 34: Notify client about partial recording on processing error
+ */
+export interface RecordingPartialMessage extends WebSocketMessageBase {
+  type: 'recording_partial';
+  message: string;
+  savedChunks: number;
+  totalChunks: number;
+  sessionId: string;
+}
+
+/**
+ * セッション制限到達メッセージ（Day 36）
+ * 会話ターン数が最大値に到達した際に送信
+ */
+export interface SessionLimitReachedMessage extends WebSocketMessageBase {
+  type: 'session_limit_reached';
+  message: string;
+  turnCount: number;
+  maxTurns: number;
+  sessionId: string;
+}
+
+/**
+ * AIフォールバック応答メッセージ（Day 36）
+ * AI応答生成エラー時のフォールバック応答通知
+ */
+export interface AIFallbackMessage extends WebSocketMessageBase {
+  type: 'ai_fallback';
+  message: string;
+  originalError: string;
+  usedFallback: boolean;
+  sessionId: string;
+}
+
+/**
  * クライアントからサーバーへのメッセージ（Union型）
  */
 export type ClientToServerMessage =
@@ -513,6 +644,7 @@ export type ServerToClientMessage =
   | VideoChunkAckMessage
   | VideoChunkMissingMessage
   | VideoChunkErrorMessage
+  | ChunkAckMessage
   | TranscriptMessage
   | AvatarResponseMessage
   | AudioResponseMessage
@@ -523,7 +655,10 @@ export type ServerToClientMessage =
   | ErrorMessage
   | NoSpeechDetectedMessage
   | PongMessage
-  | VersionMessage;
+  | VersionMessage
+  | RecordingPartialMessage
+  | SessionLimitReachedMessage
+  | AIFallbackMessage;
 
 // ============================================================
 // 感情・表情解析
@@ -716,7 +851,12 @@ export interface ScoringWeights {
 /**
  * スコアリング基準プリセット
  */
-export type ScoringPreset = 'default' | 'interview_practice' | 'language_learning' | 'presentation' | 'custom';
+export type ScoringPreset =
+  | 'default'
+  | 'interview_practice'
+  | 'language_learning'
+  | 'presentation'
+  | 'custom';
 
 /**
  * スコアリング基準
@@ -832,3 +972,56 @@ export interface ScoreAssessment {
   description: string;
   color: string; // For UI display
 }
+
+// ============================================================
+// Phase 4: Benchmark System
+// ============================================================
+
+export interface BenchmarkMetric {
+  metric: 'overallScore' | 'emotionScore' | 'audioScore' | 'contentScore' | 'deliveryScore';
+  value: number;
+  mean: number;
+  median: number;
+  stdDev: number;
+  min: number;
+  max: number;
+  p25: number;
+  p75: number;
+  zScore: number;
+  deviationValue: number;
+  percentileRank: number;
+}
+
+export interface BenchmarkData {
+  profileHash: string;
+  metrics: BenchmarkMetric[];
+  sampleSize: number;
+  sufficientData: boolean;
+}
+
+export interface SessionHistoryItem {
+  sessionId: string;
+  scenarioId: string;
+  completedAt: string;
+  overallScore: number;
+  emotionScore: number;
+  audioScore: number;
+  contentScore: number;
+  deliveryScore: number;
+  durationSec: number;
+}
+
+export interface UserAttributes {
+  age?: number;
+  gender?: string;
+  experience?: string;
+  industry?: string;
+  role?: string;
+}
+
+// ============================================================
+// API Response Types (SINGLE SOURCE OF TRUTH)
+// ============================================================
+
+export * from './api';
+export * from './api-endpoints';

@@ -11,6 +11,7 @@ import {
   InvokeModelWithResponseStreamCommandInput,
 } from '@aws-sdk/client-bedrock-runtime';
 import { retryWithBackoff } from '../utils/retry';
+import { getClaudeTemperature } from '../utils/runtime-config-loader';
 
 export interface BedrockConfig {
   region: string;
@@ -56,29 +57,26 @@ export class BedrockAI {
    */
   async generateResponse(options: GenerateResponseOptions): Promise<AIResponse> {
     // Wrap in retry logic
-    const result = await retryWithBackoff(
-      () => this._generateResponseInternal(options),
-      {
-        maxAttempts: 3,
-        initialDelay: 1000,
-        maxDelay: 10000,
-        backoffFactor: 2,
-        retryableErrors: [
-          'ThrottlingException',
-          'ServiceUnavailableException',
-          'InternalServerException',
-          'timeout',
-          'connection',
-        ],
-        onRetry: (error, attempt, delay) => {
-          console.warn('[BedrockAI] Retrying AI request:', {
-            error: error.message,
-            attempt,
-            nextRetryIn: delay,
-          });
-        },
-      }
-    );
+    const result = await retryWithBackoff(() => this._generateResponseInternal(options), {
+      maxAttempts: 3,
+      initialDelay: 1000,
+      maxDelay: 10000,
+      backoffFactor: 2,
+      retryableErrors: [
+        'ThrottlingException',
+        'ServiceUnavailableException',
+        'InternalServerException',
+        'timeout',
+        'connection',
+      ],
+      onRetry: (error, attempt, delay) => {
+        console.warn('[BedrockAI] Retrying AI request:', {
+          error: error.message,
+          attempt,
+          nextRetryIn: delay,
+        });
+      },
+    });
 
     console.log('[BedrockAI] Generation completed:', {
       attempts: result.attempts,
@@ -93,11 +91,14 @@ export class BedrockAI {
    * Internal generation method (without retry logic)
    */
   private async _generateResponseInternal(options: GenerateResponseOptions): Promise<AIResponse> {
+    // Load runtime config for Claude temperature
+    const defaultTemperature = await getClaudeTemperature();
+
     const {
       userMessage,
       conversationHistory = [],
       systemPrompt,
-      temperature = 0.7,
+      temperature = defaultTemperature,
       maxTokens = 2048,
     } = options;
 
@@ -226,11 +227,14 @@ Format your response as JSON with these fields: score, strengths, improvements, 
    * Yields text chunks as they arrive from Claude
    */
   async *streamResponse(options: GenerateResponseOptions): AsyncGenerator<string> {
+    // Load runtime config for Claude temperature
+    const defaultTemperature = await getClaudeTemperature();
+
     const {
       userMessage,
       conversationHistory = [],
       systemPrompt,
-      temperature = 0.7,
+      temperature = defaultTemperature,
       maxTokens = 2048,
     } = options;
 

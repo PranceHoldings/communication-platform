@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/provider';
 import { getAvatar, updateAvatar } from '@/lib/api/avatars';
-import type { Visibility } from '@prance/shared';
+import type { Visibility, AvatarType, AvatarStyle, AvatarSource } from '@prance/shared';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -20,9 +20,9 @@ export default function EditAvatarPage() {
 
   // Form fields
   const [name, setName] = useState('');
-  const [type, setType] = useState<'TWO_D' | 'THREE_D'>('THREE_D');
-  const [style, setStyle] = useState<'ANIME' | 'REALISTIC'>('REALISTIC');
-  const [source, setSource] = useState<'GENERATED' | 'ORG_CUSTOM'>('ORG_CUSTOM');
+  const [type, setType] = useState<AvatarType>('THREE_D');
+  const [style, setStyle] = useState<AvatarStyle>('REALISTIC');
+  const [source, setSource] = useState<AvatarSource>('ORG_CUSTOM');
   const [modelUrl, setModelUrl] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [tags, setTags] = useState('');

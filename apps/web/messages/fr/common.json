@@ -45,9 +45,6 @@
   "enabled": "Enabled",
   "disabled": "Disabled",
   "useDefault": "Use Default",
-  "contact": "Contact",
-  "privacyPolicy": "Privacy Policy",
-  "termsOfService": "Terms of Service",
   "languagesNative": {
     "en": "English",
     "ja": "日本語",
@@ -59,5 +56,20 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "avatar": {
+    "fallback": {
+      "title": "Avatar indisponible",
+      "message": "L'avatar n'a pas pu être chargé, mais la session continuera normalement.",
+      "errorDetails": "Détails de l'erreur"
+    }
+  },
+  "connectionStatus": {
+    "disconnected": "Déconnecté",
+    "connecting": "Connexion en cours...",
+    "connected": "Connecté",
+    "reconnecting": "Reconnexion en cours... ({attempt}/{maxAttempts})",
+    "reconnectFailed": "Échec de reconnexion après {attempts} tentatives. Veuillez actualiser la page.",
+    "error": "Erreur de connexion"
   }
 }

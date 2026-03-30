@@ -15,10 +15,11 @@ import { PrismaClient } from '@prisma/client';
 import { generateToken, generatePin, validateCustomPin } from '../../shared/utils/tokenGenerator';
 import { hashPin } from '../../shared/utils/pinHash';
 import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
+import { getFrontendUrl } from '../../shared/utils/env-validator';
 
 const prisma = new PrismaClient();
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = getFrontendUrl();
 
 interface CreateGuestSessionRequest {
   scenarioId: string;
@@ -47,9 +48,7 @@ interface CreateGuestSessionResponse {
 /**
  * Lambda handler for creating guest sessions
  */
-export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[CreateGuestSession] Event:', JSON.stringify(event, null, 2));
 
   try {
@@ -81,7 +80,8 @@ export const handler = async (
         statusCode: 403,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can create guest sessions',
+          error:
+            'Forbidden: Only CLIENT_ADMIN, CLIENT_USER, and SUPER_ADMIN can create guest sessions',
         }),
       };
     }
@@ -213,9 +213,7 @@ export const handler = async (
     // 5. Calculate auto_delete_at
     let autoDeleteAt: Date | undefined;
     if (dataRetentionDays && dataRetentionDays > 0) {
-      autoDeleteAt = new Date(
-        validUntilDate.getTime() + dataRetentionDays * 24 * 60 * 60 * 1000
-      );
+      autoDeleteAt = new Date(validUntilDate.getTime() + dataRetentionDays * 24 * 60 * 60 * 1000);
     }
 
     // 6. Create guest session

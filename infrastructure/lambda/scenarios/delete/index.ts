@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
+import { invalidateScenarioCache } from '../../shared/scenario/cache';
 
 /**
  * DELETE /api/v1/scenarios/{id}
@@ -54,6 +55,12 @@ export const handler: APIGatewayProxyHandler = async event => {
     });
 
     console.log(`Scenario deleted: ${scenarioId} by user ${user.userId}`);
+
+    // Phase 1.6.1 Day 36: Invalidate cache after deletion
+    invalidateScenarioCache(scenarioId).catch(error => {
+      console.error('[Delete] Failed to invalidate cache:', error);
+      // Non-blocking
+    });
 
     return successResponse({
       message: 'Scenario deleted successfully',

@@ -45,9 +45,6 @@
   "enabled": "Enabled",
   "disabled": "Disabled",
   "useDefault": "Use Default",
-  "contact": "Contact",
-  "privacyPolicy": "Privacy Policy",
-  "termsOfService": "Terms of Service",
   "languagesNative": {
     "en": "English",
     "ja": "日本語",
@@ -59,5 +56,20 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "avatar": {
+    "fallback": {
+      "title": "Avatar no disponible",
+      "message": "No se pudo cargar el avatar, pero la sesión continuará normalmente.",
+      "errorDetails": "Detalles del error"
+    }
+  },
+  "connectionStatus": {
+    "disconnected": "Desconectado",
+    "connecting": "Conectando...",
+    "connected": "Conectado",
+    "reconnecting": "Reconectando... ({attempt}/{maxAttempts})",
+    "reconnectFailed": "Error de reconexión después de {attempts} intentos. Por favor, actualice la página.",
+    "error": "Error de conexión"
   }
 }

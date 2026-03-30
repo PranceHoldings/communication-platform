@@ -10,13 +10,7 @@
 
 import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
 import { styles, colors } from './styles';
-import {
-  Header,
-  ScoreCircle,
-  ScoreBar,
-  TranscriptSection,
-  Footer,
-} from './components';
+import { Header, ScoreCircle, ScoreBar, TranscriptSection, Footer } from './components';
 import { ReportData } from '../types';
 
 interface DefaultTemplateProps {
@@ -118,7 +112,11 @@ export function DefaultReportTemplate({ data }: DefaultTemplateProps) {
         {/* Category Score Bars */}
         <View style={styles.section}>
           <Text style={styles.subsectionTitle}>カテゴリ別評価</Text>
-          <ScoreBar label="感情 - 表情・感情表現" score={data.score.emotion} color={colors.primary} />
+          <ScoreBar
+            label="感情 - 表情・感情表現"
+            score={data.score.emotion}
+            color={colors.primary}
+          />
           <ScoreBar label="音声 - 話し方・発声" score={data.score.audio} color={colors.secondary} />
           <ScoreBar label="内容 - 話の内容・論理性" score={data.score.content} color="#f59e0b" />
           <ScoreBar label="表現 - 表現力・説得力" score={data.score.delivery} color="#8b5cf6" />
@@ -150,9 +148,7 @@ export function DefaultReportTemplate({ data }: DefaultTemplateProps) {
               {data.score.confidence !== null && (
                 <View style={styles.detailedScoreRow}>
                   <Text style={styles.detailedScoreLabel}>自信度</Text>
-                  <Text style={styles.detailedScoreValue}>
-                    {Math.round(data.score.confidence)}
-                  </Text>
+                  <Text style={styles.detailedScoreValue}>{Math.round(data.score.confidence)}</Text>
                 </View>
               )}
               {data.score.clarity !== null && (

@@ -1,7 +1,7 @@
 /**
  * WebSocket $default Handler
  * Handles all WebSocket messages with STT/AI/TTS integration
- * Last updated: 2026-03-15 07:50:43 UTC (added no_speech_detected feature)
+ * Last updated: 2026-03-21 09:20:00 UTC (Phase 5.4 Batch 4: chunk-utils.ts migration complete)
  */
 
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
@@ -31,62 +31,54 @@ import { VideoProcessor } from './video-processor';
 import { sortChunksByTimestampAndIndex, logSortedChunks, generateChunkKey } from './chunk-utils';
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import {
-  AWS_DEFAULTS,
-  BEDROCK_DEFAULTS,
-  ELEVENLABS_DEFAULTS,
-  LANGUAGE_DEFAULTS,
-  MEDIA_DEFAULTS,
-  DYNAMODB_DEFAULTS,
-} from '../../shared/config/defaults';
+  getAnalysisLambdaFunctionName,
+  getRequiredEnv,
+  getS3Bucket,
+  getCloudFrontDomain,
+  getAwsEndpointSuffix,
+} from '../../shared/utils/env-validator';
+import { checkRateLimit, RateLimitProfiles } from '../../shared/utils/rate-limiter';
+import { getAwsRegion, getBedrockRegion, getSttAutoDetectLanguages, getEnableAutoAnalysis } from '../../shared/config';
 
 // Lambda function version
-const LAMBDA_VERSION = '1.1.0';
+const LAMBDA_VERSION = '1.1.4'; // Day 36: Fixed CLOUDFRONT eager evaluation
 const LAMBDA_NAME = 'websocket-default-handler';
+const BUILD_TIMESTAMP = '2026-03-22T12:10:00Z'; // Force CDK rebuild - lazy CLOUDFRONT config
+const FORCE_REBUILD_FLAG = true; // Day 36: Prisma Client initialization fix
+
+// Build identifier - unique filename format
+const BUILD_ID = `build-2026-03-22T11:32:00Z.marker`;
 
 // Supported languages (ISO 639-1 format: 'ja', 'en', 'zh-CN', 'zh-TW', etc.)
 // Source of truth: packages/shared/src/language/index.ts
 const SUPPORTED_LANGUAGES = ['ja', 'en', 'zh-CN', 'zh-TW', 'ko', 'es', 'pt', 'fr', 'de', 'it'];
 
-// Default values (imported from centralized configuration)
-// Using values from shared/config/defaults.ts to eliminate hardcoding
-const DEFAULT_AWS_REGION = AWS_DEFAULTS.REGION;
-const DEFAULT_BEDROCK_REGION = BEDROCK_DEFAULTS.REGION;
-const DEFAULT_BEDROCK_MODEL_ID = BEDROCK_DEFAULTS.MODEL_ID;
-const DEFAULT_ELEVENLABS_MODEL_ID = ELEVENLABS_DEFAULTS.MODEL_ID;
-const DEFAULT_STT_LANGUAGE = LANGUAGE_DEFAULTS.STT_LANGUAGE;
-const DEFAULT_STT_AUTO_DETECT_LANGUAGES = Array.from(LANGUAGE_DEFAULTS.STT_AUTO_DETECT_LANGUAGES_DEFAULT);
-const DEFAULT_SCENARIO_LANGUAGE = SUPPORTED_LANGUAGES[0]; // First supported language ('ja')
-const DEFAULT_VIDEO_FORMAT = MEDIA_DEFAULTS.VIDEO_FORMAT;
-const DEFAULT_VIDEO_RESOLUTION = MEDIA_DEFAULTS.VIDEO_RESOLUTION;
-const DEFAULT_AUDIO_CONTENT_TYPE = MEDIA_DEFAULTS.AUDIO_CONTENT_TYPE;
-const DEFAULT_VIDEO_CONTENT_TYPE = MEDIA_DEFAULTS.VIDEO_CONTENT_TYPE;
+// Environment variables (all values come from .env.local - single source of truth)
+const AWS_REGION = getAwsRegion();
+const BEDROCK_REGION = getBedrockRegion();
+const BEDROCK_MODEL_ID = getRequiredEnv('BEDROCK_MODEL_ID');
+const ELEVENLABS_MODEL_ID = getRequiredEnv('ELEVENLABS_MODEL_ID');
+const STT_LANGUAGE = getRequiredEnv('STT_LANGUAGE');
+const STT_AUTO_DETECT_LANGUAGES = getSttAutoDetectLanguages();
+const SCENARIO_LANGUAGE = SUPPORTED_LANGUAGES[0]; // First supported language ('ja')
+const VIDEO_FORMAT = getRequiredEnv('VIDEO_FORMAT');
+const VIDEO_RESOLUTION = getRequiredEnv('VIDEO_RESOLUTION');
+const AUDIO_CONTENT_TYPE = getRequiredEnv('AUDIO_CONTENT_TYPE');
+const VIDEO_CONTENT_TYPE = getRequiredEnv('VIDEO_CONTENT_TYPE');
 
-// Environment variables (読み取り優先順位: 環境変数 → デフォルト値)
-const ENDPOINT = process.env.WEBSOCKET_ENDPOINT || '';
-const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE_NAME || '';
-const S3_BUCKET = process.env.S3_BUCKET || '';
-const AWS_REGION = process.env.AWS_REGION || DEFAULT_AWS_REGION;
+// Environment variables (required - fail fast if not set)
+const ENDPOINT = getRequiredEnv('WEBSOCKET_ENDPOINT');
+const CONNECTIONS_TABLE = getRequiredEnv('CONNECTIONS_TABLE_NAME');
+const S3_BUCKET = getS3Bucket();
 
 // AI/Audio services configuration
-const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY || '';
-const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION || '';
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || '';
-const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '';
-const ELEVENLABS_MODEL_ID = process.env.ELEVENLABS_MODEL_ID || DEFAULT_ELEVENLABS_MODEL_ID;
-const BEDROCK_REGION = process.env.BEDROCK_REGION || DEFAULT_BEDROCK_REGION;
-const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || DEFAULT_BEDROCK_MODEL_ID;
+const AZURE_SPEECH_KEY = getRequiredEnv('AZURE_SPEECH_KEY');
+const AZURE_SPEECH_REGION = getRequiredEnv('AZURE_SPEECH_REGION');
+const ELEVENLABS_API_KEY = getRequiredEnv('ELEVENLABS_API_KEY');
+const ELEVENLABS_VOICE_ID = getRequiredEnv('ELEVENLABS_VOICE_ID');
 
-// CloudFront configuration
-const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || '';
-const CLOUDFRONT_KEY_PAIR_ID = process.env.CLOUDFRONT_KEY_PAIR_ID || '';
-const CLOUDFRONT_PRIVATE_KEY = process.env.CLOUDFRONT_PRIVATE_KEY || '';
-
-// Language and Media configuration
-const STT_LANGUAGE = process.env.STT_LANGUAGE || DEFAULT_STT_LANGUAGE;
-const VIDEO_FORMAT = process.env.VIDEO_FORMAT || DEFAULT_VIDEO_FORMAT;
-const VIDEO_RESOLUTION = process.env.VIDEO_RESOLUTION || DEFAULT_VIDEO_RESOLUTION;
-const AUDIO_CONTENT_TYPE = process.env.AUDIO_CONTENT_TYPE || DEFAULT_AUDIO_CONTENT_TYPE;
-const VIDEO_CONTENT_TYPE = process.env.VIDEO_CONTENT_TYPE || DEFAULT_VIDEO_CONTENT_TYPE;
+// CloudFront configuration (lazy evaluation - fetched when VideoProcessor is initialized)
+const CLOUDFRONT_DOMAIN = getCloudFrontDomain();
 
 const apiGateway = new ApiGatewayManagementApiClient({
   endpoint: ENDPOINT,
@@ -98,7 +90,7 @@ const ddb = DynamoDBDocumentClient.from(ddbClient);
 const s3Client = new S3Client({});
 
 const lambdaClient = new LambdaClient({
-  region: process.env.AWS_REGION || DEFAULT_AWS_REGION,
+  region: AWS_REGION,
 });
 
 const prisma = new PrismaClient();
@@ -123,8 +115,8 @@ function getAudioProcessor(): AudioProcessor {
     // Phase 2以降の拡張:
     //   - データベースから組織設定を取得
     //   - 言語リソースファイルから動的生成
-    const autoDetectLanguages = process.env.STT_AUTO_DETECT_LANGUAGES
-      ? process.env.STT_AUTO_DETECT_LANGUAGES.split(',').map(lang => lang.trim())
+    const autoDetectLanguages = getSttAutoDetectLanguages().length > 0
+      ? getSttAutoDetectLanguages()
       : LANGUAGE_DEFAULTS.STT_AUTO_DETECT_LANGUAGES_DEFAULT;
 
     console.log('[AudioProcessor] Initializing with auto-detect languages:', autoDetectLanguages);
@@ -154,11 +146,30 @@ function getVideoProcessor(): VideoProcessor {
       s3Client,
       bucket: S3_BUCKET,
       cloudFrontDomain: CLOUDFRONT_DOMAIN,
-      cloudFrontKeyPairId: CLOUDFRONT_KEY_PAIR_ID,
-      cloudFrontPrivateKey: CLOUDFRONT_PRIVATE_KEY,
+      cloudFrontKeyPairId: getRequiredEnv('CLOUDFRONT_KEY_PAIR_ID'),
+      cloudFrontPrivateKey: getRequiredEnv('CLOUDFRONT_PRIVATE_KEY'),
     });
   }
   return videoProcessor;
+}
+
+/**
+ * Phase 1.6.1 Day 32: Detect missing chunks
+ * @param receivedChunks - Array of received sequence numbers
+ * @param expectedTotal - Expected total number of chunks
+ * @returns Array of missing sequence numbers
+ */
+function detectMissingChunks(receivedChunks: number[], expectedTotal: number): number[] {
+  const missing: number[] = [];
+  const receivedSet = new Set(receivedChunks);
+
+  for (let i = 0; i < expectedTotal; i++) {
+    if (!receivedSet.has(i)) {
+      missing.push(i);
+    }
+  }
+
+  return missing;
 }
 
 /**
@@ -234,6 +245,18 @@ interface ConnectionData {
   lastAudioProcessingStartTime?: number; // Timestamp when audio processing started
   sessionEndReceived?: boolean; // Flag to indicate session_end was received while speech_end was processing
 
+  // Phase 1.6.1 Day 32: Sequence management & duplicate detection
+  expectedAudioSequence?: number; // Expected next audio sequence number
+  expectedVideoSequence?: number; // Expected next video sequence number
+  receivedAudioChunks?: number[]; // Received audio chunk sequence numbers
+  receivedVideoChunks?: number[]; // Received video chunk sequence numbers
+
+  // Phase 1.6.1 Day 35: Scenario validation & error recovery
+  turnCount?: number; // Conversation turn count (infinite loop prevention)
+  sessionStartTime?: number; // Session start timestamp (timeout detection)
+  lastErrorType?: string; // Last error type for retry logic
+  errorAttemptCount?: number; // Error retry attempt counter
+
   // Phase B: Removed legacy fields (batch audio processing)
   // - audioS3Key (unused)
   // - audioChunksCount (replaced by realtimeAudioChunkCount)
@@ -245,7 +268,7 @@ interface ConnectionData {
 }
 
 export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyResultV2> => {
-  console.log('[Lambda Version]', LAMBDA_VERSION, '- Audio Processing: volume=10.0 + compressor');
+  console.log('[Lambda Version]', LAMBDA_VERSION, '- Batch 4:', FORCE_REBUILD_FLAG ? 'chunk-utils.ts migrated' : 'old', '- BuildID:', BUILD_ID);
   console.log('WebSocket Default Handler Event:', JSON.stringify(event, null, 2));
 
   const connectionId = event.requestContext.connectionId;
@@ -279,7 +302,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         const sessionId = message.sessionId as string;
 
         // Get scenario data directly from authenticate message (sent from frontend)
-        const scenarioLanguage = (message as any).scenarioLanguage || DEFAULT_SCENARIO_LANGUAGE;
+        const scenarioLanguage = (message as any).scenarioLanguage || SCENARIO_LANGUAGE;
         const scenarioPrompt = (message as any).scenarioPrompt as string | undefined;
         const initialGreeting = (message as any).initialGreeting as string | undefined;
         const silenceTimeout = (message as any).silenceTimeout as number | undefined;
@@ -292,12 +315,58 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           promptPreview: scenarioPrompt ? scenarioPrompt.substring(0, 100) + '...' : 'none',
           language: scenarioLanguage,
           hasInitialGreeting: !!initialGreeting,
-          initialGreetingPreview: initialGreeting ? initialGreeting.substring(0, 50) + '...' : 'none',
+          initialGreetingPreview: initialGreeting
+            ? initialGreeting.substring(0, 50) + '...'
+            : 'none',
           silenceTimeout,
           silencePromptTimeout,
           enableSilencePrompt,
           initialSilenceTimeout,
         });
+
+        // Phase 1.6.1 Day 35: Scenario validation
+        const { validateScenario } = await import('../../shared/scenario/validator');
+        const validationResult = validateScenario({
+          title: (message as any).scenarioTitle,
+          systemPrompt: scenarioPrompt,
+          language: scenarioLanguage,
+          initialGreeting,
+        });
+
+        console.log('[authenticate] Scenario validation result:', {
+          isValid: validationResult.isValid,
+          errorCount: validationResult.errors.length,
+          warningCount: validationResult.warnings.length,
+        });
+
+        // Send validation warnings to client (non-blocking)
+        if (validationResult.warnings.length > 0) {
+          await sendToConnection(connectionId, {
+            type: 'validation_warning',
+            warnings: validationResult.warnings,
+            timestamp: Date.now(),
+          });
+        }
+
+        // If validation failed, send error and reject authentication
+        if (!validationResult.isValid) {
+          const { formatValidationErrors } = await import('../../shared/scenario/validator');
+          const errorMessage = formatValidationErrors(validationResult);
+
+          console.error('[authenticate] Scenario validation failed:', errorMessage);
+
+          await sendToConnection(connectionId, {
+            type: 'authentication_failed',
+            error: 'Scenario validation failed',
+            details: validationResult.errors,
+            timestamp: Date.now(),
+          });
+
+          return {
+            statusCode: 200,
+            body: JSON.stringify({ message: 'Validation failed' }),
+          };
+        }
 
         // Initialize conversation history
         const initialConversationHistory: any[] = [];
@@ -320,6 +389,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           silencePromptTimeout, // Store AI silence prompt timeout (frontend timer)
           enableSilencePrompt, // Store silence prompt flag
           initialSilenceTimeout, // Store Azure STT initial silence timeout
+          // Phase 1.6.1 Day 35: Session state tracking
+          turnCount: 0, // Initialize turn counter
+          sessionStartTime: Date.now(), // Record session start time
+          errorAttemptCount: 0, // Initialize error counter
         });
 
         // Send authenticated response
@@ -405,7 +478,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             volume: '10.0',
             compressor: 'enabled',
             sttAutoDetect: true,
-            languages: DEFAULT_STT_AUTO_DETECT_LANGUAGES,
+            languages: STT_AUTO_DETECT_LANGUAGES,
           },
         });
         console.log('[Version] Sent version info:', LAMBDA_VERSION);
@@ -427,15 +500,96 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         const rtTimestamp = message.timestamp as number;
         const rtSequenceNumber = message.sequenceNumber as number;
         const rtContentType = message.contentType as string;
+        const rtChunkId = message.chunkId as string; // Phase 1.6.1: ACK tracking
         const rtSessionId = connectionData?.sessionId || 'unknown';
 
         console.log('[audio_chunk_realtime] Received real-time audio chunk:', {
+          chunkId: rtChunkId,
           sequenceNumber: rtSequenceNumber,
           timestamp: rtTimestamp,
           dataSize: rtAudioData ? rtAudioData.length : 0,
           contentType: rtContentType,
           sessionId: rtSessionId,
         });
+
+        // Phase 1.6: Rate limiting (20 chunks/sec, 100 chunks burst)
+        const audioRateLimit = RateLimitProfiles.audioChunk(rtSessionId);
+        const rateLimitResult = await checkRateLimit(audioRateLimit, 1);
+
+        if (!rateLimitResult.allowed) {
+          console.warn('[audio_chunk_realtime] Rate limit exceeded:', {
+            sessionId: rtSessionId,
+            sequenceNumber: rtSequenceNumber,
+            remainingTokens: rateLimitResult.remainingTokens,
+            retryAfter: rateLimitResult.retryAfter,
+          });
+
+          // Send rate limit error to client
+          await sendToConnection(connectionId, {
+            type: 'error',
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Audio chunk rate limit exceeded',
+            details: {
+              retryAfter: rateLimitResult.retryAfter,
+              remainingTokens: rateLimitResult.remainingTokens,
+            },
+          });
+          break;
+        }
+
+        console.log('[audio_chunk_realtime] Rate limit check passed:', {
+          remainingTokens: rateLimitResult.remainingTokens,
+        });
+
+        // Phase 1.6.1 Day 32: Duplicate detection
+        const receivedAudioChunks = connectionData?.receivedAudioChunks || [];
+        if (receivedAudioChunks.includes(rtSequenceNumber)) {
+          console.warn('[audio_chunk_realtime] Duplicate chunk detected:', {
+            sessionId: rtSessionId,
+            sequenceNumber: rtSequenceNumber,
+            chunkId: rtChunkId,
+          });
+
+          // Send duplicate ACK
+          await sendToConnection(connectionId, {
+            type: 'chunk_ack',
+            chunkId: rtChunkId,
+            status: 'duplicate',
+            timestamp: Date.now(),
+          });
+          break;
+        }
+
+        // Phase 1.6.1 Day 32: Sequence order check
+        const expectedSequence = connectionData?.expectedAudioSequence || 0;
+        if (rtSequenceNumber < expectedSequence) {
+          console.warn('[audio_chunk_realtime] Out-of-order chunk (too old):', {
+            sessionId: rtSessionId,
+            sequenceNumber: rtSequenceNumber,
+            expected: expectedSequence,
+            chunkId: rtChunkId,
+          });
+
+          // Old chunk - send duplicate ACK
+          await sendToConnection(connectionId, {
+            type: 'chunk_ack',
+            chunkId: rtChunkId,
+            status: 'duplicate',
+            timestamp: Date.now(),
+          });
+          break;
+        }
+
+        if (rtSequenceNumber > expectedSequence) {
+          console.warn('[audio_chunk_realtime] Sequence gap detected:', {
+            sessionId: rtSessionId,
+            sequenceNumber: rtSequenceNumber,
+            expected: expectedSequence,
+            gap: rtSequenceNumber - expectedSequence,
+            chunkId: rtChunkId,
+          });
+          // Continue processing - gaps will be detected at session_end
+        }
 
         try {
           // Save this chunk to S3 for later processing (on speech_end)
@@ -459,22 +613,49 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
           console.log('[audio_chunk_realtime] Saved chunk to S3:', {
             key: rtChunkKey,
+            chunkId: rtChunkId,
             sequenceNumber: rtSequenceNumber,
             size: rtAudioBuffer.length,
           });
+
+          // Phase 1.6.1 Day 32: Update sequence tracking
+          const updatedReceivedChunks = [...(connectionData?.receivedAudioChunks || []), rtSequenceNumber];
+          const updatedExpectedSequence = rtSequenceNumber + 1;
 
           // Update connection data with latest sequence number
           await updateConnectionData(connectionId, {
             realtimeAudioSequenceNumber: rtSequenceNumber,
             realtimeAudioChunkCount: (connectionData?.realtimeAudioChunkCount || 0) + 1,
+            receivedAudioChunks: updatedReceivedChunks,
+            expectedAudioSequence: updatedExpectedSequence,
+          });
+
+          // Phase 1.6.1: Send ACK confirmation
+          await sendToConnection(connectionId, {
+            type: 'chunk_ack',
+            chunkId: rtChunkId,
+            status: 'saved',
+            timestamp: Date.now(),
+          });
+
+          console.log('[audio_chunk_realtime] ACK sent:', {
+            chunkId: rtChunkId,
+            status: 'saved',
           });
         } catch (error) {
           console.error('[audio_chunk_realtime] Failed to save chunk to S3:', error);
+
+          // Phase 1.6.1: Send error ACK
           await sendToConnection(connectionId, {
-            type: 'error',
-            code: 'REALTIME_AUDIO_CHUNK_ERROR',
-            message: 'Failed to save real-time audio chunk',
-            sequenceNumber: rtSequenceNumber,
+            type: 'chunk_ack',
+            chunkId: rtChunkId,
+            status: 'error',
+            timestamp: Date.now(),
+            error: {
+              code: 'S3_SAVE_ERROR',
+              message: 'Failed to save audio chunk to S3',
+              details: error instanceof Error ? error.message : 'Unknown error',
+            },
           });
         }
         break;
@@ -491,14 +672,41 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           totalChunks: totalRealtimeChunks,
         });
 
+        // Phase 1.6: Rate limiting for speech recognition (5 requests/sec)
+        const speechRateLimit = RateLimitProfiles.speechRecognition(speechEndSessionId);
+        const speechRateLimitResult = await checkRateLimit(speechRateLimit, 1);
+
+        if (!speechRateLimitResult.allowed) {
+          console.warn('[speech_end] Rate limit exceeded:', {
+            sessionId: speechEndSessionId,
+            remainingTokens: speechRateLimitResult.remainingTokens,
+            retryAfter: speechRateLimitResult.retryAfter,
+          });
+
+          await sendToConnection(connectionId, {
+            type: 'error',
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Speech recognition rate limit exceeded',
+            details: {
+              retryAfter: speechRateLimitResult.retryAfter,
+              remainingTokens: speechRateLimitResult.remainingTokens,
+            },
+          });
+          break;
+        }
+
         // Check if audio processing is already in progress (prevent duplicate processing)
         if (connectionData?.realtimeAudioProcessing) {
-          const processingDuration = Date.now() - (connectionData.lastAudioProcessingStartTime || 0);
-          console.warn('[speech_end] Audio processing already in progress, skipping duplicate request:', {
-            sessionId: speechEndSessionId,
-            processingDuration: `${processingDuration}ms`,
-            startTime: connectionData.lastAudioProcessingStartTime,
-          });
+          const processingDuration =
+            Date.now() - (connectionData.lastAudioProcessingStartTime || 0);
+          console.warn(
+            '[speech_end] Audio processing already in progress, skipping duplicate request:',
+            {
+              sessionId: speechEndSessionId,
+              processingDuration: `${processingDuration}ms`,
+              startTime: connectionData.lastAudioProcessingStartTime,
+            }
+          );
 
           // Send acknowledgment but don't process again
           await sendToConnection(connectionId, {
@@ -592,7 +800,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           // Check if session_end was received while we were processing
           const updatedConnectionData = await getConnectionData(connectionId);
           if (updatedConnectionData?.sessionEndReceived) {
-            console.log('[speech_end] session_end was received during processing, sending session_complete now');
+            console.log(
+              '[speech_end] session_end was received during processing, sending session_complete now'
+            );
 
             // Update session status to COMPLETED in database
             try {
@@ -605,7 +815,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
                 if (session) {
                   const endedAt = new Date();
-                  const durationSec = Math.floor((endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000);
+                  const durationSec = Math.floor(
+                    (endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000
+                  );
 
                   await prisma.session.update({
                     where: { id: sessionId },
@@ -673,12 +885,13 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           });
 
           // Import generateSilencePrompt utility
-          const { generateSilencePrompt } = await import('../../shared/utils/generateSilencePrompt');
+          const { generateSilencePrompt } =
+            await import('../../shared/utils/generateSilencePrompt');
 
           // Extract conversation history and convert to the expected format
           const rawHistory = connectionData?.conversationHistory || [];
           const conversationHistory = rawHistory.map((msg: any) => ({
-            speaker: msg.role === 'user' ? 'USER' as const : 'AI' as const,
+            speaker: msg.role === 'user' ? ('USER' as const) : ('AI' as const),
             text: msg.content || msg.text || '',
           }));
 
@@ -803,6 +1016,58 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           sessionId: partSessionId,
         });
 
+        // Phase 1.6.1 Day 32: Duplicate & sequence check (only on first part)
+        if (partIndex === 0) {
+          const receivedVideoChunks = connectionData?.receivedVideoChunks || [];
+          if (receivedVideoChunks.includes(sequenceNumber)) {
+            console.warn('[video_chunk_part] Duplicate chunk detected:', {
+              sessionId: partSessionId,
+              sequenceNumber,
+              chunkId,
+            });
+
+            // Send duplicate ACK
+            await sendToConnection(connectionId, {
+              type: 'chunk_ack',
+              chunkId,
+              status: 'duplicate',
+              timestamp: Date.now(),
+            });
+            break;
+          }
+
+          // Sequence order check
+          const expectedSequence = connectionData?.expectedVideoSequence || 0;
+          if (sequenceNumber < expectedSequence) {
+            console.warn('[video_chunk_part] Out-of-order chunk (too old):', {
+              sessionId: partSessionId,
+              sequenceNumber,
+              expected: expectedSequence,
+              chunkId,
+            });
+
+            // Old chunk - send duplicate ACK
+            await sendToConnection(connectionId, {
+              type: 'chunk_ack',
+              chunkId,
+              status: 'duplicate',
+              timestamp: Date.now(),
+            });
+            break;
+          }
+
+          if (sequenceNumber > expectedSequence) {
+            console.warn('[video_chunk_part] Sequence gap detected:', {
+              sessionId: partSessionId,
+              sequenceNumber,
+              expected: expectedSequence,
+              gap: sequenceNumber - expectedSequence,
+              chunkId,
+            });
+            // Continue processing - gaps will be detected at session_end
+          }
+        }
+
         try {
           // Phase 1.6: Validate hash for integrity
           const { getTempChunkPartKey } = await import('../../shared/config/s3-paths');
@@ -889,7 +1154,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               console.log(`Reassembling video chunk ${chunkId}...`);
 
               // Download all parts in order
-              const { getTempChunkPartKey: getTempPartKey } = await import('../../shared/config/s3-paths');
+              const { getTempChunkPartKey: getTempPartKey } =
+                await import('../../shared/config/s3-paths');
               const partBuffers: Buffer[] = [];
               for (let i = 0; i < totalParts; i++) {
                 const partKey = getTempPartKey(partSessionId, chunkId, i);
@@ -920,7 +1186,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               // Phase 1.6: Validate hash after reassembly
               if (chunkHash) {
                 const crypto = require('crypto');
-                const calculatedHash = crypto.createHash('sha256').update(videoBuffer).digest('hex');
+                const calculatedHash = crypto
+                  .createHash('sha256')
+                  .update(videoBuffer)
+                  .digest('hex');
 
                 if (calculatedHash !== chunkHash) {
                   console.error(`[video_chunk_part] Hash mismatch for chunk ${chunkId}`);
@@ -961,7 +1230,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               });
 
               // Clean up temporary parts from S3
-              const { getTempChunkPartKey: getTempPartKeyCleanup } = await import('../../shared/config/s3-paths');
+              const { getTempChunkPartKey: getTempPartKeyCleanup } =
+                await import('../../shared/config/s3-paths');
               for (let i = 0; i < totalParts; i++) {
                 const partKey = getTempPartKeyCleanup(partSessionId, chunkId, i);
                 try {
@@ -983,18 +1253,22 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                 processingError
               );
 
-              // Notify client of error
+              // Phase 1.6.1: Send error ACK
               try {
                 await sendToConnection(connectionId, {
-                  type: 'error',
-                  code: 'VIDEO_PROCESSING_ERROR',
-                  message: 'Failed to process video chunk',
-                  details:
-                    processingError instanceof Error ? processingError.message : 'Unknown error',
+                  type: 'chunk_ack',
                   chunkId,
+                  status: 'error',
+                  timestamp: Date.now(),
+                  error: {
+                    code: 'VIDEO_PROCESSING_ERROR',
+                    message: 'Failed to process video chunk',
+                    details:
+                      processingError instanceof Error ? processingError.message : 'Unknown error',
+                  },
                 });
               } catch (sendError) {
-                console.error('[video_chunk_part] Failed to send error notification:', sendError);
+                console.error('[video_chunk_part] Failed to send error ACK:', sendError);
               }
             } finally {
               // Always clean up lock (success or failure)
@@ -1008,18 +1282,29 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
             // Only update connection data and send acknowledgment if processing succeeded
             if (processingSuccess) {
+              // Phase 1.6.1 Day 32: Update sequence tracking
+              const updatedReceivedChunks = [...(connectionData?.receivedVideoChunks || []), sequenceNumber];
+              const updatedExpectedSequence = sequenceNumber + 1;
+
               await updateConnectionData(connectionId, {
                 lastVideoChunkTime: partTimestamp,
                 videoChunksCount: videoChunkCount,
+                receivedVideoChunks: updatedReceivedChunks,
+                expectedVideoSequence: updatedExpectedSequence,
               });
 
-              // Send acknowledgment (Phase 1.6: Added sequence number)
+              // Phase 1.6.1: Send unified ACK
               await sendToConnection(connectionId, {
-                type: 'video_chunk_ack',
+                type: 'chunk_ack',
+                chunkId,
+                status: 'saved',
+                timestamp: Date.now(),
+              });
+
+              console.log('[video_chunk_part] ACK sent:', {
                 chunkId,
                 sequenceNumber,
-                chunksReceived: videoChunkCount,
-                timestamp: partTimestamp,
+                status: 'saved',
               });
             }
           }
@@ -1121,7 +1406,70 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         // Phase B: Audio processing removed - handled by speech_end in real-time
         // Phase 1.5 uses realtime-chunks/ path processed by speech_end handler
         // Legacy audio-chunks/ path is no longer used
-        console.log('[session_end] Audio processing already completed by speech_end handler (Phase 1.5)');
+        console.log(
+          '[session_end] Audio processing already completed by speech_end handler (Phase 1.5)'
+        );
+
+        // Phase 1.6.1 Day 32: Detect missing chunks
+        const finalReceivedAudioChunks = connectionData?.receivedAudioChunks || [];
+        const finalReceivedVideoChunks = connectionData?.receivedVideoChunks || [];
+        const totalAudioChunks = connectionData?.realtimeAudioChunkCount || 0;
+        const totalVideoChunks = connectionData?.videoChunksCount || 0;
+
+        const missingAudio = detectMissingChunks(finalReceivedAudioChunks, totalAudioChunks);
+        const missingVideo = detectMissingChunks(finalReceivedVideoChunks, totalVideoChunks);
+
+        if (missingAudio.length > 0) {
+          console.warn('[session_end] Missing audio chunks detected:', {
+            sessionId: connectionData?.sessionId,
+            missingCount: missingAudio.length,
+            missingSequences: missingAudio.slice(0, 10), // Log first 10
+            totalReceived: finalReceivedAudioChunks.length,
+            totalExpected: totalAudioChunks,
+          });
+        }
+
+        if (missingVideo.length > 0) {
+          console.warn('[session_end] Missing video chunks detected:', {
+            sessionId: connectionData?.sessionId,
+            missingCount: missingVideo.length,
+            missingSequences: missingVideo.slice(0, 10), // Log first 10
+            totalReceived: finalReceivedVideoChunks.length,
+            totalExpected: totalVideoChunks,
+          });
+        }
+
+        // Save missing chunk info to database
+        if (missingAudio.length > 0 || missingVideo.length > 0) {
+          try {
+            const sessionId = connectionData?.sessionId;
+            if (sessionId) {
+              await prisma.session.update({
+                where: { id: sessionId },
+                data: {
+                  metadata: {
+                    missingAudioChunks: missingAudio,
+                    missingVideoChunks: missingVideo,
+                    audioChunkStats: {
+                      received: receivedAudioChunks.length,
+                      expected: totalAudioChunks,
+                      missingCount: missingAudio.length,
+                    },
+                    videoChunkStats: {
+                      received: receivedVideoChunks.length,
+                      expected: totalVideoChunks,
+                      missingCount: missingVideo.length,
+                    },
+                  },
+                },
+              });
+
+              console.log('[session_end] Missing chunk info saved to database');
+            }
+          } catch (dbError) {
+            console.error('[session_end] Failed to save missing chunk info:', dbError);
+          }
+        }
 
         // Process video chunks if any
         if (connectionData?.videoChunksCount && connectionData.videoChunksCount > 0) {
@@ -1155,7 +1503,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                   sessionId: sessionId,
                   type: 'COMBINED',
                   s3Key: result.finalVideoKey,
-                  s3Url: `https://${S3_BUCKET}.s3.${process.env.AWS_REGION || DEFAULT_AWS_REGION}.amazonaws.com/${result.finalVideoKey}`,
+                  s3Url: `https://${S3_BUCKET}.s3.${AWS_REGION}.${getAwsEndpointSuffix()}/${result.finalVideoKey}`,
                   cdnUrl: result.cloudFrontUrl,
                   fileSizeBytes: BigInt(result.finalVideoSize),
                   durationSec: Math.floor(result.duration / 1000), // Convert ms to seconds
@@ -1164,9 +1512,30 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                   videoChunksCount: connectionData.videoChunksCount,
                   processingStatus: 'COMPLETED',
                   processedAt: new Date(),
+                  // Phase 1.6.1 Day 33: Save performance metrics
+                  metadata: result.metrics ? {
+                    performanceMetrics: {
+                      listChunksTimeMs: result.metrics.listChunksTime,
+                      downloadTimeMs: result.metrics.downloadTime,
+                      ffmpegTimeMs: result.metrics.ffmpegTime,
+                      uploadTimeMs: result.metrics.uploadTime,
+                      cleanupTimeMs: result.metrics.cleanupTime,
+                      totalTimeMs: result.metrics.totalTime,
+                      chunksCount: result.metrics.chunksCount,
+                      originalSizeBytes: result.metrics.originalSize,
+                      finalSizeBytes: result.metrics.finalSize,
+                      compressionRatio: (result.metrics.finalSize / result.metrics.originalSize * 100).toFixed(2) + '%',
+                      downloadSpeedMBps: (result.metrics.originalSize / (result.metrics.downloadTime / 1000) / 1024 / 1024).toFixed(2),
+                      uploadSpeedMBps: (result.metrics.finalSize / (result.metrics.uploadTime / 1000) / 1024 / 1024).toFixed(2),
+                    },
+                  } : undefined,
                 },
               });
-              console.log('Recording metadata saved to PostgreSQL:', { recordingId: recording.id, sessionId });
+              console.log('Recording metadata saved to PostgreSQL:', {
+                recordingId: recording.id,
+                sessionId,
+                performanceMetrics: result.metrics ? 'saved' : 'not available',
+              });
             } catch (dbError) {
               console.error('Failed to save recording metadata to PostgreSQL:', dbError);
               // Continue even if DB save fails - video is already in S3
@@ -1183,10 +1552,35 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           } catch (error) {
             console.error('Failed to process video:', error);
 
-            // Save error status to PostgreSQL
+            // Phase 1.6.1 Day 34: Save partial recording info with detailed error context
             try {
               const sessionId = connectionData.sessionId || 'unknown';
               const { getRecordingKey } = await import('../../shared/config/s3-paths');
+              const { getVideoChunksPrefix } = await import('../../shared/config/s3-paths');
+
+              // List all video chunks that were successfully saved
+              const chunksPrefix = getVideoChunksPrefix(sessionId);
+              const listResponse = await s3Client.send(
+                new ListObjectsV2Command({
+                  Bucket: S3_BUCKET,
+                  Prefix: chunksPrefix,
+                })
+              );
+
+              const savedChunks = (listResponse.Contents || [])
+                .filter(obj => obj.Key && obj.Key.endsWith('.webm'))
+                .map(obj => ({
+                  key: obj.Key!,
+                  size: obj.Size || 0,
+                  lastModified: obj.LastModified?.toISOString(),
+                }));
+
+              console.log('[session_end] Partial recording saved:', {
+                totalChunksExpected: connectionData.videoChunksCount || 0,
+                chunksActuallySaved: savedChunks.length,
+                savedChunksKeys: savedChunks.map(c => c.key),
+              });
+
               const recording = await prisma.recording.create({
                 data: {
                   sessionId: sessionId,
@@ -1197,10 +1591,34 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                   videoChunksCount: connectionData.videoChunksCount || 0,
                   processingStatus: 'ERROR',
                   errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                  // Phase 1.6.1 Day 34: Partial recording metadata
+                  metadata: {
+                    partialRecording: true,
+                    savedChunks: savedChunks,
+                    totalChunksExpected: connectionData.videoChunksCount || 0,
+                    chunksActuallySaved: savedChunks.length,
+                    missingChunks: (connectionData.videoChunksCount || 0) - savedChunks.length,
+                    errorDetails: {
+                      message: error instanceof Error ? error.message : 'Unknown error',
+                      stack: error instanceof Error ? error.stack : undefined,
+                      timestamp: new Date().toISOString(),
+                    },
+                  },
                 },
               });
-              console.log('Recording error metadata saved to PostgreSQL:', {
+
+              console.log('Recording error metadata with partial info saved to PostgreSQL:', {
                 recordingId: recording.id,
+                sessionId,
+                partialChunks: savedChunks.length,
+              });
+
+              // Notify client about partial recording
+              await sendToConnection(connectionId, {
+                type: 'recording_partial',
+                message: 'Recording partially saved due to processing error',
+                savedChunks: savedChunks.length,
+                totalChunks: connectionData.videoChunksCount || 0,
                 sessionId,
               });
             } catch (dbError) {
@@ -1227,7 +1645,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         const isProcessing = currentConnectionData?.realtimeAudioProcessing;
 
         if (isProcessing) {
-          console.log('[session_end] Audio processing in progress, marking session_end_received flag');
+          console.log(
+            '[session_end] Audio processing in progress, marking session_end_received flag'
+          );
           console.log('[session_end] Current state:', {
             realtimeAudioProcessing: isProcessing,
             lastAudioProcessingStartTime: currentConnectionData?.lastAudioProcessingStartTime,
@@ -1238,7 +1658,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           });
         } else {
           // Audio processing is complete (or was never started), send session_complete now
-          console.log('[session_end] Audio processing complete or not started, sending session_complete');
+          console.log(
+            '[session_end] Audio processing complete or not started, sending session_complete'
+          );
 
           // Update session status to COMPLETED in database
           try {
@@ -1251,7 +1673,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
               if (session) {
                 const endedAt = new Date();
-                const durationSec = Math.floor((endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000);
+                const durationSec = Math.floor(
+                  (endedAt.getTime() - new Date(session.startedAt).getTime()) / 1000
+                );
 
                 await prisma.session.update({
                   where: { id: sessionId },
@@ -1274,7 +1698,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           }
 
           // 🆕 Trigger automatic analysis (if enabled)
-          if (process.env.ENABLE_AUTO_ANALYSIS === 'true' && connectionData?.sessionId) {
+          if (getEnableAutoAnalysis() && connectionData?.sessionId) {
             console.log('[session_end] Triggering automatic analysis', {
               sessionId: connectionData.sessionId,
             });
@@ -1283,7 +1707,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               // Invoke analysis Lambda function asynchronously
               await lambdaClient.send(
                 new InvokeCommand({
-                  FunctionName: process.env.ANALYSIS_LAMBDA_FUNCTION_NAME || 'prance-session-analysis-dev',
+                  FunctionName: getAnalysisLambdaFunctionName(),
                   InvocationType: 'Event', // Asynchronous invocation
                   Payload: JSON.stringify({ sessionId: connectionData.sessionId }),
                 })
@@ -1377,7 +1801,7 @@ async function handleSilencePromptGeneration(
     // Extract conversation history and convert to the expected format
     const rawHistory = connectionData?.conversationHistory || [];
     const conversationHistory = rawHistory.map((msg: any) => ({
-      speaker: msg.role === 'user' ? 'USER' as const : 'AI' as const,
+      speaker: msg.role === 'user' ? ('USER' as const) : ('AI' as const),
       text: msg.content || msg.text || '',
     }));
 
@@ -1486,6 +1910,76 @@ async function handleAudioProcessingStreaming(
       hasScenarioPrompt: !!connectionData?.scenarioPrompt,
       scenarioLanguage: connectionData?.scenarioLanguage,
     });
+
+    // Phase 1.6.1 Day 35: Validate execution state (infinite loop prevention)
+    const { validateExecutionState } = await import('../../shared/scenario/validator');
+    const executionValidation = validateExecutionState({
+      sessionId,
+      turnCount: connectionData?.turnCount || 0,
+      conversationHistory: connectionData?.conversationHistory || [],
+      startTime: connectionData?.sessionStartTime || Date.now(),
+    });
+
+    console.log('[handleAudioProcessingStreaming] Execution validation:', {
+      isValid: executionValidation.isValid,
+      turnCount: connectionData?.turnCount || 0,
+      errorCount: executionValidation.errors.length,
+      warningCount: executionValidation.warnings.length,
+    });
+
+    // Send warnings to client (non-blocking)
+    if (executionValidation.warnings.length > 0) {
+      await sendToConnection(connectionId, {
+        type: 'execution_warning',
+        warnings: executionValidation.warnings,
+        timestamp: Date.now(),
+      });
+    }
+
+    // If execution state is invalid (max turns/timeout), terminate
+    if (!executionValidation.isValid) {
+      const { formatValidationErrors } = await import('../../shared/scenario/validator');
+      const { getMaxTurnsReachedMessage } = await import('../../shared/scenario/fallback-responses');
+      const errorMessage = formatValidationErrors(executionValidation);
+      const { getRequiredEnv } = await import('../../shared/utils/env-validator');
+      const MAX_CONVERSATION_TURNS = parseInt(getRequiredEnv('MAX_CONVERSATION_TURNS'), 10);
+
+      console.error('[handleAudioProcessingStreaming] Execution state invalid:', errorMessage);
+
+      // Check if this is a max turns error
+      const isMaxTurnsError = executionValidation.errors.some(
+        (error) => error.code === 'MAX_TURNS_EXCEEDED'
+      );
+
+      if (isMaxTurnsError) {
+        // Phase 1.6.1 Day 36: Send session_limit_reached message
+        const turnCount = connectionData?.turnCount || 0;
+        const terminationMessage = getMaxTurnsReachedMessage(
+          turnCount,
+          MAX_CONVERSATION_TURNS,
+          connectionData?.scenarioLanguage || 'en'
+        );
+
+        await sendToConnection(connectionId, {
+          type: 'session_limit_reached',
+          message: terminationMessage,
+          turnCount,
+          maxTurns: MAX_CONVERSATION_TURNS,
+          sessionId,
+          timestamp: Date.now(),
+        });
+      } else {
+        // Other execution errors (timeout, etc.)
+        await sendToConnection(connectionId, {
+          type: 'session_terminated',
+          reason: 'execution_limit_exceeded',
+          details: executionValidation.errors,
+          timestamp: Date.now(),
+        });
+      }
+
+      return; // Terminate processing
+    }
 
     // Track full AI response for conversation history
     let fullAIResponse = '';
@@ -1597,8 +2091,14 @@ async function handleAudioProcessingStreaming(
           const audioTimestamp = Date.now();
           const { getAudioKey } = await import('../../shared/config/s3-paths');
           const { AudioFileType } = await import('../../shared/config/s3-paths');
-          const extension = contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm';
-          const audioKey = getAudioKey(sessionId, AudioFileType.AI_RESPONSE, audioTimestamp, extension);
+          const extension =
+            contentType.includes('mpeg') || contentType.includes('mp3') ? 'mp3' : 'webm';
+          const audioKey = getAudioKey(
+            sessionId,
+            AudioFileType.AI_RESPONSE,
+            audioTimestamp,
+            extension
+          );
 
           await s3Client.send(
             new PutObjectCommand({
@@ -1638,8 +2138,13 @@ async function handleAudioProcessingStreaming(
       { role: 'assistant' as const, content: result.aiResponse },
     ];
 
+    // Phase 1.6.1 Day 35: Increment turn count
+    const currentTurnCount = (connectionData?.turnCount || 0) + 1;
+
     await updateConnectionData(connectionId, {
       conversationHistory: updatedHistory,
+      turnCount: currentTurnCount,
+      errorAttemptCount: 0, // Reset error counter on success
     });
 
     console.log('[handleAudioProcessingStreaming] Complete:', {
@@ -1679,14 +2184,162 @@ async function handleAudioProcessingStreaming(
         await handleSilencePromptGeneration(connectionId, connectionData);
       }
     } else {
-      // This is a real error - send error message
-      await sendToConnection(connectionId, {
-        type: 'error',
-        code: 'AUDIO_PROCESSING_ERROR',
-        message: errorMessage,
-        details: errorDetails,
-        timestamp: Date.now(),
+      // Phase 1.6.1 Day 35: Error recovery logic
+      const { determineRecoveryStrategy } = await import('../../shared/scenario/error-handler');
+      const { getRequiredEnv } = await import('../../shared/utils/env-validator');
+      const MAX_RETRY_ATTEMPTS = parseInt(getRequiredEnv('MAX_RETRY_ATTEMPTS'), 10);
+
+      // Determine error type
+      let errorType: 'ai_generation' | 'tts_generation' | 'stt_recognition' | 'timeout' = 'ai_generation';
+      if (errorMessage.includes('TTS') || errorMessage.includes('ElevenLabs')) {
+        errorType = 'tts_generation';
+      } else if (errorMessage.includes('STT') || errorMessage.includes('Azure Speech')) {
+        errorType = 'stt_recognition';
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+        errorType = 'timeout';
+      }
+
+      const currentAttempts = connectionData?.errorAttemptCount || 0;
+
+      const recoveryResult = determineRecoveryStrategy({
+        sessionId: connectionData?.sessionId || 'unknown',
+        errorType,
+        errorMessage,
+        attemptNumber: currentAttempts,
+        maxAttempts: MAX_RETRY_ATTEMPTS,
+        language: connectionData?.scenarioLanguage,
       });
+
+      console.log('[handleAudioProcessingStreaming] Error recovery strategy:', {
+        errorType,
+        attemptNumber: currentAttempts,
+        shouldRetry: recoveryResult.shouldRetry,
+        shouldSkip: recoveryResult.shouldSkip,
+        shouldTerminate: recoveryResult.shouldTerminate,
+      });
+
+      // Phase 1.6.1 Day 36: Record error to database
+      try {
+        await prisma.sessionError.create({
+          data: {
+            sessionId: connectionData?.sessionId || 'unknown',
+            errorType,
+            errorMessage,
+            errorStack: errorDetails || null,
+            attemptNumber: currentAttempts,
+            recoveryAction: recoveryResult.shouldTerminate
+              ? 'terminate'
+              : recoveryResult.shouldSkip
+                ? 'skip'
+                : recoveryResult.shouldRetry
+                  ? 'retry'
+                  : 'fallback',
+            fallbackUsed: !!recoveryResult.fallbackResponse,
+            resolved: recoveryResult.shouldRetry || recoveryResult.shouldSkip,
+            metadata: {
+              connectionId,
+              language: connectionData?.scenarioLanguage,
+              hasScenarioPrompt: !!connectionData?.scenarioPrompt,
+            },
+          },
+        });
+        console.log('[handleAudioProcessingStreaming] Error recorded to database');
+      } catch (dbError) {
+        console.error('[handleAudioProcessingStreaming] Failed to record error to database:', dbError);
+      }
+
+      // Update error attempt counter
+      await updateConnectionData(connectionId, {
+        lastErrorType: errorType,
+        errorAttemptCount: currentAttempts + 1,
+      });
+
+      if (recoveryResult.shouldTerminate) {
+        // Terminate session
+        await sendToConnection(connectionId, {
+          type: 'session_terminated',
+          reason: 'max_errors_exceeded',
+          message: recoveryResult.fallbackResponse,
+          timestamp: Date.now(),
+        });
+      } else if (recoveryResult.shouldSkip) {
+        // Phase 1.6.1 Day 36: Use fallback response and send ai_fallback message
+        const { getFallbackResponse } = await import('../../shared/scenario/fallback-responses');
+        const fallbackText = getFallbackResponse(
+          currentAttempts,
+          connectionData?.scenarioLanguage || 'en'
+        );
+
+        // Send ai_fallback message to client
+        await sendToConnection(connectionId, {
+          type: 'ai_fallback',
+          message: fallbackText,
+          originalError: errorMessage,
+          usedFallback: true,
+          sessionId,
+          timestamp: Date.now(),
+        });
+
+        // Generate TTS for fallback response
+        try {
+          const processor = getAudioProcessor();
+          const ttsAudio = await processor['tts'].synthesize(fallbackText); // Access private tts instance
+
+          // Upload fallback audio to S3
+          const audioTimestamp = Date.now();
+          const { getAudioKey } = await import('../../shared/config/s3-paths');
+          const { AudioFileType } = await import('../../shared/config/s3-paths');
+          const audioKey = getAudioKey(sessionId, AudioFileType.AI_RESPONSE, audioTimestamp, 'mp3');
+
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: S3_BUCKET,
+              Key: audioKey,
+              Body: ttsAudio,
+              ContentType: 'audio/mpeg',
+            })
+          );
+
+          const audioUrl = await getSignedUrl(
+            s3Client,
+            new GetObjectCommand({
+              Bucket: S3_BUCKET,
+              Key: audioKey,
+            }),
+            { expiresIn: 3600 }
+          );
+
+          // Send audio response
+          await sendToConnection(connectionId, {
+            type: 'audio_response',
+            audioUrl,
+            audioKey,
+            contentType: 'audio/mpeg',
+            timestamp: audioTimestamp,
+          });
+        } catch (ttsError) {
+          console.error('[handleAudioProcessingStreaming] Failed to generate fallback TTS:', ttsError);
+          // Continue without audio - client has text already
+        }
+      } else if (recoveryResult.shouldRetry) {
+        // Notify client that retry will occur
+        await sendToConnection(connectionId, {
+          type: 'processing_retry',
+          attemptNumber: currentAttempts + 1,
+          maxAttempts: MAX_RETRY_ATTEMPTS,
+          timestamp: Date.now(),
+        });
+        // Retry will happen automatically on next audio chunk
+      } else {
+        // Fallback: send generic error
+        await sendToConnection(connectionId, {
+          type: 'error',
+          code: 'AUDIO_PROCESSING_ERROR',
+          message: errorMessage,
+          details: errorDetails,
+          timestamp: Date.now(),
+        });
+      }
     }
   }
 }
@@ -1779,8 +2432,14 @@ async function handleAudioData(
     const audioTimestamp = Date.now();
     const { getAudioKey: getAudioKeyLegacy } = await import('../../shared/config/s3-paths');
     const { AudioFileType: AudioFileTypeLegacy } = await import('../../shared/config/s3-paths');
-    const extensionLegacy = audioContentType.includes('mpeg') || audioContentType.includes('mp3') ? 'mp3' : 'webm';
-    const audioKey = getAudioKeyLegacy(sessionId, AudioFileTypeLegacy.AI_RESPONSE, audioTimestamp, extensionLegacy);
+    const extensionLegacy =
+      audioContentType.includes('mpeg') || audioContentType.includes('mp3') ? 'mp3' : 'webm';
+    const audioKey = getAudioKeyLegacy(
+      sessionId,
+      AudioFileTypeLegacy.AI_RESPONSE,
+      audioTimestamp,
+      extensionLegacy
+    );
 
     await s3Client.send(
       new PutObjectCommand({

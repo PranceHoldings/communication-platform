@@ -20,17 +20,25 @@ import {
   DeleteCommand,
   BatchWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
+import {
+  getAwsRegion,
+  getOptionalEnv,
+  getOptionalEnvAsNumber,
+  getEnvironmentName,
+} from './env-validator';
+import {
+  getRateLimitMaxAttempts,
+  getRateLimitLockoutDurationMs,
+  getRateLimitAttemptWindowMs,
+} from './runtime-config-loader';
 
 // DynamoDB Client
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const client = new DynamoDBClient({ region: getAwsRegion() });
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 // Configuration helpers (dynamic to support test environment variable changes)
 const getTableName = () =>
-  process.env.GUEST_RATE_LIMIT_TABLE || `prance-guest-rate-limits-${process.env.ENVIRONMENT || 'dev'}`;
-const getMaxAttempts = () => parseInt(process.env.RATE_LIMIT_MAX_ATTEMPTS || '5', 10);
-const getLockoutDuration = () => parseInt(process.env.RATE_LIMIT_LOCKOUT_DURATION || '600000', 10); // 10 minutes default
-const getAttemptWindow = () => parseInt(process.env.RATE_LIMIT_ATTEMPT_WINDOW || '600000', 10); // 10 minutes default
+  getOptionalEnv('GUEST_RATE_LIMIT_TABLE', `prance-guest-rate-limits-${getEnvironmentName()}`);
 
 /**
  * Rate limit check result
@@ -69,12 +77,10 @@ export interface RateLimitAttempt {
  *   console.log(`Locked until: ${result.lockedUntil}`);
  * }
  */
-export async function checkRateLimit(
-  ipAddress: string,
-  token?: string
-): Promise<RateLimitResult> {
+export async function checkRateLimit(ipAddress: string, token?: string): Promise<RateLimitResult> {
   const now = Date.now();
-  const windowStart = now - getAttemptWindow();
+  const attemptWindow = await getRateLimitAttemptWindowMs();
+  const windowStart = now - attemptWindow;
 
   try {
     // Query attempts within the time window
@@ -94,11 +100,13 @@ export async function checkRateLimit(
     );
 
     const attempts = result.Items?.length || 0;
+    const maxAttempts = await getRateLimitMaxAttempts();
 
     // Check if locked
-    if (attempts >= getMaxAttempts()) {
+    if (attempts >= maxAttempts) {
       const oldestAttempt = result.Items?.[result.Items.length - 1];
-      const lockedUntil = new Date(oldestAttempt.timestamp + getLockoutDuration());
+      const lockoutDuration = await getRateLimitLockoutDurationMs();
+      const lockedUntil = new Date(oldestAttempt.timestamp + lockoutDuration);
 
       // Check if lockout period has expired
       if (now < lockedUntil.getTime()) {
@@ -115,7 +123,7 @@ export async function checkRateLimit(
       return {
         allowed: true,
         attempts: 0,
-        remainingAttempts: getMaxAttempts(),
+        remainingAttempts: maxAttempts,
       };
     }
 
@@ -123,16 +131,17 @@ export async function checkRateLimit(
     return {
       allowed: true,
       attempts,
-      remainingAttempts: getMaxAttempts() - attempts,
+      remainingAttempts: maxAttempts - attempts,
     };
   } catch (error) {
     console.error('[RateLimiter] Error checking rate limit:', error);
 
     // Fail open (allow request) to prevent DoS via rate limiter errors
+    const maxAttempts = await getRateLimitMaxAttempts();
     return {
       allowed: true,
       attempts: 0,
-      remainingAttempts: getMaxAttempts(),
+      remainingAttempts: maxAttempts,
     };
   }
 }
@@ -147,12 +156,10 @@ export async function checkRateLimit(
  * @example
  * await recordAttempt('192.168.1.1', 'abc123');
  */
-export async function recordAttempt(
-  ipAddress: string,
-  token?: string
-): Promise<void> {
+export async function recordAttempt(ipAddress: string, token?: string): Promise<void> {
   const now = Date.now();
-  const ttl = Math.floor((now + getLockoutDuration()) / 1000);
+  const lockoutDuration = await getRateLimitLockoutDurationMs();
+  const ttl = Math.floor((now + lockoutDuration) / 1000);
 
   try {
     await ddbDocClient.send(
@@ -231,7 +238,11 @@ export async function resetAttempts(ipAddress: string): Promise<void> {
       );
     }
 
-    console.log('[RateLimiter] Reset attempts for IP:', ipAddress, `(${result.Items.length} records deleted)`);
+    console.log(
+      '[RateLimiter] Reset attempts for IP:',
+      ipAddress,
+      `(${result.Items.length} records deleted)`
+    );
   } catch (error) {
     console.error('[RateLimiter] Error resetting attempts:', error);
     // Don't throw - rate limiting is not critical
@@ -255,7 +266,8 @@ export async function getRateLimitStats(ipAddress: string): Promise<{
   lockedUntil?: Date;
 }> {
   const now = Date.now();
-  const windowStart = now - getAttemptWindow();
+  const attemptWindow = await getRateLimitAttemptWindowMs();
+  const windowStart = now - attemptWindow;
 
   try {
     // Query all attempts
@@ -272,16 +284,18 @@ export async function getRateLimitStats(ipAddress: string): Promise<{
     const totalAttempts = result.Items?.length || 0;
     const recentAttempts = result.Items?.filter(item => item.timestamp > windowStart).length || 0;
 
-    const isLocked = recentAttempts >= getMaxAttempts();
+    const maxAttempts = await getRateLimitMaxAttempts();
+    const isLocked = recentAttempts >= maxAttempts;
     let lockedUntil: Date | undefined;
 
     if (isLocked && result.Items && result.Items.length > 0) {
-      const oldestRecentAttempt = result.Items
-        .filter(item => item.timestamp > windowStart)
-        .sort((a, b) => a.timestamp - b.timestamp)[0];
+      const oldestRecentAttempt = result.Items.filter(item => item.timestamp > windowStart).sort(
+        (a, b) => a.timestamp - b.timestamp
+      )[0];
 
       if (oldestRecentAttempt) {
-        lockedUntil = new Date(oldestRecentAttempt.timestamp + getLockoutDuration());
+        const lockoutDuration = await getRateLimitLockoutDurationMs();
+        lockedUntil = new Date(oldestRecentAttempt.timestamp + lockoutDuration);
       }
     }
 

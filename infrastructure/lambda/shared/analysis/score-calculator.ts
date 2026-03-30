@@ -1,6 +1,7 @@
 /**
  * Score Calculator
  * Calculates comprehensive session scores based on emotion and audio analysis
+ * Updated: 2026-03-21 - Phase 5.4 Integration with runtime-config-loader
  */
 
 import type {
@@ -17,6 +18,7 @@ import type {
   ScoreAssessment,
   EmotionScore,
 } from '@prance/shared';
+import { getOptimalPauseSec, getScorePresetWeights } from '../utils/runtime-config-loader';
 
 // ============================================================
 // Scoring Presets
@@ -26,32 +28,32 @@ export const SCORING_PRESETS: Record<ScoringPreset, ScoringWeights> = {
   default: {
     emotion: 0.35,
     audio: 0.35,
-    content: 0.20,
-    delivery: 0.10,
+    content: 0.2,
+    delivery: 0.1,
   },
   interview_practice: {
-    emotion: 0.40,
-    audio: 0.30,
-    content: 0.20,
-    delivery: 0.10,
+    emotion: 0.4,
+    audio: 0.3,
+    content: 0.2,
+    delivery: 0.1,
   },
   language_learning: {
     emotion: 0.15,
-    audio: 0.50,
+    audio: 0.5,
     content: 0.25,
-    delivery: 0.10,
+    delivery: 0.1,
   },
   presentation: {
-    emotion: 0.30,
-    audio: 0.30,
-    content: 0.30,
-    delivery: 0.10,
+    emotion: 0.3,
+    audio: 0.3,
+    content: 0.3,
+    delivery: 0.1,
   },
   custom: {
     emotion: 0.35,
     audio: 0.35,
-    content: 0.20,
-    delivery: 0.10,
+    content: 0.2,
+    delivery: 0.1,
   },
 };
 
@@ -62,24 +64,25 @@ export const SCORING_PRESETS: Record<ScoringPreset, ScoringWeights> = {
 export class ScoreCalculator {
   /**
    * Calculate comprehensive session score
+   * Now async to support runtime configuration loading
    */
-  calculateScore(
+  async calculateScore(
     emotionAnalyses: EmotionAnalysis[],
     audioAnalyses: AudioAnalysis[],
     criteria: ScoringCriteria = { preset: 'default' }
-  ): ScoreCalculationResult {
+  ): Promise<ScoreCalculationResult> {
     console.log('[ScoreCalculator] Calculating score', {
       emotionAnalysesCount: emotionAnalyses.length,
       audioAnalysesCount: audioAnalyses.length,
       criteria,
     });
 
-    // Get weights
-    const weights = this.getWeights(criteria);
+    // Get weights (now async - loads from runtime config)
+    const weights = await this.getWeights(criteria);
 
     // Calculate category scores
     const emotionResult = this.calculateEmotionScore(emotionAnalyses);
-    const audioResult = this.calculateAudioScore(audioAnalyses);
+    const audioResult = await this.calculateAudioScore(audioAnalyses);
     const contentResult = this.calculateContentScore(emotionAnalyses, audioAnalyses);
     const deliveryScore = this.calculateDeliveryScore(emotionAnalyses, audioAnalyses);
 
@@ -120,12 +123,24 @@ export class ScoreCalculator {
 
   /**
    * Get scoring weights
+   * Phase 5.4.1: Now loads from runtime_configs database
    */
-  private getWeights(criteria: ScoringCriteria): ScoringWeights {
+  private async getWeights(criteria: ScoringCriteria): Promise<ScoringWeights> {
+    // If custom weights are provided directly, use them
     if (criteria.preset === 'custom' && criteria.customWeights) {
       return criteria.customWeights;
     }
-    return SCORING_PRESETS[criteria.preset] || SCORING_PRESETS.default;
+
+    // Load weights from runtime_configs database
+    try {
+      const weights = await getScorePresetWeights(criteria.preset);
+      console.log(`[ScoreCalculator] Loaded weights for preset "${criteria.preset}":`, weights);
+      return weights;
+    } catch (error) {
+      console.error(`[ScoreCalculator] Failed to load weights for preset "${criteria.preset}", falling back to hardcoded default:`, error);
+      // Fallback to hardcoded default preset if database load fails
+      return SCORING_PRESETS[criteria.preset] || SCORING_PRESETS.default;
+    }
   }
 
   /**
@@ -154,10 +169,10 @@ export class ScoreCalculator {
     let positiveCount = 0;
     let negativeCount = 0;
 
-    emotionAnalyses.forEach((analysis) => {
-      const emotions = analysis.emotions as EmotionScore[];
+    emotionAnalyses.forEach(analysis => {
+      const emotions = analysis.emotions;
       if (emotions && Array.isArray(emotions)) {
-        emotions.forEach((emotion) => {
+        emotions.forEach(emotion => {
           if (positiveEmotions.includes(emotion.type)) {
             positiveCount += emotion.confidence / 100;
           } else if (negativeEmotions.includes(emotion.type)) {
@@ -171,16 +186,13 @@ export class ScoreCalculator {
     const positiveRatio = positiveCount / totalFrames;
     const negativeRatio = negativeCount / totalFrames;
 
-    const stability = Math.max(
-      0,
-      Math.min(100, positiveRatio * 100 - negativeRatio * 50)
-    );
+    const stability = Math.max(0, Math.min(100, positiveRatio * 100 - negativeRatio * 50));
 
     // 2. Positivity
     let happyCount = 0;
     let calmCount = 0;
 
-    emotionAnalyses.forEach((analysis) => {
+    emotionAnalyses.forEach(analysis => {
       const dominantEmotion = analysis.dominantEmotion;
       if (dominantEmotion === 'HAPPY') happyCount++;
       if (dominantEmotion === 'CALM') calmCount++;
@@ -189,11 +201,9 @@ export class ScoreCalculator {
     const positivity = ((happyCount + calmCount) / totalFrames) * 100;
 
     // 3. Confidence
-    const avgConfidence = this.average(
-      emotionAnalyses.map((a) => a.confidence)
-    );
+    const avgConfidence = this.average(emotionAnalyses.map(a => a.confidence));
 
-    const eyesOpenCount = emotionAnalyses.filter((a) => a.eyesOpen === true).length;
+    const eyesOpenCount = emotionAnalyses.filter(a => a.eyesOpen === true).length;
     const eyesOpenRatio = eyesOpenCount / totalFrames;
 
     const confidence = avgConfidence * 0.7 + eyesOpenRatio * 100 * 0.3;
@@ -203,11 +213,7 @@ export class ScoreCalculator {
     const engagement = Math.min(100, emotionVariance * 50);
 
     // Calculate overall emotion score
-    const emotionScore =
-      stability * 0.3 +
-      positivity * 0.25 +
-      confidence * 0.25 +
-      engagement * 0.2;
+    const emotionScore = stability * 0.3 + positivity * 0.25 + confidence * 0.25 + engagement * 0.2;
 
     return {
       score: Math.round(emotionScore * 10) / 10,
@@ -222,11 +228,12 @@ export class ScoreCalculator {
 
   /**
    * Calculate audio score
+   * Now async to load runtime configuration
    */
-  private calculateAudioScore(audioAnalyses: AudioAnalysis[]): {
+  private async calculateAudioScore(audioAnalyses: AudioAnalysis[]): Promise<{
     score: number;
     details: AudioScoreDetails;
-  } {
+  }> {
     if (audioAnalyses.length === 0) {
       return {
         score: 50,
@@ -239,46 +246,34 @@ export class ScoreCalculator {
       };
     }
 
-    const totalDuration = this.sum(audioAnalyses.map((a) => a.duration || 0));
+    const totalDuration = this.sum(audioAnalyses.map(a => a.duration || 0));
 
     // 1. Clarity (明瞭さ)
-    const totalFillerWords = this.sum(audioAnalyses.map((a) => a.fillerCount || 0));
+    const totalFillerWords = this.sum(audioAnalyses.map(a => a.fillerCount || 0));
     const fillerWordsPerMinute = totalFillerWords / (totalDuration / 60);
     const clarityFromFillers = Math.max(0, 100 - fillerWordsPerMinute * 5);
 
-    const avgSTTConfidence = this.average(
-      audioAnalyses.map((a) => a.confidence || 80)
-    );
+    const avgSTTConfidence = this.average(audioAnalyses.map(a => a.confidence || 80));
     const clarityFromSTT = avgSTTConfidence;
 
     const clarity = clarityFromFillers * 0.6 + clarityFromSTT * 0.4;
 
-    // 2. Fluency (流暢さ)
-    const avgPauseDuration = this.average(
-      audioAnalyses.map((a) => a.pauseDuration || 0)
-    );
-    const optimalPause = 0.8; // 理想的なポーズ時間（秒）
+    // 2. Fluency (流暢さ) - Load optimal pause from runtime config
+    const avgPauseDuration = this.average(audioAnalyses.map(a => a.pauseDuration || 0));
+    const optimalPause = await getOptimalPauseSec();
 
-    const fluency = Math.max(
-      0,
-      100 - Math.abs(avgPauseDuration - optimalPause) * 50
-    );
+    const fluency = Math.max(0, 100 - Math.abs(avgPauseDuration - optimalPause) * 50);
 
     // 3. Pacing (ペース配分)
     const avgSpeakingRate = this.average(
-      audioAnalyses.map((a) => a.speakingRate || 0).filter((r) => r > 0)
+      audioAnalyses.map(a => a.speakingRate || 0).filter(r => r > 0)
     );
     const optimalRate = 130; // WPM
 
-    const pacing = Math.max(
-      0,
-      100 - Math.abs(avgSpeakingRate - optimalRate) * 0.5
-    );
+    const pacing = Math.max(0, 100 - Math.abs(avgSpeakingRate - optimalRate) * 0.5);
 
     // 4. Volume (音量適正)
-    const avgVolume = this.average(
-      audioAnalyses.map((a) => a.volume || -30)
-    );
+    const avgVolume = this.average(audioAnalyses.map(a => a.volume || -30));
     const optimalVolume = -25; // dB
 
     const volume = Math.max(0, 100 - Math.abs(avgVolume - optimalVolume) * 2);
@@ -314,13 +309,11 @@ export class ScoreCalculator {
     const relevance = 75; // Placeholder
 
     // 2. Structure (構造) - Based on pause patterns and speaking rate consistency
-    const pauseVariance = this.variance(
-      audioAnalyses.map((a) => a.pauseDuration || 0)
-    );
+    const pauseVariance = this.variance(audioAnalyses.map(a => a.pauseDuration || 0));
     const structure = Math.max(0, 100 - pauseVariance * 10);
 
     // 3. Completeness (完全性) - Based on total duration and speaking rate
-    const totalDuration = this.sum(audioAnalyses.map((a) => a.duration || 0));
+    const totalDuration = this.sum(audioAnalyses.map(a => a.duration || 0));
     const completeness = Math.min(100, (totalDuration / 60) * 40); // Assume 2.5 min optimal
 
     const contentScore = relevance * 0.4 + structure * 0.3 + completeness * 0.3;
@@ -343,11 +336,9 @@ export class ScoreCalculator {
     audioAnalyses: AudioAnalysis[]
   ): number {
     // Simplified delivery score based on overall quality
-    const avgEmotionConfidence = this.average(
-      emotionAnalyses.map((a) => a.confidence)
-    );
+    const avgEmotionConfidence = this.average(emotionAnalyses.map(a => a.confidence));
     const avgAudioQuality = this.average(
-      audioAnalyses.map((a) => (a.volume || -30) + 40) // Normalize volume to 0-100
+      audioAnalyses.map(a => (a.volume || -30) + 40) // Normalize volume to 0-100
     );
 
     const deliveryScore = avgEmotionConfidence * 0.5 + avgAudioQuality * 0.5;
@@ -525,7 +516,7 @@ export class ScoreCalculator {
   private variance(values: number[]): number {
     if (values.length === 0) return 0;
     const avg = this.average(values);
-    const squaredDiffs = values.map((val) => Math.pow(val - avg, 2));
+    const squaredDiffs = values.map(val => Math.pow(val - avg, 2));
     return this.average(squaredDiffs);
   }
 

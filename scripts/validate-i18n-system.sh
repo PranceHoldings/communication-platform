@@ -72,15 +72,15 @@ fi
 echo ""
 echo "🔍 Validating translation keys (all used keys must exist in files)..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/validate-i18n-keys.sh" ]; then
+if [ -f "$SCRIPT_DIR/validate-i18n-keys.js" ]; then
   # Skip unused key check in pre-commit (it can be slow with many keys)
-  if SKIP_UNUSED_CHECK=1 bash "$SCRIPT_DIR/validate-i18n-keys.sh"; then
+  if SKIP_UNUSED_CHECK=1 node "$SCRIPT_DIR/validate-i18n-keys.js"; then
     echo ""  # Key validation prints its own success message
   else
     FAILED=1
   fi
 else
-  echo -e "${YELLOW}WARNING: validate-i18n-keys.sh not found (skipping key validation)${NC}"
+  echo -e "${YELLOW}WARNING: validate-i18n-keys.js not found (skipping key validation)${NC}"
 fi
 
 # Summary

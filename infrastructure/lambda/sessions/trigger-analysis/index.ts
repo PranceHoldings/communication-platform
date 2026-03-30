@@ -3,12 +3,12 @@ import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
-import { AWS_DEFAULTS } from '../../shared/config/defaults';
+import { getAnalysisLambdaFunctionName } from '../../shared/utils/env-validator';
+import { getAwsRegion } from '../../shared/config';
 
 // Environment variables
-const AWS_REGION = process.env.AWS_REGION || AWS_DEFAULTS.REGION;
-const ANALYSIS_LAMBDA_FUNCTION_NAME =
-  process.env.ANALYSIS_LAMBDA_FUNCTION_NAME || 'prance-session-analysis-dev';
+const AWS_REGION = getAwsRegion();
+const ANALYSIS_LAMBDA_FUNCTION_NAME = getAnalysisLambdaFunctionName();
 
 // Initialize Lambda client
 const lambdaClient = new LambdaClient({ region: AWS_REGION });
@@ -67,7 +67,7 @@ export const handler: APIGatewayProxyHandler = async event => {
     }
 
     // Check if analysis is already in progress
-    const metadata = session.metadataJson as any;
+    const metadata = session.metadataJson;
     if (metadata?.analysisInProgress) {
       return errorResponse(
         409,
@@ -148,7 +148,7 @@ export const handler: APIGatewayProxyHandler = async event => {
           data: {
             status: 'ERROR',
             metadataJson: {
-              ...(session?.metadataJson as any),
+              ...session?.metadataJson,
               analysisInProgress: false,
               analysisError: error instanceof Error ? error.message : 'Unknown error',
               analysisErrorAt: new Date().toISOString(),

@@ -1389,24 +1389,32 @@ module.exports = {
 
 #### Playwright (E2Eテスト)
 
-**設定 (playwright.config.ts):**
+**設定 (apps/web/playwright.config.ts):**
 
 ```typescript
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: './tests/e2e',  // apps/web/ からの相対パス
   use: {
     baseURL: 'http://localhost:3000',
     headless: true,
+    permissions: ['microphone', 'camera'],
   },
   projects: [
     { name: 'chromium', use: { browserName: 'chromium' } },
-    { name: 'firefox', use: { browserName: 'firefox' } },
-    { name: 'webkit', use: { browserName: 'webkit' } },
   ],
 });
 ```
+
+**テスト構造:** `apps/web/tests/e2e/`
+- **Level 1 (Stage 0-1):** UI Component Tests
+- **Level 2 (Stage 2):** Integration Tests (Mock)
+- **Level 3 (Stage 3-5):** System E2E Tests（全スタック）
+
+**テスト成功率:** 35/35 (100%) ✅
+
+詳細: [apps/web/tests/e2e/README.md](../../apps/web/tests/e2e/README.md)
 
 ---
 

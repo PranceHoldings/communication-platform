@@ -45,9 +45,6 @@
   "enabled": "Enabled",
   "disabled": "Disabled",
   "useDefault": "Use Default",
-  "contact": "Contact",
-  "privacyPolicy": "Privacy Policy",
-  "termsOfService": "Terms of Service",
   "languagesNative": {
     "en": "English",
     "ja": "日本語",
@@ -59,5 +56,20 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "avatar": {
+    "fallback": {
+      "title": "頭像不可用",
+      "message": "無法載入頭像，但會話將正常繼續。",
+      "errorDetails": "錯誤詳情"
+    }
+  },
+  "connectionStatus": {
+    "disconnected": "已中斷",
+    "connecting": "連線中...",
+    "connected": "已連線",
+    "reconnecting": "重新連線中... ({attempt}/{maxAttempts})",
+    "reconnectFailed": "經過{attempts}次重試後連線失敗。請重新整理頁面。",
+    "error": "連線錯誤"
   }
 }

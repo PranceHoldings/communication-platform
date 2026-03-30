@@ -71,12 +71,15 @@ AWS、サーバーレス、デプロイ構成。
 日常的な開発作業のガイド。
 
 - **DEVELOPMENT_WORKFLOW.md** - 開発ワークフロー
-- **BUILD_PROCESS.md** - ビルドプロセスガイド（通常/クリーン/デプロイ前検証） 🆕
-- **TROUBLESHOOTING_NODE_MODULES.md** - node_modulesトラブルシューティング 🆕
-- **MEDIARECORDER_LIFECYCLE.md** - MediaRecorder APIライフサイクル（timeslice削除対応） 🆕
+- **BUILD_PROCESS.md** - ビルドプロセスガイド（通常/クリーン/デプロイ前検証）
+- **TROUBLESHOOTING_NODE_MODULES.md** - node_modulesトラブルシューティング
+- **MEDIARECORDER_LIFECYCLE.md** - MediaRecorder APIライフサイクル（timeslice削除対応）
 - **DATABASE_MIGRATION_CHECKLIST.md** - DBマイグレーションチェックリスト
 - **LAMBDA_VERSION_MANAGEMENT.md** - Lambdaバージョン管理
 - **LOCK_MECHANISM_ANALYSIS.md** - ロックメカニズム分析
+- **ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md** - 環境変数SSOT完全ガイド 🆕
+- **HARDCODE_PREVENTION_SYSTEM.md** - ハードコード防止システム 🆕
+- **HARDCODE_ELIMINATION_REPORT.md** - ハードコード削除記録 🆕
 
 ### 08. 運用ガイド
 デプロイ、CI/CD、運用、セキュリティ。
@@ -127,12 +130,22 @@ AWS、サーバーレス、デプロイ構成。
 
 ## 更新履歴
 
+- **2026-03-20**:
+  - Phase 4完了（ベンチマークシステム）
+  - 環境変数SSOT完全実装（ENV_VAR_SINGLE_SOURCE_OF_TRUTH.md）
+  - ハードコード防止システム完成（HARDCODE_PREVENTION_SYSTEM.md）
+  - E2Eテスト100%成功（Stage 0-5完了）
+- **2026-03-18**:
+  - Phase 3完了（Production環境構築）
+  - カスタムドメイン設定完了（app.prance.jp, api.app.prance.jp, ws.app.prance.jp）
+- **2026-03-17**:
+  - Phase 2完了（録画・解析・レポート）
 - **2026-03-11**:
-  - Day 12音声バグ修正セッション記録追加（SESSION_2026-03-10_Day12_Audio_Bug_Fixes.md）
-  - Phase 1.5進捗98%に更新（音声再生テスト待ち）
-  - MediaRecorder Lifecycle文書更新（timeslice削除対応）
+  - Day 12音声バグ修正セッション記録追加
+  - Phase 1.5進捗98%に更新
+  - MediaRecorder Lifecycle文書更新
 - **2026-03-10**:
-  - ビルドプロセスガイド追加（BUILD_PROCESS.md, TROUBLESHOOTING_NODE_MODULES.md）
+  - ビルドプロセスガイド追加
   - ドキュメント構造を番号付きカテゴリーに再編成
 - **2026-03-09**: DOCUMENTATION_CLEANUP_SUMMARY.md 作成
 - **2026-03-06**: Phase 1 完了記録

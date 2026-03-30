@@ -53,10 +53,10 @@ export function PerformanceRadar({ score }: PerformanceRadarProps) {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow p-6" data-testid="performance-radar">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('analysis.radar.title')}</h2>
 
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={400} data-testid="radar-chart">
         <RadarChart data={radarData}>
           <PolarGrid stroke="#e5e7eb" />
           <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 12 }} />
@@ -81,11 +81,15 @@ export function PerformanceRadar({ score }: PerformanceRadarProps) {
       </ResponsiveContainer>
 
       {/* Legend */}
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-        {radarData.map(item => (
+      <div
+        className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 text-sm"
+        data-testid="radar-legend"
+      >
+        {radarData.map((item, index) => (
           <div
             key={item.subject}
             className="flex items-center justify-between p-2 bg-gray-50 rounded"
+            data-testid={`radar-item-${index}`}
           >
             <span className="text-gray-700">{item.subject}</span>
             <span className="font-semibold text-indigo-600">{Math.round(item.value)}</span>

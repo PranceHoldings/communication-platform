@@ -57,7 +57,8 @@
       "titleRequired": "Title is required",
       "categoryRequired": "Category is required",
       "configRequired": "Configuration is required",
-      "invalidJson": "Invalid JSON format"
+      "invalidJson": "Invalid JSON format",
+      "shortSystemPrompt": "系统提示词较短（少于50个字符）。建议添加更多细节以改善AI行为。"
     },
     "success": "Scenario created successfully",
     "error": "Failed to create scenario"

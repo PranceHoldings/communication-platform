@@ -174,7 +174,10 @@
       "authenticationTimeout": "Authentication timeout. Please try again.",
       "processingComplete": "Processing Complete",
       "lowVolumeWarning": "⚠️ Microphone volume is very low. Please speak louder or check your microphone settings.",
-      "audioTooQuiet": "Audio level is too low. Please speak closer to your microphone."
+      "audioTooQuiet": "Audio level is too low. Please speak closer to your microphone.",
+      "partialRecording": "⚠️ Recording Partially Saved",
+      "partialRecordingDescription": "An error occurred during processing. {saved} of {total} chunks were saved successfully.",
+      "aiFallbackUsed": "AI is using a fallback response due to a temporary issue."
     },
     "noSpeech": {
       "guidance": "No speech detected. Please speak louder or move closer to your microphone.",
@@ -205,7 +208,8 @@
     "completed": {
       "title": "Session Completed",
       "duration": "Duration",
-      "messageCount": "{count} messages"
+      "messageCount": "{count} messages",
+      "turnLimitReached": "Conversation completed after {turnCount} turns."
     },
     "info": {
       "scenario": "Scenario",
@@ -247,6 +251,20 @@
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
         "notSupported": "Recording is not supported in your browser"
       }
+    },
+    "validation": {
+      "cannotStart": "Cannot Start Session",
+      "warningsDetected": "Scenario Warnings Detected",
+      "warningsMessage": "The following warnings were detected in your scenario configuration:",
+      "proceedAnyway": "Do you want to proceed anyway?",
+      "sessionCancelled": "Session start cancelled",
+      "titleRequired": "Scenario title is required",
+      "languageRequired": "Scenario language is required",
+      "systemPromptRequired": "System prompt is required",
+      "initialGreetingMissing": "Initial greeting is not set. AI will wait for user to speak first.",
+      "silenceTimeoutTooShort": "Silence timeout is very short. Consider increasing it.",
+      "systemPromptTooLong": "System prompt is very long. This may affect AI response quality.",
+      "systemPromptTooShort": "System prompt is very short. Consider adding more context."
     }
   },
   "errors": {

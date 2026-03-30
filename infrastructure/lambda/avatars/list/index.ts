@@ -2,7 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { successResponse, errorResponse } from '../../shared/utils/response';
-import type { Visibility } from '../../shared/types';
+import type { Visibility, AvatarType, AvatarStyle, AvatarSource } from '../../shared/types';
 
 /**
  * GET /api/v1/avatars
@@ -31,9 +31,9 @@ export const handler: APIGatewayProxyHandler = async event => {
     const queryParams = event.queryStringParameters || {};
     const limit = Math.min(parseInt(queryParams.limit || '20'), 100);
     const offset = parseInt(queryParams.offset || '0');
-    const type = queryParams.type as 'TWO_D' | 'THREE_D' | undefined;
-    const style = queryParams.style as 'ANIME' | 'REALISTIC' | undefined;
-    const source = queryParams.source as 'PRESET' | 'GENERATED' | 'ORG_CUSTOM' | undefined;
+    const type = queryParams.type as AvatarType | undefined;
+    const style = queryParams.style as AvatarStyle | undefined;
+    const source = queryParams.source as AvatarSource | undefined;
     const visibility = queryParams.visibility as Visibility | undefined;
 
     // Build where clause - get avatars from user's org, presets, or public avatars

@@ -44,23 +44,44 @@ export default function SessionDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      // セッション情報取得
+      // セッション情報取得 (avatar and scenario are included in response)
       const sessionData = await getSession(sessionId);
+      console.log('[SessionDetail] Session data loaded:', {
+        id: sessionData.id,
+        status: sessionData.status,
+        hasAvatar: !!sessionData.avatar,
+        hasScenario: !!sessionData.scenario,
+      });
       setSession(sessionData);
 
-      // アバター情報取得
-      const avatarData = await getAvatar(sessionData.avatarId);
-      setAvatar(avatarData);
+      // Use avatar and scenario from session response if available
+      // Otherwise fetch them separately
+      if (sessionData.avatar) {
+        console.log('[SessionDetail] Using avatar from session response');
+        setAvatar(sessionData.avatar as any); // Use any to avoid type mismatch
+      } else if (sessionData.avatarId) {
+        console.log('[SessionDetail] Fetching avatar separately');
+        const avatarData = await getAvatar(sessionData.avatarId);
+        setAvatar(avatarData);
+      }
 
-      // シナリオ情報取得
-      const scenarioData = await getScenario(sessionData.scenarioId);
-      setScenario(scenarioData);
+      if (sessionData.scenario) {
+        console.log('[SessionDetail] Using scenario from session response');
+        setScenario(sessionData.scenario as any); // Use any to avoid type mismatch
+      } else if (sessionData.scenarioId) {
+        console.log('[SessionDetail] Fetching scenario separately');
+        const scenarioData = await getScenario(sessionData.scenarioId);
+        setScenario(scenarioData);
+      }
+
+      console.log('[SessionDetail] Avatar and scenario setup complete');
 
       // 完了したセッションの場合、解析結果を取得
       if (sessionData.status === 'COMPLETED') {
         loadAnalysisData();
       }
     } catch (err) {
+      console.error('[SessionDetail] Error loading session data:', err);
       setError(err instanceof Error ? err.message : t('sessions.detail.notFound'));
     } finally {
       setLoading(false);
@@ -209,6 +230,7 @@ export default function SessionDetailPage() {
               <button
                 onClick={handleTriggerAnalysis}
                 disabled={triggeringAnalysis}
+                data-testid="analysis-trigger-button"
                 className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {triggeringAnalysis ? (
