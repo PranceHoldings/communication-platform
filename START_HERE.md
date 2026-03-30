@@ -11,13 +11,54 @@
 
 ```
 前回の続きから始めます。START_HERE.mdを確認してください。
+今回の最優先タスク: mainブランチへのPR作成とマージ
 ```
 
 ---
 
 ## 🔴 必須手順
 
-### Step 1: 環境検証
+### Step 0: 🎯 最優先タスク - mainブランチへのPR作成とマージ
+
+**前提条件:** ユーザーが事前に `gh auth login` を実行済み
+
+```bash
+# GitHub CLI認証確認
+gh auth status
+
+# 期待結果: "✓ Logged in to github.com as [username]"
+```
+
+**認証が確認できたら、以下を実行:**
+
+```bash
+# PR作成
+gh pr create \
+  --base main \
+  --head dev \
+  --title "feat: merge Phase 1-5 and development improvements (Day 1-38)" \
+  --body-file PR_DESCRIPTION.md
+
+# PR URLが表示されます（例: https://github.com/PranceHoldings/communication-platform/pull/123）
+```
+
+**PR作成後:**
+
+```bash
+# PRのマージ（オプション: レビュー後に実行）
+gh pr merge [PR番号] --merge --delete-branch=false
+
+# devブランチは削除せず、mainブランチにマージ
+# マージ後、mainブランチを最新化
+git checkout main
+git pull origin main
+```
+
+**⚠️ 注意:** PRマージは慎重に。レビューが必要な場合は、Web UIでレビューを依頼してからマージすること。
+
+---
+
+### Step 1: 環境検証（PR作成後に実行）
 
 ```bash
 bash scripts/verify-environment.sh
@@ -41,7 +82,7 @@ git log --oneline -5
 git diff HEAD~1 --name-only
 
 # 期待される最新コミット:
-# "fix(api-gateway): add CORS headers to 401/403 error responses"
+# "docs: update START_HERE.md and prepare PR description for main merge"
 ```
 
 ---
@@ -79,11 +120,13 @@ git diff HEAD~1 --name-only
 
 ## 🎯 次のアクション
 
-### 1. Pull Request作成（mainブランチへのマージ）🔄 進行中
+### 🚨 最優先: Pull Request作成とマージ（次回セッション開始直後）
+
+**状態:** 準備完了 ✅ → ユーザーが `gh auth login` 実行後にPR作成
 
 **マージ対象:**
-- devブランチ → mainブランチ
-- 149コミット
+- `dev` → `main` ブランチ
+- 150コミット（0d8d2d4まで）
 - 669ファイル変更（+121,070 -14,236行）
 
 **主な変更内容:**
@@ -92,18 +135,11 @@ git diff HEAD~1 --name-only
 - Phase 3.1-3.4: Dev/Production環境・環境変数管理
 - Phase 4: ベンチマークシステム
 - Phase 5: ランタイム設定管理
-- Day 37-38: CORS問題解決・検証スクリプト追加
+- Day 37-38: CORS問題解決・検証スクリプト追加・ドキュメント整備
 
-**PR作成方法:**
+**PR説明文:** `PR_DESCRIPTION.md` にすべての詳細を記載済み
 
-```bash
-# GitHub CLIを使用する場合（認証が必要）
-! gh auth login
-gh pr create --base main --head dev --title "feat: merge Phase 1-5 and development improvements" --body-file PR_DESCRIPTION.md
-
-# または GitHub Web UI
-# https://github.com/PranceHoldings/communication-platform/compare/main...dev
-```
+**実行手順は上記「Step 0」を参照**
 
 ### 2. 既存機能改善・最適化
 
