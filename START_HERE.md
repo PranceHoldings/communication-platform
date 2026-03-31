@@ -31,6 +31,8 @@ bash scripts/verify-environment.sh
 cat docs/07-development/KNOWN_ISSUES.md
 ```
 
+**エラーが発生した場合:** [TROUBLESHOOTING.md](docs/07-development/TROUBLESHOOTING.md) を参照
+
 ### Step 3: 最新のコミット確認
 
 ```bash
@@ -115,6 +117,7 @@ git diff HEAD~1 --name-only
 - [CLAUDE.md](CLAUDE.md) - プロジェクト全体概要
 - [CODING_RULES.md](CODING_RULES.md) - コミット前チェックリスト
 - [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) - ドキュメント索引
+- [TROUBLESHOOTING.md](docs/07-development/TROUBLESHOOTING.md) - エラー解決ガイド 🆕
 
 ### Phase関連
 - [SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md) - 全セッション履歴
