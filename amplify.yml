@@ -1,11 +1,14 @@
 version: 1
 applications:
-  - frontend:
+  - appRoot: apps/web
+    frontend:
       phases:
         preBuild:
           commands:
             - echo "Installing monorepo dependencies..."
             - npm install
+            - echo "Generating Prisma Client..."
+            - npm run db:generate
             - echo "Dependencies installed successfully"
         build:
           commands:
@@ -13,12 +16,13 @@ applications:
             - cd apps/web
             - npm run build
       artifacts:
-        baseDirectory: apps/web/.next
+        baseDirectory: apps/web
         files:
           - '**/*'
       cache:
         paths:
           - node_modules/**/*
+          - apps/web/node_modules/**/*
           - apps/web/.next/cache/**/*
     env:
       variables:

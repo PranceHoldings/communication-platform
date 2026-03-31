@@ -8,8 +8,8 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 const nextConfig = {
   reactStrictMode: true,
 
-  // Standalone build for Lambda deployment (SSR enabled)
-  output: 'standalone',
+  // Amplify Hosting deployment (SSR enabled by default)
+  // Note: Remove 'output: standalone' for Amplify - it's only for Lambda
 
   // 実験的機能
   experimental: {
@@ -17,6 +17,9 @@ const nextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+
+  // Transpile packages from monorepo
+  transpilePackages: ['@react-three/drei', 'detect-gpu'],
 
   // 画像最適化
   images: {
