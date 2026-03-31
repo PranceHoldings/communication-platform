@@ -90,15 +90,15 @@ export interface RollbackRuntimeConfigResponse {
  * Get all runtime configurations
  */
 export async function getRuntimeConfigs(category?: string): Promise<GetRuntimeConfigsResponse> {
-  const params = category ? { category } : undefined;
-  return apiClient.get('/admin/runtime-config', { params });
+  const endpoint = category ? `/admin/runtime-config?category=${encodeURIComponent(category)}` : '/admin/runtime-config';
+  return (apiClient.get(endpoint) as any) as GetRuntimeConfigsResponse;
 }
 
 /**
  * Get runtime configuration by key
  */
 export async function getRuntimeConfig(key: string): Promise<GetRuntimeConfigResponse> {
-  return apiClient.get(`/admin/runtime-config/${key}`);
+  return (apiClient.get(`/admin/runtime-config/${key}`) as any) as GetRuntimeConfigResponse;
 }
 
 /**
@@ -108,7 +108,7 @@ export async function updateRuntimeConfig(
   key: string,
   data: UpdateRuntimeConfigRequest
 ): Promise<UpdateRuntimeConfigResponse> {
-  return apiClient.put(`/admin/runtime-config/${key}`, data);
+  return (apiClient.put(`/admin/runtime-config/${key}`, data) as any) as UpdateRuntimeConfigResponse;
 }
 
 /**
@@ -118,7 +118,10 @@ export async function getRuntimeConfigHistory(
   key: string,
   params?: { limit?: number; offset?: number }
 ): Promise<GetRuntimeConfigHistoryResponse> {
-  return apiClient.get(`/admin/runtime-config/${key}/history`, { params });
+  const endpoint = params
+    ? `/admin/runtime-config/${key}/history?limit=${params.limit || 20}&offset=${params.offset || 0}`
+    : `/admin/runtime-config/${key}/history`;
+  return (apiClient.get(endpoint) as any) as GetRuntimeConfigHistoryResponse;
 }
 
 /**
@@ -128,5 +131,5 @@ export async function rollbackRuntimeConfig(
   key: string,
   data: RollbackRuntimeConfigRequest
 ): Promise<RollbackRuntimeConfigResponse> {
-  return apiClient.post(`/admin/runtime-config/${key}/rollback`, data);
+  return (apiClient.post(`/admin/runtime-config/${key}/rollback`, data) as any) as RollbackRuntimeConfigResponse;
 }

@@ -151,7 +151,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     failedChunks: string[];
   }
 
-  const [pendingChunks, setPendingChunks] = useState<Map<string, PendingChunk>>(new Map());
+  const [_pendingChunks, setPendingChunks] = useState<Map<string, PendingChunk>>(new Map());
   const [chunkStats, setChunkStats] = useState<ChunkStats>({
     audioSent: 0,
     audioAcked: 0,
@@ -363,7 +363,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               ...prev,
               {
                 id: `ai-partial-${Date.now()}`,
-                speaker: 'AI',
+                speaker: 'AI' as const,
                 text: message.text,
                 timestamp: message.timestamp,
                 partial: true,
@@ -387,7 +387,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             ...filtered,
             {
               id: `ai-${message.timestamp}`,
-              speaker: 'AI',
+              speaker: 'AI' as const,
               text: message.text,
               timestamp: message.timestamp,
               partial: false,
@@ -793,12 +793,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         ...prev,
         {
           id: `fallback-${Date.now()}`,
-          sessionId: session.id,
           speaker: 'AI' as const,
           text: message.message,
-          timestampStart: message.timestamp,
-          timestampEnd: message.timestamp,
-          confidence: 1.0,
+          timestamp: message.timestamp ?? Date.now(),
+          partial: false,
         },
       ]);
 
@@ -1509,7 +1507,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       // Phase 1.6.1 Day 36: Scenario validation (skip if already confirmed)
       if (!validationConfirmed) {
         console.log('[SessionPlayer] Validating scenario before start...');
-        const validation = validateScenario(scenario);
+        const validation = validateScenario(scenario as any);
 
         if (!validation.isValid) {
           // Validation errors - block session start

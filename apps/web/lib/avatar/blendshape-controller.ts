@@ -164,7 +164,7 @@ export class BlendshapeController {
   /**
    * Update blendshapes (call this in animation loop)
    */
-  public update(deltaTime: number = 0.016): void {
+  public update(_deltaTime: number = 0.016): void {
     if (this.meshes.length === 0) return;
 
     const emotionBlendshapes = EMOTION_BLENDSHAPES[this.currentEmotion];
@@ -174,9 +174,13 @@ export class BlendshapeController {
       if (!mesh.morphTargetDictionary || !mesh.morphTargetInfluences) return;
 
       // Reset all blendshapes to 0 (smooth transition)
-      mesh.morphTargetInfluences.forEach((_, index) => {
-        mesh.morphTargetInfluences![index] *= 1 - this.transitionSpeed;
-      });
+      if (mesh.morphTargetInfluences) {
+        mesh.morphTargetInfluences.forEach((_, index) => {
+          if (mesh.morphTargetInfluences && mesh.morphTargetInfluences[index] !== undefined) {
+            mesh.morphTargetInfluences[index] *= 1 - this.transitionSpeed;
+          }
+        });
+      }
 
       // Apply emotion blendshapes
       Object.entries(emotionBlendshapes).forEach(([targetName, targetValue]) => {
@@ -198,7 +202,7 @@ export class BlendshapeController {
 
     const index = mesh.morphTargetDictionary[targetName];
     if (index !== undefined) {
-      const currentValue = mesh.morphTargetInfluences[index];
+      const currentValue = mesh.morphTargetInfluences[index] ?? 0;
       mesh.morphTargetInfluences[index] = THREE.MathUtils.lerp(
         currentValue,
         targetValue,

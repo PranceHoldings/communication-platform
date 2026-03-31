@@ -334,7 +334,7 @@ export class WebSocketMock {
   /**
    * Wait for toast notification to appear
    */
-  async waitForToast(expectedText?: string, timeout = 5000): Promise<boolean> {
+  async waitForToast(expectedText?: string, _timeout = 5000): Promise<boolean> {
     try {
       // Common toast notification selectors
       const toastSelectors = [

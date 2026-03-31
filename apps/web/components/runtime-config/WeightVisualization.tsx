@@ -33,7 +33,7 @@ export function WeightVisualization({
   // Calculate percentages
   const percentages: Record<string, number> = {};
   weightGroup.forEach((key) => {
-    percentages[key] = sum > 0 ? (weights[key] / sum) * 100 : 0;
+    percentages[key] = sum > 0 ? ((weights[key] ?? 0) / sum) * 100 : 0;
   });
 
   // Color palette
@@ -61,7 +61,7 @@ export function WeightVisualization({
       {/* Progress bar */}
       <div className="h-8 flex rounded-md overflow-hidden">
         {weightGroup.map((key, index) => {
-          const percentage = percentages[key];
+          const percentage = percentages[key] ?? 0;
           if (percentage === 0) return null;
 
           return (
@@ -69,7 +69,7 @@ export function WeightVisualization({
               key={key}
               className={`${colors[index % colors.length]} flex items-center justify-center text-xs text-white font-medium transition-all`}
               style={{ width: `${percentage}%` }}
-              title={`${key}: ${weights[key].toFixed(3)} (${percentage.toFixed(1)}%)`}
+              title={`${key}: ${(weights[key] ?? 0).toFixed(3)} (${percentage.toFixed(1)}%)`}
             >
               {percentage >= 10 && `${percentage.toFixed(0)}%`}
             </div>
@@ -90,7 +90,7 @@ export function WeightVisualization({
             <div className="flex-1 min-w-0">
               <div className="font-mono text-xs truncate">{key}</div>
               <div className="font-mono font-bold">
-                {weights[key].toFixed(3)} ({percentages[key].toFixed(1)}%)
+                {(weights[key] ?? 0).toFixed(3)} ({(percentages[key] ?? 0).toFixed(1)}%)
               </div>
             </div>
           </div>

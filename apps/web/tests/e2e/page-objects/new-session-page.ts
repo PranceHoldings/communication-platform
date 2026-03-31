@@ -230,7 +230,7 @@ export class NewSessionPage {
     // Extract session ID from URL
     const url = this.page.url();
     const match = url.match(/\/dashboard\/sessions\/([^\/]+)/);
-    return match ? match[1] : '';
+    return match ? (match[1] ?? '') : '';
   }
 
   /**

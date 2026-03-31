@@ -8,7 +8,6 @@ import { getRuntimeConfigs, type RuntimeConfig } from '@/lib/api/runtime-config'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Search, Settings, ChevronRight } from 'lucide-react';
@@ -19,7 +18,6 @@ export default function RuntimeConfigPage() {
   const { t } = useI18n();
 
   const [configs, setConfigs] = useState<RuntimeConfig[]>([]);
-  const [groupedConfigs, setGroupedConfigs] = useState<Record<string, RuntimeConfig[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -41,7 +39,6 @@ export default function RuntimeConfigPage() {
         setIsLoading(true);
         const response = await getRuntimeConfigs();
         setConfigs(response.data.configs);
-        setGroupedConfigs(response.data.groupedByCategory);
       } catch (error) {
         console.error('Failed to load runtime configs:', error);
         toast.error('Failed to load configurations');

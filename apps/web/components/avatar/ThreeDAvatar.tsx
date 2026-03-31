@@ -5,6 +5,7 @@ import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
+import type { AvatarEmotion } from '@/lib/avatar/blendshape-controller';
 
 interface Props {
   modelUrl?: string;
@@ -12,7 +13,7 @@ interface Props {
   height?: number;
   onReady?: () => void;
   lipSyncData?: number; // 0.0-1.0, current lip sync intensity
-  emotion?: 'neutral' | 'happy' | 'sad' | 'angry' | 'surprised';
+  emotion?: AvatarEmotion;
   autoRotate?: boolean;
 }
 
@@ -61,7 +62,7 @@ function AvatarModel({ modelUrl, lipSyncData = 0, emotion = 'neutral', onReady }
       const lipSyncTargets = ['mouthOpen', 'jawOpen', 'viseme_aa', 'viseme_O'];
 
       lipSyncTargets.forEach((targetName) => {
-        const index = mesh.morphTargetDictionary[targetName];
+        const index = mesh.morphTargetDictionary?.[targetName];
         if (index !== undefined && mesh.morphTargetInfluences) {
           mesh.morphTargetInfluences[index] = lipSyncData;
         }
@@ -79,25 +80,29 @@ function AvatarModel({ modelUrl, lipSyncData = 0, emotion = 'neutral', onReady }
       const emotionTargets = emotionMap[emotion] || [];
 
       // Reset all emotion blendshapes first
-      Object.keys(mesh.morphTargetDictionary).forEach((targetName) => {
-        const index = mesh.morphTargetDictionary[targetName];
-        if (
-          index !== undefined &&
-          mesh.morphTargetInfluences &&
-          !lipSyncTargets.includes(targetName)
-        ) {
-          // Smooth transition to 0
-          mesh.morphTargetInfluences[index] *= 0.95;
-        }
-      });
+      if (mesh.morphTargetDictionary) {
+        Object.keys(mesh.morphTargetDictionary).forEach((targetName) => {
+          const index = mesh.morphTargetDictionary?.[targetName];
+          if (
+            index !== undefined &&
+            mesh.morphTargetInfluences &&
+            !lipSyncTargets.includes(targetName)
+          ) {
+            // Smooth transition to 0
+            if (mesh.morphTargetInfluences[index] !== undefined) {
+              mesh.morphTargetInfluences[index] *= 0.95;
+            }
+          }
+        });
+      }
 
       // Apply current emotion
       emotionTargets.forEach((targetName) => {
-        const index = mesh.morphTargetDictionary[targetName];
+        const index = mesh.morphTargetDictionary?.[targetName];
         if (index !== undefined && mesh.morphTargetInfluences) {
           // Smooth transition to target value
           const targetValue = 0.8;
-          const currentValue = mesh.morphTargetInfluences[index];
+          const currentValue = mesh.morphTargetInfluences[index] ?? 0;
           mesh.morphTargetInfluences[index] = THREE.MathUtils.lerp(
             currentValue,
             targetValue,
@@ -214,7 +219,7 @@ export function ThreeDAvatar({
       <Canvas
         style={{ background: '#1a1a1a' }}
         gl={{ antialias: true, alpha: true }}
-        onError={handleError}
+        onError={handleError as any}
       >
         <PerspectiveCamera makeDefault position={[0, 1.6, 2]} fov={50} />
 

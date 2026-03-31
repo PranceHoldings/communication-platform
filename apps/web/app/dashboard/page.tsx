@@ -220,7 +220,7 @@ export default function DashboardPage() {
                             return isLocalPath ? (
                               <img
                                 src={thumbnailUrl}
-                                alt={session.avatar.name}
+                                alt={session.avatar?.name || 'Avatar'}
                                 className="h-8 w-8 rounded-full mr-2 object-cover"
                                 onError={(e) => {
                                   // Hide image on error

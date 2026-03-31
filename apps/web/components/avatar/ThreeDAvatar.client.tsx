@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import type { ComponentType } from 'react';
+import type { AvatarEmotion } from '@/lib/avatar/blendshape-controller';
 
 interface ThreeDAvatarProps {
   modelUrl?: string;
@@ -9,7 +10,7 @@ interface ThreeDAvatarProps {
   height?: number;
   onReady?: () => void;
   lipSyncData?: number;
-  emotion?: 'neutral' | 'happy' | 'sad' | 'angry' | 'surprised';
+  emotion?: AvatarEmotion;
   autoRotate?: boolean;
 }
 

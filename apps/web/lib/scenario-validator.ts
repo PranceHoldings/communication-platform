@@ -20,8 +20,8 @@ const VALID_LANGUAGES = [
  * @returns ScenarioValidation - 検証結果（エラー・警告）
  */
 export function validateScenario(scenario: Scenario): ScenarioValidation {
-  const errors: ValidationError[] = [];
-  const warnings: ValidationWarning[] = [];
+  const errors: any[] = [];
+  const warnings: any[] = [];
 
   // ========================================
   // 必須フィールドチェック
