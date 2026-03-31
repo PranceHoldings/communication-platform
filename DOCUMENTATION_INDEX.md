@@ -1,6 +1,6 @@
 # Prance Communication Platform - ドキュメント索引
 
-**最終更新:** 2026-03-22
+**最終更新:** 2026-03-31
 **ステータス:** ✅ Phase 1-5 全完了・ドキュメント整理完了
 
 ---
@@ -26,6 +26,10 @@
 ### 3. docs/07-development/KNOWN_ISSUES.md
 **役割:** 現在発生中の問題と回避策
 **内容:** Critical/Warning/Info Issues、解決済み問題の参考記録
+
+### 4. docs/07-development/TROUBLESHOOTING.md
+**役割:** 一般的なエラーと解決策の完全ガイド
+**内容:** データベースクエリ、AWS Lambda呼び出し、環境変数、Prisma、Git等のエラー対応
 
 ---
 
@@ -161,6 +165,7 @@
 ### docs/07-development/ - 開発ガイド
 - **SESSION_RESTART_PROTOCOL.md** - セッション再開プロトコル（🔴必読）
 - **KNOWN_ISSUES.md** - 既知の問題（🔴必読）
+- **TROUBLESHOOTING.md** - トラブルシューティングガイド（🔴エラー対応）
 - **DEVELOPMENT_WORKFLOW.md** - 開発ワークフロー
 - **DATABASE_MIGRATION_CHECKLIST.md** - DBマイグレーションチェックリスト
 - **LAMBDA_VERSION_MANAGEMENT.md** - Lambdaバージョン管理
