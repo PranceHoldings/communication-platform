@@ -3,8 +3,8 @@
 **親ドキュメント:** [../CLAUDE.md](../CLAUDE.md)
 **関連ドキュメント:** [../infrastructure/CLAUDE.md](../infrastructure/CLAUDE.md)
 
-**バージョン:** 1.0
-**最終更新:** 2026-03-15
+**バージョン:** 1.1
+**最終更新:** 2026-03-31
 
 ---
 
@@ -321,6 +321,117 @@ bash clean-deploy.sh dev
 - 時間がかかる（10-20分）
 - 依存関係が破損している場合のみ使用
 - 通常は `deploy.sh` を使用すること
+
+---
+
+### クリーンアップスクリプト
+
+#### clean-space-files-and-dirs.sh
+
+**用途:** ファイル名・ディレクトリ名に空白を含むアイテムを削除
+
+**背景:**
+- macOS Finderが自動生成するコピーファイル（`file 2.sh`, `dir 2/` など）を検出・削除
+- ビルドエラーの原因となるため、定期的な実行を推奨
+- 削除失敗時は自動的に `-broken-<timestamp>` に名称変更
+
+**実行:**
+
+```bash
+# ドライラン（削除せずに確認のみ）
+bash scripts/clean-space-files-and-dirs.sh --dry-run
+
+# 通常実行（確認プロンプト付き）
+bash scripts/clean-space-files-and-dirs.sh
+
+# 確認なしで実行
+bash scripts/clean-space-files-and-dirs.sh --force
+
+# 全プロジェクトをスキャン
+bash scripts/clean-space-files-and-dirs.sh --all
+
+# 削除せず名称変更のみ
+bash scripts/clean-space-files-and-dirs.sh --rename-only
+```
+
+**処理フロー:**
+1. 空白を含むファイル・ディレクトリを検出
+2. 削除試行（通常 → sudo）
+3. 削除失敗時は `-broken-<timestamp>` に自動名称変更
+4. サマリーレポート表示
+
+**除外パターン:**
+- `node_modules/`
+- `.git/`
+- `*.broken-*` (既に名称変更済みのアイテム)
+
+**デフォルトスキャンパス:**
+- `apps/`, `infrastructure/`, `packages/`, `scripts/`, `docs/`
+
+**期待される出力:**
+
+```
+Files found:           98
+Files cleaned:         98 ✅
+Files failed:          0
+
+Directories found:     42
+Directories cleaned:   42 ✅
+Directories failed:    0
+
+✅ All space-containing items cleaned successfully
+```
+
+#### clean-space-directories.sh
+
+**用途:** ディレクトリ名に空白を含むディレクトリを削除（ディレクトリのみ）
+
+**対象パス:**
+- `apps/web/.next`
+- `infrastructure/cdk.out`
+- `apps/web/.turbo`
+
+**実行:**
+
+```bash
+bash scripts/clean-space-directories.sh
+```
+
+**⚠️ 注意:**
+- `clean-space-files-and-dirs.sh` の方が機能が豊富（ファイル + ディレクトリ対応）
+- 新規クリーンアップには `clean-space-files-and-dirs.sh` の使用を推奨
+
+#### cleanup-broken-files.sh
+
+**用途:** `.broken-*` パターンでリネームされたディレクトリを削除
+
+**実行:**
+
+```bash
+# 7日以上前のバックアップのみ削除
+bash scripts/cleanup-broken-files.sh
+
+# 全バックアップを削除
+bash scripts/cleanup-broken-files.sh --all
+
+# 確認なしで実行
+bash scripts/cleanup-broken-files.sh --force
+```
+
+**削除対象パターン:**
+- `.broken-*`
+- `node_modules.broken*`
+- `.next.broken-*`, `.next.old-*`
+- `cdk.out.old-*`, `cdk.out.broken-*`
+
+**期待される出力:**
+
+```
+✓ 成功: 5
+✗ 失敗: 0
+
+✅ クリーンアップ完了
+```
 
 ---
 
