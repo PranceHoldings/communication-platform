@@ -1390,6 +1390,9 @@ export class ApiLambdaStack extends cdk.Stack {
         VIDEO_RESOLUTION: process.env.VIDEO_RESOLUTION!,
         AUDIO_CONTENT_TYPE: process.env.AUDIO_CONTENT_TYPE!,
         VIDEO_CONTENT_TYPE: process.env.VIDEO_CONTENT_TYPE!,
+        // Scenario Validation Configuration
+        MIN_PROMPT_LENGTH: process.env.MIN_PROMPT_LENGTH!,
+        MAX_PROMPT_LENGTH: process.env.MAX_PROMPT_LENGTH!,
         // Analysis Configuration
         ANALYSIS_FUNCTION_NAME: `prance-sessions-analysis-${props.environment}`,
         ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS!,

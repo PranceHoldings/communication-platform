@@ -7,6 +7,12 @@
  * - 2 Scenarios (Interview Practice, Customer Support)
  */
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load environment variables from root .env.local
+config({ path: resolve(__dirname, '../../../.env.local') });
+
 import { PrismaClient } from '../../../packages/database/node_modules/.prisma/client/index.js';
 import bcrypt from 'bcryptjs';
 
@@ -100,6 +106,13 @@ async function main() {
       visibility: 'PUBLIC',
       orgId: user.orgId,
       userId: null, // System preset
+      initialGreeting: 'Hello! I\'m Emma, and I\'ll be conducting your technical interview today. Let\'s start by having you tell me a bit about your software engineering experience.',
+      silenceTimeout: 10,
+      silencePromptTimeout: 15,
+      enableSilencePrompt: true,
+      silenceThreshold: 0.01,
+      minSilenceDuration: 1500,
+      showSilenceTimer: true,
       configJson: {
         difficulty: 'INTERMEDIATE',
         estimatedDuration: 1800, // 30 minutes
@@ -134,6 +147,13 @@ Start by introducing yourself and asking about the candidate's experience.`,
       visibility: 'ORGANIZATION',
       orgId: user.orgId,
       userId: user.id,
+      initialGreeting: 'Hi, this is Yuki from customer support. I understand you\'re having an issue with your product. Could you please describe what\'s happening?',
+      silenceTimeout: 8,
+      silencePromptTimeout: 12,
+      enableSilencePrompt: true,
+      silenceThreshold: 0.01,
+      minSilenceDuration: 1500,
+      showSilenceTimer: true,
       configJson: {
         difficulty: 'BEGINNER',
         estimatedDuration: 900, // 15 minutes
