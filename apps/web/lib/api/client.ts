@@ -60,6 +60,7 @@ class ApiClient {
           url,
           status: response.status,
           ok: response.ok,
+          headers: Object.fromEntries(response.headers.entries()),
         });
       }
 
