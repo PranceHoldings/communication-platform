@@ -1,9 +1,9 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls as ThreeOrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as THREE from 'three';
 import type { AvatarEmotion } from '@/lib/avatar/blendshape-controller';
 
@@ -22,6 +22,35 @@ interface AvatarModelProps {
   lipSyncData?: number;
   emotion?: string;
   onReady?: () => void;
+}
+
+/**
+ * CameraControls - OrbitControls implementation using three.js directly
+ */
+function CameraControls({ autoRotate = false }: { autoRotate?: boolean }) {
+  const { camera, gl } = useThree();
+  const controlsRef = useRef<ThreeOrbitControls | null>(null);
+
+  useEffect(() => {
+    const controls = new ThreeOrbitControls(camera, gl.domElement);
+    controls.enableZoom = false;
+    controls.enablePan = false;
+    controls.autoRotate = autoRotate;
+    controls.autoRotateSpeed = 1;
+    controls.minPolarAngle = Math.PI / 3;
+    controls.maxPolarAngle = Math.PI / 2;
+    controlsRef.current = controls;
+
+    return () => {
+      controls.dispose();
+    };
+  }, [camera, gl, autoRotate]);
+
+  useFrame(() => {
+    controlsRef.current?.update();
+  });
+
+  return null;
 }
 
 /**
@@ -219,10 +248,9 @@ export function ThreeDAvatar({
       <Canvas
         style={{ background: '#1a1a1a' }}
         gl={{ antialias: true, alpha: true }}
+        camera={{ position: [0, 1.6, 2], fov: 50 }}
         onError={handleError as any}
       >
-        <PerspectiveCamera makeDefault position={[0, 1.6, 2]} fov={50} />
-
         {/* Lighting */}
         <ambientLight intensity={0.5} />
         <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
@@ -237,14 +265,7 @@ export function ThreeDAvatar({
         />
 
         {/* Camera Controls */}
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          autoRotate={autoRotate}
-          autoRotateSpeed={1}
-          minPolarAngle={Math.PI / 3}
-          maxPolarAngle={Math.PI / 2}
-        />
+        <CameraControls autoRotate={autoRotate} />
       </Canvas>
     </div>
   );

@@ -30,6 +30,7 @@
     "validate:api-contracts": "bash scripts/validate-api-contracts.sh",
     "validate:api-responses": "bash scripts/validate-lambda-responses.sh",
     "validate:api-types": "bash scripts/validate-api-type-usage.sh",
+    "validate:workspace-deps": "bash scripts/validate-workspace-dependencies.sh",
     "test:silence-prompt-timeout": "bash scripts/test-silence-prompt-timeout.sh",
     "clean": "turbo run clean && rm -rf node_modules",
     "clean:broken": "bash scripts/cleanup-broken-files.sh",
@@ -66,7 +67,7 @@
     "lambda:deploy-manual": "bash scripts/deploy-lambda-websocket-manual.sh",
     "deploy:lambda": "cd infrastructure && npm run deploy:lambda",
     "build:deploy": "bash scripts/build-and-deploy.sh",
-    "pre-commit": "npm run i18n:validate && npm run lambda:validate && npm run validate:api-responses && npm run consistency:validate && npm run lint && npm run typecheck",
+    "pre-commit": "npm run validate:workspace-deps && npm run i18n:validate && npm run lambda:validate && npm run validate:api-responses && npm run consistency:validate && npm run lint && npm run typecheck",
     "env:validate": "bash scripts/validate-env.sh",
     "env:consistency": "bash scripts/validate-env-consistency.sh",
     "perf:test": "npx tsx scripts/performance-test.ts",
@@ -95,12 +96,6 @@
     "npm": ">=10.0.0"
   },
   "dependencies": {
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2",
-    "@prisma/client": "^5.22.0",
-    "@reduxjs/toolkit": "^2.11.2",
-    "immer": "^10.2.0",
-    "ws": "^8.19.0"
+    "@prisma/client": "^5.22.0"
   }
 }

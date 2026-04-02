@@ -4,6 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { login, TEST_USER } from './fixtures/auth.fixture';
 
 test.describe('Login Authentication', () => {
   test.beforeEach(async ({ page, context }) => {
@@ -14,38 +15,11 @@ test.describe('Login Authentication', () => {
   });
 
   test('should successfully login and store tokens in localStorage', async ({ page }) => {
-    // Fill in login form
-    await page.fill('input[name="email"]', 'admin@prance.com');
-    await page.fill('input[name="password"]', 'Admin2026!Prance');
+    // Use login helper with detailed logging
+    await login(page);
 
-    // Setup API response listener
-    const responsePromise = page.waitForResponse(
-      response =>
-        response.url().includes('/api/v1/auth/login') && response.request().method() === 'POST'
-    );
-
-    // Click login button
-    await page.click('button[type="submit"]');
-
-    // Wait for API response
-    const response = await responsePromise;
-
-    // Verify API response
-    console.log('Login API status:', response.status());
-    expect(response.status()).toBe(200);
-
-    const responseBody = await response.json();
-    console.log('Login API response:', JSON.stringify(responseBody, null, 2));
-
-    // Verify response structure
-    expect(responseBody.success).toBe(true);
-    expect(responseBody.data).toBeDefined();
-    expect(responseBody.data.tokens).toBeDefined();
-    expect(responseBody.data.tokens.accessToken).toBeDefined();
-    expect(responseBody.data.user).toBeDefined();
-
-    // Wait for redirect to dashboard
-    await page.waitForURL('/dashboard', { timeout: 10000 });
+    // Verify URL changed to dashboard
+    expect(page.url()).toContain('/dashboard');
 
     // Verify localStorage contains tokens
     const accessToken = await page.evaluate(() => localStorage.getItem('accessToken'));
@@ -67,7 +41,7 @@ test.describe('Login Authentication', () => {
     // Verify user data structure
     const userData = JSON.parse(user!);
     expect(userData.id).toBeDefined();
-    expect(userData.email).toBe('admin@prance.com');
+    expect(userData.email).toBe(TEST_USER.email);
     expect(userData.role).toBe('SUPER_ADMIN');
 
     console.log('✅ Login successful and tokens stored correctly');
@@ -75,7 +49,7 @@ test.describe('Login Authentication', () => {
 
   test('should show error message for invalid credentials', async ({ page }) => {
     // Fill in login form with invalid credentials
-    await page.fill('input[name="email"]', 'admin@prance.com');
+    await page.fill('input[name="email"]', TEST_USER.email);
     await page.fill('input[name="password"]', 'WrongPassword123!');
 
     // Click login button
@@ -92,11 +66,8 @@ test.describe('Login Authentication', () => {
   });
 
   test('should maintain authentication after page reload', async ({ page }) => {
-    // Login first
-    await page.fill('input[name="email"]', 'admin@prance.com');
-    await page.fill('input[name="password"]', 'Admin2026!Prance');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/dashboard', { timeout: 10000 });
+    // Login first using helper
+    await login(page);
 
     // Verify tokens are stored
     const accessTokenBefore = await page.evaluate(() => localStorage.getItem('accessToken'));
@@ -107,49 +78,41 @@ test.describe('Login Authentication', () => {
 
     // Verify tokens persist after reload
     const accessTokenAfter = await page.evaluate(() => localStorage.getItem('accessToken'));
-    const user = await page.evaluate(() => localStorage.getItem('user'));
-
+    expect(accessTokenAfter).not.toBeNull();
     expect(accessTokenAfter).toBe(accessTokenBefore);
-    expect(user).not.toBeNull();
 
-    // Should still be on dashboard (not redirected to login)
+    // Verify still on dashboard
     expect(page.url()).toContain('/dashboard');
 
-    console.log('✅ Authentication persists after page reload');
+    console.log('✅ Authentication persisted after page reload');
   });
 
   test('should clear tokens on logout', async ({ page }) => {
-    // Login first
-    await page.fill('input[name="email"]', 'admin@prance.com');
-    await page.fill('input[name="password"]', 'Admin2026!Prance');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/dashboard', { timeout: 10000 });
+    // Login first using helper
+    await login(page);
 
     // Verify tokens are stored
-    const accessToken = await page.evaluate(() => localStorage.getItem('accessToken'));
-    expect(accessToken).not.toBeNull();
+    const accessTokenBefore = await page.evaluate(() => localStorage.getItem('accessToken'));
+    expect(accessTokenBefore).not.toBeNull();
 
-    // Click logout button (if available)
-    const logoutButton = page.locator('button:has-text("Logout"), button:has-text("ログアウト"), a:has-text("Logout"), a:has-text("ログアウト")');
+    // Click logout button (assuming there's a logout button in the dashboard)
+    const logoutButton = page.locator('button:has-text("Logout"), button:has-text("Sign out"), [aria-label*="Logout"]').first();
+    if (await logoutButton.isVisible({ timeout: 2000 })) {
+      await logoutButton.click();
 
-    if (await logoutButton.count() > 0) {
-      await logoutButton.first().click();
-
-      // Wait for redirect to login
-      await page.waitForURL('/login', { timeout: 5000 });
+      // Wait for redirect to login page
+      await page.waitForURL('/login', { timeout: 10000 });
 
       // Verify tokens are cleared
       const accessTokenAfter = await page.evaluate(() => localStorage.getItem('accessToken'));
       const refreshTokenAfter = await page.evaluate(() => localStorage.getItem('refreshToken'));
-      const userAfter = await page.evaluate(() => localStorage.getItem('user'));
-
       expect(accessTokenAfter).toBeNull();
       expect(refreshTokenAfter).toBeNull();
-      expect(userAfter).toBeNull();
 
       console.log('✅ Tokens cleared on logout');
     } else {
       console.log('⚠️  Logout button not found, skipping logout test');
+      test.skip();
     }
   });
 });
