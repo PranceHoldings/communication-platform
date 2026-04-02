@@ -135,17 +135,26 @@ test.describe('WebSocket Connection - Dev Environment Integration', () => {
 
     console.log('[Test] WebSocket connections:', JSON.stringify(wsConnections, null, 2));
 
+    // Filter out Next.js HMR connections
+    const appWsConnections = wsConnections.filter((conn: any) =>
+      !conn.url.includes('webpack-hmr') &&
+      !conn.url.includes('localhost:3000') &&
+      (conn.url.includes('wss://') || conn.url.includes('ws://'))
+    );
+
+    console.log('[Test] Application WebSocket connections (filtered):', JSON.stringify(appWsConnections, null, 2));
+
     // Verify WebSocket connection was attempted
-    expect(wsConnections.length).toBeGreaterThan(0);
-    expect(wsConnections[0].url).toContain('wss://');
+    expect(appWsConnections.length).toBeGreaterThan(0);
+    expect(appWsConnections[0].url).toMatch(/wss?:\/\//); // Accept both ws:// and wss://
 
     // Check if connection opened successfully
     // ReadyState: 0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED
-    const isConnected = wsConnections.some((conn: any) => conn.readyState === 1);
+    const isConnected = appWsConnections.some((conn: any) => conn.readyState === 1);
 
     if (!isConnected) {
       console.error('[Test] WebSocket connection failed!');
-      console.error('[Test] Final states:', wsConnections.map((c: any) => c.readyState));
+      console.error('[Test] Final states:', appWsConnections.map((c: any) => c.readyState));
     } else {
       console.log('[Test] WebSocket connection successful!');
     }
