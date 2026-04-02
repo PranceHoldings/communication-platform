@@ -145,10 +145,11 @@ npm run test:e2e
 5. **Three.js ReactCurrentOwner** - @react-three/fiber 9.5.0で完全解決
 6. **ログアウトボタンE2E** - aria-label追加で検出可能に
 7. **Dashboard API調査** - Backend正常、Browser fetch問題特定
+8. **Stage 2 E2E WebSocket greeting** - Page object selector修正でAI/USER両メッセージ検出可能に ✅
 
 **残課題:**
-- ⚠️ Dashboard API fetch (TypeError: Failed to fetch) - React Query移行推奨
-- ⚠️ Stage 2-5 E2Eテスト - Backend API起動が必要（46テスト）
+- ⚠️ Dashboard API fetch (TypeError: Failed to fetch) - React Query移行完了、動作検証が必要
+- ⚠️ Stage 2-5 E2Eテスト - Backend API起動が必要（残りのテスト）
 
 ### 過去の達成 (Day 41 - 2026-03-31)
 
