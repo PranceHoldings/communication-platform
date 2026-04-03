@@ -328,6 +328,8 @@ bash clean-deploy.sh dev
 
 #### clean-space-files-and-dirs.sh
 
+**バージョン:** 2.0 (2026-04-03改善版)
+
 **用途:** ファイル名・ディレクトリ名に空白を含むアイテムを削除
 
 **背景:**
@@ -335,13 +337,25 @@ bash clean-deploy.sh dev
 - ビルドエラーの原因となるため、定期的な実行を推奨
 - 削除失敗時は自動的に `-broken-<timestamp>` に名称変更
 
+**v2.0の改善点:**
+- ✅ `.broken-*` ディレクトリ内部もスキャン対象に（従来は除外）
+- ✅ `find -depth` で深くネストしたディレクトリから削除
+- ✅ 4段階（ファイル）/5段階（ディレクトリ）の削除戦略
+  - Strategy 1: 通常削除 (`rm -rf`)
+  - Strategy 2: sudo削除 (`sudo rm -rf`)
+  - Strategy 3: パーミッション変更後削除 (`chmod 777 + rm`)
+  - Strategy 4: 個別削除 (`find -delete`, ディレクトリのみ)
+  - Strategy 5: リネームフォールバック (`.broken-*`)
+- ✅ 削除失敗ログを記録 (`/tmp/failed-deletions-*.log`)
+- ✅ 失敗時のユーザーガイダンス改善
+
 **実行:**
 
 ```bash
 # ドライラン（削除せずに確認のみ）
 bash scripts/clean-space-files-and-dirs.sh --dry-run
 
-# 通常実行（確認プロンプト付き）
+# 通常実行（確認プロンプト付き、.broken-* 含む）
 bash scripts/clean-space-files-and-dirs.sh
 
 # 確認なしで実行
@@ -352,18 +366,22 @@ bash scripts/clean-space-files-and-dirs.sh --all
 
 # 削除せず名称変更のみ
 bash scripts/clean-space-files-and-dirs.sh --rename-only
+
+# .broken-* を除外（v1.0互換モード）
+bash scripts/clean-space-files-and-dirs.sh --exclude-broken
 ```
 
 **処理フロー:**
-1. 空白を含むファイル・ディレクトリを検出
-2. 削除試行（通常 → sudo）
+1. 空白を含むファイル・ディレクトリを検出（深い階層から）
+2. 削除試行（4-5段階の戦略）
 3. 削除失敗時は `-broken-<timestamp>` に自動名称変更
-4. サマリーレポート表示
+4. 失敗したアイテムを `/tmp/failed-deletions-*.log` に記録
+5. サマリーレポート＋対処方法を表示
 
 **除外パターン:**
 - `node_modules/`
 - `.git/`
-- `*.broken-*` (既に名称変更済みのアイテム)
+- `*.broken-*` (オプション: `--exclude-broken` で除外可能)
 
 **デフォルトスキャンパス:**
 - `apps/`, `infrastructure/`, `packages/`, `scripts/`, `docs/`
@@ -403,7 +421,20 @@ bash scripts/clean-space-directories.sh
 
 #### cleanup-broken-files.sh
 
+**バージョン:** 2.0 (2026-04-03改善版)
+
 **用途:** `.broken-*` パターンでリネームされたディレクトリを削除
+
+**v2.0の改善点:**
+- ✅ 5段階の強化された削除戦略
+  - Strategy 1: 通常削除 (`rm -rf`)
+  - Strategy 2: sudo削除 (`sudo rm -rf`)
+  - Strategy 3: アグレッシブモード（空白含むファイル先削除）
+  - Strategy 4: パーミッション変更後削除 (`chmod 777 + rm`)
+  - Strategy 5: 個別削除 (`find -delete`)
+- ✅ アグレッシブモード追加（`--aggressive`）
+- ✅ 削除失敗ログを記録 (`/tmp/cleanup-failed-*.log`)
+- ✅ 失敗時の詳細なガイダンス
 
 **実行:**
 
@@ -416,7 +447,18 @@ bash scripts/cleanup-broken-files.sh --all
 
 # 確認なしで実行
 bash scripts/cleanup-broken-files.sh --force
+
+# アグレッシブモード（.broken-* 内の空白含むファイルも削除）
+bash scripts/cleanup-broken-files.sh --all --aggressive
+
+# フルパワーモード（推奨）
+bash scripts/cleanup-broken-files.sh --all --aggressive --force
 ```
+
+**アグレッシブモードとは:**
+- `.broken-*` ディレクトリ内の空白を含むファイル・ディレクトリを先に削除
+- 今回のような「`dir 2/subdir 2/`」パターンに有効
+- 削除成功率が向上
 
 **削除対象パターン:**
 - `.broken-*`
@@ -431,6 +473,20 @@ bash scripts/cleanup-broken-files.sh --force
 ✗ 失敗: 0
 
 ✅ クリーンアップ完了
+```
+
+**失敗時の出力:**
+
+```
+✗ 失敗: 2
+
+失敗したアイテムのログ:
+  /tmp/cleanup-failed-20260403-143000.log
+
+推奨される対処方法:
+  1. アグレッシブモードで再試行
+  2. プロセスを確認・終了
+  3. システム再起動後に再試行
 ```
 
 ---

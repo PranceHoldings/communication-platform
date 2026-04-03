@@ -4,11 +4,19 @@
 # Prance Communication Platform - 破損ファイルクリーンアップスクリプト
 # =============================================================================
 # 用途: 削除できなかった破損ファイル・バックアップディレクトリの強制削除
-# 実行方法: ./scripts/cleanup-broken-files.sh [--all] [--force]
+# 実行方法: ./scripts/cleanup-broken-files.sh [--all] [--force] [--aggressive]
+#
+# Version: 2.0 (2026-04-03)
+# Improvements:
+#   - Enhanced 5-stage deletion strategy (same as clean-space-files-and-dirs.sh)
+#   - Aggressive mode with space-containing file cleanup inside .broken-*
+#   - Failure logging to /tmp/cleanup-failed-*.log
+#   - Better error reporting and user guidance
 #
 # オプション:
-#   --all    : 全てのバックアップを削除（日数に関わらず）
-#   --force  : 確認なしで削除
+#   --all         : 全てのバックアップを削除（日数に関わらず）
+#   --force       : 確認なしで削除
+#   --aggressive  : .broken-* 内の空白を含むファイルも削除してから削除試行
 # =============================================================================
 
 set -e
@@ -23,6 +31,7 @@ NC='\033[0m'
 # オプション解析
 DELETE_ALL=false
 FORCE=false
+AGGRESSIVE=false
 
 for arg in "$@"; do
   case $arg in
@@ -34,8 +43,15 @@ for arg in "$@"; do
       FORCE=true
       shift
       ;;
+    --aggressive)
+      AGGRESSIVE=true
+      shift
+      ;;
   esac
 done
+
+# Failure log file
+FAILURE_LOG="/tmp/cleanup-failed-$(date +%Y%m%d-%H%M%S).log"
 
 # ヘルパー関数
 log_info() {
@@ -207,12 +223,40 @@ for dir in "${DIRS_TO_DELETE[@]}"; do
     continue
   fi
 
-  # Strategy 3: 個別ファイル削除
-  log_warning "  sudo削除失敗、個別ファイル削除を試行..."
+  # Strategy 3: Aggressive mode - 空白を含むファイル・ディレクトリを先に削除
+  if [ "$AGGRESSIVE" = true ] && [ -d "$dir" ]; then
+    log_warning "  アグレッシブモード: 空白を含むファイルを先に削除..."
+
+    # Find and delete files with spaces from deepest level
+    find "$dir" -depth -type f -name "* *" -exec sudo rm -f {} \; 2>/dev/null || true
+
+    # Find and delete directories with spaces from deepest level
+    find "$dir" -depth -type d -name "* *" -exec sudo rmdir {} \; 2>/dev/null || true
+
+    # Try again after removing space-containing items
+    if sudo rm -rf "$dir" 2>/dev/null; then
+      log_success "  ✓ アグレッシブ削除成功"
+      ((SUCCESS_COUNT++))
+      continue
+    fi
+  fi
+
+  # Strategy 4: chmod + rm (パーミッション変更後削除)
+  log_warning "  パーミッション変更後に削除を試行..."
+  if [ -d "$dir" ]; then
+    if sudo chmod -R 777 "$dir" 2>/dev/null && sudo rm -rf "$dir" 2>/dev/null; then
+      log_success "  ✓ chmod+rm削除成功"
+      ((SUCCESS_COUNT++))
+      continue
+    fi
+  fi
+
+  # Strategy 5: 個別ファイル削除（最深部から）
+  log_warning "  個別ファイル削除を試行..."
 
   if [ -d "$dir" ]; then
     # ディレクトリ内のファイルを個別に削除
-    find "$dir" -type f -exec sudo rm -f {} \; 2>/dev/null || true
+    find "$dir" -depth -type f -exec sudo rm -f {} \; 2>/dev/null || true
 
     # 空ディレクトリを削除
     find "$dir" -depth -type d -exec sudo rmdir {} \; 2>/dev/null || true
@@ -227,6 +271,7 @@ for dir in "${DIRS_TO_DELETE[@]}"; do
 
   # すべて失敗
   log_error "  ✗ 削除失敗"
+  echo "$dir" >> "$FAILURE_LOG"
   ((FAILED_COUNT++))
   FAILED_DIRS+=("$dir")
 done
@@ -248,11 +293,24 @@ if [ ${#FAILED_DIRS[@]} -gt 0 ]; then
   done
 
   echo ""
-  log_info "手動削除の方法:"
-  echo "  1. プロセスを確認: lsof | grep node_modules"
-  echo "  2. プロセスを終了: pkill -f 'node\|npm'"
-  echo "  3. 再試行: sudo rm -rf <ディレクトリ>"
-  echo "  4. または再起動後に削除"
+  log_warning "失敗したアイテムのログ:"
+  echo "  ${FAILURE_LOG}"
+  echo ""
+  log_info "推奨される対処方法:"
+  echo "  1. アグレッシブモードで再試行:"
+  echo "     ./scripts/cleanup-broken-files.sh --all --aggressive"
+  echo ""
+  echo "  2. プロセスを確認・終了:"
+  echo "     lsof | grep node_modules"
+  echo "     pkill -f 'node\\|npm'"
+  echo ""
+  echo "  3. システム再起動後に再試行"
+  echo ""
+  echo "  4. 手動削除:"
+  echo "     sudo rm -rf <ディレクトリ>"
+  echo ""
+  log_info "注意: 削除できなかったディレクトリは .broken-* パターンなので"
+  echo "       ビルドやデプロイには影響しません。"
 fi
 
 if [ "$SUCCESS_COUNT" -gt 0 ]; then
@@ -260,4 +318,9 @@ if [ "$SUCCESS_COUNT" -gt 0 ]; then
 
   # ディスク容量解放の確認
   log_info "ディスク使用量を確認: df -h"
+
+  # Clean up empty failure log
+  if [ "$FAILED_COUNT" -eq 0 ] && [ -f "$FAILURE_LOG" ]; then
+    rm -f "$FAILURE_LOG"
+  fi
 fi
