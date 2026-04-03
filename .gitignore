@@ -35,6 +35,13 @@ infrastructure/deploy*.log
 # Build backups
 .next.backup-*
 .next.old-*
+.next-archive/
+
+# Broken/archived directories (containing files with spaces)
+*.broken-*
+node_modules.broken*
+cdk.out.broken-*
+dist.broken-*
 
 # TypeScript build info
 *.tsbuildinfo
