@@ -137,5 +137,10 @@
     "loadFailed": "アバターの読み込みに失敗しました",
     "loadListFailed": "アバター一覧の読み込みに失敗しました",
     "genericError": "エラーが発生しました"
+  },
+  "fallback": {
+    "title": "アバター読み込みエラー",
+    "message": "アバターを読み込めません。もう一度お試しください。",
+    "errorDetails": "エラー詳細"
   }
 }
