@@ -1353,7 +1353,6 @@ export class ApiLambdaStack extends cdk.Stack {
       description: 'WebSocket $default message handler (v2 - FIXED: schema.prisma in .prisma/client/)',
       entry: path.join(__dirname, '../lambda/websocket/default/index.ts'),
       handler: 'handler',
-      depsLockFilePath: path.join(__dirname, '../lambda/websocket/default/package-lock.json'),
       environment: {
         ENVIRONMENT: props.environment,
         LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
