@@ -19,14 +19,9 @@
 #   --aggressive  : .broken-* 内の空白を含むファイルも削除してから削除試行
 # =============================================================================
 
-set -e
-
-# カラー出力
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # オプション解析
 DELETE_ALL=false
@@ -52,30 +47,6 @@ done
 
 # Failure log file
 FAILURE_LOG="/tmp/cleanup-failed-$(date +%Y%m%d-%H%M%S).log"
-
-# ヘルパー関数
-log_info() {
-  echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-  echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-log_warning() {
-  echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-log_error() {
-  echo -e "${RED}[ERROR]${NC} $1"
-}
-
-log_section() {
-  echo ""
-  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-  echo -e "${GREEN}$1${NC}"
-  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-}
 
 # =============================================================================
 # Step 1: バックアップディレクトリのスキャン
@@ -187,10 +158,8 @@ done
 # =============================================================================
 if [ "$FORCE" = false ]; then
   echo ""
-  echo -e "${YELLOW}警告: この操作は元に戻せません${NC}"
-  read -p "削除を実行しますか? (yes/no): " CONFIRM
-
-  if [ "$CONFIRM" != "yes" ]; then
+  log_warning "警告: この操作は元に戻せません"
+  if ! confirm "削除を実行しますか?" "n"; then
     log_info "削除をキャンセルしました"
     exit 0
   fi

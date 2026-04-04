@@ -17,85 +17,75 @@
 # 4. No broken dependencies before deployment
 ##############################################################################
 
-set -e
-
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Get stack name from argument
 STACK_NAME="${1:-}"
 
 if [ -z "$STACK_NAME" ]; then
-  echo -e "${RED}ERROR: Stack name required${NC}"
-  echo "Usage: $0 <stack-name>"
-  echo "Example: $0 Prance-dev-ApiLambda"
+  log_error "Stack name required"
+  log_info "Usage: $0 <stack-name>"
+  log_info "Example: $0 Prance-dev-ApiLambda"
   exit 1
 fi
 
-echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}CDK Deploy Wrapper${NC}"
-echo -e "${BLUE}========================================${NC}"
-echo ""
+log_section "CDK Deploy Wrapper"
 
 # Check if deploying ApiLambda stack (contains WebSocket functions)
 if [[ "$STACK_NAME" == *"ApiLambda"* ]]; then
-  echo -e "${YELLOW}⚠️  Detected ApiLambda stack deployment${NC}"
+  log_warning "Detected ApiLambda stack deployment"
   echo ""
-  echo -e "${YELLOW}IMPORTANT: WebSocket Lambda functions require special deployment${NC}"
+  log_warning "IMPORTANT: WebSocket Lambda functions require special deployment"
   echo ""
   echo "Options:"
   echo "  1. Deploy WebSocket Lambda ONLY (recommended):"
-  echo "     ${GREEN}./scripts/deploy-lambda-websocket-manual.sh${NC}"
+  log_info "     ./scripts/deploy-lambda-websocket-manual.sh"
   echo ""
   echo "  2. Deploy full ApiLambda stack (may use old code for WebSocket):"
   echo "     Continue with standard CDK deploy"
   echo ""
-  read -p "Do you want to use the manual WebSocket deployment script? (y/n): " -n 1 -r
-  echo ""
 
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo -e "${GREEN}✓ Using manual WebSocket deployment${NC}"
+  if confirm "Do you want to use the manual WebSocket deployment script?" "y"; then
+    log_success "Using manual WebSocket deployment"
     exec ./scripts/deploy-lambda-websocket-manual.sh
   else
-    echo -e "${YELLOW}⚠️  Proceeding with standard CDK deploy${NC}"
-    echo -e "${YELLOW}⚠️  WebSocket Lambda may use old code - verify after deployment${NC}"
+    log_warning "Proceeding with standard CDK deploy"
+    log_warning "WebSocket Lambda may use old code - verify after deployment"
     echo ""
   fi
 fi
 
 # Run pre-deployment checks
-echo -e "${BLUE}Step 1/4: Running pre-deployment checks...${NC}"
+log_step 1 "Running pre-deployment checks..."
 if ! bash scripts/pre-deploy-lambda-check.sh; then
-  echo -e "${RED}✗ Pre-deployment checks failed${NC}"
-  echo "Fix the issues above before deploying"
+  log_error "Pre-deployment checks failed"
+  log_info "Fix the issues above before deploying"
   exit 1
 fi
-echo -e "${GREEN}✓ Pre-deployment checks passed${NC}"
+log_success "Pre-deployment checks passed"
 echo ""
 
 # Validate environment variables
-echo -e "${BLUE}Step 2/4: Validating environment variables...${NC}"
+log_step 2 "Validating environment variables..."
 if ! bash scripts/validate-env.sh; then
-  echo -e "${RED}✗ Environment validation failed${NC}"
+  log_error "Environment validation failed"
   exit 1
 fi
-echo -e "${GREEN}✓ Environment variables validated${NC}"
+log_success "Environment variables validated"
 echo ""
 
 # Build infrastructure
-echo -e "${BLUE}Step 3/4: Building infrastructure...${NC}"
+log_step 3 "Building infrastructure..."
 cd infrastructure
 pnpm run build
 cd ..
-echo -e "${GREEN}✓ Infrastructure built${NC}"
+log_success "Infrastructure built"
 echo ""
 
 # Deploy with CDK
-echo -e "${BLUE}Step 4/4: Deploying stack: $STACK_NAME${NC}"
+log_step 4 "Deploying stack: $STACK_NAME"
 cd infrastructure
 pnpm run cdk -- deploy "$STACK_NAME" --require-approval never
 DEPLOY_EXIT_CODE=$?
@@ -103,24 +93,20 @@ cd ..
 
 if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
   echo ""
-  echo -e "${GREEN}========================================${NC}"
-  echo -e "${GREEN}✓ Deployment completed successfully${NC}"
-  echo -e "${GREEN}========================================${NC}"
+  log_section "Deployment completed successfully"
 
   # Post-deployment validation for ApiLambda stack
   if [[ "$STACK_NAME" == *"ApiLambda"* ]]; then
     echo ""
-    echo -e "${BLUE}Running post-deployment tests...${NC}"
+    log_info "Running post-deployment tests..."
     if bash scripts/post-deploy-lambda-test.sh prance-websocket-default-dev; then
-      echo -e "${GREEN}✓ Post-deployment tests passed${NC}"
+      log_success "Post-deployment tests passed"
     else
-      echo -e "${YELLOW}⚠️  Post-deployment tests failed - check logs${NC}"
+      log_warning "Post-deployment tests failed - check logs"
     fi
   fi
 else
   echo ""
-  echo -e "${RED}========================================${NC}"
-  echo -e "${RED}✗ Deployment failed${NC}"
-  echo -e "${RED}========================================${NC}"
+  log_error "Deployment failed"
   exit $DEPLOY_EXIT_CODE
 fi
