@@ -2,40 +2,14 @@
 # Simplified Build and Deploy Script
 # Usage: pnpm run build:deploy
 
-set -e  # Exit on error
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-# Helper function
-log_step() {
-    echo -e "${BLUE}[$(date +'%H:%M:%S')]${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-log_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}✗${NC} $1"
-}
-
-echo ""
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Build and Deploy - Phase A Refactoring${NC}"
-echo -e "${BLUE}============================================${NC}"
-echo ""
+log_section "Build and Deploy - Phase A Refactoring"
 
 # Step 1: Build Infrastructure
-log_step "Step 1/3: Building infrastructure..."
+log_step 1 "Building infrastructure..."
 if pnpm run build --workspace=infrastructure > /tmp/infra-build.log 2>&1; then
     log_success "Infrastructure built successfully"
 else
@@ -45,7 +19,7 @@ else
 fi
 
 # Step 2: Pre-deployment validation
-log_step "Step 2/3: Running pre-deployment checks..."
+log_step 2 "Running pre-deployment checks..."
 if pnpm run lambda:predeploy > /tmp/predeploy.log 2>&1; then
     log_success "All validations passed"
 else
@@ -55,7 +29,7 @@ else
 fi
 
 # Step 3: Deploy Lambda functions
-log_step "Step 3/3: Deploying Lambda functions..."
+log_step 3 "Deploying Lambda functions..."
 echo ""
 log_warning "This may take 2-3 minutes..."
 echo ""
@@ -69,9 +43,7 @@ else
 fi
 
 echo ""
-echo -e "${GREEN}============================================${NC}"
-echo -e "${GREEN}✅ Build and Deploy Complete${NC}"
-echo -e "${GREEN}============================================${NC}"
+log_section "Build and Deploy Complete"
 echo ""
 echo "Lambda Function: prance-websocket-default-dev"
 echo "Region: us-east-1"

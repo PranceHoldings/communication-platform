@@ -1,11 +1,10 @@
 #!/bin/bash
-set -e
 
 # Markdownファイル内のnpm → pnpm変換
 
-log() {
-  echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*"
-}
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # 対象ファイル（backups, node_modules, .next, cdk.out を除外）
 MD_FILES=$(find . -name "*.md" -type f \
@@ -19,8 +18,8 @@ MD_FILES=$(find . -name "*.md" -type f \
 BACKUP_DIR="/tmp/docs-backup-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 
-log "Converting $(echo "$MD_FILES" | wc -l) markdown files"
-log "Backup directory: $BACKUP_DIR"
+log "Converting $(echo "$MD_FILES" | wc -l) markdown files" true
+log "Backup directory: $BACKUP_DIR" true
 
 TOTAL_FILES=0
 MODIFIED_FILES=0
@@ -58,14 +57,14 @@ while IFS= read -r file; do
   rm -f "$file.bak"
 done <<< "$MD_FILES"
 
-log "Conversion complete"
-log "Total files: $TOTAL_FILES"
-log "Modified files: $MODIFIED_FILES"
-log "Backup: $BACKUP_DIR"
-log ""
-log "Review important files:"
-log "  - CLAUDE.md"
-log "  - START_HERE.md"
-log "  - README.md"
-log "  - infrastructure/CLAUDE.md"
-log "  - docs/08-operations/DEPLOYMENT.md"
+log "Conversion complete" true
+log "Total files: $TOTAL_FILES" true
+log "Modified files: $MODIFIED_FILES" true
+log "Backup: $BACKUP_DIR" true
+log "" true
+log "Review important files:" true
+log "  - CLAUDE.md" true
+log "  - START_HERE.md" true
+log "  - README.md" true
+log "  - infrastructure/CLAUDE.md" true
+log "  - docs/08-operations/DEPLOYMENT.md" true

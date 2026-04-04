@@ -5,11 +5,13 @@
 # 2. Extract token from Authorization header before verification
 # 3. Replace userData.sub with userData.userId
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 GUEST_SESSIONS_DIR="/workspaces/prance-communication-platform/infrastructure/lambda/guest-sessions"
 
-echo "🔧 Fixing authentication issues in guest session Lambda functions..."
+log_info "Fixing authentication issues in guest session Lambda functions..."
 
 # List of Lambda function directories to fix
 FUNCTIONS=(
@@ -26,11 +28,11 @@ for func in "${FUNCTIONS[@]}"; do
   FILE="$GUEST_SESSIONS_DIR/$func/index.ts"
 
   if [ ! -f "$FILE" ]; then
-    echo "⚠️  Skipping $func: File not found"
+    log_warning "Skipping $func: File not found"
     continue
   fi
 
-  echo "📝 Fixing $func/index.ts..."
+  log_info "Fixing $func/index.ts..."
 
   # 1. Add extractTokenFromHeader import if not present
   if grep -q "extractTokenFromHeader" "$FILE"; then
@@ -59,17 +61,17 @@ for func in "${FUNCTIONS[@]}"; do
     echo "   ✓ No userData.sub references found"
   fi
 
-  echo "   ✅ $func/index.ts fixed"
+  log_success "$func/index.ts fixed"
 done
 
 echo ""
-echo "✅ All guest session Lambda functions fixed!"
+log_success "All guest session Lambda functions fixed!"
 echo ""
-echo "📋 Summary:"
+log_info "Summary:"
 echo "   - Added extractTokenFromHeader import"
 echo "   - Fixed Bearer token extraction"
 echo "   - Replaced userData.sub with userData.userId"
 echo ""
-echo "🚀 Next steps:"
+log_info "Next steps:"
 echo "   1. Run: pnpm run deploy:lambda"
 echo "   2. Test the guest session APIs"
