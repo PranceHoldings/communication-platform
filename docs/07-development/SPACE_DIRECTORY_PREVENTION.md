@@ -87,9 +87,9 @@
 
 ## 自動防止メカニズム
 
-### 1. clean-space-directories.sh スクリプト
+### 1. clean-space-files-and-dirs.sh スクリプト
 
-**場所:** `scripts/clean-space-directories.sh`
+**場所:** `scripts/clean-space-files-and-dirs.sh`
 
 **機能:**
 1. 空白を含むディレクトリを自動検出
@@ -99,7 +99,7 @@
 **実行方法:**
 ```bash
 # 直接実行
-bash scripts/clean-space-directories.sh
+bash scripts/clean-space-files-and-dirs.sh
 
 # npm script経由
 pnpm run clean:spaces
@@ -167,7 +167,7 @@ pnpm run build:clean
 
 # 出力例:
 # Step 0: 空白文字を含むディレクトリの検出・削除
-#   実行中: clean-space-directories.sh
+#   実行中: clean-space-files-and-dirs.sh
 #   空白文字チェック完了
 ```
 

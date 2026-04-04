@@ -99,7 +99,7 @@ fi
 **Examples from this project:**
 - `validate-workspace-dependencies.sh` - Prevents build config errors
 - `validate-schema-interface-implementation.sh` - Prevents type mismatches
-- `validate-env-consistency.sh` - Prevents environment variable errors
+- `validate-env-consistency-comprehensive.sh` - Prevents environment variable errors
 
 ### Pattern 2: Integration Scripts
 

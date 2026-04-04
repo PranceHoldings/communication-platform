@@ -205,7 +205,7 @@ const s3Url = `https://${bucket}.s3.${region}.${getAwsEndpointSuffix()}/${key}`;
 | ファイル | 内容 |
 |---------|------|
 | `scripts/detect-hardcoded-values.sh` | 9パターンのハードコード検出（拡張版） |
-| `scripts/validate-env-consistency.sh` | 環境変数の重複・矛盾チェック（新規） |
+| `scripts/validate-env-consistency-comprehensive.sh` | 環境変数の重複・矛盾チェック（新規） |
 
 ---
 
@@ -416,7 +416,7 @@ aws cloudfront create-public-key --public-key-config file://public-key-config.js
 - [ ] `env-validator.ts` に getter 関数追加
 - [ ] `infrastructure/.env` にも追加（必要に応じて）
 - [ ] Lambda環境変数に設定（CDK経由）
-- [ ] `validate-env-consistency.sh` の必須変数リストに追加
+- [ ] `validate-env-consistency-comprehensive.sh` の必須変数リストに追加
 - [ ] ドキュメント更新（ENVIRONMENT_ARCHITECTURE.md）
 - [ ] 検証実行（`pnpm run env:consistency`）
 
@@ -459,7 +459,7 @@ aws cloudfront create-public-key --public-key-config file://public-key-config.js
 - `env-validator.ts` の 20個の getter 関数
 - `.env.local` の 30個の環境変数
 - `detect-hardcoded-values.sh` の拡張（9パターン検出）
-- `validate-env-consistency.sh` の新規作成（8項目検証）
+- `validate-env-consistency-comprehensive.sh` の新規作成（8項目検証）
 
 ### メンテナンス負荷
 

@@ -91,7 +91,7 @@
 
 **実行される検証（3ステップ）:**
 1. ハードコード検出（`detect-hardcoded-values.sh`）
-2. 環境変数整合性チェック（`validate-env-consistency.sh`）
+2. 環境変数整合性チェック（`validate-env-consistency-comprehensive.sh`）
 3. ESLint on staged files
 
 **動作:**
@@ -114,7 +114,7 @@ Run: bash scripts/detect-hardcoded-values.sh
 
 [2/3] Validating environment variables...
 ❌ Environment variable inconsistency
-Run: bash scripts/validate-env-consistency.sh
+Run: bash scripts/validate-env-consistency-comprehensive.sh
 
 [3/3] Running ESLint on staged files...
 ✅ No files to lint

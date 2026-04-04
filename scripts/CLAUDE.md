@@ -400,7 +400,7 @@ Directories failed:    0
 ✅ All space-containing items cleaned successfully
 ```
 
-#### clean-space-directories.sh
+#### clean-space-files-and-dirs.sh
 
 **用途:** ディレクトリ名に空白を含むディレクトリを削除（ディレクトリのみ）
 
@@ -412,7 +412,7 @@ Directories failed:    0
 **実行:**
 
 ```bash
-bash scripts/clean-space-directories.sh
+bash scripts/clean-space-files-and-dirs.sh
 ```
 
 **⚠️ 注意:**

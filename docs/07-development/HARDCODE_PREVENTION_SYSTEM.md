@@ -278,7 +278,7 @@ fi
 
 # Step 3: 環境変数整合性チェック
 echo "Validating environment variables..."
-bash scripts/validate-env-consistency.sh
+bash scripts/validate-env-consistency-comprehensive.sh
 if [ $? -ne 0 ]; then
   echo "❌ Environment variable inconsistency detected."
   exit 1
@@ -347,7 +347,7 @@ jobs:
         run: bash scripts/detect-hardcoded-values.sh
 
       - name: Validate environment variables
-        run: bash scripts/validate-env-consistency.sh
+        run: bash scripts/validate-env-consistency-comprehensive.sh
 
       - name: Generate report
         if: failure()

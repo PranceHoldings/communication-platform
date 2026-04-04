@@ -846,7 +846,7 @@ import type { User } from '@prance/shared';
 # 検証スクリプト例（200-300行が目安）
 scripts/validate-workspace-dependencies.sh  # 236行、8チェック
 scripts/validate-schema-interface-implementation.sh  # 220行、5チェック
-scripts/validate-env-consistency.sh  # 210行、6チェック
+scripts/validate-env-consistency-comprehensive.sh  # 210行、6チェック
 ```
 
 **Pre-commit hookに統合:**

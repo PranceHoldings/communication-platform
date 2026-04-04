@@ -38,7 +38,7 @@ aws sts get-caller-identity
 
 ```bash
 # 認証トークン取得（環境変数に設定）
-export AUTH_TOKEN=$(./scripts/get-auth-token.sh)
+export AUTH_TOKEN=$(./scripts/get-auth-token.js)
 
 # トークン確認
 echo $AUTH_TOKEN
@@ -282,7 +282,7 @@ aws apigatewayv2 get-apis --query 'Items[?Name==`prance-websocket-dev`]'
 **解決策:**
 ```bash
 # 新しいトークンを取得
-export AUTH_TOKEN=$(./scripts/get-auth-token.sh)
+export AUTH_TOKEN=$(./scripts/get-auth-token.js)
 
 # トークンの有効性を確認
 curl -H "Authorization: Bearer $AUTH_TOKEN" \

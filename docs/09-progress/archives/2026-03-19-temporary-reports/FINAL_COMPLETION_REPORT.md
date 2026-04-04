@@ -168,7 +168,7 @@ export async function generateSignedUrl(s3Key: string, expiresIn: number): Promi
 |-------|------|------|
 | 1 | Git Pre-commit Hook | ✅ 実装・動作確認済み |
 | 2 | .env.example（単一の真実の源） | ✅ 39変数管理 |
-| 3 | validate-env-consistency.sh | ✅ バグ修正済み |
+| 3 | validate-env-consistency-comprehensive.sh | ✅ バグ修正済み |
 | 4 | GitHub Actions CI/CD | 📋 Phase 3で実装予定 |
 
 ### 検証ツール改善
@@ -246,7 +246,7 @@ export async function generateSignedUrl(s3Key: string, expiresIn: number): Promi
 - [x] 今後の必須タスク記録
 
 ### 検証ツール
-- [x] validate-env-consistency.sh バグ修正
+- [x] validate-env-consistency-comprehensive.sh バグ修正
 - [x] Git pre-commit hook 動作確認
 - [x] 4層防御システム構築
 - [ ] GitHub Actions統合（Phase 3）

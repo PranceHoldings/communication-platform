@@ -437,7 +437,7 @@ pnpm install
 
 ```bash
 # Step 1: スペース含むディレクトリを削除
-bash scripts/clean-space-directories.sh
+bash scripts/clean-space-files-and-dirs.sh
 
 # Step 2: node_modules を完全削除
 rm -rf node_modules apps/web/node_modules packages/*/node_modules infrastructure/node_modules
@@ -537,7 +537,7 @@ pnpm run validate:workspace-deps
 
 ### スクリプト
 - `scripts/validate-workspace-dependencies.sh` - 依存関係検証
-- `scripts/clean-space-directories.sh` - スペース含むディレクトリ削除
+- `scripts/clean-space-files-and-dirs.sh` - スペース含むディレクトリ削除
 - `scripts/clean-build.sh` - クリーンビルド
 
 ### npm コマンド

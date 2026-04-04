@@ -6,7 +6,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "clean": "bash scripts/pre-deploy-clean.sh",
-    "clean:spaces": "bash ../scripts/clean-space-directories.sh",
+    "clean:spaces": "bash ../scripts/clean-space-files-and-dirs.sh",
     "cdk": "echo '\u26a0\ufe0f  WARNING: Use pnpm run deploy instead of direct cdk commands to ensure validation' && cdk",
     "bootstrap": "cdk bootstrap",
     "validate:bundling": "bash scripts/validate-cdk-bundling.sh",

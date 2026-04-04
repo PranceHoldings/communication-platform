@@ -94,7 +94,7 @@ export const handler = async (
 
 ```bash
 [1/3] Checking for hardcoded values...        # detect-hardcoded-values.sh
-[2/3] Validating environment variables...     # validate-env-consistency.sh
+[2/3] Validating environment variables...     # validate-env-consistency-comprehensive.sh
 [3/3] Running ESLint on staged files...       # ESLint --max-warnings=0
 ```
 
@@ -261,7 +261,7 @@ jobs:
       - run: pnpm install
       - run: pnpm run lint
       - run: bash scripts/detect-hardcoded-values.sh
-      - run: bash scripts/validate-env-consistency.sh
+      - run: bash scripts/validate-env-consistency-comprehensive.sh
 ```
 
 **効果:**

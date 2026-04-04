@@ -358,7 +358,7 @@ aws secretsmanager create-secret \
 **3.2 環境変数管理の自動化**
 ```bash
 # タスク: 環境変数同期チェックをCI/CDに統合
-# - GitHub Actions で validate-env-consistency.sh 実行
+# - GitHub Actions で validate-env-consistency-comprehensive.sh 実行
 # - 本番デプロイ前に必須チェック
 ```
 

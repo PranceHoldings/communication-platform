@@ -39,12 +39,12 @@ FAILED_CHECKS=0
 echo -e "${MAGENTA}[CHECK 0/7]${NC} 空白文字を含むディレクトリの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
-if [ -f "scripts/clean-space-directories.sh" ]; then
-  if bash scripts/clean-space-directories.sh > /dev/null 2>&1; then
+if [ -f "scripts/clean-space-files-and-dirs.sh" ]; then
+  if bash scripts/clean-space-files-and-dirs.sh > /dev/null 2>&1; then
     echo -e "  ${GREEN}✓${NC} 空白文字チェック: OK"
   else
     echo -e "  ${RED}✗${NC} 空白文字チェック: FAILED"
-    echo -e "  ${YELLOW}→ Run: bash scripts/clean-space-directories.sh${NC}"
+    echo -e "  ${YELLOW}→ Run: bash scripts/clean-space-files-and-dirs.sh${NC}"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
   fi
 else

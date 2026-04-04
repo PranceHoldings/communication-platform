@@ -233,16 +233,16 @@ remove_directory_robust() {
 # =============================================================================
 log_step "Step 0: 空白文字を含むディレクトリの検出・削除"
 
-if [ -f "scripts/clean-space-directories.sh" ]; then
-  log_info "実行中: clean-space-directories.sh"
-  if bash scripts/clean-space-directories.sh; then
+if [ -f "scripts/clean-space-files-and-dirs.sh" ]; then
+  log_info "実行中: clean-space-files-and-dirs.sh"
+  if bash scripts/clean-space-files-and-dirs.sh; then
     log_success "空白文字チェック完了"
   else
     log_error "空白文字を含むディレクトリの削除に失敗しました"
     handle_error "space-cleanup"
   fi
 else
-  log_warning "clean-space-directories.sh が見つかりません（スキップ）"
+  log_warning "clean-space-files-and-dirs.sh が見つかりません（スキップ）"
 fi
 
 # =============================================================================

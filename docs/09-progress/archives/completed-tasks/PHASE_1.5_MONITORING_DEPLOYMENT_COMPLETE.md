@@ -154,7 +154,7 @@ pnpm run perf:alarms -- --email your@email.com
 scripts/
 ├── performance-test.ts                # パフォーマンステストスクリプト（修正済み）
 ├── collect-metrics.sh                 # CloudWatch メトリクス収集
-├── get-auth-token.sh                  # 認証トークン取得
+├── get-auth-token.js                  # 認証トークン取得
 ├── create-cloudwatch-dashboard.sh     # Dashboard自動作成 🆕
 └── create-cloudwatch-alarms.sh        # Alarms自動作成 🆕
 
@@ -241,7 +241,7 @@ docs/
 
 ```bash
 # パフォーマンステスト
-export AUTH_TOKEN=$(./scripts/get-auth-token.sh)
+export AUTH_TOKEN=$(./scripts/get-auth-token.js)
 pnpm run perf:test              # 単一セッション
 pnpm run perf:load              # 10並行負荷テスト
 pnpm run perf:test -- --verbose # 詳細ログ
