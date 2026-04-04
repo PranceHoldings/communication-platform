@@ -3,8 +3,8 @@
 **親ドキュメント:** [../CLAUDE.md](../CLAUDE.md)
 **関連ドキュメント:** [../infrastructure/CLAUDE.md](../infrastructure/CLAUDE.md)
 
-**バージョン:** 1.1
-**最終更新:** 2026-03-31
+**バージョン:** 2.0
+**最終更新:** 2026-04-05
 
 ---
 
@@ -698,13 +698,239 @@ set +a
 
 ---
 
+## 📚 共有ライブラリシステム
+
+### 概要
+
+**バージョン:** Phase 4完了（2026-04-05）
+**カバレッジ:** 75/75 production scripts (100%)
+
+全てのproductionスクリプトは `scripts/lib/common.sh` 共有ライブラリを使用しています。
+
+### 提供機能
+
+#### 1. カラー出力
+```bash
+# 自動的にexportされる変数
+RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, BOLD, NC
+```
+
+#### 2. ログ関数
+```bash
+log_success "成功メッセージ"    # 緑のチェックマーク
+log_error "エラーメッセージ"    # 赤のX
+log_warning "警告メッセージ"    # 黄色の警告
+log_info "情報メッセージ"       # シアンの情報アイコン
+log_section "セクションタイトル" # セクションヘッダー
+log_step 1 "ステップ1"          # ステップ表示
+log_debug "デバッグメッセージ"  # DEBUG=true時のみ表示
+```
+
+#### 3. カウンター管理
+```bash
+reset_counters                  # 全カウンターを0にリセット
+increment_counter PASSED        # PASSEDカウンターをインクリメント
+increment_counter FAILED        # FAILEDカウンターをインクリメント
+increment_counter ERRORS        # ERRORSカウンターをインクリメント
+increment_counter WARNINGS      # WARNINGSカウンターをインクリメント
+increment_counter SKIPPED       # SKIPPEDカウンターをインクリメント
+print_counter_summary           # サマリーを表示して終了コード返却
+```
+
+#### 4. エラーハンドリング
+```bash
+die "エラーメッセージ" [exit_code]  # エラーメッセージを表示して終了
+require_command "aws" "brew install awscli"  # コマンドの存在確認
+require_file "/path/to/file" "hint"          # ファイルの存在確認
+require_directory "/path/to/dir" "hint"      # ディレクトリの存在確認
+require_env "DATABASE_URL" "hint"            # 環境変数の存在確認
+```
+
+#### 5. ユーティリティ
+```bash
+confirm "実行しますか？" "y"    # ユーザー確認プロンプト（デフォルトy）
+print_separator "=" 50          # 区切り線表示
+get_script_dir                  # スクリプトディレクトリパスを取得
+is_sourced                      # sourceされているか確認
+```
+
+### 新規スクリプト作成ガイドライン
+
+#### テンプレート
+
+```bash
+#!/bin/bash
+# ==============================================================================
+# Script Name - Brief Description
+# ==============================================================================
+# Purpose: Detailed purpose
+# Usage: bash scripts/script-name.sh [options]
+# ==============================================================================
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
+# ==============================================================================
+# Configuration
+# ==============================================================================
+
+# Your configuration variables here
+
+# ==============================================================================
+# Main Logic
+# ==============================================================================
+
+log_section "Script Name"
+
+log_info "Starting process..."
+
+# Your logic here
+
+# Use counters
+if [ condition ]; then
+  log_success "Operation succeeded"
+  increment_counter PASSED
+else
+  log_error "Operation failed"
+  increment_counter FAILED
+fi
+
+# ==============================================================================
+# Summary
+# ==============================================================================
+
+print_counter_summary
+```
+
+#### ベストプラクティス
+
+1. **必ず共有ライブラリをsource**
+   ```bash
+   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+   source "$SCRIPT_DIR/lib/common.sh"
+   ```
+
+2. **色定義を独自に定義しない**
+   ```bash
+   # ❌ 禁止
+   RED='\033[0;31m'
+   GREEN='\033[0;32m'
+   
+   # ✅ 推奨
+   # 共有ライブラリの変数を直接使用
+   echo -e "${GREEN}Success${NC}"
+   # または
+   log_success "Success"
+   ```
+
+3. **ログ関数を使用**
+   ```bash
+   # ❌ 禁止
+   echo -e "${GREEN}✅ Success${NC}"
+   
+   # ✅ 推奨
+   log_success "Success"
+   ```
+
+4. **カウンター管理を使用**
+   ```bash
+   # ❌ 禁止
+   PASSED=0
+   ((PASSED++))
+   
+   # ✅ 推奨
+   increment_counter PASSED
+   ```
+
+5. **エラーハンドリング**
+   ```bash
+   # ✅ 推奨
+   require_command "aws" "brew install awscli"
+   require_file ".env.local" "Copy from .env.example"
+   require_env "DATABASE_URL" "Set in .env.local"
+   ```
+
+### 検証
+
+#### 共有ライブラリ使用検証
+
+**全スクリプトが共有ライブラリを使用しているか確認:**
+
+```bash
+bash scripts/validate-shared-lib-usage.sh
+```
+
+**期待される出力:**
+
+```
+==========================================
+  Shared Library Usage Validation
+==========================================
+ℹ️  Scanning scripts/ directory (excluding archive/)
+
+==========================================
+  Summary Report
+==========================================
+Total scripts analyzed: 75
+
+✅ Scripts using shared library (75):
+  ✓ validate-env.sh
+  ✓ detect-hardcoded-values.sh
+  ✓ ...
+
+==========================================
+  Validation Result
+==========================================
+✅ All scripts are using the shared library system correctly! 🎉
+
+Statistics:
+  • Scripts using shared lib: 75
+  • Special scripts (excluded): 0
+  • Total analyzed: 75
+```
+
+**検証項目:**
+- 共有ライブラリ source 確認
+- 古い色定義検出（`RED='\033[...'`）
+- 手動カウンター検出（`((PASSED++))`）
+- カスタムdie関数検出
+
+#### 構文チェック
+
+```bash
+# 個別スクリプト
+bash -n scripts/your-script.sh
+
+# 全スクリプト
+for script in scripts/*.sh; do
+  bash -n "$script" && echo "✓ $script"
+done
+```
+
+### アーカイブ
+
+**使用されていない古いスクリプトのアーカイブ:**
+
+```
+scripts/archive/
+├── pre-phase4-migration/        ← Phase 4移行前のスクリプト（63個）
+├── domain-migration-2024/       ← ドメイン移行スクリプト（5個）
+└── [その他のアーカイブ]
+```
+
+各アーカイブディレクトリにはREADME.mdが含まれ、目的・日時・注意事項が記載されています。
+
+---
+
 ## 📚 関連ドキュメント
 
 - [データベースクエリシステム](../docs/07-development/DATABASE_QUERY_SYSTEM.md)
 - [デプロイメント](../docs/08-operations/DEPLOYMENT.md)
 - [環境アーキテクチャ](../docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md)
+- [共有ライブラリソースコード](lib/common.sh)
 
 ---
 
-**最終更新:** 2026-03-15
+**最終更新:** 2026-04-05
 **次回レビュー:** 新規スクリプト追加時
