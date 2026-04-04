@@ -94,7 +94,7 @@ count_dependencies() {
       fi
 
       # Get dependency info
-      DEP_INFO=$(npm info "$DEP" --json 2>/dev/null || echo "{}")
+      DEP_INFO=$(pnpm info "$DEP" --json 2>/dev/null || echo "{}")
 
       # Count transitive dependencies (this is approximate)
       # We use pnpm list which shows the full tree
@@ -186,7 +186,7 @@ else
   echo "❌ $ERRORS validation error(s) detected"
   echo ""
   echo "Fix guide:"
-  echo "1. Remove heavy dependencies: npm uninstall <package>"
+  echo "1. Remove heavy dependencies: pnpm remove <package>"
   echo "2. Find lighter alternatives: https://npmtrends.com"
   echo "3. Self-implement small utilities"
   echo "4. Use tree-shakeable versions (e.g., lodash-es)"
