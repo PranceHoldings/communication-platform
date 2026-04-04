@@ -71,17 +71,10 @@ if [ "$SKIP_BUILD" = false ]; then
 
   # Prisma Client生成
   echo -e "${BLUE}   Prisma Client生成中...${NC}"
-  cd "$PROJECT_ROOT/packages/database"
+  cd "$PROJECT_ROOT"
 
-  if [ ! -d "node_modules" ]; then
-    mkdir -p node_modules
-  fi
-
-  if [ -d "$PROJECT_ROOT/node_modules/@prisma" ]; then
-    cp -r "$PROJECT_ROOT/node_modules/@prisma" node_modules/
-  fi
-
-  pnpm exec prisma generate
+  # Generate Prisma Client from root directory
+  npx prisma generate --schema=packages/database/prisma/schema.prisma
   echo -e "${GREEN}   ✅ Prisma Client生成完了${NC}"
 
   # TypeScriptビルド

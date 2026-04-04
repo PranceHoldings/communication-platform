@@ -12,7 +12,7 @@
     "WARNING": "ローカルPostgreSQLは使用しません。マイグレーションはLambda Migration Function経由でAWS RDSに適用します。"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0"
+    "@prisma/client": "5.22.0"
   },
   "devDependencies": {
     "prisma": "^5.9.0",
