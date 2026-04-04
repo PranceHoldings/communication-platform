@@ -20,12 +20,9 @@
 
 set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 PROJECT_ROOT="/workspaces/prance-communication-platform"
 SSOT_FILE="${PROJECT_ROOT}/.env.local"
@@ -41,33 +38,30 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     *)
-      echo -e "${RED}Unknown option: $1${NC}"
+      log_error "Unknown option: $1"
       exit 2
       ;;
   esac
 done
 
 echo ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}Environment Variables Synchronization${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
+log_section "Environment Variables Synchronization"
 
 # Check if SSOT file exists
 if [ ! -f "$SSOT_FILE" ]; then
-  echo -e "${RED}❌ Error: Single Source of Truth file not found${NC}"
-  echo "Expected: $SSOT_FILE"
+  log_error "Single Source of Truth file not found"
+  log_info "Expected: $SSOT_FILE"
   exit 2
 fi
 
-echo -e "${YELLOW}Single Source of Truth:${NC} $SSOT_FILE"
-echo -e "${YELLOW}Target:${NC} $TARGET_FILE"
+log_warning "Single Source of Truth: $SSOT_FILE"
+log_warning "Target: $TARGET_FILE"
 echo ""
 
 # Extract non-secret environment variables from SSOT
 # Exclude: API keys, passwords, secrets, tokens
 # Include: Configuration values, domains, formats, limits
-echo "Extracting non-secret environment variables from SSOT..."
+log_info "Extracting non-secret environment variables from SSOT..."
 
 TEMP_FILE=$(mktemp)
 
@@ -78,17 +72,17 @@ grep -E "^[A-Z_]+=" "$SSOT_FILE" | \
   > "$TEMP_FILE"
 
 NON_SECRET_COUNT=$(wc -l < "$TEMP_FILE" | tr -d ' ')
-echo -e "${GREEN}✓${NC} Extracted $NON_SECRET_COUNT non-secret variables"
+log_success "Extracted $NON_SECRET_COUNT non-secret variables"
 echo ""
 
 # Check if target file exists
 if [ ! -f "$TARGET_FILE" ]; then
   if [ "$CHECK_ONLY" = true ]; then
-    echo -e "${RED}❌ Target file does not exist${NC}"
+    log_error "Target file does not exist"
     rm -f "$TEMP_FILE"
     exit 1
   else
-    echo -e "${YELLOW}Target file does not exist. Creating...${NC}"
+    log_warning "Target file does not exist. Creating..."
     mkdir -p "$(dirname "$TARGET_FILE")"
     touch "$TARGET_FILE"
   fi
@@ -96,19 +90,19 @@ fi
 
 # Compare files
 if diff -q "$TEMP_FILE" "$TARGET_FILE" > /dev/null 2>&1; then
-  echo -e "${GREEN}✅ Files are already in sync${NC}"
+  log_success "Files are already in sync"
   rm -f "$TEMP_FILE"
   exit 0
 else
-  echo -e "${YELLOW}⚠️  Files are out of sync${NC}"
+  log_warning "Files are out of sync"
   echo ""
 
   if [ "$CHECK_ONLY" = true ]; then
-    echo "Differences:"
+    log_info "Differences:"
     diff "$TEMP_FILE" "$TARGET_FILE" || true
     echo ""
-    echo -e "${RED}❌ Sync required${NC}"
-    echo "Run: bash scripts/sync-env-vars.sh"
+    log_error "Sync required"
+    log_info "Run: bash scripts/sync-env-vars.sh"
     rm -f "$TEMP_FILE"
     exit 1
   else
@@ -116,22 +110,20 @@ else
     if [ -f "$TARGET_FILE" ]; then
       BACKUP_FILE="${TARGET_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
       cp "$TARGET_FILE" "$BACKUP_FILE"
-      echo -e "${GREEN}✓${NC} Backup created: $BACKUP_FILE"
+      log_success "Backup created: $BACKUP_FILE"
     fi
 
     # Sync
     cp "$TEMP_FILE" "$TARGET_FILE"
-    echo -e "${GREEN}✓${NC} Synced $NON_SECRET_COUNT variables to $TARGET_FILE"
+    log_success "Synced $NON_SECRET_COUNT variables to $TARGET_FILE"
     echo ""
 
     # Show summary
-    echo "Synced variables:"
+    log_info "Synced variables:"
     cat "$TARGET_FILE" | sed 's/=.*/=***/' | sed 's/^/  - /'
     echo ""
 
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${GREEN}✅ Synchronization complete${NC}"
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    log_section "Synchronization complete"
     echo ""
   fi
 fi
