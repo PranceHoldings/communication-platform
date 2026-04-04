@@ -2,14 +2,16 @@
 # 不整合自動修正スクリプト
 # 検出された不整合を自動的に修正
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 BACKUP_DIR="/tmp/prance-backup-$(date +%s)"
 mkdir -p "$BACKUP_DIR"
 
-echo "🔧 不整合の自動修正を開始します..."
+log_info "🔧 不整合の自動修正を開始します..."
 echo ""
-echo "📦 バックアップディレクトリ: $BACKUP_DIR"
+log_info "📦 バックアップディレクトリ: $BACKUP_DIR"
 echo ""
 
 FIXED_COUNT=0
@@ -17,7 +19,7 @@ FIXED_COUNT=0
 # ============================================================
 # 1. Prismaスキーマ不整合の修正
 # ============================================================
-echo "📌 [1/4] Prismaスキーマ不整合を修正中..."
+log_info "📌 [1/4] Prismaスキーマ不整合を修正中..."
 
 # session_id → sessionId (WebSocket handler)
 FILE="infrastructure/lambda/websocket/default/index.ts"
@@ -41,7 +43,7 @@ fi
 # ============================================================
 # 2. 型定義の重複を修正（共有型を使用）
 # ============================================================
-echo "📌 [2/4] 型定義の重複を修正中..."
+log_info "📌 [2/4] 型定義の重複を修正中..."
 
 # apps/web/lib/api/auth.ts - Userインターフェース削除
 FILE="apps/web/lib/api/auth.ts"
@@ -74,7 +76,7 @@ fi
 # ============================================================
 # 3. ハードコード設定値の修正
 # ============================================================
-echo "📌 [3/4] ハードコード設定値を修正中..."
+log_info "📌 [3/4] ハードコード設定値を修正中..."
 
 # audio-processor.ts - ハードコード言語
 FILE="infrastructure/lambda/websocket/default/audio-processor.ts"
@@ -114,7 +116,7 @@ fi
 # ============================================================
 # 4. コードフォーマット
 # ============================================================
-echo "📌 [4/4] コードフォーマットを適用中..."
+log_info "📌 [4/4] コードフォーマットを適用中..."
 
 # 修正したファイルをフォーマット
 if command -v prettier &> /dev/null; then
@@ -130,14 +132,14 @@ if command -v prettier &> /dev/null; then
         fi
     done
 else
-    echo "  ⚠️  Prettier not found, skipping formatting"
+    log_warning "Prettier not found, skipping formatting"
 fi
 
 echo ""
-echo "✅ 自動修正完了！"
+log_success "自動修正完了！"
 echo ""
-echo "📊 修正したファイル数: $FIXED_COUNT"
-echo "📦 バックアップ: $BACKUP_DIR"
+log_info "📊 修正したファイル数: $FIXED_COUNT"
+log_info "📦 バックアップ: $BACKUP_DIR"
 echo ""
 echo "次のステップ:"
 echo "1. git diff で変更内容を確認"
