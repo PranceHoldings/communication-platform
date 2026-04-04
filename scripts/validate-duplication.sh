@@ -8,23 +8,15 @@
 # Exit Code: 0 = success, 1 = duplications found
 # ============================================================
 
-set -e
-
+# Load shared library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Color codes
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+reset_counters
 
-ERRORS=0
-WARNINGS=0
-
-echo "============================================================"
-echo "Duplication Management Validation"
-echo "============================================================"
+log_section "Duplication Management Validation"
 echo ""
 
 # ============================================================
@@ -51,7 +43,7 @@ ENV_ACCESSES=$(grep -rn "process\.env\." infrastructure/lambda --include="*.ts" 
   | wc -l || echo "0")
 
 if [ "$ENV_ACCESSES" -gt 0 ]; then
-  echo -e "${RED}❌ Found $ENV_ACCESSES direct process.env accesses (should use centralized config)${NC}"
+  log_error "Found $ENV_ACCESSES direct process.env accesses (should use centralized config)"
   grep -rn "process\.env\." infrastructure/lambda --include="*.ts" --exclude-dir=node_modules \
     | grep -v ".test.ts" \
     | grep -v ".spec.ts" \
@@ -67,9 +59,9 @@ if [ "$ENV_ACCESSES" -gt 0 ]; then
     | grep -v "AWS_LAMBDA_FUNCTION_NAME" \
     | grep -v "NODE_ENV" \
     | head -10
-  WARNINGS=$((WARNINGS + 1))
+  increment_counter WARNINGS
 else
-  echo -e "${GREEN}✅ No unauthorized environment variable accesses${NC}"
+  log_success "No unauthorized environment variable accesses"
 fi
 
 # ============================================================
@@ -81,17 +73,17 @@ echo -e "${YELLOW}[2/8]${NC} Checking type definition duplication..."
 TYPE_DUPLICATES=0
 
 if grep -q "^export interface EmotionScore" infrastructure/lambda/shared/analysis/rekognition.ts 2>/dev/null; then
-  echo -e "${RED}❌ EmotionScore defined in rekognition.ts (should import from types/index.ts)${NC}"
+  log_error "EmotionScore defined in rekognition.ts (should import from types/index.ts)"
   TYPE_DUPLICATES=$((TYPE_DUPLICATES + 1))
 fi
 
 if grep -q "^export interface AgeRange" infrastructure/lambda/shared/analysis/rekognition.ts 2>/dev/null; then
-  echo -e "${RED}❌ AgeRange defined in rekognition.ts (should import from types/index.ts)${NC}"
+  log_error "AgeRange defined in rekognition.ts (should import from types/index.ts)"
   TYPE_DUPLICATES=$((TYPE_DUPLICATES + 1))
 fi
 
 if grep -q "^export interface Pose" infrastructure/lambda/shared/analysis/rekognition.ts 2>/dev/null; then
-  echo -e "${RED}❌ Pose defined in rekognition.ts (should import from types/index.ts)${NC}"
+  log_error "Pose defined in rekognition.ts (should import from types/index.ts)"
   TYPE_DUPLICATES=$((TYPE_DUPLICATES + 1))
 fi
 
@@ -100,14 +92,14 @@ SHARED_HAS_INITIAL=$(grep -c "initialSilenceTimeout" packages/shared/src/types/i
 LAMBDA_HAS_INITIAL=$(grep -c "initialSilenceTimeout" infrastructure/lambda/shared/types/organization.ts || echo "0")
 
 if [ "$SHARED_HAS_INITIAL" != "$LAMBDA_HAS_INITIAL" ]; then
-  echo -e "${RED}❌ OrganizationSettings inconsistent: initialSilenceTimeout mismatch${NC}"
+  log_error "OrganizationSettings inconsistent: initialSilenceTimeout mismatch"
   TYPE_DUPLICATES=$((TYPE_DUPLICATES + 1))
 fi
 
 if [ "$TYPE_DUPLICATES" -gt 0 ]; then
-  ERRORS=$((ERRORS + 1))
+  increment_counter ERRORS
 else
-  echo -e "${GREEN}✅ No type definition duplicates${NC}"
+  log_success "No type definition duplicates"
 fi
 
 # ============================================================
@@ -120,10 +112,9 @@ SHARED_USER_ROLE=$(grep "export type UserRole" packages/shared/src/types/index.t
 LAMBDA_USER_ROLE=$(grep "export type UserRole" infrastructure/lambda/shared/types/index.ts | sed 's/.*= //' | tr -d "'" | tr '|' '\n' | sort)
 
 if [ "$SHARED_USER_ROLE" != "$LAMBDA_USER_ROLE" ]; then
-  echo -e "${RED}❌ UserRole enum mismatch between packages/shared and infrastructure/lambda/shared${NC}"
-  ERRORS=$((ERRORS + 1))
+  log_error "UserRole enum mismatch between packages/shared and infrastructure/lambda/shared"
 else
-  echo -e "${GREEN}✅ Enum definitions synchronized${NC}"
+  log_success "Enum definitions synchronized"
 fi
 
 # ============================================================
@@ -135,10 +126,9 @@ echo -e "${YELLOW}[4/8]${NC} Checking constants/configuration duplication..."
 CONSTANT_GROUPS=$(grep -c "^export const.*DEFAULTS = {" infrastructure/lambda/shared/config/defaults.ts || echo "0")
 
 if [ "$CONSTANT_GROUPS" -lt 15 ]; then
-  echo -e "${YELLOW}⚠️  Expected 15+ constant groups, found $CONSTANT_GROUPS${NC}"
-  WARNINGS=$((WARNINGS + 1))
+  log_warning "Expected 15+ constant groups, found $CONSTANT_GROUPS"
 else
-  echo -e "${GREEN}✅ Constants properly centralized ($CONSTANT_GROUPS groups)${NC}"
+  log_success "Constants properly centralized ($CONSTANT_GROUPS groups)"
 fi
 
 # ============================================================
@@ -153,11 +143,10 @@ UTIL_FILES=$(find infrastructure/lambda/shared/utils -name "*.ts" -type f | wc -
 DUPLICATE_UTILS=$(find infrastructure/lambda -name "*-utils.ts" -type f | grep -v shared/utils | grep -v node_modules | wc -l)
 
 if [ "$DUPLICATE_UTILS" -gt 1 ]; then
-  echo -e "${YELLOW}⚠️  Found $DUPLICATE_UTILS utility files outside shared/utils (verify they're not duplicates)${NC}"
+  log_warning "Found $DUPLICATE_UTILS utility files outside shared/utils (verify they're not duplicates)"
   find infrastructure/lambda -name "*-utils.ts" -type f | grep -v shared/utils | grep -v node_modules
-  WARNINGS=$((WARNINGS + 1))
 else
-  echo -e "${GREEN}✅ Utility functions centralized ($UTIL_FILES files in shared/utils)${NC}"
+  log_success "Utility functions centralized ($UTIL_FILES files in shared/utils)"
 fi
 
 # ============================================================
@@ -168,10 +157,9 @@ echo -e "${YELLOW}[6/8]${NC} Checking validation logic duplication..."
 VALIDATION_FILES=$(find infrastructure/lambda -name "*validat*.ts" -type f | grep -v node_modules | grep -v ".test.ts" | wc -l)
 
 if [ "$VALIDATION_FILES" -lt 3 ]; then
-  echo -e "${YELLOW}⚠️  Expected 3 validation files, found $VALIDATION_FILES${NC}"
-  WARNINGS=$((WARNINGS + 1))
+  log_warning "Expected 3 validation files, found $VALIDATION_FILES"
 else
-  echo -e "${GREEN}✅ Validation logic centralized ($VALIDATION_FILES files)${NC}"
+  log_success "Validation logic centralized ($VALIDATION_FILES files)"
 fi
 
 # ============================================================
@@ -183,11 +171,10 @@ echo -e "${YELLOW}[7/8]${NC} Checking frontend API call duplication..."
 DIRECT_FETCH=$(grep -rn "fetch(" apps/web/app apps/web/components --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v node_modules | wc -l || echo "0")
 
 if [ "$DIRECT_FETCH" -gt 0 ]; then
-  echo -e "${RED}❌ Found $DIRECT_FETCH direct fetch() calls (should use API client)${NC}"
+  log_error "Found $DIRECT_FETCH direct fetch() calls (should use API client)"
   grep -rn "fetch(" apps/web/app apps/web/components --include="*.ts" --include="*.tsx" | grep -v node_modules | head -5
-  ERRORS=$((ERRORS + 1))
 else
-  echo -e "${GREEN}✅ All API calls go through centralized client${NC}"
+  log_success "All API calls go through centralized client"
 fi
 
 # ============================================================
@@ -204,39 +191,37 @@ MISSING_DIRS=0
 
 for dir in "${REQUIRED_DIRS[@]}"; do
   if [ ! -d "infrastructure/lambda/shared/$dir" ]; then
-    echo -e "${RED}❌ Missing shared/$dir directory${NC}"
+    log_error "Missing shared/$dir directory"
     MISSING_DIRS=$((MISSING_DIRS + 1))
   fi
 done
 
 if [ "$MISSING_DIRS" -gt 0 ]; then
-  ERRORS=$((ERRORS + 1))
+  increment_counter ERRORS
 else
-  echo -e "${GREEN}✅ Lambda functions properly structured ($LAMBDA_FUNCTIONS functions)${NC}"
+  log_success "Lambda functions properly structured ($LAMBDA_FUNCTIONS functions)"
 fi
 
 # ============================================================
 # Summary
 # ============================================================
 echo ""
-echo "============================================================"
-echo "Validation Summary"
-echo "============================================================"
+log_section "Validation Summary"
 
 if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
-  echo -e "${GREEN}✅ All checks passed (0 errors, 0 warnings)${NC}"
+  log_success "All checks passed (0 errors, 0 warnings)"
   echo ""
   exit 0
 elif [ "$ERRORS" -eq 0 ]; then
-  echo -e "${YELLOW}⚠️  Validation passed with warnings${NC}"
-  echo -e "${YELLOW}   Errors: $ERRORS${NC}"
-  echo -e "${YELLOW}   Warnings: $WARNINGS${NC}"
+  log_warning "Validation passed with warnings"
+  log_warning "   Errors: $ERRORS"
+  log_warning "   Warnings: $WARNINGS"
   echo ""
   exit 0
 else
-  echo -e "${RED}❌ Validation failed${NC}"
-  echo -e "${RED}   Errors: $ERRORS${NC}"
-  echo -e "${YELLOW}   Warnings: $WARNINGS${NC}"
+  log_error "Validation failed"
+  log_error "   Errors: $ERRORS"
+  log_warning "   Warnings: $WARNINGS"
   echo ""
   echo "Please fix the errors above before committing/deploying."
   echo ""
