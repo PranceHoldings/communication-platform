@@ -4,7 +4,7 @@
 #
 # Purpose: Ensure tests are written based on actual implementation, not assumptions
 # When to run: Pre-commit hook (recommended), PR checks, before writing tests
-# How to run: npm run validate:tests
+# How to run: pnpm run validate:tests
 #
 
 set -e

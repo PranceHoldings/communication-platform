@@ -81,7 +81,7 @@ if [ -f "scripts/validate-lambda-dependencies.sh" ]; then
     echo -e "  ${GREEN}✓${NC} Lambda依存関係: OK"
   else
     echo -e "  ${RED}✗${NC} Lambda依存関係: FAILED"
-    echo -e "  ${YELLOW}→ Run: npm run lambda:fix${NC}"
+    echo -e "  ${YELLOW}→ Run: pnpm run lambda:fix${NC}"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
   fi
 else
@@ -120,7 +120,7 @@ if [ -d "infrastructure/lib" ]; then
     echo -e "  ${GREEN}✓${NC} TypeScriptビルド: OK ($JS_COUNT files)"
   else
     echo -e "  ${RED}✗${NC} TypeScriptビルド: NOT BUILT"
-    echo -e "  ${YELLOW}→ Run: npm run build${NC}"
+    echo -e "  ${YELLOW}→ Run: pnpm run build${NC}"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
   fi
 else
@@ -139,7 +139,7 @@ if [ -d "packages/database/node_modules/.prisma/client" ]; then
   echo -e "  ${GREEN}✓${NC} Prisma Client: OK"
 else
   echo -e "  ${RED}✗${NC} Prisma Client: NOT GENERATED"
-  echo -e "  ${YELLOW}→ Run: npm run db:generate${NC}"
+  echo -e "  ${YELLOW}→ Run: pnpm run db:generate${NC}"
   FAILED_CHECKS=$((FAILED_CHECKS + 1))
 fi
 
@@ -151,7 +151,7 @@ echo -e "${MAGENTA}[CHECK 6/7]${NC} CDK Synthesizeの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 cd infrastructure
-if npm run cdk -- synth --context environment=dev > /dev/null 2>&1; then
+if pnpm run cdk -- synth --context environment=dev > /dev/null 2>&1; then
   echo -e "  ${GREEN}✓${NC} CDK Synth: OK"
 else
   echo -e "  ${RED}✗${NC} CDK Synth: FAILED"
@@ -177,7 +177,7 @@ if [ "$FAILED_CHECKS" -eq 0 ]; then
   echo -e "${GREEN}✅ All pre-deploy checks passed${NC}"
   echo ""
   echo -e "${BLUE}Ready to deploy:${NC}"
-  echo -e "  ${GREEN}cd infrastructure && npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never${NC}"
+  echo -e "  ${GREEN}cd infrastructure && pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never${NC}"
   echo ""
   exit 0
 else

@@ -20,8 +20,8 @@ echo "Lambda関数バンドル完全検証（esbuild + afterBundling + 依存関
 echo "==================================================================${NC}"
 echo ""
 
-if ! command -v npx &> /dev/null; then
-    echo -e "${RED}✗ npx command not found${NC}"
+if ! command -v pnpm exec &> /dev/null; then
+    echo -e "${RED}✗ pnpm exec command not found${NC}"
     exit 1
 fi
 
@@ -74,7 +74,7 @@ for func in "${CRITICAL_FUNCTIONS[@]}"; do
     echo -n "    [1/4] esbuild bundling... "
     BUNDLE_OUTPUT="$PACKAGE_DIR/index.js"
 
-    if npx esbuild "$ENTRY_FILE" \
+    if pnpm exec esbuild "$ENTRY_FILE" \
         --bundle \
         --platform=node \
         --target=es2020 \
@@ -215,9 +215,9 @@ for file in "${CRITICAL_SHARED[@]}"; do
     SHARED_FILE="$LAMBDA_DIR/shared/$file"
     if [ -f "$SHARED_FILE" ]; then
         echo -n "  Checking $(basename $file)... "
-        if npx tsc --noEmit --skipLibCheck "$SHARED_FILE" 2>&1 | grep -q "error TS"; then
+        if pnpm exec tsc --noEmit --skipLibCheck "$SHARED_FILE" 2>&1 | grep -q "error TS"; then
             echo -e "${RED}✗ Syntax error${NC}"
-            npx tsc --noEmit --skipLibCheck "$SHARED_FILE" 2>&1 | grep "error TS" | head -3
+            pnpm exec tsc --noEmit --skipLibCheck "$SHARED_FILE" 2>&1 | grep "error TS" | head -3
             ERRORS_FOUND=$((ERRORS_FOUND + 1))
         else
             echo -e "${GREEN}✓${NC}"
@@ -234,7 +234,7 @@ echo -e "${YELLOW}[4/4]${NC} Verifying CDK stack compiles..."
 echo ""
 
 cd "$PROJECT_ROOT/infrastructure"
-if npm run build > /tmp/cdk-build.log 2>&1; then
+if pnpm run build > /tmp/cdk-build.log 2>&1; then
     echo -e "${GREEN}✓ CDK stack compiles successfully${NC}"
 else
     echo -e "${RED}✗ CDK stack compilation failed${NC}"
@@ -260,7 +260,7 @@ if [ "$ERRORS_FOUND" -eq 0 ]; then
     echo -e "${GREEN}✅ All validations passed - Safe to deploy!${NC}"
     echo ""
     echo "Deploy command:"
-    echo "  cd infrastructure && npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never"
+    echo "  cd infrastructure && pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never"
     echo ""
     echo "Estimated deployment time: ~3 minutes"
     exit 0

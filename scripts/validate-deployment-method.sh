@@ -40,7 +40,7 @@ if [ -n "$ZIP_FILES" ]; then
   echo "  - esbuild bundling process is skipped"
   echo ""
   echo "Correct deployment method:"
-  echo "  cd infrastructure && npm run deploy:lambda"
+  echo "  cd infrastructure && pnpm run deploy:lambda"
   echo ""
   echo "To remove these zip files:"
   echo "  find infrastructure/lambda -name '*.zip' -delete"
@@ -97,7 +97,7 @@ else
   echo -e "${GREEN}✅ All validations passed${NC}"
   echo ""
   echo "Deployment method is correct."
-  echo "Proceed with: cd infrastructure && npm run deploy:lambda"
+  echo "Proceed with: cd infrastructure && pnpm run deploy:lambda"
   echo ""
   exit 0
 fi

@@ -152,7 +152,7 @@ fix_lambda_function() {
 
   # Install dependencies
   log_info "Installing dependencies..."
-  npm install --omit=dev
+  pnpm install --omit=dev
 
   if [ $? -eq 0 ]; then
     log_success "$lambda_name dependencies installed"
@@ -229,7 +229,7 @@ else
   echo -e "${YELLOW}Troubleshooting:${NC}"
   echo -e "  - Check npm registry connectivity"
   echo -e "  - Verify package.json is valid"
-  echo -e "  - Try manual install: ${BLUE}cd <lambda-dir> && npm install${NC}"
+  echo -e "  - Try manual install: ${BLUE}cd <lambda-dir> && pnpm install${NC}"
   echo ""
   exit 1
 fi

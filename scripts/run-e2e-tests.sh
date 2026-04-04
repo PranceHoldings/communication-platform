@@ -36,7 +36,7 @@ else
   echo -e "${YELLOW}⚠️  Next.js server is not running${NC}"
   echo "  Starting server in background..."
   cd "${PROJECT_ROOT}/apps/web"
-  npm run dev > /tmp/nextjs-dev.log 2>&1 &
+  pnpm run dev > /tmp/nextjs-dev.log 2>&1 &
   NEXTJS_PID=$!
   echo "  PID: ${NEXTJS_PID}"
 
@@ -65,11 +65,11 @@ echo ""
 if [ -n "$1" ]; then
   # Run specific test
   echo "Running test: $1"
-  npx playwright test --grep "$1" --reporter=list
+  pnpm exec playwright test --grep "$1" --reporter=list
 else
   # Run all tests
   echo "Running all E2E tests"
-  npx playwright test --reporter=list,html
+  pnpm exec playwright test --reporter=list,html
 fi
 
 TEST_EXIT_CODE=$?
@@ -97,7 +97,7 @@ if [ ! -n "$1" ]; then
   echo "  file://${PROJECT_ROOT}/playwright-report/index.html"
   echo ""
   echo "To view the report:"
-  echo "  npx playwright show-report"
+  echo "  pnpm exec playwright show-report"
   echo ""
 fi
 

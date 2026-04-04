@@ -86,16 +86,16 @@ handle_error() {
       ;;
     "install")
       log_info "  - ネットワーク接続を確認してください"
-      log_info "  - npm cache をクリア: npm cache clean --force"
+      log_info "  - npm cache をクリア: pnpm store prune --force"
       log_info "  - package-lock.json を削除して再試行"
       ;;
     "validation")
       log_info "  - 環境変数を確認: ./scripts/validate-env.sh"
-      log_info "  - workspaces構成を確認: npm ls --depth=0"
+      log_info "  - workspaces構成を確認: pnpm list --depth=0"
       ;;
     "build")
       log_info "  - 型エラー: 各パッケージのtsconfigを確認"
-      log_info "  - 依存関係エラー: npm install を再実行"
+      log_info "  - 依存関係エラー: pnpm install を再実行"
       log_info "  - 詳細ログ: /tmp/build-output.log を確認"
       ;;
   esac
@@ -336,8 +336,8 @@ cleanup
 if [ "$SKIP_INSTALL" = false ]; then
   log_step "Step 2: 依存関係のインストール"
 
-  log_info "プロジェクトルートで npm install 実行中..."
-  npm install || handle_error "install"
+  log_info "プロジェクトルートで pnpm install 実行中..."
+  pnpm install || handle_error "install"
 
   log_success "依存関係インストール完了"
 else
@@ -362,7 +362,7 @@ if [ "$SKIP_VALIDATION" = false ]; then
   )
 
   for package in "${REQUIRED_PACKAGES[@]}"; do
-    if npm ls "$package" --depth=0 > /dev/null 2>&1; then
+    if pnpm list "$package" --depth=0 > /dev/null 2>&1; then
       log_success "  ✓ $package"
     else
       log_error "  ✗ $package が見つかりません"
@@ -376,7 +376,7 @@ if [ "$SKIP_VALIDATION" = false ]; then
     log_success "  ✓ Prisma Client 生成済み"
   else
     log_warning "  Prisma Client が生成されていません。生成中..."
-    cd packages/database && npx prisma generate && cd ../..
+    cd packages/database && pnpm exec prisma generate && cd ../..
     log_success "  ✓ Prisma Client 生成完了"
   fi
 
@@ -393,7 +393,7 @@ log_step "Step 4: ビルド実行"
 log_info "Turboでビルド開始..."
 START_TIME=$(date +%s)
 
-npm run build 2>&1 | tee /tmp/build-output.log || {
+pnpm run build 2>&1 | tee /tmp/build-output.log || {
   log_error "ビルド失敗"
   log_info "エラーログ: /tmp/build-output.log"
 

@@ -29,7 +29,7 @@ show_deployment_reminder() {
   echo -e "${YELLOW}⚠️  DEPLOYMENT REMINDER${NC}"
   echo -e "${YELLOW}========================================${NC}"
   echo ""
-  echo -e "${RED}Do NOT use 'cd infrastructure && npx cdk deploy' directly!${NC}"
+  echo -e "${RED}Do NOT use 'cd infrastructure && pnpm exec cdk deploy' directly!${NC}"
   echo ""
   echo "Correct deployment methods:"
   echo ""
@@ -40,7 +40,7 @@ show_deployment_reminder() {
   echo "     ./scripts/cdk-deploy-wrapper.sh Prance-dev-<StackName>"
   echo ""
   echo "  ${GREEN}3. Full deployment:${NC}"
-  echo "     npm run build:deploy"
+  echo "     pnpm run build:deploy"
   echo ""
   echo -e "${YELLOW}========================================${NC}"
   echo ""
@@ -59,7 +59,7 @@ cdk() {
   fi
 }
 
-# Create npm run shortcuts with validation
+# Create pnpm run shortcuts with validation
 npm-deploy() {
   echo -e "${YELLOW}⚠️  Intercepted npm deployment command${NC}"
   show_deployment_reminder

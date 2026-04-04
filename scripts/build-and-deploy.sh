@@ -1,6 +1,6 @@
 #!/bin/bash
 # Simplified Build and Deploy Script
-# Usage: npm run build:deploy
+# Usage: pnpm run build:deploy
 
 set -e  # Exit on error
 
@@ -36,7 +36,7 @@ echo ""
 
 # Step 1: Build Infrastructure
 log_step "Step 1/3: Building infrastructure..."
-if npm run build --workspace=infrastructure > /tmp/infra-build.log 2>&1; then
+if pnpm run build --workspace=infrastructure > /tmp/infra-build.log 2>&1; then
     log_success "Infrastructure built successfully"
 else
     log_error "Infrastructure build failed"
@@ -46,7 +46,7 @@ fi
 
 # Step 2: Pre-deployment validation
 log_step "Step 2/3: Running pre-deployment checks..."
-if npm run lambda:predeploy > /tmp/predeploy.log 2>&1; then
+if pnpm run lambda:predeploy > /tmp/predeploy.log 2>&1; then
     log_success "All validations passed"
 else
     log_error "Validation failed"
@@ -60,7 +60,7 @@ echo ""
 log_warning "This may take 2-3 minutes..."
 echo ""
 
-if npm run deploy:lambda 2>&1 | tee /tmp/deploy.log | grep -E "(UPDATE_COMPLETE|CREATE_COMPLETE|✓|Error:|Failed)" | tail -5; then
+if pnpm run deploy:lambda 2>&1 | tee /tmp/deploy.log | grep -E "(UPDATE_COMPLETE|CREATE_COMPLETE|✓|Error:|Failed)" | tail -5; then
     log_success "Lambda functions deployed successfully"
 else
     log_error "Deployment failed"

@@ -89,7 +89,7 @@ log_info "Shared modules TypeScript compilation..."
 cd "$PROJECT_ROOT/infrastructure/lambda/shared"
 
 if [ -f "tsconfig.json" ]; then
-  npx tsc --noEmit || {
+  pnpm exec tsc --noEmit || {
     log_error "Shared modules type check failed"
     exit 1
   }
@@ -117,7 +117,7 @@ for lambda_dir in "${LAMBDA_DIRS[@]}"; do
   if [ -f "$PROJECT_ROOT/$lambda_dir/tsconfig.json" ]; then
     log_info "Type checking: $lambda_dir"
     cd "$PROJECT_ROOT/$lambda_dir"
-    if npx tsc --noEmit 2>/dev/null; then
+    if pnpm exec tsc --noEmit 2>/dev/null; then
       log_success "  ✓ Type check passed"
     else
       log_warning "  ⚠ Type check failed (will be caught by CDK)"
@@ -141,8 +141,8 @@ echo ""
 echo -e "${GREEN}✅ Lambda関数ビルド準備完了${NC}"
 echo ""
 echo -e "${BLUE}次のステップ:${NC}"
-echo -e "  1. ${GREEN}CDK Synth${NC}: cd infrastructure && npm run cdk -- synth --context environment=dev"
-echo -e "  2. ${GREEN}CDK Deploy${NC}: cd infrastructure && npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never"
+echo -e "  1. ${GREEN}CDK Synth${NC}: cd infrastructure && pnpm run cdk -- synth --context environment=dev"
+echo -e "  2. ${GREEN}CDK Deploy${NC}: cd infrastructure && pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never"
 echo ""
 echo -e "${YELLOW}注意事項:${NC}"
 echo -e "  - CDKが自動的にTypeScriptをビルドします"

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # CDK Wrapper - Enforces Pre-Deployment Validation
-# This script wraps `npx cdk` to ensure all validations run before deployment
+# This script wraps `pnpm exec cdk` to ensure all validations run before deployment
 #
 # Usage:
 #   ./scripts/cdk-wrapper.sh deploy Prance-dev-ApiLambda --require-approval never
@@ -52,12 +52,12 @@ if [ "$IS_DEPLOY" = true ]; then
 
   # 1. Space-containing directories check
   echo -e "${BLUE}[1/4]${NC} Checking for space-containing directories..."
-  if npm run clean:spaces > /dev/null 2>&1; then
+  if pnpm run clean:spaces > /dev/null 2>&1; then
     echo -e "${GREEN}  ✓ No space-containing directories${NC}"
   else
     echo -e "${RED}  ✗ Space-containing directories found${NC}"
     echo ""
-    echo -e "${YELLOW}Run: npm run clean:spaces${NC}"
+    echo -e "${YELLOW}Run: pnpm run clean:spaces${NC}"
     exit 1
   fi
   echo ""
@@ -77,12 +77,12 @@ if [ "$IS_DEPLOY" = true ]; then
   # 3. Lambda dependencies check (if deploying Lambda stack)
   if [[ "$*" == *"ApiLambda"* ]] || [[ "$*" == *"--all"* ]] || [[ -z "$*" ]]; then
     echo -e "${BLUE}[3/4]${NC} Validating Lambda dependencies..."
-    if npm run lambda:validate > /dev/null 2>&1; then
+    if pnpm run lambda:validate > /dev/null 2>&1; then
       echo -e "${GREEN}  ✓ Lambda dependencies valid${NC}"
     else
       echo -e "${RED}  ✗ Lambda dependencies validation failed${NC}"
       echo ""
-      echo -e "${YELLOW}Run: npm run lambda:validate${NC}"
+      echo -e "${YELLOW}Run: pnpm run lambda:validate${NC}"
       exit 1
     fi
     echo ""
@@ -95,12 +95,12 @@ if [ "$IS_DEPLOY" = true ]; then
   if [[ "$*" == *"ApiLambda"* ]] || [[ "$*" == *"--all"* ]] || [[ -z "$*" ]]; then
     echo -e "${BLUE}[4/4]${NC} Validating CDK bundling configuration..."
     cd "$INFRA_DIR"
-    if npm run validate:bundling > /dev/null 2>&1; then
+    if pnpm run validate:bundling > /dev/null 2>&1; then
       echo -e "${GREEN}  ✓ CDK bundling configuration valid${NC}"
     else
       echo -e "${RED}  ✗ CDK bundling configuration invalid${NC}"
       echo ""
-      echo -e "${YELLOW}Run: cd infrastructure && npm run validate:bundling${NC}"
+      echo -e "${YELLOW}Run: cd infrastructure && pnpm run validate:bundling${NC}"
       exit 1
     fi
     echo ""
@@ -120,7 +120,7 @@ cd "$INFRA_DIR"
 echo -e "${MAGENTA}[CDK]${NC} Executing: cdk $CDK_COMMAND $*"
 echo ""
 
-npx cdk "$CDK_COMMAND" "$@"
+pnpm exec cdk "$CDK_COMMAND" "$@"
 
 echo ""
 echo -e "${GREEN}✅ CDK command completed successfully${NC}"

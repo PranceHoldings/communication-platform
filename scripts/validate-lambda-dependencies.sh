@@ -54,7 +54,7 @@ check_lambda_deps() {
   # Check if node_modules exists
   if [ ! -d "$lambda_dir/node_modules" ]; then
     echo -e "  ${RED}✗ node_modules not found (not installed)${NC}"
-    echo -e "  ${YELLOW}→ Run: cd $lambda_dir && npm install${NC}"
+    echo -e "  ${YELLOW}→ Run: cd $lambda_dir && pnpm install${NC}"
     FAILED=1
     MISSING_DEPS+=("$lambda_name")
     return
@@ -74,7 +74,7 @@ check_lambda_deps() {
           echo -e "  ${GREEN}✓${NC} .prisma/client (generated)"
         else
           echo -e "  ${RED}✗${NC} .prisma/client ${RED}(NOT GENERATED)${NC}"
-          echo -e "  ${YELLOW}→ Run: cd $lambda_dir && npx prisma generate${NC}"
+          echo -e "  ${YELLOW}→ Run: cd $lambda_dir && pnpm exec prisma generate${NC}"
           missing_count=$((missing_count + 1))
           FAILED=1
         fi
@@ -166,7 +166,7 @@ else
   echo ""
   echo -e "${YELLOW}Fix steps:${NC}"
   echo -e "  1. Run: ${BLUE}./scripts/fix-lambda-node-modules.sh${NC}"
-  echo -e "  2. Or manually: ${BLUE}cd <lambda-dir> && npm install${NC}"
+  echo -e "  2. Or manually: ${BLUE}cd <lambda-dir> && pnpm install${NC}"
   echo -e "  3. Redeploy Lambda functions"
   echo ""
   exit 1

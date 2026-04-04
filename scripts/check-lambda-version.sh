@@ -72,6 +72,6 @@ elif [ "$DEPLOYED_VERSION" = "不明" ]; then
 else
   echo -e "\n${RED}❌ バージョン不一致！${NC}"
   echo -e "${RED}   Lambda関数を再デプロイしてください：${NC}"
-  echo -e "   ${BLUE}cd infrastructure && npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never${NC}"
+  echo -e "   ${BLUE}cd infrastructure && pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never${NC}"
   exit 1
 fi

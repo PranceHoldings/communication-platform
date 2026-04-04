@@ -61,7 +61,7 @@ fi
 echo -e "${BLUE}[2/3]${NC} Checking TypeScript compilation..."
 
 cd infrastructure
-if npm run build > /tmp/tsc-build.log 2>&1; then
+if pnpm run build > /tmp/tsc-build.log 2>&1; then
   echo -e "${GREEN}  ✓ TypeScript compilation successful${NC}"
 else
   echo -e "${RED}  ✗ TypeScript compilation failed${NC}"
@@ -80,7 +80,7 @@ cd ..
 echo -e "${BLUE}[3/3]${NC} Running ESLint on Lambda functions..."
 
 cd infrastructure/lambda
-if npx eslint --quiet . > /tmp/eslint.log 2>&1; then
+if pnpm exec eslint --quiet . > /tmp/eslint.log 2>&1; then
   echo -e "${GREEN}  ✓ ESLint passed${NC}"
 else
   echo -e "${RED}  ✗ ESLint failed${NC}"

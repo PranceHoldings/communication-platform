@@ -71,7 +71,7 @@ sleep 2
 
 # 新しいサーバーを起動
 cd /workspaces/prance-communication-platform
-npm run dev > /tmp/next-dev.log 2>&1 &
+pnpm run dev > /tmp/next-dev.log 2>&1 &
 DEV_PID=$!
 
 echo "✅ 開発サーバー起動中 (PID: $DEV_PID)"

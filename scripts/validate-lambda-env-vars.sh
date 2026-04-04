@@ -266,7 +266,7 @@ else
   echo "2. Or update CDK stack and redeploy:"
   echo "   - Edit infrastructure/lib/api-lambda-stack.ts"
   echo "   - Add missing variables to environment: { ... }"
-  echo "   - Run: cd infrastructure && npx cdk deploy Prance-dev-ApiLambda"
+  echo "   - Run: cd infrastructure && pnpm exec cdk deploy Prance-dev-ApiLambda"
   echo ""
   echo "3. Get CloudFront domain:"
   echo "   aws cloudfront list-distributions \\"
