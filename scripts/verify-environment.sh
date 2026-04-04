@@ -7,22 +7,11 @@
 # Usage: bash scripts/verify-environment.sh
 # ==============================================================================
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Counters
-PASSED=0
-FAILED=0
-
-echo "=========================================="
-echo "  Environment Verification"
-echo "=========================================="
-echo ""
+log_section "Environment Verification"
 
 # ==============================================================================
 # 1. Git Status
@@ -30,11 +19,11 @@ echo ""
 echo -n "✅ Checking Git working directory... "
 if git diff --quiet && git diff --cached --quiet; then
   echo -e "${GREEN}Clean${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
   echo -e "${YELLOW}Modified files detected${NC}"
   git status --short | head -10
-  ((PASSED++))
+  increment_counter PASSED
 fi
 
 # ==============================================================================
@@ -44,10 +33,10 @@ echo -n "✅ Checking Node.js version... "
 NODE_VERSION=$(node --version)
 if [[ "$NODE_VERSION" == v22.* ]]; then
   echo -e "${GREEN}$NODE_VERSION${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
   echo -e "${RED}$NODE_VERSION (Expected: v22.x)${NC}"
-  ((FAILED++))
+  increment_counter FAILED
 fi
 
 # ==============================================================================
@@ -56,7 +45,7 @@ fi
 echo -n "✅ Checking npm version... "
 NPM_VERSION=$(npm --version)
 echo -e "${GREEN}$NPM_VERSION${NC}"
-((PASSED++))
+increment_counter PASSED
 
 # ==============================================================================
 # 4. Environment File
@@ -65,11 +54,11 @@ echo -n "✅ Checking .env.local file... "
 if [ -f ".env.local" ]; then
   VAR_COUNT=$(grep -c "^[A-Z_]" .env.local 2>/dev/null || echo 0)
   echo -e "${GREEN}Found ($VAR_COUNT variables)${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
   echo -e "${RED}Not found${NC}"
   echo "   ❌ .env.local is missing. Copy from .env.example and configure."
-  ((FAILED++))
+  increment_counter FAILED
 fi
 
 # ==============================================================================
@@ -95,10 +84,10 @@ done
 
 if [ ${#MISSING_VARS[@]} -eq 0 ]; then
   echo -e "${GREEN}All set${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
   echo -e "${RED}Missing: ${MISSING_VARS[*]}${NC}"
-  ((FAILED++))
+  increment_counter FAILED
 fi
 
 # ==============================================================================
@@ -110,18 +99,18 @@ if command -v psql &> /dev/null; then
   if [ -n "$DB_HOST" ]; then
     if nc -z -w5 "$DB_HOST" 5432 &> /dev/null; then
       echo -e "${GREEN}Connected${NC}"
-      ((PASSED++))
+      increment_counter PASSED
     else
       echo -e "${YELLOW}Cannot reach database (might be sleeping)${NC}"
-      ((PASSED++))
+      increment_counter PASSED
     fi
   else
     echo -e "${YELLOW}Skipped (invalid DATABASE_URL)${NC}"
-    ((PASSED++))
+    increment_counter PASSED
   fi
 else
   echo -e "${YELLOW}Skipped (psql not installed)${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 fi
 
 # ==============================================================================
@@ -130,10 +119,10 @@ fi
 echo -n "✅ Checking development server... "
 if lsof -ti:3000 &> /dev/null; then
   echo -e "${GREEN}Running on port 3000${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
   echo -e "${YELLOW}Not running (will start automatically)${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 fi
 
 # ==============================================================================
@@ -142,35 +131,26 @@ fi
 echo -n "✅ Checking API endpoint configuration... "
 if [ -n "$NEXT_PUBLIC_API_URL" ]; then
   echo -e "${GREEN}$NEXT_PUBLIC_API_URL${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
   echo -e "${RED}Not configured${NC}"
-  ((FAILED++))
+  increment_counter FAILED
 fi
 
 # ==============================================================================
 # Summary
 # ==============================================================================
 echo ""
-echo "=========================================="
-echo "  Summary"
-echo "=========================================="
-echo -e "Passed: ${GREEN}$PASSED${NC}"
-if [ $FAILED -gt 0 ]; then
-  echo -e "Failed: ${RED}$FAILED${NC}"
-else
-  echo -e "Failed: ${GREEN}$FAILED${NC}"
-fi
-echo ""
+print_counter_summary
 
 if [ $FAILED -eq 0 ]; then
-  echo -e "${GREEN}✅ All environment checks passed${NC}"
+  log_success "All environment checks passed"
   echo ""
   echo "You can now proceed with:"
   echo "  pnpm run dev          # Start development server"
   echo "  pnpm run test:e2e     # Run E2E tests"
   exit 0
 else
-  echo -e "${RED}❌ Some checks failed. Please fix the issues above.${NC}"
+  log_error "Some checks failed. Please fix the issues above."
   exit 1
 fi

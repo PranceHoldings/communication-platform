@@ -12,14 +12,9 @@
 #   ./scripts/collect-metrics.sh --hours 24   # Last 24 hours
 #   ./scripts/collect-metrics.sh --days 7     # Last 7 days
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Configuration
 REGION="${AWS_REGION:-us-east-1}"
@@ -41,7 +36,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     *)
-      echo "Unknown option: $1"
+      log_error "Unknown option: $1"
       exit 1
       ;;
   esac
@@ -51,14 +46,12 @@ done
 END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%S")
 START_TIME=$(date -u -d "$HOURS hours ago" +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || date -u -v-${HOURS}H +"%Y-%m-%dT%H:%M:%S")
 
-echo -e "${BLUE}================================================================${NC}"
-echo -e "${BLUE}📊 CloudWatch Metrics Collection${NC}"
-echo -e "${BLUE}================================================================${NC}"
-echo ""
-echo -e "${YELLOW}Function:${NC} $FUNCTION_NAME"
-echo -e "${YELLOW}Region:${NC} $REGION"
-echo -e "${YELLOW}Time Range:${NC} Last $HOURS hours"
-echo -e "${YELLOW}Period:${NC} $START_TIME to $END_TIME"
+log_section "📊 CloudWatch Metrics Collection"
+
+log_warning "Function: $FUNCTION_NAME"
+log_warning "Region: $REGION"
+log_warning "Time Range: Last $HOURS hours"
+log_warning "Period: $START_TIME to $END_TIME"
 echo ""
 
 # Function to get metric statistics
@@ -81,8 +74,8 @@ get_metric_stats() {
 }
 
 # 1. Invocation Count
-echo -e "${GREEN}1. Invocation Metrics${NC}"
-echo "---"
+log_success "1. Invocation Metrics"
+print_separator "-"
 
 INVOCATIONS=$(get_metric_stats "Invocations" "Sum" 3600)
 echo "  Total Invocations: $INVOCATIONS"
@@ -102,8 +95,8 @@ fi
 echo ""
 
 # 2. Duration Metrics
-echo -e "${GREEN}2. Duration Metrics${NC}"
-echo "---"
+log_success "2. Duration Metrics"
+print_separator "-"
 
 DURATION_AVG=$(get_metric_stats "Duration" "Average" 3600)
 DURATION_P95=$(get_metric_stats "Duration" "ExtendedStatistics" 3600)
@@ -116,8 +109,8 @@ echo "  Max Duration: ${DURATION_MAX}ms"
 echo ""
 
 # 3. Concurrent Executions
-echo -e "${GREEN}3. Concurrent Executions${NC}"
-echo "---"
+log_success "3. Concurrent Executions"
+print_separator "-"
 
 CONCURRENT_AVG=$(get_metric_stats "ConcurrentExecutions" "Average" 3600)
 CONCURRENT_MAX=$(get_metric_stats "ConcurrentExecutions" "Maximum" 3600)
@@ -128,8 +121,8 @@ echo "  Max Concurrent: $CONCURRENT_MAX"
 echo ""
 
 # 4. Check if metrics meet Phase 1.5 criteria
-echo -e "${GREEN}4. Phase 1.5 Completion Criteria${NC}"
-echo "---"
+log_success "4. Phase 1.5 Completion Criteria"
+print_separator "-"
 
 # Note: These are Lambda execution times, not end-to-end response times
 # For full pipeline metrics, use the performance-test.ts script
@@ -154,8 +147,8 @@ fi
 echo ""
 
 # 5. Recent errors (last 10)
-echo -e "${GREEN}5. Recent Errors (Last 10)${NC}"
-echo "---"
+log_success "5. Recent Errors (Last 10)"
+print_separator "-"
 
 aws logs filter-log-events \
   --region "$REGION" \
@@ -172,8 +165,8 @@ aws logs filter-log-events \
   done || echo "  No recent errors found"
 
 echo ""
-echo -e "${BLUE}================================================================${NC}"
+print_separator
 echo ""
-echo -e "${YELLOW}💡 Tip: For end-to-end performance metrics, run:${NC}"
-echo -e "   pnpm run perf:test"
+log_warning "💡 Tip: For end-to-end performance metrics, run:"
+echo "   pnpm run perf:test"
 echo ""
