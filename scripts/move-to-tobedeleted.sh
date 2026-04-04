@@ -18,14 +18,9 @@
 #   - Returns success even if original deletion would fail
 ###############################################################################
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Project root
 PROJECT_ROOT="/workspaces/prance-communication-platform"
@@ -34,16 +29,16 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Create tobedeleted directory if it doesn't exist
 if [ ! -d "$TOBEDELETED_DIR" ]; then
-    echo -e "${BLUE}Creating tobedeleted directory...${NC}"
+    log_info "Creating tobedeleted directory..."
     mkdir -p "$TOBEDELETED_DIR"
-    echo -e "${GREEN}✓ Created: $TOBEDELETED_DIR${NC}"
+    log_success "Created: $TOBEDELETED_DIR"
 fi
 
 # Check if arguments provided
 if [ $# -eq 0 ]; then
-    echo -e "${RED}Error: No paths provided${NC}"
-    echo -e "${YELLOW}Usage: $0 <path1> [path2] [path3] ...${NC}"
-    echo -e "${YELLOW}Example: $0 apps/web/.next infrastructure/cdk.out${NC}"
+    log_error "No paths provided"
+    log_warning "Usage: $0 <path1> [path2] [path3] ..."
+    log_warning "Example: $0 apps/web/.next infrastructure/cdk.out"
     exit 1
 fi
 
@@ -52,10 +47,7 @@ SUCCESS_COUNT=0
 FAIL_COUNT=0
 SKIP_COUNT=0
 
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Moving items to tobedeleted${NC}"
-echo -e "${BLUE}============================================${NC}"
-echo ""
+log_section "Moving items to tobedeleted"
 
 # Process each argument
 for target in "$@"; do
@@ -66,7 +58,7 @@ for target in "$@"; do
 
     # Check if target exists
     if [ ! -e "$target" ]; then
-        echo -e "${YELLOW}⚠ Skip: $target (does not exist)${NC}"
+        log_warning "Skip: $target (does not exist)"
         ((SKIP_COUNT++))
         continue
     fi
@@ -76,23 +68,23 @@ for target in "$@"; do
     unique_name="${basename}_${TIMESTAMP}"
     destination="${TOBEDELETED_DIR}/${unique_name}"
 
-    echo -e "${BLUE}Processing: $target${NC}"
+    log_info "Processing: $target"
 
     # Ensure tobedeleted directory exists (safety check)
     if [ ! -d "$TOBEDELETED_DIR" ]; then
-        echo -e "${YELLOW}⚠ tobedeleted directory not found, creating...${NC}"
+        log_warning "tobedeleted directory not found, creating..."
         mkdir -p "$TOBEDELETED_DIR"
     fi
 
     # Try to move
     if mv "$target" "$destination" 2>/dev/null; then
-        echo -e "${GREEN}✓ Moved to: ${unique_name}${NC}"
+        log_success "Moved to: ${unique_name}"
         ((SUCCESS_COUNT++))
     elif sudo mv "$target" "$destination" 2>/dev/null; then
-        echo -e "${GREEN}✓ Moved to: ${unique_name} (with sudo)${NC}"
+        log_success "Moved to: ${unique_name} (with sudo)"
         ((SUCCESS_COUNT++))
     else
-        echo -e "${RED}✗ Failed to move: $target${NC}"
+        log_error "Failed to move: $target"
         ((FAIL_COUNT++))
     fi
 
@@ -100,9 +92,7 @@ for target in "$@"; do
 done
 
 # Summary
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Summary${NC}"
-echo -e "${BLUE}============================================${NC}"
+log_section "Summary"
 echo -e "Successfully moved: ${GREEN}${SUCCESS_COUNT}${NC}"
 echo -e "Failed:            ${RED}${FAIL_COUNT}${NC}"
 echo -e "Skipped:           ${YELLOW}${SKIP_COUNT}${NC}"
@@ -110,10 +100,10 @@ echo ""
 
 # List tobedeleted contents
 if [ -d "$TOBEDELETED_DIR" ] && [ "$(ls -A $TOBEDELETED_DIR 2>/dev/null)" ]; then
-    echo -e "${YELLOW}Items in tobedeleted ($(du -sh $TOBEDELETED_DIR | cut -f1)):${NC}"
+    log_warning "Items in tobedeleted ($(du -sh $TOBEDELETED_DIR | cut -f1)):"
     ls -lh "$TOBEDELETED_DIR" | tail -n +2 | awk '{printf "  - %s (%s)\n", $9, $5}'
     echo ""
-    echo -e "${YELLOW}To permanently delete tobedeleted:${NC}"
+    log_warning "To permanently delete tobedeleted:"
     echo -e "  ${BLUE}sudo rm -rf $TOBEDELETED_DIR${NC}"
 fi
 
