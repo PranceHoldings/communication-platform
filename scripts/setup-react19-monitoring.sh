@@ -2,29 +2,24 @@
 # setup-react19-monitoring.sh - React 19 Monitoring Dashboard Setup
 # Creates CloudWatch dashboards and alarms for React 19 deployment monitoring
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-echo -e "${BLUE}📊 React 19 Monitoring Setup${NC}"
-echo "=============================================="
+log_info "📊 React 19 Monitoring Setup"
+print_separator "=" 46
 
 # Configuration
 ENVIRONMENT="${1:-dev}"
 REGION="${AWS_REGION:-us-east-1}"
 DASHBOARD_NAME="React19-Migration-${ENVIRONMENT}"
 
-echo -e "${BLUE}Environment: ${ENVIRONMENT}${NC}"
-echo -e "${BLUE}Region: ${REGION}${NC}"
+log_info "Environment: ${ENVIRONMENT}"
+log_info "Region: ${REGION}"
 echo ""
 
 # Step 1: Create CloudWatch Dashboard
-echo -e "${YELLOW}Step 1: Creating CloudWatch Dashboard...${NC}"
+log_section "Step 1: Creating CloudWatch Dashboard"
 
 DASHBOARD_BODY=$(cat <<'EOF'
 {
@@ -113,16 +108,16 @@ aws cloudwatch put-dashboard \
   --region "${REGION}" >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✓ Dashboard created: ${DASHBOARD_NAME}${NC}"
-  echo -e "${BLUE}  View at: https://${REGION}.console.aws.amazon.com/cloudwatch/home?region=${REGION}#dashboards:name=${DASHBOARD_NAME}${NC}"
+  log_success "Dashboard created: ${DASHBOARD_NAME}"
+  log_info "  View at: https://${REGION}.console.aws.amazon.com/cloudwatch/home?region=${REGION}#dashboards:name=${DASHBOARD_NAME}"
 else
-  echo -e "${RED}✗ Failed to create dashboard${NC}"
+  log_error "Failed to create dashboard"
   exit 1
 fi
 
 # Step 2: Create CloudWatch Alarms
 echo ""
-echo -e "${YELLOW}Step 2: Creating CloudWatch Alarms...${NC}"
+log_section "Step 2: Creating CloudWatch Alarms"
 
 # Alarm 1: High Error Rate
 aws cloudwatch put-metric-alarm \
@@ -138,9 +133,9 @@ aws cloudwatch put-metric-alarm \
   --region "${REGION}" >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✓ Alarm created: React19-${ENVIRONMENT}-HighErrorRate${NC}"
+  log_success "Alarm created: React19-${ENVIRONMENT}-HighErrorRate"
 else
-  echo -e "${YELLOW}⚠ Alarm creation failed or already exists${NC}"
+  log_warning "Alarm creation failed or already exists"
 fi
 
 # Alarm 2: Slow Response Time
@@ -157,9 +152,9 @@ aws cloudwatch put-metric-alarm \
   --region "${REGION}" >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✓ Alarm created: React19-${ENVIRONMENT}-SlowResponseTime${NC}"
+  log_success "Alarm created: React19-${ENVIRONMENT}-SlowResponseTime"
 else
-  echo -e "${YELLOW}⚠ Alarm creation failed or already exists${NC}"
+  log_warning "Alarm creation failed or already exists"
 fi
 
 # Alarm 3: Frontend 5xx Error Rate
@@ -176,14 +171,14 @@ aws cloudwatch put-metric-alarm \
   --region "${REGION}" >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✓ Alarm created: React19-${ENVIRONMENT}-Frontend5xxErrors${NC}"
+  log_success "Alarm created: React19-${ENVIRONMENT}-Frontend5xxErrors"
 else
-  echo -e "${YELLOW}⚠ Alarm creation failed or already exists${NC}"
+  log_warning "Alarm creation failed or already exists"
 fi
 
 # Step 3: Create Log Insights Queries
 echo ""
-echo -e "${YELLOW}Step 3: Creating CloudWatch Log Insights Queries...${NC}"
+log_section "Step 3: Creating CloudWatch Log Insights Queries"
 
 # Query 1: React 19 Specific Errors
 QUERY_1=$(cat <<EOF
@@ -203,22 +198,20 @@ fields @timestamp, @message, @duration
 EOF
 )
 
-echo -e "${BLUE}Saved queries (manual setup required):${NC}"
+log_info "Saved queries (manual setup required):"
 echo ""
-echo -e "${GREEN}Query 1: React 19 Specific Errors${NC}"
+log_success "Query 1: React 19 Specific Errors"
 echo "$QUERY_1"
 echo ""
-echo -e "${GREEN}Query 2: Performance Metrics${NC}"
+log_success "Query 2: Performance Metrics"
 echo "$QUERY_2"
 echo ""
 
 # Step 4: Summary
 echo ""
-echo -e "${GREEN}=============================================${NC}"
-echo -e "${GREEN}✓ Monitoring Setup Complete${NC}"
-echo -e "${GREEN}=============================================${NC}"
+log_section "✓ Monitoring Setup Complete"
 echo ""
-echo -e "${BLUE}Next Steps:${NC}"
+log_info "Next Steps:"
 echo "1. View dashboard:"
 echo "   https://${REGION}.console.aws.amazon.com/cloudwatch/home?region=${REGION}#dashboards:name=${DASHBOARD_NAME}"
 echo ""
@@ -228,7 +221,7 @@ echo "   aws cloudwatch put-metric-alarm ... --alarm-actions arn:aws:sns:${REGIO
 echo ""
 echo "3. Monitor for 24-48 hours after deployment"
 echo ""
-echo -e "${YELLOW}Key Metrics to Watch:${NC}"
+log_warning "Key Metrics to Watch:"
 echo "- Error Rate: Should stay < 0.1%"
 echo "- Response Time: Should stay < 500ms (P95)"
 echo "- React-specific errors: Should be 0"

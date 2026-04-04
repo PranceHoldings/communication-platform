@@ -8,27 +8,21 @@
 # Reference: docs/09-progress/DOCUMENTATION_AUDIT_2026-03-30.md
 # ==============================================================================
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Counters
 FILES_MOVED=0
 DIRS_CREATED=0
 
-echo "=========================================="
-echo "  Documentation Cleanup - Phase 2"
-echo "=========================================="
+log_section "Documentation Cleanup - Phase 2"
 echo ""
 
 # ==============================================================================
 # Create archive directories
 # ==============================================================================
-echo "📁 Creating archive directories..."
+log_info "📁 Creating archive directories..."
 
 ARCHIVE_BASE="docs/09-progress/archives"
 
@@ -42,13 +36,13 @@ mkdir -p "$ARCHIVE_BASE/test-reports"
 
 DIRS_CREATED=6
 
-echo -e "${GREEN}✅ Created $DIRS_CREATED archive directories${NC}"
+log_success "Created $DIRS_CREATED archive directories"
 echo ""
 
 # ==============================================================================
 # Issue #4: Move date-specific reports
 # ==============================================================================
-echo "🔍 Moving date-specific reports..."
+log_info "🔍 Moving date-specific reports..."
 
 REPORT_COUNT=0
 
@@ -72,9 +66,9 @@ done
 
 if [ "$REPORT_COUNT" -gt 0 ]; then
   FILES_MOVED=$((FILES_MOVED + REPORT_COUNT))
-  echo -e "${GREEN}✅ Moved $REPORT_COUNT date-specific reports${NC}"
+  log_success "Moved $REPORT_COUNT date-specific reports"
 else
-  echo -e "${YELLOW}No date-specific reports found${NC}"
+  log_warning "No date-specific reports found"
 fi
 
 echo ""
@@ -82,7 +76,7 @@ echo ""
 # ==============================================================================
 # Issue #4: Move completion reports
 # ==============================================================================
-echo "🔍 Moving completion reports..."
+log_info "🔍 Moving completion reports..."
 
 COMPLETE_COUNT=0
 
@@ -108,9 +102,9 @@ done
 
 if [ "$COMPLETE_COUNT" -gt 0 ]; then
   FILES_MOVED=$((FILES_MOVED + COMPLETE_COUNT))
-  echo -e "${GREEN}✅ Moved $COMPLETE_COUNT completion reports${NC}"
+  log_success "Moved $COMPLETE_COUNT completion reports"
 else
-  echo -e "${YELLOW}No completion reports found${NC}"
+  log_warning "No completion reports found"
 fi
 
 echo ""
@@ -118,7 +112,7 @@ echo ""
 # ==============================================================================
 # Issue #4: Move ROOT_CAUSE_ANALYSIS files
 # ==============================================================================
-echo "🔍 Moving root cause analysis files..."
+log_info "🔍 Moving root cause analysis files..."
 
 RCA_COUNT=0
 
@@ -132,9 +126,9 @@ done
 
 if [ "$RCA_COUNT" -gt 0 ]; then
   FILES_MOVED=$((FILES_MOVED + RCA_COUNT))
-  echo -e "${GREEN}✅ Moved $RCA_COUNT root cause analysis files${NC}"
+  log_success "Moved $RCA_COUNT root cause analysis files"
 else
-  echo -e "${YELLOW}No root cause analysis files found${NC}"
+  log_warning "No root cause analysis files found"
 fi
 
 echo ""
@@ -142,7 +136,7 @@ echo ""
 # ==============================================================================
 # Issue #5: Move test plans and reports
 # ==============================================================================
-echo "🔍 Moving test plans and reports..."
+log_info "🔍 Moving test plans and reports..."
 
 TEST_COUNT=0
 
@@ -173,9 +167,9 @@ fi
 
 if [ "$TEST_COUNT" -gt 0 ]; then
   FILES_MOVED=$((FILES_MOVED + TEST_COUNT))
-  echo -e "${GREEN}✅ Moved $TEST_COUNT test-related files${NC}"
+  log_success "Moved $TEST_COUNT test-related files"
 else
-  echo -e "${YELLOW}No test-related files found${NC}"
+  log_warning "No test-related files found"
 fi
 
 echo ""
@@ -183,15 +177,13 @@ echo ""
 # ==============================================================================
 # Summary
 # ==============================================================================
-echo "=========================================="
-echo "  Summary"
-echo "=========================================="
+log_section "Summary"
 echo -e "Archive directories created: ${GREEN}$DIRS_CREATED${NC}"
 echo -e "Files moved: ${GREEN}$FILES_MOVED${NC}"
 echo ""
 
 if [ "$FILES_MOVED" -gt 0 ]; then
-  echo -e "${GREEN}✅ Phase 2 cleanup complete${NC}"
+  log_success "Phase 2 cleanup complete"
   echo ""
   echo "Archive structure:"
   echo "  $ARCHIVE_BASE/"
@@ -205,7 +197,7 @@ if [ "$FILES_MOVED" -gt 0 ]; then
   echo "  1. Review changes: git status"
   echo "  2. Commit changes: git add . && git commit -m 'docs: organize temporary reports (Phase 2)'"
 else
-  echo -e "${YELLOW}No files were moved${NC}"
+  log_warning "No files were moved"
   echo "All reports may have been already organized."
 fi
 
