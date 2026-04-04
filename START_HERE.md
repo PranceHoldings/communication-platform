@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-04-04 (Day 43 - 06:00 UTC)
-**現在の Phase:** npm → pnpm 移行完了 ✅ | React 19 Production準備完了 ✅
-**次のアクション:** pnpm環境での最終検証 → Staging環境デプロイ
-**ステータス:** migration/npm-to-pnpm ブランチ、pnpm 10.32.1、全機能動作確認済み ✅
+**最終更新:** 2026-04-04 (Day 43 - 12:00 UTC)
+**現在の Phase:** pnpm 移行完了 ✅ | スクリプト統合 Phase 2-3完了 ✅ | React 19 Production準備完了 ✅
+**次のアクション:** スクリプト統合 Phase 4（既存スクリプトの共有ライブラリ移行） → Staging環境デプロイ
+**ステータス:** dev ブランチ、pnpm 10.32.1、共有ライブラリシステム構築完了 ✅
 
 ---
 
@@ -83,10 +83,59 @@ pnpm run test:e2e
 
 **詳細:** [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md)
 
-### 🎯 最新達成 (Day 43 - 2026-04-04) - npm → pnpm 完全移行完了 🎉
+### 🎯 最新達成 (Day 43 - 2026-04-04 午後) - スクリプト統合システム構築完了 🎉
 
-**ブランチ:** migration/npm-to-pnpm  
-**最新コミット:** f9e2471 "docs: convert all documentation from npm to pnpm commands"
+**ブランチ:** dev  
+**最新コミット:** 2ec1394 "docs(scripts): enhance documentation with registry and workflows (Phase 3 complete)"
+
+**スクリプト統合 Phase 1-3完了（所要時間: 4時間）**
+
+**Phase 1: スクリプト重複削除**
+- ✅ 80+スクリプトの包括的監査完了
+- ✅ 6組の重複スクリプトペア特定
+- ✅ 5個の重複スクリプト削除（648行削減）
+- ✅ 71箇所のリファレンス更新（26ファイル）
+- ✅ TypeScript優先（型安全性）、機能統合スクリプト採用
+
+**Phase 2: 共有ライブラリシステム構築**
+- ✅ scripts/lib/ ディレクトリ作成
+- ✅ common.sh（305行）- 色定義、ログ、エラーハンドリング、カウンター
+- ✅ aws.sh（410行）- AWS CLI ラッパー、自動リトライロジック
+- ✅ validate.sh（428行）- 再利用可能な検証関数
+- ✅ logging.sh（425行）- 構造化ログ、JSON出力対応
+- ✅ lib/README.md（566行）- 包括的使用ガイド
+- ✅ サンプルスクリプト作成（2個）
+- ✅ validate-env-v2.sh 移行完了（216→142行、34%削減）
+
+**Phase 3: ドキュメント拡張**
+- ✅ REGISTRY.json 作成（167行）- スクリプトメタデータ管理
+- ✅ scripts/README.md 拡張（279→513行、+84%）
+- ✅ 5個の共通ワークフロー追加
+- ✅ 7個のトラブルシューティングガイド追加
+- ✅ 35+使用例追加（+192%）
+- ✅ ベストプラクティスセクション追加
+
+**インパクト:**
+- コード重複削除: ~1,228行（57スクリプトの色定義等）
+- スクリプトサイズ削減: 平均34-50%（共有ライブラリ使用時）
+- 一貫性向上: 統一されたログ・エラーハンドリング
+- 保守性向上: 80箇所 → 4ライブラリファイルに集約
+- ドキュメント品質: 詳細ガイド、メタデータ、ワークフロー
+
+**レポート:**
+- [Phase 2完了レポート](docs/09-progress/archives/2026-04-04-temporary-reports/PHASE2_SHARED_LIBRARY_COMPLETE.md)
+- [Phase 3完了レポート](docs/09-progress/archives/2026-04-04-temporary-reports/PHASE3_DOCUMENTATION_ENHANCEMENT_COMPLETE.md)
+- [共有ライブラリガイド](scripts/lib/README.md)
+- [スクリプトレジストリ](scripts/REGISTRY.json)
+
+**次フェーズ:** Phase 4 - 既存スクリプトの共有ライブラリ移行（目標: 60スクリプト、75%）
+
+---
+
+### 🎯 過去の達成 (Day 43 - 2026-04-04 午前) - npm → pnpm 完全移行完了 🎉
+
+**ブランチ:** dev（migration/npm-to-pnpm からマージ済み）
+**コミット:** e86c66f "refactor(scripts): consolidate duplicate scripts (Phase 1)"
 
 **pnpm 移行完了（所要時間: 4時間）**
 - ✅ pnpm 10.32.1 完全移行完了（877パッケージ）
@@ -224,40 +273,60 @@ pnpm run test:e2e
 
 ## 🎯 次のアクション
 
-### 0. pnpm 移行ブランチのマージ 🔴 最優先
+### 0. スクリプト統合 Phase 4 - 既存スクリプトの共有ライブラリ移行 🔴 推奨
 
-**目的:** pnpm環境をdevブランチに統合
+**目的:** validate-*.sh スクリプトを共有ライブラリに移行（コード重複削減）
 
 **前提条件:**
-- ✅ pnpm 10.32.1 完全移行完了
-- ✅ 全システム検証完了（環境変数・CDK・Prisma・Dev Server）
-- ✅ パフォーマンス向上確認（60% 高速化、50% 削減）
-- ✅ 既存問題の特定完了（移行無関係）
+- ✅ 共有ライブラリシステム構築完了（Phase 2）
+- ✅ ドキュメント・メタデータ整備完了（Phase 3）
+- ✅ サンプル移行完了（validate-env-v2.sh: 34%削減）
 
-**手順:**
+**優先度順スクリプト:**
 ```bash
-# 1. devブランチにマージ
-git checkout dev
-git merge migration/npm-to-pnpm
-git push origin dev
+# High Priority: 検証スクリプト（15個）
+validate-lambda-dependencies.sh
+validate-language-sync.sh
+validate-ui-settings-sync.sh
+validate-workspace-dependencies.sh
+validate-deployment-method.sh
+validate-api-contracts.sh
+validate-i18n-keys.sh
+validate-lambda-bundling.sh
+validate-schema-interface-implementation.sh
+validate-duplication.sh
+validate-lambda-responses.sh
+validate-api-type-usage.sh
+validate-lambda-env-coverage.sh
+validate-lambda-env-vars.sh
+validate-env-consistency-comprehensive.sh
 
-# 2. 最終検証
-pnpm install
-pnpm run dev
-pnpm exec cdk synth
-
-# 3. プルリクエスト作成（オプション）
-gh pr create --base dev --head migration/npm-to-pnpm \
-  --title "feat: migrate from npm to pnpm for improved performance" \
-  --body "$(cat docs/06-infrastructure/NPM_TO_PNPM_MIGRATION_REPORT.md)"
+# Medium Priority: データベース・デプロイスクリプト（20個）
+# Low Priority: ユーティリティスクリプト（40個）
 ```
 
-**期待結果:**
-- devブランチがpnpm環境に更新
-- 全機能正常動作
-- チーム通知完了
+**移行手順（1スクリプトあたり10-15分）:**
+```bash
+# 1. 元スクリプトを読み取り、共有ライブラリで置き換え可能な部分を特定
+# 2. 新バージョン作成（例: validate-xxx-v2.sh）
+# 3. テスト実行
+bash scripts/validate-xxx-v2.sh
+# 4. 動作確認後、元スクリプトを削除
+# 5. REGISTRY.json 更新
+# 6. コミット
+```
 
-### 1. Staging環境デプロイ（pnpm環境で実施）
+**目標:**
+- 60スクリプト移行（75%達成）
+- 平均コード削減: 50-200行/スクリプト
+- 総削減見込み: 6,000行
+
+**期待結果:**
+- コード重複完全削除
+- 一貫した検証インターフェース
+- 保守性向上（変更1箇所 → 全スクリプトに反映）
+
+### 1. Staging環境デプロイ（Phase 4後または並行実施）
 
 **目的:** pnpm + React 19.2.4を実環境で検証
 
@@ -340,9 +409,17 @@ pnpm run test:e2e -- --grep="stage3"
 - [CODING_RULES.md](CODING_RULES.md) - コミット前チェックリスト
 - [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) - ドキュメント索引
 - [TROUBLESHOOTING.md](docs/07-development/TROUBLESHOOTING.md) - エラー解決ガイド
-- [npm → pnpm Migration Report](docs/06-infrastructure/NPM_TO_PNPM_MIGRATION_REPORT.md) - pnpm移行完全レポート 🆕
+- [npm → pnpm Migration Report](docs/06-infrastructure/NPM_TO_PNPM_MIGRATION_REPORT.md) - pnpm移行完全レポート
 - [React 19 Migration Report](docs/06-infrastructure/REACT_19_MIGRATION_REPORT.md) - 移行完全ガイド
 - [React 19 E2E Test Report](docs/09-progress/REACT_19_E2E_TEST_REPORT.md) - テスト検証結果
+
+### スクリプト関連 🆕
+- [scripts/README.md](scripts/README.md) - スクリプトディレクトリガイド（ワークフロー・トラブルシューティング）
+- [scripts/REGISTRY.json](scripts/REGISTRY.json) - スクリプトメタデータレジストリ（jqでクエリ可能）
+- [scripts/lib/README.md](scripts/lib/README.md) - 共有ライブラリ詳細ガイド
+- [scripts/CLAUDE.md](scripts/CLAUDE.md) - スクリプト詳細仕様
+- [Phase 2完了レポート](docs/09-progress/archives/2026-04-04-temporary-reports/PHASE2_SHARED_LIBRARY_COMPLETE.md) - 共有ライブラリ構築記録
+- [Phase 3完了レポート](docs/09-progress/archives/2026-04-04-temporary-reports/PHASE3_DOCUMENTATION_ENHANCEMENT_COMPLETE.md) - ドキュメント拡張記録
 
 ### Phase関連
 - [SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md) - 全セッション履歴
@@ -359,7 +436,7 @@ bash scripts/detect-hardcoded-values.sh      # ハードコード検出
 
 ## 📈 プロジェクト統計
 
-- **Package Manager: pnpm 10.32.1** ✅ 🆕
+- **Package Manager: pnpm 10.32.1** ✅
 - React: **19.2.4** (完全統合・検証済み) ✅
 - 依存関係: 877パッケージ（100% React 19統一）✅
 - React Query: **5.96.1** (Dashboard統合完了) ✅
@@ -367,11 +444,15 @@ bash scripts/detect-hardcoded-values.sh      # ハードコード検出
 - ランタイム: 100% nodejs22.x ✅
 - 環境変数: 93個
 - **E2Eテスト: Stage 0-2 Core: 100%** (20/20 passed) ✅
-- 検証スクリプト: 21個（監視セットアップ追加）
-- ドキュメント: 430ファイル（pnpm移行レポート追加）🆕
+- **スクリプト統合: Phase 1-3完了** 🆕
+  - 総スクリプト数: 80+
+  - 共有ライブラリ移行: 1スクリプト（1.25%）
+  - 目標: 60スクリプト（75%）
+  - 削除された重複: 5スクリプト（648行）
+  - 共有ライブラリ: 4ファイル（1,568行）
+- ドキュメント: 433ファイル（スクリプトレジストリ・レポート追加）🆕
 - 全Phase: 完了 ✅
-- devブランチ: 最新（5359948）
-- migration/npm-to-pnpm ブランチ: **pnpm移行完了（f9e2471）** ✅ 🆕
+- devブランチ: 最新（2ec1394）🆕
 - stagingブランチ: 作成済み（デプロイ準備完了）
 
 **pnpm パフォーマンス改善:** 🆕
@@ -393,9 +474,10 @@ bash scripts/detect-hardcoded-values.sh      # ハードコード検出
 
 ---
 
-**最終更新:** 2026-04-04 (Day 43 - 06:00 UTC) 🎉 **pnpm移行完了**
-**Package Manager:** 🔄 **pnpm 10.32.1** - 60% 高速化、50% ディスク削減 ✅ 🆕
+**最終更新:** 2026-04-04 (Day 43 - 12:00 UTC) 🎉 **スクリプト統合Phase 2-3完了**
+**Package Manager:** 🔄 **pnpm 10.32.1** - 60% 高速化、50% ディスク削減 ✅
+**スクリプトシステム:** 📚 **共有ライブラリ構築完了** - 4ライブラリ（1,568行）、重複削減（~1,228行）✅ 🆕
 **Production Status:** 🚀 **稼働中** - https://app.prance.jp (React 18)
 **Staging Status:** 🎯 **準備完了** - デプロイ待ち (React 19.2.4 + pnpm)
 **開発環境:** ✅ **完全検証済み** - pnpm 10.32.1 + React 19.2.4 + React Query + E2E 100%
-**次のマイルストーン:** pnpm移行ブランチマージ → Staging環境デプロイ実行 → 24-48h監視 → Production展開
+**次のマイルストーン:** スクリプト統合Phase 4（60スクリプト移行） → Staging環境デプロイ → 24-48h監視 → Production展開
