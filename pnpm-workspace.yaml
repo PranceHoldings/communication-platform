@@ -1,0 +1,9 @@
+packages:
+  # Frontend applications
+  - 'apps/*'
+
+  # Shared packages
+  - 'packages/*'
+
+  # Infrastructure (CDK + Lambda functions)
+  - 'infrastructure'
