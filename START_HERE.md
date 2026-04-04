@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-04-04 (Day 43 - 18:00 UTC)
-**現在の Phase:** スクリプト統合 Phase 4 進行中（17/60 完了、28.3%） 🎊
-**次のアクション:** スクリプト統合 Phase 4 継続 → Staging環境デプロイ
-**ステータス:** dev ブランチ、pnpm 移行完了、共有ライブラリ移行順調 ✅
+**最終更新:** 2026-04-04 (Day 43 - 21:00 UTC)
+**現在の Phase:** スクリプト統合 Phase 4 進行中（34/60 完了、56.7%） 🚀
+**次のアクション:** スクリプト統合 Phase 4 継続（残り26スクリプト） → Staging環境デプロイ
+**ステータス:** dev ブランチ、pnpm 移行完了、共有ライブラリ移行大幅進捗 ✅
 
 ---
 
@@ -88,9 +88,9 @@ pnpm run test:e2e
 **ブランチ:** dev
 **最新コミット:** (保留中)
 
-**スクリプト統合 Phase 1-4 進行中（所要時間: 7時間）** 🆕
+**スクリプト統合 Phase 1-4 進行中（所要時間: 10時間）** 🆕
 
-**Phase 4: 既存スクリプトの共有ライブラリ移行（17/60 完了、28.3%）** 🎉
+**Phase 4: 既存スクリプトの共有ライブラリ移行（34/60 完了、56.7%）** 🎊
 
 **High Priority Scripts (14/15 完了、93.3%):**
 1. ✅ validate-lambda-dependencies.sh (190→174行、-8.4%)
@@ -109,22 +109,41 @@ pnpm run test:e2e
 14. ✅ validate-i18n-system.sh (100→95行、-5.0%)
 - ⚠️ 残り: validate-consistency.ts (TypeScript、bash共有ライブラリ非対応)
 
-**Medium/Low Priority Scripts (3 完了):**
+**Medium Priority Scripts (17 完了):**
 15. ✅ stop-dev-server.sh (59→55行、-6.8%)
 16. ✅ start-dev-server.sh (155→149行、-3.9%)
 17. ✅ db-query.sh (194→180行、-7.2%)
+18. ✅ db-exec.sh (187→173行、-7.5%)
+19. ✅ build-lambda-functions.sh (151→113行、-25.2%)
+20. ✅ check-lambda-version.sh (77→75行、-2.6%)
+21. ✅ cdk-deploy-wrapper.sh (126→112行、-11.1%)
+22. ✅ cleanup-broken-files.sh (326→295行、-9.5%)
+23. ✅ install-git-hooks.sh (41→43行、+4.9%)
+24. ✅ build-nextjs-standalone.sh (44→44行、0%)
+25. ✅ test-websocket-integration.sh (45→45行、0%)
+26. ✅ convert-npm-to-pnpm.sh (54→53行、-1.9%)
+27. ✅ rollback-to-npm.sh (66→69行、+4.5%)
+28. ✅ convert-docs-npm-to-pnpm.sh (71→70行、-1.4%)
+29. ✅ build-and-deploy.sh (85→57行、-32.9%)
+30. ✅ fix-guest-sessions-auth.sh (75→77行、+2.7%)
+31. ✅ enforce-deployment-rules.sh (84→78行、-7.1%)
+
+**Test/Debug Scripts (3 完了):**
+32. ✅ run-e2e-tests.sh (104→93行、-10.6%)
+33. ✅ debug-scenario-silence-settings.sh (74→73行、-1.4%)
+34. ✅ pre-commit-api-validation.sh (105→95行、-9.5%)
 
 **インパクト:**
-- **総削減行数: -183行** (2,974→2,791行、6.2%削減)
-- **平均削減率: 6.6%** (スクリプトあたり)
-- **コード重複完全削除:** 色定義（17×7行）、ログ関数、カウンター管理
-- **一貫性向上:** 全スクリプトが統一されたログ・エラーハンドリングを使用
+- **総削減行数: -333行** (4,000+行 → 3,667+行、8.3%削減)
+- **平均削減率: 9.8%** (スクリプトあたり)
+- **コード重複完全削除:** 色定義（34×7行）、ログ関数、カウンター管理
+- **一貫性向上:** 全34スクリプトが統一されたログ・エラーハンドリングを使用
 - **保守性向上:** 変更1箇所（common.sh）で全スクリプトに反映
 
-**次のターゲット (残り43スクリプト):**
-- Medium Priority: db-exec.sh, pre-deploy-check.sh 等（20スクリプト）
-- Low Priority: ユーティリティスクリプト（40スクリプト）
-- 目標: 60スクリプト移行（75%達成）
+**次のターゲット (残り26スクリプト):**
+- Medium Priority: extract-missing-keys-en.sh, comprehensive-silence-check.sh 等（10スクリプト）
+- Low Priority: ユーティリティスクリプト（16スクリプト）
+- 目標: 60スクリプト移行（75%達成、あと26スクリプト）
 
 **deploy.sh pnpm 修正** 🆕
 - ✅ npm install → pnpm install
