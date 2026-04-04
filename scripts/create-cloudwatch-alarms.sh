@@ -5,14 +5,9 @@
 #   ./scripts/create-cloudwatch-alarms.sh
 #   ./scripts/create-cloudwatch-alarms.sh --email your@email.com  # With SNS notifications
 
-set -e
-
-# Colors
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Configuration
 REGION="${AWS_REGION:-us-east-1}"
@@ -28,32 +23,30 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     *)
-      echo "Unknown option: $1"
+      log_error "Unknown option: $1"
       exit 1
       ;;
   esac
 done
 
-echo -e "${BLUE}================================================================${NC}"
-echo -e "${BLUE}Creating CloudWatch Alarms${NC}"
-echo -e "${BLUE}================================================================${NC}"
-echo ""
-echo -e "${YELLOW}Region:${NC} $REGION"
-echo -e "${YELLOW}Function:${NC} $FUNCTION_NAME"
+log_section "Creating CloudWatch Alarms"
+
+log_warning "Region: $REGION"
+log_warning "Function: $FUNCTION_NAME"
 if [[ -n "$ALERT_EMAIL" ]]; then
-  echo -e "${YELLOW}Email:${NC} $ALERT_EMAIL"
+  log_warning "Email: $ALERT_EMAIL"
 fi
 echo ""
 
 # Create SNS Topic if email is provided
 SNS_TOPIC_ARN=""
 if [[ -n "$ALERT_EMAIL" ]]; then
-  echo -e "${YELLOW}Creating SNS topic...${NC}"
+  log_warning "Creating SNS topic..."
 
   SNS_TOPIC_NAME="prance-alarms-${ENVIRONMENT}"
   SNS_TOPIC_ARN=$(aws sns create-topic --region "$REGION" --name "$SNS_TOPIC_NAME" --query 'TopicArn' --output text)
 
-  echo -e "${GREEN}✓${NC} SNS topic created: $SNS_TOPIC_ARN"
+  log_success "SNS topic created: $SNS_TOPIC_ARN"
 
   # Subscribe email
   aws sns subscribe \
@@ -62,12 +55,12 @@ if [[ -n "$ALERT_EMAIL" ]]; then
     --protocol email \
     --notification-endpoint "$ALERT_EMAIL" > /dev/null
 
-  echo -e "${GREEN}✓${NC} Email subscription created (check your inbox to confirm)"
+  log_success "Email subscription created (check your inbox to confirm)"
   echo ""
 fi
 
 # Alarm 1: High Error Rate (> 5%)
-echo -e "${YELLOW}Creating alarm: High Error Rate...${NC}"
+log_warning "Creating alarm: High Error Rate..."
 ALARM_NAME="${ENVIRONMENT}-websocket-high-error-rate"
 
 aws cloudwatch put-metric-alarm \
@@ -87,10 +80,10 @@ aws cloudwatch put-metric-alarm \
   --treat-missing-data notBreaching \
   ${SNS_TOPIC_ARN:+--alarm-actions "$SNS_TOPIC_ARN"} > /dev/null
 
-echo -e "${GREEN}✓${NC} Alarm created: $ALARM_NAME"
+log_success "Alarm created: $ALARM_NAME"
 
 # Alarm 2: High Duration (p95 > 6s)
-echo -e "${YELLOW}Creating alarm: High Duration...${NC}"
+log_warning "Creating alarm: High Duration..."
 ALARM_NAME="${ENVIRONMENT}-websocket-high-duration"
 
 aws cloudwatch put-metric-alarm \
@@ -110,10 +103,10 @@ aws cloudwatch put-metric-alarm \
   --treat-missing-data notBreaching \
   ${SNS_TOPIC_ARN:+--alarm-actions "$SNS_TOPIC_ARN"} > /dev/null
 
-echo -e "${GREEN}✓${NC} Alarm created: $ALARM_NAME"
+log_success "Alarm created: $ALARM_NAME"
 
 # Alarm 3: Throttles Detected
-echo -e "${YELLOW}Creating alarm: Throttles...${NC}"
+log_warning "Creating alarm: Throttles..."
 ALARM_NAME="${ENVIRONMENT}-websocket-throttles"
 
 aws cloudwatch put-metric-alarm \
@@ -132,14 +125,12 @@ aws cloudwatch put-metric-alarm \
   --treat-missing-data notBreaching \
   ${SNS_TOPIC_ARN:+--alarm-actions "$SNS_TOPIC_ARN"} > /dev/null
 
-echo -e "${GREEN}✓${NC} Alarm created: $ALARM_NAME"
+log_success "Alarm created: $ALARM_NAME"
 
 echo ""
-echo -e "${BLUE}================================================================${NC}"
-echo -e "${BLUE}Summary${NC}"
-echo -e "${BLUE}================================================================${NC}"
-echo ""
-echo -e "${GREEN}✅ 3 alarms created successfully${NC}"
+log_section "Summary"
+
+log_success "3 alarms created successfully"
 echo ""
 echo "Alarms:"
 echo "  1. ${ENVIRONMENT}-websocket-high-error-rate"
@@ -149,7 +140,7 @@ echo ""
 if [[ -n "$SNS_TOPIC_ARN" ]]; then
   echo "SNS Topic: $SNS_TOPIC_ARN"
   echo ""
-  echo -e "${YELLOW}⚠️  Check your email ($ALERT_EMAIL) to confirm the subscription${NC}"
+  log_warning "Check your email ($ALERT_EMAIL) to confirm the subscription"
   echo ""
 fi
 echo "View alarms:"
