@@ -17,12 +17,9 @@
 
 set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 PROJECT_ROOT="/workspaces/prance-communication-platform"
 SSOT_FILE="${PROJECT_ROOT}/.env.local"
@@ -31,9 +28,7 @@ TARGET_FILE="${PROJECT_ROOT}/infrastructure/.env"
 VALIDATION_FAILED=0
 
 echo ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}Environment Variables SSOT Validation${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+log_section "Environment Variables SSOT Validation"
 echo ""
 
 # ===================================================================
@@ -42,10 +37,10 @@ echo ""
 echo -e "${YELLOW}[1/5]${NC} Checking SSOT file exists..."
 
 if [ ! -f "$SSOT_FILE" ]; then
-  echo -e "${RED}❌ SSOT file not found: $SSOT_FILE${NC}"
+  log_error "SSOT file not found: $SSOT_FILE"
   VALIDATION_FAILED=1
 else
-  echo -e "${GREEN}✅ SSOT file exists${NC}"
+  log_success "SSOT file exists"
 fi
 
 # ===================================================================
@@ -56,11 +51,11 @@ echo -e "${YELLOW}[2/5]${NC} Checking for duplicate definitions in SSOT..."
 DUPLICATES=$(grep -E "^[A-Z_]+=" "$SSOT_FILE" | cut -d= -f1 | sort | uniq -d)
 
 if [ -n "$DUPLICATES" ]; then
-  echo -e "${RED}❌ Duplicate environment variable definitions found in $SSOT_FILE:${NC}"
+  log_error "Duplicate environment variable definitions found in $SSOT_FILE:"
   echo "$DUPLICATES" | sed 's/^/  - /'
   VALIDATION_FAILED=1
 else
-  echo -e "${GREEN}✅ No duplicate definitions${NC}"
+  log_success "No duplicate definitions"
 fi
 
 # ===================================================================
@@ -69,9 +64,9 @@ fi
 echo -e "${YELLOW}[3/5]${NC} Checking synchronization between SSOT and infrastructure/.env..."
 
 if bash scripts/sync-env-vars.sh --check-only > /dev/null 2>&1; then
-  echo -e "${GREEN}✅ Files are in sync${NC}"
+  log_success "Files are in sync"
 else
-  echo -e "${RED}❌ Files are out of sync${NC}"
+  log_error "Files are out of sync"
   echo "Run: bash scripts/sync-env-vars.sh"
   VALIDATION_FAILED=1
 fi
@@ -95,16 +90,16 @@ if [ -f "$TARGET_FILE" ]; then
   MANUAL_ADDITIONS=$(comm -13 <(echo "$SSOT_NON_SECRET_VARS") <(echo "$INFRA_VARS"))
 
   if [ -n "$MANUAL_ADDITIONS" ]; then
-    echo -e "${RED}❌ Manual additions detected in infrastructure/.env:${NC}"
+    log_error "Manual additions detected in infrastructure/.env:"
     echo "$MANUAL_ADDITIONS" | sed 's/^/  - /'
     echo ""
-    echo -e "${YELLOW}Action: Remove these from infrastructure/.env and add to .env.local${NC}"
+    log_warning "Action: Remove these from infrastructure/.env and add to .env.local"
     VALIDATION_FAILED=1
   else
-    echo -e "${GREEN}✅ No manual additions detected${NC}"
+    log_success "No manual additions detected"
   fi
 else
-  echo -e "${YELLOW}⚠️  infrastructure/.env does not exist (will be created on sync)${NC}"
+  log_warning "infrastructure/.env does not exist (will be created on sync)"
 fi
 
 # ===================================================================
@@ -116,13 +111,13 @@ if [ -f "$TARGET_FILE" ]; then
   SECRETS_IN_INFRA=$(grep -E "_(SECRET|KEY|PASSWORD|TOKEN|CREDENTIALS)=" "$TARGET_FILE" || true)
 
   if [ -n "$SECRETS_IN_INFRA" ]; then
-    echo -e "${RED}❌ Secrets detected in infrastructure/.env:${NC}"
+    log_error "Secrets detected in infrastructure/.env:"
     echo "$SECRETS_IN_INFRA" | sed 's/=.*/=***/' | sed 's/^/  - /'
     echo ""
-    echo -e "${YELLOW}Action: Remove these secrets. Use AWS Secrets Manager instead.${NC}"
+    log_warning "Action: Remove these secrets. Use AWS Secrets Manager instead."
     VALIDATION_FAILED=1
   else
-    echo -e "${GREEN}✅ No secrets in infrastructure/.env${NC}"
+    log_success "No secrets in infrastructure/.env"
   fi
 fi
 
@@ -130,17 +125,17 @@ fi
 # Summary
 # ===================================================================
 echo ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+print_separator "=" 60
 
 if [ $VALIDATION_FAILED -eq 0 ]; then
-  echo -e "${GREEN}✅ All SSOT validations passed${NC}"
+  log_success "All SSOT validations passed"
   echo ""
   echo "Single Source of Truth: .env.local"
   echo "Configuration files: infrastructure/.env (auto-generated)"
   echo "Secrets: AWS Secrets Manager"
   exit 0
 else
-  echo -e "${RED}❌ SSOT validation failed${NC}"
+  log_error "SSOT validation failed"
   echo ""
   echo "Fix the issues above before committing."
   echo ""
