@@ -5,13 +5,15 @@
 # Git hooksを自動的にインストールする
 #
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
-echo "🔧 Installing Git hooks..."
+log_info "Installing Git hooks..."
 
 # Check if .git directory exists
 if [ ! -d ".git" ]; then
-  echo "❌ Error: .git directory not found. Run this script from the repository root."
+  log_error ".git directory not found. Run this script from the repository root."
   exit 1
 fi
 
@@ -22,14 +24,14 @@ mkdir -p .git/hooks
 if [ -f "scripts/git-hooks/pre-commit" ]; then
   ln -sf ../../scripts/git-hooks/pre-commit .git/hooks/pre-commit
   chmod +x .git/hooks/pre-commit
-  echo "✅ pre-commit hook installed"
+  log_success "pre-commit hook installed"
 else
-  echo "❌ Error: scripts/git-hooks/pre-commit not found"
+  log_error "scripts/git-hooks/pre-commit not found"
   exit 1
 fi
 
 echo ""
-echo "✅ Git hooks installed successfully"
+log_success "Git hooks installed successfully"
 echo ""
 echo "The following checks will run on every commit:"
 echo "  1. Hardcoded values detection"

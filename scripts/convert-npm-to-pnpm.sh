@@ -1,11 +1,10 @@
 #!/bin/bash
-set -e
 
 # npm → pnpm 自動変換スクリプト
 
-log() {
-  echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*"
-}
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # 対象ファイルを取得
 SCRIPT_FILES=$(find scripts infrastructure/scripts apps/web/scripts -name "*.sh" -type f 2>/dev/null)
@@ -14,8 +13,8 @@ SCRIPT_FILES=$(find scripts infrastructure/scripts apps/web/scripts -name "*.sh"
 BACKUP_DIR="/tmp/npm-scripts-backup-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 
-log "Starting conversion of $(echo "$SCRIPT_FILES" | wc -l) files"
-log "Backup directory: $BACKUP_DIR"
+log "Starting conversion of $(echo "$SCRIPT_FILES" | wc -l) files" true
+log "Backup directory: $BACKUP_DIR" true
 
 TOTAL_FILES=0
 MODIFIED_FILES=0
@@ -39,16 +38,16 @@ for file in $SCRIPT_FILES; do
 
   # 差分確認
   if ! diff -q "$file.bak" "$file" > /dev/null 2>&1; then
-    log "Modified: $file"
+    log "Modified: $file" true
     MODIFIED_FILES=$((MODIFIED_FILES + 1))
   fi
 
   rm -f "$file.bak"
 done
 
-log "Conversion complete"
-log "Total files: $TOTAL_FILES"
-log "Modified files: $MODIFIED_FILES"
-log "Backup: $BACKUP_DIR"
-log ""
-log "Review changes with: git diff scripts/ infrastructure/scripts/ apps/web/scripts/"
+log "Conversion complete" true
+log "Total files: $TOTAL_FILES" true
+log "Modified files: $MODIFIED_FILES" true
+log "Backup: $BACKUP_DIR" true
+log "" true
+log "Review changes with: git diff scripts/ infrastructure/scripts/ apps/web/scripts/" true

@@ -1,7 +1,10 @@
 #!/bin/bash
-set -e
 
-echo "🔄 Rolling back from pnpm to npm..."
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
+log_info "Rolling back from pnpm to npm..."
 
 # pnpmファイル削除
 rm -f pnpm-workspace.yaml
@@ -25,7 +28,7 @@ loglevel=warn
 EOF
 
 # package.jsonを元に戻す（overrides, engines）
-echo "Restoring package.json..."
+log_info "Restoring package.json..."
 
 python3 << 'PYTHON_EOF'
 import json
@@ -56,11 +59,11 @@ PYTHON_EOF
 # npmに戻す
 if [ -f "package-lock.json.backup-before-pnpm" ]; then
     cp package-lock.json.backup-before-pnpm package-lock.json
-    echo "✅ package-lock.json restored from backup"
+    log_success "package-lock.json restored from backup"
 else
-    echo "⚠️  No backup found, running npm install..."
+    log_warning "No backup found, running npm install..."
 fi
 
 npm install
 
-echo "✅ Rollback complete. npm restored."
+log_success "Rollback complete. npm restored."
