@@ -7,29 +7,21 @@
 # Usage: bash scripts/validate-lambda-env-vars.sh [function-name] [region]
 #
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Default values
 FUNCTION_NAME="${1:-prance-websocket-default-dev}"
 REGION="${2:-us-east-1}"
 
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Lambda Environment Variables Validation${NC}"
-echo -e "${BLUE}============================================${NC}"
+log_section "Lambda Environment Variables Validation"
 echo ""
-echo -e "Function: ${YELLOW}$FUNCTION_NAME${NC}"
-echo -e "Region: ${YELLOW}$REGION${NC}"
+log_info "Function: $FUNCTION_NAME"
+log_info "Region: $REGION"
 echo ""
 
-TOTAL_CHECKS=0
-FAILED_CHECKS=0
+reset_counters
 MISSING_VARS=()
 EMPTY_VARS=()
 
@@ -72,7 +64,6 @@ ALL_REQUIRED_VARS=("${CRITICAL_VARS[@]}" "${API_KEY_VARS[@]}" "${DATABASE_VARS[@
 # =============================================================================
 
 echo -e "${BLUE}[CHECK 1/4]${NC} Retrieving Lambda environment variables..."
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 ENV_VARS=$(aws lambda get-function-configuration \
   --function-name "$FUNCTION_NAME" \
@@ -81,13 +72,12 @@ ENV_VARS=$(aws lambda get-function-configuration \
   --output json 2>/dev/null)
 
 if [ $? -ne 0 ] || [ -z "$ENV_VARS" ] || [ "$ENV_VARS" == "null" ]; then
-  echo -e "${RED}✗ FAIL: Could not retrieve environment variables${NC}"
-  echo -e "${YELLOW}→ Function may not exist or you may not have permissions${NC}"
-  FAILED_CHECKS=$((FAILED_CHECKS + 1))
+  log_error "FAIL: Could not retrieve environment variables"
+  log_warning "→ Function may not exist or you may not have permissions"
   exit 1
 fi
 
-echo -e "${GREEN}✓ Retrieved environment variables${NC}"
+log_success "Retrieved environment variables"
 echo ""
 
 # =============================================================================
@@ -95,7 +85,6 @@ echo ""
 # =============================================================================
 
 echo -e "${BLUE}[CHECK 2/4]${NC} Validating CRITICAL environment variables..."
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 CRITICAL_FAILED=0
 
@@ -116,10 +105,9 @@ for var in "${CRITICAL_VARS[@]}"; do
 done
 
 if [ $CRITICAL_FAILED -eq 0 ]; then
-  echo -e "${GREEN}✓ All CRITICAL variables present${NC}"
+  log_success "All CRITICAL variables present"
 else
-  echo -e "${RED}✗ $CRITICAL_FAILED CRITICAL variables missing or empty${NC}"
-  FAILED_CHECKS=$((FAILED_CHECKS + 1))
+  log_error "$CRITICAL_FAILED CRITICAL variables missing or empty"
 fi
 
 echo ""
@@ -129,7 +117,6 @@ echo ""
 # =============================================================================
 
 echo -e "${BLUE}[CHECK 3/4]${NC} Validating API Key environment variables..."
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 API_FAILED=0
 
@@ -152,10 +139,9 @@ for var in "${API_KEY_VARS[@]}"; do
 done
 
 if [ $API_FAILED -eq 0 ]; then
-  echo -e "${GREEN}✓ All API Key variables present${NC}"
+  log_success "All API Key variables present"
 else
-  echo -e "${RED}✗ $API_FAILED API Key variables missing or empty${NC}"
-  FAILED_CHECKS=$((FAILED_CHECKS + 1))
+  log_error "$API_FAILED API Key variables missing or empty"
 fi
 
 echo ""
@@ -165,7 +151,6 @@ echo ""
 # =============================================================================
 
 echo -e "${BLUE}[CHECK 4/4]${NC} Validating Database & Security variables..."
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 DB_SEC_FAILED=0
 
@@ -188,10 +173,9 @@ for var in "${DATABASE_VARS[@]}" "${SECURITY_VARS[@]}"; do
 done
 
 if [ $DB_SEC_FAILED -eq 0 ]; then
-  echo -e "${GREEN}✓ All Database & Security variables present${NC}"
+  log_success "All Database & Security variables present"
 else
-  echo -e "${RED}✗ $DB_SEC_FAILED Database & Security variables missing or empty${NC}"
-  FAILED_CHECKS=$((FAILED_CHECKS + 1))
+  log_error "$DB_SEC_FAILED Database & Security variables missing or empty"
 fi
 
 echo ""
@@ -205,17 +189,15 @@ echo -e "${BLUE}[CRITICAL CHECK]${NC} Validating CLOUDFRONT_DOMAIN format..."
 CLOUDFRONT_DOMAIN=$(echo "$ENV_VARS" | jq -r '.CLOUDFRONT_DOMAIN // empty')
 
 if [ -z "$CLOUDFRONT_DOMAIN" ]; then
-  echo -e "${RED}✗ CRITICAL: CLOUDFRONT_DOMAIN is MISSING${NC}"
-  echo -e "${RED}   This will cause audio playback errors!${NC}"
-  echo -e "${YELLOW}   Expected: d3mx0sug5s3a6x.cloudfront.net${NC}"
-  FAILED_CHECKS=$((FAILED_CHECKS + 1))
+  log_error "CRITICAL: CLOUDFRONT_DOMAIN is MISSING"
+  log_error "   This will cause audio playback errors!"
+  log_warning "   Expected: d3mx0sug5s3a6x.cloudfront.net"
 elif [[ ! "$CLOUDFRONT_DOMAIN" =~ \.cloudfront\.net$ ]]; then
-  echo -e "${RED}✗ CRITICAL: CLOUDFRONT_DOMAIN has invalid format${NC}"
-  echo -e "${RED}   Current: $CLOUDFRONT_DOMAIN${NC}"
-  echo -e "${YELLOW}   Expected format: *.cloudfront.net${NC}"
-  FAILED_CHECKS=$((FAILED_CHECKS + 1))
+  log_error "CRITICAL: CLOUDFRONT_DOMAIN has invalid format"
+  log_error "   Current: $CLOUDFRONT_DOMAIN"
+  log_warning "   Expected format: *.cloudfront.net"
 else
-  echo -e "${GREEN}✓ CLOUDFRONT_DOMAIN is valid: $CLOUDFRONT_DOMAIN${NC}"
+  log_success "CLOUDFRONT_DOMAIN is valid: $CLOUDFRONT_DOMAIN"
 fi
 
 echo ""
@@ -224,16 +206,14 @@ echo ""
 # Summary
 # =============================================================================
 
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Validation Summary${NC}"
-echo -e "${BLUE}============================================${NC}"
+log_section "Validation Summary"
 echo ""
-echo -e "Total checks: ${TOTAL_CHECKS}"
-echo -e "Failed: ${FAILED_CHECKS}"
+echo -e "Total checks: 4"
+echo -e "Errors: $ERRORS"
 echo ""
 
 if [ ${#MISSING_VARS[@]} -gt 0 ]; then
-  echo -e "${RED}Missing variables (${#MISSING_VARS[@]}):${NC}"
+  log_error "Missing variables (${#MISSING_VARS[@]}):"
   for var in "${MISSING_VARS[@]}"; do
     echo -e "${RED}  - $var${NC}"
   done
@@ -241,21 +221,21 @@ if [ ${#MISSING_VARS[@]} -gt 0 ]; then
 fi
 
 if [ ${#EMPTY_VARS[@]} -gt 0 ]; then
-  echo -e "${RED}Empty/Null variables (${#EMPTY_VARS[@]}):${NC}"
+  log_error "Empty/Null variables (${#EMPTY_VARS[@]}):"
   for var in "${EMPTY_VARS[@]}"; do
     echo -e "${RED}  - $var${NC}"
   done
   echo ""
 fi
 
-if [ "$FAILED_CHECKS" -eq 0 ]; then
-  echo -e "${GREEN}✅ All environment variables are valid${NC}"
+if [ "$ERRORS" -eq 0 ]; then
+  log_success "All environment variables are valid"
   echo ""
   exit 0
 else
-  echo -e "${RED}❌ Environment variables validation FAILED${NC}"
+  log_error "Environment variables validation FAILED"
   echo ""
-  echo -e "${YELLOW}How to fix:${NC}"
+  log_warning "How to fix:"
   echo ""
   echo "1. Update Lambda environment variables manually:"
   echo "   aws lambda update-function-configuration \\"
