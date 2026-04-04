@@ -18,10 +18,10 @@
 ### Issue #6: Tailwind CSS Build Error - System Error -35 (Resource Deadlock)
 
 **発生日:** 2026-03-21 08:00 UTC (Day 30)
-**解決日:** 2026-04-02 03:50 UTC (Day 42)
-**状態:** ✅ 解決済み
-**影響:** フロントエンド（Next.js）のビルドができず、E2Eテスト実行不可
-**重要度:** Medium（バックエンドは正常動作、フロントエンドのみ影響）
+**再発日:** 2026-04-04 12:30 UTC (Day 44) 🔴
+**状態:** 🔄 **再発中** - ポート3000で継続発生、ポート3001で回避可能
+**影響:** フロントエンド（Next.js）のビルドができず、E2Eテスト実行不可、開発サーバー起動に異常な時間がかかる
+**重要度:** **High** - ローカル開発環境の立ち上げが困難
 
 #### 問題詳細
 
@@ -116,6 +116,63 @@ cd apps/web && PORT=3001 pnpm exec next dev
 **教訓:**
 - CodeSpaces環境固有の一時的な問題だった可能性
 - Day 41のTypeScript修正（依存関係修復）が間接的に寄与した可能性
+
+#### 再発（Day 44 - 2026-04-04）🔴
+
+**実施内容:**
+1. 開発サーバー起動試行
+   ```bash
+   pnpm run dev
+   ```
+2. "Ready in 1809ms"メッセージは表示
+3. しかし最初のページコンパイル時にエラー発生:
+   ```
+   Error: Unknown system error -35: Unknown system error -35, read
+   at async /workspaces/prance-communication-platform/node_modules/tailwindcss/lib/lib/expandTailwindAtRules.js:173:34
+   ```
+
+**症状:**
+- Next.jsプロセスは起動するが、ポート3000でリスニングしていない（孤立プロセス）
+- HTTPリクエストがタイムアウト（curlがハング）
+- `.next`キャッシュ内に空白を含むディレクトリ（`server 2`, `cache 3`など）が削除できない
+- 開発サーバー立ち上げに異常な時間がかかる（通常1-2分 → 今回30分以上）
+
+**根本原因（確定）:**
+1. **Tailwind CSSビルドエラー** → System Error -35 (Resource Deadlock)
+2. **`.next`キャッシュ破損** → 空白含むディレクトリが削除不可（macOS Finder自動生成コピー）
+3. **孤立プロセス** → ポート3000を占有していないが、プロセスとして残る
+4. **curlハング** → レスポンスが返ってこないため、次回起動時にポート競合
+
+**有効な回避策（Day 44で確認）:**
+
+**Option D: ポート3001で起動（最も簡単・確実）🆕**
+```bash
+PORT=3001 pnpm run dev
+# → 正常に起動、HTTPリクエストにも応答
+# → ポート3000の問題を完全に回避
+```
+
+**Option E: .nextキャッシュをリネーム退避 🆕**
+```bash
+# .nextディレクトリを退避（削除できない場合）
+mv apps/web/.next apps/web/.next-broken-$(date +%s)
+pnpm run dev
+```
+
+**重要な教訓（Day 44）:**
+- ポート3000固有の問題（ポート3001では正常動作）
+- `.next`キャッシュクリアが必要だが、空白含むディレクトリが削除を妨げる
+- `rm -rf .next`が失敗する場合は、`mv`でリネーム退避が有効
+- CodeSpaces再起動が最も確実な解決方法
+
+**次回セッション開始時の推奨手順:**
+```bash
+# 1. まずポート3001で試す（最速）
+PORT=3001 pnpm run dev
+
+# 2. それでも問題がある場合
+# GitHub CodeSpaces UI → "Restart Codespace"
+```
 
 ---
 

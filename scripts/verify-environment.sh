@@ -138,6 +138,38 @@ else
 fi
 
 # ==============================================================================
+# 9. Browser Rendering Verification (if server is running)
+# ==============================================================================
+echo -n "✅ Checking browser rendering... "
+if lsof -ti:3000 &> /dev/null; then
+  # Development server is running, verify rendering
+  RENDERING_SCRIPT="${SCRIPT_DIR}/verify-rendering.sh"
+
+  if [ -f "$RENDERING_SCRIPT" ]; then
+    # Run rendering verification (suppress detailed output)
+    if bash "$RENDERING_SCRIPT" --skip-screenshot > /dev/null 2>&1; then
+      echo -e "${GREEN}Verified (HTTP + HTML)${NC}"
+      increment_counter PASSED
+
+      # Optionally capture screenshot for visual verification
+      SCREENSHOT_FILE="/tmp/verify-rendering-$(date +%Y%m%d-%H%M%S).png"
+      if bash "$RENDERING_SCRIPT" --output "$SCREENSHOT_FILE" > /dev/null 2>&1; then
+        echo "   📸 Screenshot: $SCREENSHOT_FILE"
+      fi
+    else
+      echo -e "${RED}Rendering check failed${NC}"
+      increment_counter FAILED
+    fi
+  else
+    echo -e "${YELLOW}Skipped (verify-rendering.sh not found)${NC}"
+    increment_counter PASSED
+  fi
+else
+  echo -e "${YELLOW}Skipped (server not running)${NC}"
+  increment_counter PASSED
+fi
+
+# ==============================================================================
 # Summary
 # ==============================================================================
 echo ""

@@ -1,9 +1,10 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-04-05 (Day 44 - 00:15 UTC)
+**最終更新:** 2026-04-04 (Day 44 - 12:45 UTC)
 **現在の Phase:** スクリプト統合 Phase 4 完全完了（60/60 完了、100%） 🎉🎉🎉
-**次のアクション:** Phase 4完了報告作成 → Staging環境デプロイ準備
+**次のアクション:** Staging環境デプロイ準備
 **ステータス:** dev ブランチ、pnpm 移行完了、共有ライブラリ移行100%完了 ✅✅✅
+**開発サーバー:** http://localhost:3001 （System Error -35回避のためポート3001使用中）
 
 ---
 
@@ -24,6 +25,20 @@ bash scripts/verify-environment.sh
 ```
 
 **期待結果:** `✅ All environment checks passed`
+
+**検証項目（9項目）:**
+1. Git作業ディレクトリの状態
+2. Node.jsバージョン（v22.x推奨、v24.xでも動作）
+3. npm/pnpmバージョン
+4. .env.local ファイル存在確認
+5. 必須環境変数の設定確認
+6. データベース接続確認（オプション）
+7. 開発サーバー起動状態
+8. API エンドポイント設定
+9. **ブラウザレンダリング確認**（開発サーバー起動時のみ） 🆕
+   - HTTP 200 OKだけでなく、実際のHTMLコンテンツ確認
+   - スクリーンショット自動撮影（/tmp/verify-rendering-*.png）
+   - Tailwind CSSビルドエラー等を早期検出
 
 ### Step 2: 既知の問題確認
 
@@ -62,6 +77,11 @@ pnpm list react react-dom @react-three/fiber @tanstack/react-query 2>&1 | head -
 # 3. 開発サーバー起動（React 19環境）
 pnpm run dev
 # 期待: ✓ Ready in XXXs
+
+# ⚠️ System Error -35発生時の回避策（KNOWN_ISSUES.md #6）
+# "Error: Unknown system error -35" が発生した場合:
+PORT=3001 pnpm run dev
+# → ポート3001で起動してエラー回避
 
 # 4. E2Eテスト実行（React 19環境で検証）
 pnpm run test:e2e
