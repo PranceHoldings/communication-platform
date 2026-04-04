@@ -66,7 +66,7 @@ if [ "$SKIP_BUILD" = false ]; then
   # 依存関係インストール
   echo -e "${BLUE}   依存関係をインストール中...${NC}"
   cd "$PROJECT_ROOT"
-  npm install --ignore-scripts
+  pnpm install --ignore-scripts
   echo -e "${GREEN}   ✅ 依存関係インストール完了${NC}"
 
   # Prisma Client生成
@@ -81,13 +81,13 @@ if [ "$SKIP_BUILD" = false ]; then
     cp -r "$PROJECT_ROOT/node_modules/@prisma" node_modules/
   fi
 
-  npx prisma generate
+  pnpm exec prisma generate
   echo -e "${GREEN}   ✅ Prisma Client生成完了${NC}"
 
   # TypeScriptビルド
   echo -e "${BLUE}   TypeScriptをビルド中...${NC}"
   cd "$PROJECT_ROOT"
-  npm run build
+  pnpm run build
   echo -e "${GREEN}   ✅ ビルド完了${NC}"
 else
   echo -e "${YELLOW}📦 Step 1: ビルドスキップ${NC}"
