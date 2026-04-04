@@ -120,9 +120,11 @@ fi
 
 # Check 8: Shared Library Usage (CRITICAL - 2026-04-05)
 echo -e "${YELLOW}[8/8]${NC} Validating shared library usage in scripts..."
-STAGED_SCRIPT_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E 'scripts/.*\.sh$' | grep -v 'archive/' || true)
+STAGED_SCRIPT_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E 'scripts/.*\.sh$' | grep -v 'archive/' | grep -v 'templates/' || true)
+NEW_SCRIPT_FILES=$(git diff --cached --name-only --diff-filter=A | grep -E 'scripts/.*\.sh$' | grep -v 'archive/' | grep -v 'templates/' || true)
 
 if [ -n "$STAGED_SCRIPT_FILES" ]; then
+  # Comprehensive check for all staged scripts
   if bash scripts/validate-shared-lib-usage.sh > /dev/null 2>&1; then
     log_success "All scripts use shared library correctly"
   else
@@ -130,6 +132,27 @@ if [ -n "$STAGED_SCRIPT_FILES" ]; then
     echo "Run: bash scripts/validate-shared-lib-usage.sh"
     echo "Guide: scripts/CLAUDE.md - 共有ライブラリシステム"
     CHECKS_FAILED=1
+  fi
+
+  # Stricter validation for NEW scripts only
+  if [ -n "$NEW_SCRIPT_FILES" ]; then
+    echo ""
+    log_info "🆕 Performing strict validation on new scripts..."
+    NEW_SCRIPT_FAILED=0
+    while IFS= read -r script; do
+      if bash scripts/validate-new-script.sh "$script" > /dev/null 2>&1; then
+        log_success "✓ $script"
+      else
+        log_error "✗ $script (strict validation failed)"
+        echo "  Run: bash scripts/validate-new-script.sh $script"
+        echo "  Tip: Use 'bash scripts/new-script.sh' to generate compliant scripts"
+        NEW_SCRIPT_FAILED=1
+      fi
+    done <<< "$NEW_SCRIPT_FILES"
+
+    if [ $NEW_SCRIPT_FAILED -eq 1 ]; then
+      CHECKS_FAILED=1
+    fi
   fi
 else
   log_success "No script files modified"
