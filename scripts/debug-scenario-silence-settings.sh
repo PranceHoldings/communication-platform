@@ -2,38 +2,38 @@
 # Debug Script: Scenario Silence Settings
 # This script helps debug why silence timer settings are not being saved
 
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 SCENARIO_ID="28c97f47-b51c-4334-aac3-dbb14c681c42"
 
-echo "======================================"
-echo "Scenario Silence Settings Debug"
-echo "======================================"
-echo "Scenario ID: $SCENARIO_ID"
+log_section "Scenario Silence Settings Debug"
+log_info "Scenario ID: $SCENARIO_ID"
 echo ""
 
 # 1. Check Lambda function deployment
-echo "1. Checking Lambda function deployment..."
+log_info "1. Checking Lambda function deployment..."
 aws lambda get-function --function-name prance-scenarios-update-dev \
   --query '{FunctionName:Configuration.FunctionName, LastModified:Configuration.LastModified, Runtime:Configuration.Runtime}' \
   --output table
 echo ""
 
 # 2. Test Lambda function with sample update
-echo "2. Testing Lambda function with sample update (DRY RUN)..."
+log_info "2. Testing Lambda function with sample update (DRY RUN)..."
 echo "   This will show what happens when we try to update showSilenceTimer"
 echo ""
 
 # 3. Check recent CloudWatch Logs
-echo "3. Checking recent CloudWatch Logs for scenarios-update..."
+log_info "3. Checking recent CloudWatch Logs for scenarios-update..."
 echo "   Looking for update requests in the last 10 minutes:"
 echo ""
 aws logs tail /aws/lambda/prance-scenarios-update-dev --since 10m | grep -A 5 -B 2 "showSilenceTimer\|Update scenario request\|Scenario updated"
 echo ""
 
 # 4. Instructions for frontend testing
-echo "======================================"
-echo "Frontend Testing Instructions"
-echo "======================================"
-echo ""
+log_section "Frontend Testing Instructions"
+
 echo "1. Open scenario edit page:"
 echo "   http://localhost:3000/dashboard/scenarios/$SCENARIO_ID/edit"
 echo ""
@@ -58,10 +58,9 @@ echo "   [ScenarioDetail] showSilenceTimer: ... type: ..."
 echo ""
 echo "8. Share all console logs with the developer"
 echo ""
-echo "======================================"
-echo "Expected Values"
-echo "======================================"
-echo ""
+
+log_section "Expected Values"
+
 echo "showSilenceTimer values:"
 echo "  - undefined/null → Use organization default (gray toggle)"
 echo "  - true → Enabled (green toggle)"

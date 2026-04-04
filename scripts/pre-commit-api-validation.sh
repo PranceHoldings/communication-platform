@@ -10,47 +10,39 @@
 #   1 - Validation failed, commit blocked
 #
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo ""
-echo -e "${BLUE}════════════════════════════════════════════${NC}"
-echo -e "${BLUE}   Pre-commit: API Response Validation${NC}"
-echo -e "${BLUE}════════════════════════════════════════════${NC}"
-echo ""
+log_section "Pre-commit: API Response Validation"
 
 # Check if Lambda files were modified
 LAMBDA_FILES_CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep "infrastructure/lambda" | grep "\.ts$" || true)
 
 if [ -z "$LAMBDA_FILES_CHANGED" ]; then
-  echo -e "${GREEN}✅ No Lambda files modified, skipping validation${NC}"
+  log_success "No Lambda files modified, skipping validation"
   echo ""
   exit 0
 fi
 
-echo -e "${YELLOW}Lambda files modified:${NC}"
+log_warning "Lambda files modified:"
 echo "$LAMBDA_FILES_CHANGED" | sed 's/^/  /'
 echo ""
 
 # ============================================================
 # Validation 1: Response Structure
 # ============================================================
-echo -e "${BLUE}[1/3]${NC} Validating response structures..."
+log_info "[1/3] Validating response structures..."
 
 if bash scripts/validate-lambda-responses.sh > /tmp/response-validation.log 2>&1; then
-  echo -e "${GREEN}  ✓ Response structures valid${NC}"
+  log_success "Response structures valid"
 else
-  echo -e "${RED}  ✗ Response structure validation failed${NC}"
+  log_error "Response structure validation failed"
   echo ""
   cat /tmp/response-validation.log
   echo ""
-  echo -e "${RED}❌ COMMIT BLOCKED: Fix response structures before committing${NC}"
+  log_error "COMMIT BLOCKED: Fix response structures before committing"
   echo ""
   exit 1
 fi
@@ -58,17 +50,17 @@ fi
 # ============================================================
 # Validation 2: TypeScript Compilation
 # ============================================================
-echo -e "${BLUE}[2/3]${NC} Checking TypeScript compilation..."
+log_info "[2/3] Checking TypeScript compilation..."
 
 cd infrastructure
 if pnpm run build > /tmp/tsc-build.log 2>&1; then
-  echo -e "${GREEN}  ✓ TypeScript compilation successful${NC}"
+  log_success "TypeScript compilation successful"
 else
-  echo -e "${RED}  ✗ TypeScript compilation failed${NC}"
+  log_error "TypeScript compilation failed"
   echo ""
   cat /tmp/tsc-build.log | head -20
   echo ""
-  echo -e "${RED}❌ COMMIT BLOCKED: Fix TypeScript errors before committing${NC}"
+  log_error "COMMIT BLOCKED: Fix TypeScript errors before committing"
   echo ""
   exit 1
 fi
@@ -77,17 +69,17 @@ cd ..
 # ============================================================
 # Validation 3: ESLint
 # ============================================================
-echo -e "${BLUE}[3/3]${NC} Running ESLint on Lambda functions..."
+log_info "[3/3] Running ESLint on Lambda functions..."
 
 cd infrastructure/lambda
 if pnpm exec eslint --quiet . > /tmp/eslint.log 2>&1; then
-  echo -e "${GREEN}  ✓ ESLint passed${NC}"
+  log_success "ESLint passed"
 else
-  echo -e "${RED}  ✗ ESLint failed${NC}"
+  log_error "ESLint failed"
   echo ""
   cat /tmp/eslint.log
   echo ""
-  echo -e "${RED}❌ COMMIT BLOCKED: Fix ESLint errors before committing${NC}"
+  log_error "COMMIT BLOCKED: Fix ESLint errors before committing"
   echo ""
   exit 1
 fi
@@ -97,9 +89,7 @@ cd ../..
 # Summary
 # ============================================================
 echo ""
-echo -e "${BLUE}════════════════════════════════════════════${NC}"
-echo -e "${GREEN}✅ All validations passed - Commit allowed${NC}"
-echo -e "${BLUE}════════════════════════════════════════════${NC}"
+log_section "All validations passed - Commit allowed"
 echo ""
 
 exit 0
