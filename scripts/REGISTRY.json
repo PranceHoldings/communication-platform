@@ -22,7 +22,12 @@
       "category": "validation",
       "description": "Validate environment variables in .env.local and infrastructure/.env",
       "usage": "bash scripts/validate-env.sh",
-      "tags": ["environment", "validation", "database", "aws"],
+      "tags": [
+        "environment",
+        "validation",
+        "database",
+        "aws"
+      ],
       "dependencies": [],
       "hasHelpFlag": false,
       "usesSharedLib": false,
@@ -35,8 +40,17 @@
       "category": "validation",
       "description": "Validate environment variables using shared library (v2)",
       "usage": "bash scripts/validate-env-v2.sh",
-      "tags": ["environment", "validation", "database", "aws", "shared-lib"],
-      "dependencies": ["scripts/lib/common.sh", "scripts/lib/validate.sh"],
+      "tags": [
+        "environment",
+        "validation",
+        "database",
+        "aws",
+        "shared-lib"
+      ],
+      "dependencies": [
+        "scripts/lib/common.sh",
+        "scripts/lib/validate.sh"
+      ],
       "hasHelpFlag": false,
       "usesSharedLib": true,
       "lastUpdated": "2026-04-04",
@@ -48,7 +62,12 @@
       "category": "validation",
       "description": "Validate Lambda function dependencies are correctly installed",
       "usage": "bash scripts/validate-lambda-dependencies.sh <function-name>",
-      "tags": ["lambda", "validation", "aws", "dependencies"],
+      "tags": [
+        "lambda",
+        "validation",
+        "aws",
+        "dependencies"
+      ],
       "dependencies": [],
       "hasHelpFlag": false,
       "usesSharedLib": false,
@@ -56,25 +75,17 @@
       "maintainer": "infrastructure-team"
     },
     {
-      "name": "validate-language-sync.sh",
-      "path": "scripts/validate-language-sync.sh",
-      "category": "validation",
-      "description": "Validate language lists are synchronized across Frontend/Lambda/Messages",
-      "usage": "bash scripts/validate-language-sync.sh",
-      "tags": ["i18n", "validation", "multilingual"],
-      "dependencies": [],
-      "hasHelpFlag": false,
-      "usesSharedLib": false,
-      "lastUpdated": "2026-03-11",
-      "maintainer": "frontend-team"
-    },
-    {
       "name": "validate-ui-settings-sync.sh",
       "path": "scripts/validate-ui-settings-sync.sh",
       "category": "validation",
       "description": "Validate UI settings are properly saved to database",
       "usage": "bash scripts/validate-ui-settings-sync.sh [--field <field-name>]",
-      "tags": ["ui", "validation", "database", "settings"],
+      "tags": [
+        "ui",
+        "validation",
+        "database",
+        "settings"
+      ],
       "dependencies": [],
       "hasHelpFlag": false,
       "usesSharedLib": false,
@@ -87,8 +98,16 @@
       "category": "database",
       "description": "Execute SQL query via Lambda (direct execution mode)",
       "usage": "bash scripts/db-query.sh [--write] [--max-results N] [--file FILE] <query>",
-      "tags": ["database", "query", "lambda", "rds"],
-      "dependencies": ["jq", "aws-cli"],
+      "tags": [
+        "database",
+        "query",
+        "lambda",
+        "rds"
+      ],
+      "dependencies": [
+        "jq",
+        "aws-cli"
+      ],
       "hasHelpFlag": false,
       "usesSharedLib": false,
       "lastUpdated": "2026-03-10",
@@ -100,8 +119,16 @@
       "category": "database",
       "description": "Execute SQL query via Lambda (S3-based mode for large queries)",
       "usage": "bash scripts/db-exec.sh [--write] <sql-file>",
-      "tags": ["database", "query", "lambda", "s3", "rds"],
-      "dependencies": ["aws-cli"],
+      "tags": [
+        "database",
+        "query",
+        "lambda",
+        "s3",
+        "rds"
+      ],
+      "dependencies": [
+        "aws-cli"
+      ],
       "hasHelpFlag": false,
       "usesSharedLib": false,
       "lastUpdated": "2026-03-10",
@@ -113,7 +140,12 @@
       "category": "cleanup",
       "description": "Remove files and directories with spaces in names (v2.0)",
       "usage": "bash scripts/clean-space-files-and-dirs.sh [--dry-run] [--force] [--all] [--rename-only] [--exclude-broken]",
-      "tags": ["cleanup", "filesystem", "macOS", "finder"],
+      "tags": [
+        "cleanup",
+        "filesystem",
+        "macOS",
+        "finder"
+      ],
       "dependencies": [],
       "hasHelpFlag": false,
       "usesSharedLib": false,
@@ -126,7 +158,11 @@
       "category": "cleanup",
       "description": "Delete .broken-* directories (v2.0 with aggressive mode)",
       "usage": "bash scripts/cleanup-broken-files.sh [--all] [--force] [--aggressive]",
-      "tags": ["cleanup", "filesystem", "backup"],
+      "tags": [
+        "cleanup",
+        "filesystem",
+        "backup"
+      ],
       "dependencies": [],
       "hasHelpFlag": false,
       "usesSharedLib": false,
@@ -139,8 +175,17 @@
       "category": "validation",
       "description": "Verify development environment before starting a new session",
       "usage": "bash scripts/verify-environment.sh",
-      "tags": ["environment", "validation", "session", "startup"],
-      "dependencies": ["git", "node", "pnpm"],
+      "tags": [
+        "environment",
+        "validation",
+        "session",
+        "startup"
+      ],
+      "dependencies": [
+        "git",
+        "node",
+        "pnpm"
+      ],
       "hasHelpFlag": false,
       "usesSharedLib": false,
       "lastUpdated": "2026-03-19",
@@ -152,12 +197,98 @@
       "category": "utilities",
       "description": "Demonstration of shared library usage",
       "usage": "bash scripts/example-shared-lib-usage.sh",
-      "tags": ["example", "shared-lib", "documentation"],
-      "dependencies": ["scripts/lib/common.sh", "scripts/lib/validate.sh", "scripts/lib/aws.sh"],
+      "tags": [
+        "example",
+        "shared-lib",
+        "documentation"
+      ],
+      "dependencies": [
+        "scripts/lib/common.sh",
+        "scripts/lib/validate.sh",
+        "scripts/lib/aws.sh"
+      ],
       "hasHelpFlag": false,
       "usesSharedLib": true,
       "lastUpdated": "2026-04-04",
       "maintainer": "devops-team"
+    },
+    {
+      "name": "validate-lambda-dependencies.sh",
+      "path": "scripts/validate-lambda-dependencies.sh",
+      "category": "validation",
+      "description": "Validate Lambda function dependencies using shared library (v2)",
+      "usage": "bash scripts/validate-lambda-dependencies.sh",
+      "tags": [
+        "lambda",
+        "validation",
+        "aws",
+        "dependencies",
+        "shared-lib"
+      ],
+      "dependencies": [
+        "scripts/lib/common.sh",
+        "scripts/lib/validate.sh"
+      ],
+      "hasHelpFlag": false,
+      "usesSharedLib": true,
+      "lastUpdated": "2026-04-04",
+      "maintainer": "infrastructure-team",
+      "linesOfCode": 152,
+      "reducedFrom": {
+        "script": "validate-lambda-dependencies.sh",
+        "originalLines": 173,
+        "reductionPercent": 12
+      }
+    },
+    {
+      "name": "validate-language-sync.sh",
+      "path": "scripts/validate-language-sync.sh",
+      "category": "validation",
+      "description": "Validate language lists synchronization using shared library (v2)",
+      "usage": "bash scripts/validate-language-sync.sh",
+      "tags": [
+        "i18n",
+        "validation",
+        "languages",
+        "shared-lib"
+      ],
+      "dependencies": [
+        "scripts/lib/common.sh"
+      ],
+      "hasHelpFlag": false,
+      "usesSharedLib": true,
+      "lastUpdated": "2026-04-04",
+      "maintainer": "i18n-team",
+      "linesOfCode": 110,
+      "reducedFrom": {
+        "originalLines": 115,
+        "reductionPercent": 5
+      }
+    },
+    {
+      "name": "validate-deployment-method.sh",
+      "path": "scripts/validate-deployment-method.sh",
+      "category": "validation",
+      "description": "Prevent manual zip upload to Lambda using shared library (v2)",
+      "usage": "bash scripts/validate-deployment-method.sh",
+      "tags": [
+        "deployment",
+        "validation",
+        "lambda",
+        "shared-lib"
+      ],
+      "dependencies": [
+        "scripts/lib/common.sh"
+      ],
+      "hasHelpFlag": false,
+      "usesSharedLib": true,
+      "lastUpdated": "2026-04-04",
+      "maintainer": "infrastructure-team",
+      "linesOfCode": 106,
+      "reducedFrom": {
+        "originalLines": 103,
+        "reductionPercent": -3
+      }
     }
   ],
   "sharedLibraries": [
@@ -189,7 +320,11 @@
         "Secrets Manager: get_secret",
         "Utilities: get_account_id, get_current_region, resource_exists_by_arn"
       ],
-      "dependencies": ["aws-cli", "jq", "scripts/lib/common.sh"],
+      "dependencies": [
+        "aws-cli",
+        "jq",
+        "scripts/lib/common.sh"
+      ],
       "lastUpdated": "2026-04-04"
     },
     {
@@ -205,7 +340,10 @@
         "Git: validate_git_clean, validate_git_branch",
         "Lambda: validate_lambda_zip_size, validate_no_manual_lambda_zips"
       ],
-      "dependencies": ["jq", "scripts/lib/common.sh"],
+      "dependencies": [
+        "jq",
+        "scripts/lib/common.sh"
+      ],
       "lastUpdated": "2026-04-04"
     },
     {
@@ -221,7 +359,9 @@
         "File logging: rotate_log_file, enable_file_logging",
         "Configuration: set_log_level, enable_json_logging"
       ],
-      "dependencies": ["scripts/lib/common.sh"],
+      "dependencies": [
+        "scripts/lib/common.sh"
+      ],
       "lastUpdated": "2026-04-04"
     }
   ],

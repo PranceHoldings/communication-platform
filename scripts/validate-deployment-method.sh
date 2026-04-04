@@ -1,103 +1,106 @@
 #!/bin/bash
-
-##############################################
-# Deployment Method Validation Script
+# ==============================================================================
+# Deployment Method Validation Script (v2 - Using Shared Library)
+# ==============================================================================
 # Purpose: Prevent manual zip upload to Lambda
-# Created: 2026-03-15
-##############################################
+# Usage: bash scripts/validate-deployment-method-v2.sh
+# ==============================================================================
 
-set -e
+# Source shared libraries
+source "$(dirname "$0")/lib/common.sh"
 
-echo "============================================"
-echo "Deployment Method Validation"
-echo "============================================"
-echo ""
+log_section "デプロイメント方法検証スクリプト"
 
-ERRORS=0
-WARNINGS=0
+# ==============================================================================
+# Check 1: Manual zip files
+# ==============================================================================
 
-# Color codes
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-NC='\033[0m' # No Color
+log_step "1" "Lambda ディレクトリ内の手動 zip ファイル確認"
 
-echo "[1/3] Checking for manual zip files in Lambda directories..."
 ZIP_FILES=$(find infrastructure/lambda -name "*.zip" -o -name "lambda-deployment.zip" 2>/dev/null || true)
 
 if [ -n "$ZIP_FILES" ]; then
-  echo ""
-  echo -e "${RED}❌ ERROR: Manual zip files detected!${NC}"
+  log_error "手動 zip ファイルが検出されました"
   echo ""
   echo "Found zip files:"
   echo "$ZIP_FILES"
   echo ""
-  echo -e "${RED}Manual zip upload is FORBIDDEN.${NC}"
+  log_error "手動 zip アップロードは禁止されています"
   echo ""
-  echo "Reason:"
-  echo "  - TypeScript files (.ts) are not transpiled to JavaScript (.js)"
-  echo "  - Lambda Runtime expects .js files → Runtime.ImportModuleError"
-  echo "  - esbuild bundling process is skipped"
+  log_info "理由:"
+  echo "  - TypeScript ファイル (.ts) が JavaScript (.js) に変換されていない"
+  echo "  - Lambda Runtime は .js ファイルを期待 → Runtime.ImportModuleError"
+  echo "  - esbuild bundling プロセスがスキップされている"
   echo ""
-  echo "Correct deployment method:"
+  log_info "正しいデプロイ方法:"
   echo "  cd infrastructure && pnpm run deploy:lambda"
   echo ""
-  echo "To remove these zip files:"
+  log_info "zip ファイルを削除するには:"
   echo "  find infrastructure/lambda -name '*.zip' -delete"
   echo ""
-  ERRORS=$((ERRORS + 1))
+  increment_counter ERRORS
 else
-  echo -e "${GREEN}  ✓ No manual zip files found${NC}"
+  log_success "手動 zip ファイルは見つかりませんでした"
+  increment_counter PASSED
 fi
 
-echo ""
-echo "[2/3] Checking CDK output directory..."
+# ==============================================================================
+# Check 2: CDK output directory
+# ==============================================================================
+
+log_step "2" "CDK 出力ディレクトリ確認"
+
 if [ -d "infrastructure/cdk.out" ]; then
   CDK_AGE=$(find infrastructure/cdk.out -name "*.template.json" -mmin +60 2>/dev/null | wc -l)
   if [ "$CDK_AGE" -gt 0 ]; then
-    echo -e "${YELLOW}  ⚠ Warning: CDK output is older than 60 minutes${NC}"
-    echo "  Consider clearing cache: rm -rf infrastructure/cdk.out"
-    WARNINGS=$((WARNINGS + 1))
+    log_warning "CDK 出力が60分以上前のものです"
+    log_info "  キャッシュクリアを検討: rm -rf infrastructure/cdk.out"
+    increment_counter WARNINGS
   else
-    echo -e "${GREEN}  ✓ CDK output is recent${NC}"
+    log_success "CDK 出力は最新です"
+    increment_counter PASSED
   fi
 else
-  echo -e "${GREEN}  ✓ No CDK output directory (clean state)${NC}"
+  log_success "CDK 出力ディレクトリなし（クリーン状態）"
+  increment_counter PASSED
 fi
 
-echo ""
-echo "[3/3] Validating deployment process documentation..."
+# ==============================================================================
+# Check 3: Deployment documentation
+# ==============================================================================
+
+log_step "3" "デプロイメントプロセスドキュメント検証"
+
 if ! grep -q "手動zipアップロード絶対禁止" memory/deployment-rules.md 2>/dev/null; then
-  echo -e "${YELLOW}  ⚠ Warning: deployment-rules.md may need update${NC}"
-  WARNINGS=$((WARNINGS + 1))
+  log_warning "deployment-rules.md の更新が必要な可能性があります"
+  increment_counter WARNINGS
 else
-  echo -e "${GREEN}  ✓ Deployment rules documented${NC}"
+  log_success "デプロイメントルールがドキュメント化されています"
+  increment_counter PASSED
 fi
 
-echo ""
-echo "============================================"
-echo "Validation Summary"
-echo "============================================"
-echo ""
+# ==============================================================================
+# Summary
+# ==============================================================================
+
+log_section "検証結果"
+print_counter_summary
 
 if [ $ERRORS -gt 0 ]; then
-  echo -e "${RED}❌ Validation FAILED with $ERRORS error(s)${NC}"
+  log_error "検証に失敗しました"
   echo ""
-  echo "Manual zip files must be removed before deployment."
-  echo "Use CDK deployment process only."
-  echo ""
+  log_info "手動 zip ファイルをデプロイ前に削除してください"
+  log_info "CDK デプロイメントプロセスのみを使用してください"
   exit 1
 elif [ $WARNINGS -gt 0 ]; then
-  echo -e "${YELLOW}⚠ Validation PASSED with $WARNINGS warning(s)${NC}"
+  log_warning "警告付きで検証に合格しました"
   echo ""
-  echo "You may proceed, but please review the warnings above."
-  echo ""
+  log_info "続行可能ですが、上記の警告を確認してください"
   exit 0
 else
-  echo -e "${GREEN}✅ All validations passed${NC}"
+  log_success "全ての検証に合格しました"
   echo ""
-  echo "Deployment method is correct."
-  echo "Proceed with: cd infrastructure && pnpm run deploy:lambda"
-  echo ""
+  log_info "デプロイメント方法は正しいです"
+  log_info "次のステップ: cd infrastructure && pnpm run deploy:lambda"
   exit 0
 fi
