@@ -56,13 +56,13 @@ cd communication-platform
 
 ```bash
 # ルートの依存関係 + 全ワークスペース
-npm install
+pnpm install
 
 # CDK CLI (グローバル)
-npm install -g aws-cdk
+pnpm install -g aws-cdk
 
 # Prisma CLI (グローバル)
-npm install -g prisma
+pnpm install -g prisma
 ```
 
 ### 2.3 環境変数設定
@@ -119,7 +119,7 @@ DATABASE_URL="postgresql://postgres:****@YOUR_RDS_ENDPOINT:5432/prance"
 cd packages/database
 
 # Prisma Clientを生成（型定義のため）
-npx prisma generate
+pnpm exec prisma generate
 ```
 
 ### データベース接続テスト
@@ -162,7 +162,7 @@ aws sts get-caller-identity
 cd infrastructure
 
 # 初回のみ: CDK Bootstrap実行
-npx cdk bootstrap
+pnpm exec cdk bootstrap
 
 # 出力例:
 # ✅  Bootstrapping environment aws://123456789012/us-east-1...
@@ -172,13 +172,13 @@ npx cdk bootstrap
 
 ```bash
 # すべてのスタックをデプロイ
-npx cdk deploy --all
+pnpm exec cdk deploy --all
 
 # または個別にデプロイ
-npx cdk deploy Prance-dev-Network
-npx cdk deploy Prance-dev-Cognito
-npx cdk deploy Prance-dev-Database
-npx cdk deploy Prance-dev-Storage
+pnpm exec cdk deploy Prance-dev-Network
+pnpm exec cdk deploy Prance-dev-Cognito
+pnpm exec cdk deploy Prance-dev-Database
+pnpm exec cdk deploy Prance-dev-Storage
 ```
 
 デプロイ完了まで10-15分かかります。
@@ -189,7 +189,7 @@ npx cdk deploy Prance-dev-Storage
 
 ```bash
 # Outputs確認
-npx cdk list
+pnpm exec cdk list
 ```
 
 以下の値を `.env.local` に追加：
@@ -224,11 +224,11 @@ aws secretsmanager get-secret-value \
 
 ```bash
 # ルートディレクトリで
-npm run dev
+pnpm run dev
 
 # または apps/web で直接
 cd apps/web
-npm run dev
+pnpm run dev
 ```
 
 ブラウザで http://localhost:3000 にアクセス
@@ -238,7 +238,7 @@ npm run dev
 - [ ] Node.js 20.x インストール確認
 - [ ] 外部サービスアカウント作成（5サービス）
 - [ ] `.env.local` ファイル作成・設定
-- [ ] `npm install` 完了
+- [ ] `pnpm install` 完了
 - [ ] PostgreSQL起動確認
 - [ ] Prismaマイグレーション実行
 - [ ] AWS CLI設定完了
@@ -254,14 +254,14 @@ npm run dev
 ```bash
 # node_modulesを削除して再インストール
 rm -rf node_modules
-npm install
+pnpm install
 ```
 
 ### エラー: "CDK bootstrap required"
 
 ```bash
 cd infrastructure
-npx cdk bootstrap aws://ACCOUNT-ID/REGION
+pnpm exec cdk bootstrap aws://ACCOUNT-ID/REGION
 ```
 
 ### エラー: Prisma migration failed
@@ -269,8 +269,8 @@ npx cdk bootstrap aws://ACCOUNT-ID/REGION
 ```bash
 # マイグレーションリセット
 cd packages/database
-npx prisma migrate reset
-npx prisma migrate dev --name init
+pnpm exec prisma migrate reset
+pnpm exec prisma migrate dev --name init
 ```
 
 ### エラー: AWS credentials not found

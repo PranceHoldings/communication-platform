@@ -109,7 +109,7 @@ These files only use infrastructure configs (not runtime-tunable):
 - `prance-guest-sessions-batch-dev` - 2026-03-21 11:02:06 UTC
 - `prance-db-query-dev` - 2026-03-21 11:02:07 UTC
 
-**Deployment Method:** CDK (infrastructure/npm run deploy:lambda)
+**Deployment Method:** CDK (infrastructure/pnpm run deploy:lambda)
 
 **Deployment Status:** ✅ Success (exit code 0)
 

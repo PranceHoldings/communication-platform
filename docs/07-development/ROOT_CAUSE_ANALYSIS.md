@@ -145,7 +145,7 @@ mv node_modules node_modules.broken
 # package.json から "prepare" スクリプトを削除
 
 # --ignore-scripts で明示的に制御
-npm install --ignore-scripts
+pnpm install --ignore-scripts
 
 # deploy scriptでビルドステップを明示的に実行
 # prepare.shを廃止し、deploy.sh内で直接実行
@@ -220,13 +220,13 @@ remove_directory_robust() {
 **根本原因分析:**
 ```
 clean-deploy.sh
-  → npm install
+  → pnpm install
     → prepare hook (1回目)
       → prepare.sh
-        → npm ci
+        → pnpm install --frozen-lockfile
           → prepare hook (2回目)
             → prepare.sh
-              → npm ci
+              → pnpm install --frozen-lockfile
                 → prepare hook (3回目) → ENOTEMPTY
 ```
 
@@ -236,15 +236,15 @@ clean-deploy.sh
 - "prepare": "cd infrastructure && ./prepare.sh"
 
 # 2. npm installに--ignore-scriptsフラグを追加
-npm install --ignore-scripts
+pnpm install --ignore-scripts
 
 # 3. ビルドステップを明示的に実行
 cd "$PROJECT_ROOT"
-npm install --ignore-scripts
+pnpm install --ignore-scripts
 cd "$PROJECT_ROOT/packages/database"
-npx prisma generate
+pnpm exec prisma generate
 cd "$PROJECT_ROOT"
-npm run build
+pnpm run build
 ```
 
 **教訓:**

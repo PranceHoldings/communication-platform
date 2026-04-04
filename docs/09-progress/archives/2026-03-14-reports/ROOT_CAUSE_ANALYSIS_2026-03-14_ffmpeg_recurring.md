@@ -508,10 +508,10 @@ throw new Error(
 
 ```bash
 # ❌ Bad: 検証なし
-npx cdk deploy
+pnpm exec cdk deploy
 
 # ✅ Good: デプロイ後即座に検証
-npx cdk deploy
+pnpm exec cdk deploy
 bash scripts/post-deploy-lambda-test.sh prance-websocket-default-dev
 ```
 

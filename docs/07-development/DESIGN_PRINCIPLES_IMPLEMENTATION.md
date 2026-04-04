@@ -155,8 +155,8 @@ type: feedback
     "validate:deps-size": "bash scripts/validate-dependency-size.sh",
     "validate:monorepo": "bash scripts/validate-monorepo-boundaries.sh",
     "validate:tests": "bash scripts/validate-test-implementation.sh",
-    "validate:design-principles": "npm run validate:deps-size && npm run validate:monorepo && npm run validate:tests",
-    "pre-commit": "npm run validate:design-principles && npm run lint && npm run typecheck"
+    "validate:design-principles": "pnpm run validate:deps-size && pnpm run validate:monorepo && pnpm run validate:tests",
+    "pre-commit": "pnpm run validate:design-principles && pnpm run lint && pnpm run typecheck"
   }
 }
 ```
@@ -218,7 +218,7 @@ type: feedback
 
 **1. Dependency Size Validation**
 ```bash
-$ npm run validate:deps-size
+$ pnpm run validate:deps-size
 ✅ All dependencies are within acceptable limits
 ```
 - Checked: 4 workspaces (root, apps/web, infrastructure, packages/shared)
@@ -227,7 +227,7 @@ $ npm run validate:deps-size
 
 **2. Monorepo Boundary Validation**
 ```bash
-$ npm run validate:monorepo
+$ pnpm run validate:monorepo
 ✅ All monorepo boundary validations passed
 ```
 - Frontend → Backend imports: 0 ✅
@@ -239,7 +239,7 @@ $ npm run validate:monorepo
 
 **3. Test Implementation Validation**
 ```bash
-$ npm run validate:tests
+$ pnpm run validate:tests
 ✅ All test implementation validations passed
 ```
 - Route references: 5 routes checked, all valid ✅
@@ -248,7 +248,7 @@ $ npm run validate:tests
 
 **4. Combined Validation**
 ```bash
-$ npm run validate:design-principles
+$ pnpm run validate:design-principles
 ✅ All design principle validations passed (3/3)
 ```
 

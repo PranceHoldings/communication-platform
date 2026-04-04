@@ -44,7 +44,7 @@ Week 2 Day 12のテスト中に、既存シナリオが無音管理（Silence Ma
 ```bash
 # デプロイステータス確認
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### ステップ 2: Lambda関数を実行
@@ -200,7 +200,7 @@ aws rds modify-db-cluster \
 
    ```bash
    pkill -f "next dev"
-   npm run dev
+   pnpm run dev
    ```
 
 3. **ブラウザでシナリオをテスト:**
@@ -251,7 +251,7 @@ WHERE new_field IS NULL;
 ```bash
 # マイグレーション生成
 cd packages/database
-npx prisma migrate dev --name add_new_field_with_defaults
+pnpm exec prisma migrate dev --name add_new_field_with_defaults
 
 # 生成されたSQLに UPDATE文を追加（手動）
 vim prisma/migrations/YYYYMMDDHHMMSS_add_new_field_with_defaults/migration.sql
@@ -281,7 +281,7 @@ aws lambda list-functions --query 'Functions[?starts_with(FunctionName, `prance-
 
 # CDKデプロイログを確認
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### SQL実行がタイムアウト
@@ -292,11 +292,11 @@ RDS Query Editor でタイムアウトする場合、Lambda関数を使用して
 
 ```bash
 # Prisma Clientを再生成
-npm run db:generate
+pnpm run db:generate
 
 # 開発サーバーを完全再起動
 pkill -f "next dev"
-npm run dev
+pnpm run dev
 ```
 
 ---

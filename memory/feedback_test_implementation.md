@@ -453,7 +453,7 @@ model User {
 
 ```bash
 # .git/hooks/pre-commit
-npm run validate:tests  # Runs validation script
+pnpm run validate:tests  # Runs validation script
 ```
 
 ### Code Review Checklist
@@ -471,10 +471,10 @@ When reviewing test PRs, check:
 ```yaml
 # .github/workflows/test.yml
 - name: Validate test assumptions
-  run: npm run validate:tests
+  run: pnpm run validate:tests
   
 - name: Run tests
-  run: npm run test
+  run: pnpm run test
 ```
 
 ---

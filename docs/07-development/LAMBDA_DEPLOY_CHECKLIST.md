@@ -31,13 +31,13 @@
 
 ```bash
 # 1. Prisma Client生成
-npm run db:generate
+pnpm run db:generate
 
 # 2. 環境変数確認
 ./scripts/validate-env.sh
 
 # 3. Lambda依存関係確認
-npm run lambda:validate
+pnpm run lambda:validate
 ```
 
 **チェック項目:**
@@ -49,10 +49,10 @@ npm run lambda:validate
 
 ```bash
 # 4. TypeScriptビルド
-npm run build:infra
+pnpm run build:infra
 
 # 5. Lambda関数ビルド
-npm run lambda:build
+pnpm run lambda:build
 ```
 
 **チェック項目:**
@@ -63,7 +63,7 @@ npm run lambda:build
 
 ```bash
 # 6. デプロイ前全検証（6項目）
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 ```
 
 **検証項目（自動）:**
@@ -81,12 +81,12 @@ npm run lambda:predeploy
 
 ```bash
 # 7. Lambda関数デプロイ
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # または個別スタック
 cd infrastructure
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
-npx cdk deploy Prance-dev-WebSocketLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-WebSocketLambda --require-approval never
 ```
 
 **チェック項目:**
@@ -174,8 +174,8 @@ aws lambda get-function-configuration \
 
 **解決策:**
 ```bash
-npm run db:generate
-npm run lambda:predeploy  # 再検証
+pnpm run db:generate
+pnpm run lambda:predeploy  # 再検証
 ```
 
 ### Issue 2: Lambda依存関係欠如
@@ -186,9 +186,9 @@ npm run lambda:predeploy  # 再検証
 
 **解決策:**
 ```bash
-npm run lambda:fix        # 自動修復
-npm run lambda:validate   # 確認
-npm run lambda:predeploy  # 再検証
+pnpm run lambda:fix        # 自動修復
+pnpm run lambda:validate   # 確認
+pnpm run lambda:predeploy  # 再検証
 ```
 
 ### Issue 3: デプロイ後に500エラー
@@ -210,9 +210,9 @@ aws logs filter-log-events \
 **解決策:**
 ```bash
 # 依存関係を修復してデプロイし直す
-npm run lambda:fix
-npm run lambda:predeploy
-npm run deploy:lambda
+pnpm run lambda:fix
+pnpm run lambda:predeploy
+pnpm run deploy:lambda
 ```
 
 ---
@@ -236,8 +236,8 @@ npm run deploy:lambda
 ### ✅ 正しいデプロイフロー
 
 ```bash
-npm run lambda:predeploy    # 必須
-npm run deploy:lambda       # 推奨
+pnpm run lambda:predeploy    # 必須
+pnpm run deploy:lambda       # 推奨
 ```
 
 ---

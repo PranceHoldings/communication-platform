@@ -64,10 +64,10 @@ vim packages/database/prisma/schema.prisma
 
 # Step 2: マイグレーション生成
 cd packages/database
-npx prisma migrate dev --name add_new_field
+pnpm exec prisma migrate dev --name add_new_field
 
 # Step 3: Prisma Client再生成
-npx prisma generate
+pnpm exec prisma generate
 
 # Step 4: packages/shared 型定義更新（手動）
 vim packages/shared/src/types/index.ts
@@ -81,7 +81,7 @@ bash scripts/validate-schema-interface-implementation.sh
 
 # Step 7: デプロイ
 cd infrastructure
-npm run deploy:dev-migration
+pnpm run deploy:dev-migration
 ```
 
 ### 2. 型定義追加時の手順

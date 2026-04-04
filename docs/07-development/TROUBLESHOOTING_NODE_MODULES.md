@@ -25,7 +25,7 @@
 
 ```bash
 # 推奨: 全自動（リトライ＋リネーム戦略）
-npm run build:clean
+pnpm run build:clean
 
 # または直接実行
 ./scripts/clean-build.sh
@@ -60,7 +60,7 @@ npm run build:clean
 
 ```bash
 # 7日以上前のバックアップのみ削除（推奨）
-npm run clean:broken
+pnpm run clean:broken
 
 # 全てのバックアップを削除
 ./scripts/cleanup-broken-files.sh --all
@@ -93,13 +93,13 @@ lsof | grep node_modules | head -20
 
 # 開発サーバーを停止
 pkill -f "next dev"
-pkill -f "npm run dev"
+pkill -f "pnpm run dev"
 pkill -f "node"
 ```
 
 #### Step 2: 自動クリーンビルド
 ```bash
-npm run build:clean
+pnpm run build:clean
 ```
 
 削除できないファイルは自動的に`*.broken-<timestamp>`にリネームされます。
@@ -111,7 +111,7 @@ sudo rm -rf node_modules
 
 # それでも失敗する場合、リネームして新規作成
 sudo mv node_modules node_modules.broken-manual
-npm install
+pnpm install
 ```
 
 ---
@@ -131,10 +131,10 @@ rm: cannot remove 'node_modules/package/file': Resource deadlock avoided
 
 ```bash
 # 1. 自動リネーム戦略を使用
-npm run build:clean
+pnpm run build:clean
 
 # 2. 破損ファイルのスキャンとクリーンアップ
-npm run clean:broken
+pnpm run clean:broken
 ```
 
 ---
@@ -160,7 +160,7 @@ sudo chattr -i -R node_modules
 sudo chown -R $(whoami):$(whoami) node_modules
 
 # 3. クリーンビルド実行
-npm run build:clean
+pnpm run build:clean
 ```
 
 ---
@@ -190,7 +190,7 @@ find . -name "*.broken-*" -o -name "*.old-*" -type d
 du -sh *.broken-* 2>/dev/null
 
 # 手動削除
-npm run clean:broken --all --force
+pnpm run clean:broken --all --force
 ```
 
 ---
@@ -214,7 +214,7 @@ du -sh *.broken-* *.old-* 2>/dev/null | awk '{sum+=$1} END {print sum " total"}'
 
 ```bash
 # 1. バックアップを削除
-npm run clean:broken --all
+pnpm run clean:broken --all
 
 # 2. npm cache をクリア
 npm cache clean --force
@@ -223,7 +223,7 @@ npm cache clean --force
 docker system prune -a --volumes
 
 # 4. 完全クリーンビルド
-npm run build:clean
+pnpm run build:clean
 ```
 
 ---
@@ -234,10 +234,10 @@ npm run build:clean
 
 ```bash
 # 週1回実行（推奨）
-npm run clean:broken
+pnpm run clean:broken
 
 # 月1回実行（推奨）
-npm run build:clean
+pnpm run build:clean
 ```
 
 ### 2. 開発サーバーの適切な停止
@@ -304,7 +304,7 @@ node_modules/
 ls -lah *.broken-*
 
 # 削除
-npm run clean:broken --all
+pnpm run clean:broken --all
 ```
 
 ### Q2: 削除中にエラーが出たらどうすれば？
@@ -313,7 +313,7 @@ npm run clean:broken --all
 
 ```bash
 # 自動対応
-npm run build:clean
+pnpm run build:clean
 
 # 手動確認
 ls -lah | grep broken
@@ -325,7 +325,7 @@ ls -lah | grep broken
 
 ```bash
 # 1. バックアップ削除（即効性あり）
-npm run clean:broken --all
+pnpm run clean:broken --all
 
 # 2. npm cache削除
 npm cache clean --force

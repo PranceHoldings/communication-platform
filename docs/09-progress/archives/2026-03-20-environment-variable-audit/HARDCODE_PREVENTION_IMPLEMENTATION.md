@@ -258,8 +258,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
-      - run: npm install
-      - run: npm run lint
+      - run: pnpm install
+      - run: pnpm run lint
       - run: bash scripts/detect-hardcoded-values.sh
       - run: bash scripts/validate-env-consistency.sh
 ```

@@ -254,7 +254,7 @@ Checking for numeric hardcoded constants in backend...
 ### ✅ 環境変数整合性チェック - エラーなし
 
 ```bash
-npm run env:consistency
+pnpm run env:consistency
 
 🔍 環境変数の重複・矛盾チェック: .env.local
 
@@ -317,13 +317,13 @@ EMOTION_WEIGHT (0.25) + AUDIO_WEIGHT (0.25) + CONTENT_WEIGHT (0.30) + DELIVERY_W
 
 ```bash
 # コミット前の全検証
-npm run pre-commit
+pnpm run pre-commit
 
 # ハードコード値検出のみ
 bash scripts/detect-hardcoded-values.sh
 
 # 環境変数整合性チェックのみ
-npm run env:consistency
+pnpm run env:consistency
 
 # 特定ファイルのみ検証
 bash scripts/detect-hardcoded-values.sh infrastructure/lambda
@@ -356,7 +356,7 @@ const value = getNewConfigValue();
 **Step 4: 検証**
 ```bash
 bash scripts/detect-hardcoded-values.sh
-npm run env:consistency
+pnpm run env:consistency
 ```
 
 ### 環境別設定
@@ -399,7 +399,7 @@ aws cloudfront create-public-key --public-key-config file://public-key-config.js
 # .github/workflows/ci.yml
 - name: Validate Environment Variables
   run: |
-    npm run env:consistency
+    pnpm run env:consistency
     bash scripts/detect-hardcoded-values.sh
 ```
 
@@ -418,7 +418,7 @@ aws cloudfront create-public-key --public-key-config file://public-key-config.js
 - [ ] Lambda環境変数に設定（CDK経由）
 - [ ] `validate-env-consistency.sh` の必須変数リストに追加
 - [ ] ドキュメント更新（ENVIRONMENT_ARCHITECTURE.md）
-- [ ] 検証実行（`npm run env:consistency`）
+- [ ] 検証実行（`pnpm run env:consistency`）
 
 ### 5. チーム共有ルール
 

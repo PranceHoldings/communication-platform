@@ -27,7 +27,7 @@
 ./scripts/deploy-lambda-websocket-manual.sh
 
 # または npm scripts経由
-npm run deploy:websocket
+pnpm run deploy:websocket
 ```
 
 **内部で実行される8ステップ:**
@@ -49,7 +49,7 @@ npm run deploy:websocket
 ./scripts/cdk-deploy-wrapper.sh <StackName>
 
 # または npm scripts経由
-npm run deploy:stack <StackName>
+pnpm run deploy:stack <StackName>
 ```
 
 **内部で実行される検証:**
@@ -130,7 +130,7 @@ npm run deploy:stack <StackName>
 
 ```bash
 # ワンコマンドで全自動
-npm run deploy:websocket
+pnpm run deploy:websocket
 ```
 
 ---
@@ -139,10 +139,10 @@ npm run deploy:websocket
 
 ```bash
 # Database スタック
-npm run deploy:stack Prance-dev-Database
+pnpm run deploy:stack Prance-dev-Database
 
 # Storage スタック
-npm run deploy:stack Prance-dev-Storage
+pnpm run deploy:stack Prance-dev-Storage
 ```
 
 ---
@@ -151,7 +151,7 @@ npm run deploy:stack Prance-dev-Storage
 
 ```bash
 # 全検証を一括実行
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 ```
 
 ---
@@ -160,10 +160,10 @@ npm run lambda:predeploy
 
 ```bash
 # 自動修復
-npm run lambda:fix
+pnpm run lambda:fix
 
 # 修復後の検証
-npm run lambda:validate
+pnpm run lambda:validate
 ```
 
 ---
@@ -172,7 +172,7 @@ npm run lambda:validate
 
 ```bash
 # 特定のLambda関数をテスト
-npm run lambda:test prance-websocket-default-dev
+pnpm run lambda:test prance-websocket-default-dev
 
 # 環境変数を検証
 bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev
@@ -195,8 +195,8 @@ chmod +x scripts/*.sh
 
 **解決策:**
 ```bash
-npm run lambda:fix
-npm run lambda:validate
+pnpm run lambda:fix
+pnpm run lambda:validate
 ```
 
 ---
@@ -207,7 +207,7 @@ npm run lambda:validate
 
 **解決策:**
 ```bash
-npm run deploy:websocket
+pnpm run deploy:websocket
 ```
 
 ---

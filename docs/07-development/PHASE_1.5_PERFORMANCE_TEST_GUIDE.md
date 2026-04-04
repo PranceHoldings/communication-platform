@@ -48,10 +48,10 @@ echo $AUTH_TOKEN
 
 ```bash
 # 基本テスト（1セッション）
-npm run perf:test
+pnpm run perf:test
 
 # 詳細ログ付きテスト
-npm run perf:test -- --verbose
+pnpm run perf:test -- --verbose
 ```
 
 **期待される出力:**
@@ -76,10 +76,10 @@ npm run perf:test -- --verbose
 
 ```bash
 # 10セッション同時実行
-npm run perf:test -- --load 10
+pnpm run perf:test -- --load 10
 
 # カスタム並行数
-npm run perf:test -- --load 20
+pnpm run perf:test -- --load 20
 ```
 
 **期待される出力:**
@@ -120,13 +120,13 @@ Component Breakdown (Average):
 
 ```bash
 # 過去1時間のメトリクス
-npm run perf:metrics
+pnpm run perf:metrics
 
 # 過去24時間のメトリクス
-npm run perf:metrics -- --hours 24
+pnpm run perf:metrics -- --hours 24
 
 # 過去7日間のメトリクス
-npm run perf:metrics -- --days 7
+pnpm run perf:metrics -- --days 7
 ```
 
 **期待される出力:**
@@ -173,7 +173,7 @@ Period: 2026-03-14T09:30:00 to 2026-03-14T10:30:00
 ================================================================
 
 💡 Tip: For end-to-end performance metrics, run:
-   npm run perf:test
+   pnpm run perf:test
 ```
 
 ---
@@ -342,17 +342,17 @@ curl -H "xi-api-key: ${ELEVENLABS_API_KEY}" \
 
 ```bash
 # crontabで1時間ごとにテスト実行
-0 * * * * cd /path/to/prance && npm run perf:test >> /var/log/prance-perf.log 2>&1
+0 * * * * cd /path/to/prance && pnpm run perf:test >> /var/log/prance-perf.log 2>&1
 
 # 毎日午前2時に負荷テスト
-0 2 * * * cd /path/to/prance && npm run perf:load >> /var/log/prance-load.log 2>&1
+0 2 * * * cd /path/to/prance && pnpm run perf:load >> /var/log/prance-load.log 2>&1
 ```
 
 ### メトリクス収集（推奨）
 
 ```bash
 # 1時間ごとにメトリクス収集
-0 * * * * cd /path/to/prance && npm run perf:metrics >> /var/log/prance-metrics.log 2>&1
+0 * * * * cd /path/to/prance && pnpm run perf:metrics >> /var/log/prance-metrics.log 2>&1
 ```
 
 ---

@@ -37,12 +37,12 @@
 - [ ] マイグレーション内容が正しい: `ALTER TABLE "scenarios" ADD COLUMN "silence_prompt_timeout" INTEGER;`
 
 #### 1.3 Prisma Client生成
-- [ ] `npx prisma generate` が成功する
+- [ ] `pnpm exec prisma generate` が成功する
 - [ ] 生成された型定義に `silencePromptTimeout` が含まれる
 
 **検証コマンド**:
 ```bash
-npm run test:silence-prompt-timeout -- --phase 1
+pnpm run test:silence-prompt-timeout -- --phase 1
 ```
 
 ---
@@ -62,7 +62,7 @@ npm run test:silence-prompt-timeout -- --phase 1
 
 **検証コマンド**:
 ```bash
-npm run test:silence-prompt-timeout -- --phase 2
+pnpm run test:silence-prompt-timeout -- --phase 2
 ```
 
 ---
@@ -83,7 +83,7 @@ npm run test:silence-prompt-timeout -- --phase 2
 
 **検証コマンド**:
 ```bash
-npm run test:silence-prompt-timeout -- --phase 3
+pnpm run test:silence-prompt-timeout -- --phase 3
 ```
 
 ---
@@ -122,7 +122,7 @@ npm run test:silence-prompt-timeout -- --phase 3
 
 **検証コマンド**:
 ```bash
-npm run test:silence-prompt-timeout -- --phase 4
+pnpm run test:silence-prompt-timeout -- --phase 4
 ```
 
 ---
@@ -155,7 +155,7 @@ npm run test:silence-prompt-timeout -- --phase 4
 
 **検証コマンド**:
 ```bash
-npm run test:silence-prompt-timeout -- --phase 5
+pnpm run test:silence-prompt-timeout -- --phase 5
 ```
 
 ---
@@ -165,7 +165,7 @@ npm run test:silence-prompt-timeout -- --phase 5
 #### 6.1 データベースマイグレーション
 ```bash
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 aws lambda invoke --function-name prance-db-migration-dev \
   --payload '{}' /tmp/migration-result.json
 cat /tmp/migration-result.json
@@ -306,17 +306,17 @@ curl -X PUT "https://api-dev.prance-app.com/api/v1/scenarios/$SCENARIO_ID" \
 ### 実行方法
 ```bash
 # 全フェーズ実行
-npm run test:silence-prompt-timeout
+pnpm run test:silence-prompt-timeout
 
 # 特定フェーズのみ実行
-npm run test:silence-prompt-timeout -- --phase 1
-npm run test:silence-prompt-timeout -- --phase 2
-npm run test:silence-prompt-timeout -- --phase 3
-npm run test:silence-prompt-timeout -- --phase 4
-npm run test:silence-prompt-timeout -- --phase 5
+pnpm run test:silence-prompt-timeout -- --phase 1
+pnpm run test:silence-prompt-timeout -- --phase 2
+pnpm run test:silence-prompt-timeout -- --phase 3
+pnpm run test:silence-prompt-timeout -- --phase 4
+pnpm run test:silence-prompt-timeout -- --phase 5
 
 # すべての自動テストを実行（Phase 1-5）
-npm run test:silence-prompt-timeout -- --auto-only
+pnpm run test:silence-prompt-timeout -- --auto-only
 ```
 
 ### 実装場所

@@ -107,7 +107,7 @@ cat /tmp/result.json | jq '.'
 
 **症状:**
 ```bash
-npm run dev
+pnpm run dev
 # → Error: DATABASE_URL is not defined
 ```
 
@@ -132,7 +132,7 @@ bash scripts/validate-env.sh
 
 # Step 5: Next.js再起動
 pkill -f "next dev"
-npm run dev
+pnpm run dev
 ```
 
 **予防策:**
@@ -159,15 +159,15 @@ Error: Cannot find module '@prisma/client'
 ```bash
 # Step 1: Prisma Client再生成
 cd packages/database
-npx prisma generate
+pnpm exec prisma generate
 
 # Step 2: node_modules再インストール（必要に応じて）
 cd ../..
-npm install
+pnpm install
 
 # Step 3: Lambda依存関係修復（Lambda関数デプロイ時）
 cd infrastructure
-npm run lambda:fix
+pnpm run lambda:fix
 ```
 
 ---
@@ -191,7 +191,7 @@ Runtime.ImportModuleError: Cannot find module 'index'
 ```bash
 # ✅ 正しいデプロイ方法（唯一の方法）
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # CDKが自動実行する処理:
 # 1. esbuildでトランスパイル (index.ts → index.js)
@@ -235,10 +235,10 @@ Error: Unknown system error -35: Unknown system error -35, read
 # Option 2: プロセス完全クリーンアップ
 pkill -9 node
 rm -rf apps/web/.next
-cd apps/web && PORT=3000 npx next dev
+cd apps/web && PORT=3000 pnpm exec next dev
 
 # Option 3: 別のポートで起動
-cd apps/web && PORT=3001 npx next dev
+cd apps/web && PORT=3001 pnpm exec next dev
 ```
 
 **参照:** [docs/07-development/KNOWN_ISSUES.md - Issue #6](KNOWN_ISSUES.md#issue-6-tailwind-css-build-error---system-error--35-resource-deadlock)
@@ -264,7 +264,7 @@ git push origin main
 ```bash
 # Step 1: Lambda依存関係を修復
 cd infrastructure
-npm run lambda:fix
+pnpm run lambda:fix
 
 # Step 2: 環境変数を検証
 bash scripts/validate-env.sh
@@ -295,10 +295,10 @@ bash scripts/db-query.sh --file scripts/queries/my-query.sql
 ```bash
 # 全Lambda関数デプロイ
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # 特定スタックのみ
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### 検証スクリプト
@@ -308,13 +308,13 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 bash scripts/validate-env.sh
 
 # Lambda依存関係検証
-cd infrastructure && npm run lambda:predeploy
+cd infrastructure && pnpm run lambda:predeploy
 
 # 言語同期検証
-npm run validate:languages
+pnpm run validate:languages
 
 # 全チェック
-npm run pre-commit
+pnpm run pre-commit
 ```
 
 ---

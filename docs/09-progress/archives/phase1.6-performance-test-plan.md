@@ -103,7 +103,7 @@ aws cloudwatch get-metric-statistics \
 ### Next Steps
 
 1. **Manual Test** in local/dev environment:
-   - Start Next.js dev server: `npm run dev`
+   - Start Next.js dev server: `pnpm run dev`
    - Start a real session with microphone
    - Monitor browser console for buffer stats
    - Verify 80% reduction in Network tab

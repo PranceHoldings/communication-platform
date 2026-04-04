@@ -120,15 +120,15 @@ bash scripts/validate-<feature>.sh
 
 # Step 2: Build
 echo "[2/5] Building..."
-npm run build
+pnpm run build
 
 # Step 3: Test
 echo "[3/5] Testing..."
-npm run test
+pnpm run test
 
 # Step 4: Deploy
 echo "[4/5] Deploying..."
-cd infrastructure && npx cdk deploy <stack>
+cd infrastructure && pnpm exec cdk deploy <stack>
 
 # Step 5: Post-deployment verification
 echo "[5/5] Verifying deployment..."
@@ -178,7 +178,7 @@ if [ $FOUND -eq 0 ]; then
   exit 0
 else
   echo "⚠️  $FOUND issue(s) detected"
-  echo "Run 'npm run fix:<issue>' to auto-fix"
+  echo "Run 'pnpm run fix:<issue>' to auto-fix"
   exit 1
 fi
 ```
@@ -220,7 +220,7 @@ fi
 # ...
 
 echo "✅ Fixed $FIXED issue(s)"
-echo "Run validation to confirm: npm run validate:<feature>"
+echo "Run validation to confirm: pnpm run validate:<feature>"
 ```
 
 **ROI Calculation:**
@@ -283,7 +283,7 @@ Is the task repeated?
 
 ```bash
 # ❌ Bad: Auto-deploy to production without approval
-npm run deploy:prod  # No confirmation!
+pnpm run deploy:prod  # No confirmation!
 ```
 
 **Fix:**
@@ -339,7 +339,7 @@ grep -r "pattern" src/
 #
 # Purpose: Ensure frontend doesn't import backend code
 # When to run: Pre-commit hook, PR checks
-# How to run: npm run validate:monorepo
+# How to run: pnpm run validate:monorepo
 # Expected output: ✅ All checks passed OR ❌ N violations
 #
 
@@ -386,7 +386,7 @@ SCRIPT_COUNT=$(find scripts -name "*.sh" -type f | wc -l)
 echo "Total automation scripts: $SCRIPT_COUNT"
 
 # Execution count (from git logs)
-EXEC_COUNT=$(git log --since="1 month ago" --all --oneline | grep -c "npm run \|bash scripts/")
+EXEC_COUNT=$(git log --since="1 month ago" --all --oneline | grep -c "pnpm run \|bash scripts/")
 echo "Script executions (last 30 days): $EXEC_COUNT"
 
 # Prevented errors (from commit messages)
@@ -428,11 +428,11 @@ echo "Commits blocked: $(grep -v '0$' $STATS_FILE | wc -l)"
 ```json
 {
   "scripts": {
-    "validate:all": "npm run validate:deps && npm run validate:monorepo && npm run validate:tests",
+    "validate:all": "pnpm run validate:deps && pnpm run validate:monorepo && pnpm run validate:tests",
     "validate:deps": "bash scripts/validate-dependency-size.sh",
     "validate:monorepo": "bash scripts/validate-monorepo-boundaries.sh",
     "validate:tests": "bash scripts/validate-test-implementation.sh",
-    "pre-commit": "npm run validate:all && npm run lint && npm run typecheck"
+    "pre-commit": "pnpm run validate:all && pnpm run lint && pnpm run typecheck"
   }
 }
 ```
@@ -443,7 +443,7 @@ echo "Commits blocked: $(grep -v '0$' $STATS_FILE | wc -l)"
 # .git/hooks/pre-commit
 #!/bin/bash
 
-npm run pre-commit
+pnpm run pre-commit
 
 if [ $? -ne 0 ]; then
   echo ""
@@ -467,9 +467,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
-      - run: npm install
-      - run: npm run validate:all
-      - run: npm run test
+      - run: pnpm install
+      - run: pnpm run validate:all
+      - run: pnpm run test
 ```
 
 ## Key Principles

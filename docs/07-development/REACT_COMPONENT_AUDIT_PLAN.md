@@ -149,10 +149,10 @@ useEffect(() => {
 ### Step 1: 静的解析
 ```bash
 # TypeScript型チェック
-npx tsc --noEmit --skipLibCheck
+pnpm exec tsc --noEmit --skipLibCheck
 
 # ESLint（React Hooks Plugin）
-npx eslint apps/web --ext .ts,.tsx --max-warnings 0
+pnpm exec eslint apps/web --ext .ts,.tsx --max-warnings 0
 ```
 
 ### Step 2: コード検査

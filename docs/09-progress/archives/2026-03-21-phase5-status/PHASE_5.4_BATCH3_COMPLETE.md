@@ -205,7 +205,7 @@ private async _generateResponseInternal(options: GenerateResponseOptions): Promi
 ### Deployment Command:
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 ### Deployment Result:

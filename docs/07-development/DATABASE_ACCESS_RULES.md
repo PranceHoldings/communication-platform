@@ -128,10 +128,10 @@ psql postgresql://pranceadmin:xxx@xxx.rds.amazonaws.com:5432/prance
 ```bash
 # ❌ ローカル環境から直接実行（接続できない）
 cd packages/database
-npx prisma migrate dev
+pnpm exec prisma migrate dev
 
 # ❌ Prisma Studioの起動（接続できない）
-npx prisma studio
+pnpm exec prisma studio
 ```
 
 **正しい方法:**
@@ -139,15 +139,15 @@ npx prisma studio
 ```bash
 # ✅ 統合デプロイスクリプト使用（推奨）
 cd infrastructure
-npm run deploy:dev-migration
+pnpm run deploy:dev-migration
 
 # ✅ または手動実行
 cd packages/database
-npx prisma migrate dev --name description  # マイグレーションファイル生成のみ
-npx prisma generate                         # Prisma Client再生成
+pnpm exec prisma migrate dev --name description  # マイグレーションファイル生成のみ
+pnpm exec prisma generate                         # Prisma Client再生成
 
 cd ../../infrastructure
-npm run deploy:lambda                       # Lambda関数デプロイ
+pnpm run deploy:lambda                       # Lambda関数デプロイ
 
 aws lambda invoke \
   --function-name prance-db-migration-dev \
@@ -295,7 +295,7 @@ git commit -m "..."
 
 ```bash
 cd infrastructure
-npm run deploy:dev-migration
+pnpm run deploy:dev-migration
 ```
 
 ### Q: pgAdminやTablePlusで接続したい

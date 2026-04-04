@@ -69,25 +69,25 @@ Lambda関数は `../../shared/` ディレクトリのモジュールに依存し
 └──────────────────────┬──────────────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 2. npm run build (Turborepo)                                 │
+│ 2. pnpm run build (Turborepo)                                 │
 │    - infrastructure: tsc (TypeScript → JavaScript)            │
 │    - shared: tsc (shared modules compilation)                │
 └──────────────────────┬──────────────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. Lambda依存関係検証 (npm run lambda:validate)               │
+│ 3. Lambda依存関係検証 (pnpm run lambda:validate)               │
 │    - node_modules存在確認                                     │
 │    - 必須SDK確認 (Azure Speech, ElevenLabs, etc.)            │
 └──────────────────────┬──────────────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 4. CDK Synth (npm run cdk -- synth)                          │
+│ 4. CDK Synth (pnpm run cdk -- synth)                          │
 │    - CloudFormationテンプレート生成                            │
 │    - Lambda関数のentry pointを検証                            │
 └──────────────────────┬──────────────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 5. CDK Deploy (npm run cdk -- deploy)                        │
+│ 5. CDK Deploy (pnpm run cdk -- deploy)                        │
 │    - Lambda関数ごとにビルド（NodejsFunction）                 │
 │    - esbuild bundling                                         │
 │    - commandHooks.afterBundling() で共有モジュールコピー      │
@@ -148,13 +148,13 @@ const websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefau
 
 ```bash
 # 1. クリーンビルド（推奨：初回・トラブル時）
-npm run build:clean
+pnpm run build:clean
 
 # 2. 通常ビルド
-npm run build
+pnpm run build
 
 # 3. Lambda依存関係検証
-npm run lambda:validate
+pnpm run lambda:validate
 
 # 4. デプロイ前チェック（全検証）
 bash scripts/pre-deploy-lambda-check.sh
@@ -183,19 +183,19 @@ bash scripts/pre-deploy-lambda-check.sh
 
 ```bash
 cd infrastructure/lambda/websocket/default
-npm install
+pnpm install
 ```
 
 #### 破損したnode_modulesの修復
 
 ```bash
 # 自動修復
-npm run lambda:fix
+pnpm run lambda:fix
 
 # または手動修復
 cd infrastructure/lambda/websocket/default
 sudo rm -rf node_modules
-npm install
+pnpm install
 ```
 
 ### 共有モジュールのビルド
@@ -205,7 +205,7 @@ npm install
 ```bash
 # TypeScriptコンパイル（CDKが自動実行）
 cd infrastructure/lambda/shared
-npx tsc
+pnpm exec tsc
 ```
 
 **重要:**
@@ -251,7 +251,7 @@ cd infrastructure
 
 ```bash
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **使用タイミング:**
@@ -266,7 +266,7 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 cd infrastructure/lambda/websocket/default
 
 # 1. 依存関係確認
-npm install
+pnpm install
 
 # 2. ZIPパッケージ作成
 zip -r /tmp/websocket-default.zip . -x "*.broken-*" -x ".DS_Store"
@@ -316,7 +316,7 @@ Cannot find module '../../shared/config/defaults'
 2. **再デプロイ:**
    ```bash
    cd infrastructure
-   npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+   pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
    ```
 
 ### Error 2: Cannot find module 'microsoft-cognitiveservices-speech-sdk'
@@ -334,14 +334,14 @@ Runtime.ImportModuleError: Cannot find module 'microsoft-cognitiveservices-speec
 
 ```bash
 # 1. 依存関係検証
-npm run lambda:validate
+pnpm run lambda:validate
 
 # 2. 自動修復
-npm run lambda:fix
+pnpm run lambda:fix
 
 # 3. 再デプロイ
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### Error 3: CDK Synth Failed
@@ -367,7 +367,7 @@ rm -rf infrastructure/cdk.out
 
 # 3. 再実行
 cd infrastructure
-npm run cdk -- synth --context environment=dev
+pnpm run cdk -- synth --context environment=dev
 ```
 
 ### Error 4: TypeScript Compilation Error
@@ -385,11 +385,11 @@ TS2307: Cannot find module '../../shared/config/defaults'
 
 ```bash
 # 1. 共有モジュールのビルド
-npm run build
+pnpm run build
 
 # 2. 型チェック
 cd infrastructure/lambda/websocket/default
-npx tsc --noEmit
+pnpm exec tsc --noEmit
 
 # 3. importパス確認
 # 正しい: import { DEFAULTS } from '../../shared/config/defaults';
@@ -424,13 +424,13 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Validate Lambda dependencies
-        run: npm run lambda:validate
+        run: pnpm run lambda:validate
 
       - name: Pre-deploy checks
         run: bash scripts/pre-deploy-lambda-check.sh
@@ -445,7 +445,7 @@ jobs:
       - name: Deploy Lambda functions
         run: |
           cd infrastructure
-          npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+          pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### npm scriptsの活用
@@ -457,7 +457,7 @@ jobs:
     "lambda:fix": "bash scripts/fix-lambda-node-modules.sh",
     "lambda:build": "bash scripts/build-lambda-functions.sh",
     "lambda:predeploy": "bash scripts/pre-deploy-lambda-check.sh",
-    "deploy:lambda": "cd infrastructure && npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never"
+    "deploy:lambda": "cd infrastructure && pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never"
   }
 }
 ```
@@ -468,12 +468,12 @@ jobs:
 
 ### デプロイ前チェックリスト
 
-- [ ] `npm run build` 成功
-- [ ] `npm run lambda:validate` 成功
+- [ ] `pnpm run build` 成功
+- [ ] `pnpm run lambda:validate` 成功
 - [ ] `bash scripts/pre-deploy-lambda-check.sh` 成功
 - [ ] 環境変数が正しく設定されている（`.env.local`, `infrastructure/.env`）
 - [ ] AWS認証情報が設定されている
-- [ ] Prisma Clientが生成されている（`npm run db:generate`）
+- [ ] Prisma Clientが生成されている（`pnpm run db:generate`）
 
 ### デプロイ後確認
 

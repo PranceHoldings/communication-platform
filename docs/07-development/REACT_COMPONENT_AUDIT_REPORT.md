@@ -91,7 +91,7 @@ useEffect(() => {
 #### 修正後の検証
 ```bash
 # TypeScript型チェック: エラー0件
-$ npx tsc --noEmit --skipLibCheck
+$ pnpm exec tsc --noEmit --skipLibCheck
 # → 成功
 
 # 開発サーバー: 正常稼働

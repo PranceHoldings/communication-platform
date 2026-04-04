@@ -71,12 +71,12 @@ Next Priority: Execute Stage 4-5 E2E tests
 
 **自動起動:**
 ```bash
-npm run dev:auto
+pnpm run dev:auto
 ```
 
 **手動起動（デバッグ時）:**
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 **検証:**
@@ -206,7 +206,7 @@ bash scripts/session-start-checklist.sh
 
 4. 再起動
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
 ---

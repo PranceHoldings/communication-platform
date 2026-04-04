@@ -286,7 +286,7 @@ export const DEFAULT_ORGANIZATION_SETTINGS: OrganizationSettings = {
 rm -rf infrastructure/cdk.out
 
 # 2. Deploy Lambda functions
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # Result: 91.04s deployment time
 # Updated: OrganizationSettingsFunction, WebSocketDefaultFunction

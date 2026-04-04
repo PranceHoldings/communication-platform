@@ -260,7 +260,7 @@ export async function generateReport(sessionId: string): Promise<ReportResponse>
 
 ```bash
 cd apps/web
-npm run dev
+pnpm run dev
 ```
 
 ### 2. セッション詳細ページでテスト

@@ -216,7 +216,7 @@ f259e34 - Day 1-5: WebSocket speech_end fix
 1. **Lambda関数デプロイ**
    ```bash
    cd infrastructure
-   npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+   pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
    ```
 
 2. **動作確認テスト**
@@ -229,7 +229,7 @@ f259e34 - Day 1-5: WebSocket speech_end fix
 3. **Next.js アプリケーションデプロイ**
    ```bash
    cd apps/web
-   npm run build
+   pnpm run build
    # Amplify Hosting へデプロイ
    ```
 

@@ -36,7 +36,7 @@
 
 ### 3. 言語リスト同期
 ```bash
-✅ npm run validate:languages
+✅ pnpm run validate:languages
 ```
 - Frontend config: 10言語
 - Lambda config: 10言語
@@ -190,7 +190,7 @@ Environment Variables SSOT Validation
 
 ### 言語リスト同期検証
 ```bash
-$ npm run validate:languages
+$ pnpm run validate:languages
 ============================================
 Language List Synchronization Validation
 ============================================
@@ -226,17 +226,17 @@ Language List Synchronization Validation
 bash scripts/detect-hardcoded-values.sh
 
 # 2. 環境変数整合性
-npm run env:consistency
+pnpm run env:consistency
 
 # 3. 言語リスト同期
-npm run validate:languages
+pnpm run validate:languages
 
 # 4. Lint + Type Check
-npm run lint
-npm run type-check
+pnpm run lint
+pnpm run type-check
 
 # 5. E2Eテスト
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ---

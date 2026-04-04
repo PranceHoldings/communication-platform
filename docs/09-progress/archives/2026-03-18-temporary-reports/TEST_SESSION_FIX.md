@@ -107,7 +107,7 @@ WHERE session_id = '44040076-ebb5-4579-b019-e81c0ad1713c';
 
 ```bash
 # Run E2E tests
-npm run test:e2e -- stage4-recording.spec.ts
+pnpm run test:e2e -- stage4-recording.spec.ts
 
 # Expected console output:
 # 🎯 Attempting to use known test session: 44040076-ebb5-4579-b019-e81c0ad1713c

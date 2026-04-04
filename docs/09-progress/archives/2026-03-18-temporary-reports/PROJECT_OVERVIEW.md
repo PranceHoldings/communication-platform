@@ -527,14 +527,14 @@ rekognition.detectFaces({
 ```bash
 # Step 1: マイグレーションファイル生成
 cd packages/database
-npx prisma migrate dev --name <変更内容の説明>
+pnpm exec prisma migrate dev --name <変更内容の説明>
 
 # Step 2: Prisma Client再生成
-npx prisma generate
+pnpm exec prisma generate
 
 # Step 3: Lambda関数デプロイ
 cd ../../infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # Step 4: データベースマイグレーション実行
 aws lambda invoke --function-name prance-db-migration-dev \
@@ -735,10 +735,10 @@ export interface User { ... }
 
 ```bash
 # クリーンビルド（推奨）
-npm run build:clean
+pnpm run build:clean
 
 # デプロイ前検証
-npm run deploy:check
+pnpm run deploy:check
 
 # 詳細: docs/07-development/BUILD_PROCESS.md
 ```
@@ -747,7 +747,7 @@ npm run deploy:check
 
 ```bash
 # 破損ファイルクリーンアップ
-npm run clean:broken
+pnpm run clean:broken
 
 # 詳細: docs/07-development/TROUBLESHOOTING_NODE_MODULES.md
 ```
@@ -756,7 +756,7 @@ npm run clean:broken
 
 ```bash
 cd /workspaces/prance-communication-platform/apps/web
-npm run dev:clean
+pnpm run dev:clean
 ```
 
 ### Lambda関数が古いバージョン
@@ -764,7 +764,7 @@ npm run dev:clean
 ```bash
 ./scripts/check-lambda-version.sh
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### CloudWatch Logsでエラー確認

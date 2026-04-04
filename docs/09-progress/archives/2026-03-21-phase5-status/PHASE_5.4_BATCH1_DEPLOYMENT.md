@@ -145,7 +145,7 @@ const scoreResult = await this.scoreCalculator.calculateScore(
 **Option 1: E2E Test Execution**
 ```bash
 cd apps/web
-npm run test:e2e:stage3
+pnpm run test:e2e:stage3
 ```
 
 **Expected Coverage:**
@@ -342,7 +342,7 @@ Property 'then' does not exist on type 'ScoreCalculationResult'
 **Execute E2E Tests:**
 ```bash
 cd apps/web
-npm run test:e2e:stage3
+pnpm run test:e2e:stage3
 ```
 
 **Monitor CloudWatch Logs:**

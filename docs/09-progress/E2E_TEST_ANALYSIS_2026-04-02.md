@@ -99,7 +99,7 @@ SELECT id, status FROM sessions WHERE status != 'COMPLETED' LIMIT 5;
 
 ```bash
 # 完全なテストデータセットを作成
-npm run seed:test-data
+pnpm run seed:test-data
 ```
 
 **3. テストの段階的修正**

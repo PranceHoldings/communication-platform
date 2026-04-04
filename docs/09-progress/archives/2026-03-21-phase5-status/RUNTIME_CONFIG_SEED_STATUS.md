@@ -108,7 +108,7 @@ curl -X POST https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/a
 
 ```bash
 # From root directory
-npx tsx scripts/seed-missing-configs.ts
+pnpm exec tsx scripts/seed-missing-configs.ts
 ```
 
 ---

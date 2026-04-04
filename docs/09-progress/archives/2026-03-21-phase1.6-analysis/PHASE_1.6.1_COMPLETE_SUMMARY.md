@@ -281,7 +281,7 @@ SCENARIO_CACHE_TTL_DAYS=7
 **実行コマンド:**
 ```bash
 cd apps/web
-npx playwright test phase1.6.1-integration.spec.ts
+pnpm exec playwright test phase1.6.1-integration.spec.ts
 ```
 
 ### パフォーマンステスト（準備完了）
@@ -310,7 +310,7 @@ bash scripts/performance-test.sh
 ### immediate（今すぐ実施可能）
 1. **E2Eテスト実行**
    ```bash
-   npx playwright test phase1.6.1-integration.spec.ts
+   pnpm exec playwright test phase1.6.1-integration.spec.ts
    ```
 
 2. **パフォーマンステスト実行**

@@ -239,10 +239,10 @@ export default config;
 **インストール:**
 
 ```bash
-npx shadcn-ui@latest init
-npx shadcn-ui@latest add button
-npx shadcn-ui@latest add dialog
-npx shadcn-ui@latest add dropdown-menu
+pnpm exec shadcn-ui@latest init
+pnpm exec shadcn-ui@latest add button
+pnpm exec shadcn-ui@latest add dialog
+pnpm exec shadcn-ui@latest add dropdown-menu
 ```
 
 **特徴:**
@@ -374,7 +374,7 @@ export function Avatar3D({ modelUrl }: { modelUrl: string }) {
 **導入:**
 
 ```bash
-npm install @live2d/cubism-framework
+pnpm install @live2d/cubism-framework
 ```
 
 **使用例:**
@@ -567,13 +567,13 @@ enum UserRole {
 
 ```bash
 # マイグレーション作成
-npx prisma migrate dev --name init
+pnpm exec prisma migrate dev --name init
 
 # 本番適用
-npx prisma migrate deploy
+pnpm exec prisma migrate deploy
 
 # Prisma Client生成
-npx prisma generate
+pnpm exec prisma generate
 ```
 
 **使用例:**
@@ -706,7 +706,7 @@ export async function publishMessage(topic: string, message: object) {
 **SDK:**
 
 ```bash
-npm install @aws-sdk/client-bedrock-runtime
+pnpm install @aws-sdk/client-bedrock-runtime
 ```
 
 **使用例:**
@@ -768,7 +768,7 @@ export async function generateAIResponse(
 **SDK:**
 
 ```bash
-npm install elevenlabs
+pnpm install elevenlabs
 ```
 
 **使用例:**
@@ -821,7 +821,7 @@ export async function generateSpeech(text: string, voiceId: string): Promise<Buf
 **SDK:**
 
 ```bash
-npm install microsoft-cognitiveservices-speech-sdk
+pnpm install microsoft-cognitiveservices-speech-sdk
 ```
 
 **使用例:**
@@ -871,7 +871,7 @@ export async function transcribeAudio(audioBuffer: Buffer): Promise<string> {
 **SDK:**
 
 ```bash
-npm install @aws-sdk/client-rekognition
+pnpm install @aws-sdk/client-rekognition
 ```
 
 **使用例:**
@@ -1083,14 +1083,14 @@ infrastructure/
 cd infrastructure
 
 # Bootstrap (初回のみ)
-npm run bootstrap
+pnpm run bootstrap
 
 # 全スタックデプロイ
-npm run deploy
+pnpm run deploy
 
 # 個別スタックデプロイ
-npm run deploy:network
-npm run deploy:database
+pnpm run deploy:network
+pnpm run deploy:database
 ```
 
 **特徴:**
@@ -1125,13 +1125,13 @@ jobs:
         with:
           node-version: '20'
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Build
-        run: npm run build
+        run: pnpm run build
       - name: CDK Deploy
         run: |
           cd infrastructure
-          npm run deploy -- --require-approval never
+          pnpm run deploy -- --require-approval never
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -1254,7 +1254,7 @@ curl -X POST https://api.readyplayer.me/v1/avatars \
 **SDK:**
 
 ```bash
-npm install stripe
+pnpm install stripe
 ```
 
 **料金:**

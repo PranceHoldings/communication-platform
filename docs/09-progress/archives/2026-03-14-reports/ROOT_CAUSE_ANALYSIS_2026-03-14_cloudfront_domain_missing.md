@@ -294,10 +294,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Pre-deploy validation
-        run: npm run lambda:predeploy
+        run: pnpm run lambda:predeploy
 
       - name: Deploy Lambda
-        run: npm run deploy:lambda
+        run: pnpm run deploy:lambda
 
       - name: Validate Lambda environment variables
         run: bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev
@@ -371,10 +371,10 @@ if (!process.env.CLOUDFRONT_DOMAIN) {
 
 ```bash
 # ❌ デプロイ後に確認しない
-cd infrastructure && npx cdk deploy  # デプロイして終了
+cd infrastructure && pnpm exec cdk deploy  # デプロイして終了
 
 # ✅ デプロイ後に必ず確認
-cd infrastructure && npx cdk deploy
+cd infrastructure && pnpm exec cdk deploy
 bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev
 ```
 

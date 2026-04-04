@@ -155,18 +155,18 @@ type AvatarType = '2D' | '3D'; // 数字のみ
 ```bash
 # Step 1: マイグレーション生成
 cd packages/database
-npx prisma migrate dev --name <変更内容>
+pnpm exec prisma migrate dev --name <変更内容>
 
 # Step 2: Prisma Client再生成
-npx prisma generate
+pnpm exec prisma generate
 
 # Step 3: 共有型パッケージのビルド
 cd ../../packages/shared
-npm run build
+pnpm run build
 
 # Step 4: Lambda関数デプロイ
 cd ../../infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # Step 5: データベースマイグレーション実行
 aws lambda invoke --function-name prance-db-migration-dev \
@@ -222,22 +222,22 @@ grep -rn "'en-US'\|'ja-JP'\|'us-east-1'\|'webm'\|'1280x720'" \
 
 ```bash
 # 1. 朝一番（または新しいブランチで作業開始時）
-npm run consistency:validate  # 整合性検証
+pnpm run consistency:validate  # 整合性検証
 
 # 2. コード変更後
-npm run lint                 # Lint
-npm run typecheck            # 型チェック
+pnpm run lint                 # Lint
+pnpm run typecheck            # 型チェック
 
 # 3. コミット前（必須）
-npm run pre-commit           # 全チェック（整合性・lint・型）
+pnpm run pre-commit           # 全チェック（整合性・lint・型）
 
 # 4. コミット
 git add .
 git commit -m "feat: ..."
 
 # 5. プッシュ前
-npm run build                # ビルド確認
-npm run test                 # テスト実行
+pnpm run build                # ビルド確認
+pnpm run test                 # テスト実行
 git push origin <branch>
 ```
 
@@ -249,16 +249,16 @@ vim packages/database/prisma/schema.prisma
 
 # 2. マイグレーション生成・実行
 cd packages/database
-npx prisma migrate dev --name <変更内容>
-npx prisma generate
+pnpm exec prisma migrate dev --name <変更内容>
+pnpm exec prisma generate
 
 # 3. 整合性チェック
 cd ../..
-npm run consistency:validate
+pnpm run consistency:validate
 
 # 4. Lambda関数デプロイ
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # 5. DBマイグレーション実行
 aws lambda invoke --function-name prance-db-migration-dev \
@@ -275,7 +275,7 @@ curl https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1/health
 ### 1. 不整合検出スクリプト
 
 ```bash
-npm run consistency:check
+pnpm run consistency:check
 ```
 
 **検出内容:**
@@ -292,7 +292,7 @@ npm run consistency:check
 ### 2. 自動修正スクリプト
 
 ```bash
-npm run consistency:fix
+pnpm run consistency:fix
 ```
 
 **修正内容:**
@@ -306,7 +306,7 @@ npm run consistency:fix
 ### 3. 型整合性検証
 
 ```bash
-npm run consistency:validate
+pnpm run consistency:validate
 ```
 
 **検証項目:**
@@ -321,7 +321,7 @@ npm run consistency:validate
 ### 4. 環境変数検証
 
 ```bash
-npm run env:validate
+pnpm run env:validate
 ```
 
 **検証項目:**
@@ -339,9 +339,9 @@ npm run env:validate
 ```bash
 # 解決方法
 cd packages/database
-npx prisma generate
+pnpm exec prisma generate
 cd ../..
-npm run build
+pnpm run build
 ```
 
 ### Q2: 「共有型がimportできない」エラー
@@ -349,16 +349,16 @@ npm run build
 ```bash
 # 解決方法
 cd packages/shared
-npm run build
+pnpm run build
 cd ../..
-npm install
+pnpm install
 ```
 
 ### Q3: 「型定義が重複している」警告
 
 ```bash
 # 自動修正
-npm run consistency:fix
+pnpm run consistency:fix
 
 # または手動で修正
 # 1. 重複定義を削除
@@ -379,9 +379,9 @@ cd infrastructure
 
 # 原因3: Prisma Client再生成が必要
 cd packages/database
-npx prisma generate
+pnpm exec prisma generate
 cd ../../infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ---
@@ -393,20 +393,20 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 - [ ] 共有型パッケージの既存型を確認
 - [ ] Prismaスキーマと命名を一致
 - [ ] ハードコードを避け、デフォルト値を使用
-- [ ] `npm run consistency:validate` を実行
-- [ ] `npm run typecheck` を実行
-- [ ] `npm run lint` を実行
+- [ ] `pnpm run consistency:validate` を実行
+- [ ] `pnpm run typecheck` を実行
+- [ ] `pnpm run lint` を実行
 
 ### コミット前
 
-- [ ] `npm run pre-commit` を実行
+- [ ] `pnpm run pre-commit` を実行
 - [ ] git diff で変更内容を確認
 - [ ] コミットメッセージに変更内容を明記
 
 ### デプロイ前
 
-- [ ] `npm run build` を実行
-- [ ] `npm run test` を実行
+- [ ] `pnpm run build` を実行
+- [ ] `pnpm run test` を実行
 - [ ] Lambda関数をデプロイ
 - [ ] DBマイグレーションを実行
 - [ ] 動作確認（health check）
@@ -426,9 +426,9 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 **覚えておくべき3つのコマンド:**
 
 ```bash
-npm run consistency:validate  # 整合性検証
-npm run consistency:check     # 不整合検出
-npm run consistency:fix       # 自動修正
+pnpm run consistency:validate  # 整合性検証
+pnpm run consistency:check     # 不整合検出
+pnpm run consistency:fix       # 自動修正
 ```
 
 ---

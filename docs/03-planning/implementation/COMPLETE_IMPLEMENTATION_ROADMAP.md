@@ -349,7 +349,7 @@ Phase 2以降を実装する前に、Phase 1.5-1.6を完了してください。
 
 タスク:
 □ React Flow セットアップ
-  - npm install reactflow
+  - pnpm install reactflow
   - キャンバス実装
   - ズーム・パン機能
   - グリッド表示
@@ -562,7 +562,7 @@ Phase 2以降を実装する前に、Phase 1.5-1.6を完了してください。
 
 タスク:
 □ VM2 サンドボックス統合
-  - npm install vm2
+  - pnpm install vm2
   - セキュア実行環境
   - タイムアウト設定（30秒）
   - メモリ制限（256MB）
@@ -1099,7 +1099,7 @@ model SystemSettings {
 
 タスク:
 □ React DnD 統合
-  - npm install react-dnd react-dnd-html5-backend
+  - pnpm install react-dnd react-dnd-html5-backend
   - キャンバスエリア
   - コンポーネントパレット
 

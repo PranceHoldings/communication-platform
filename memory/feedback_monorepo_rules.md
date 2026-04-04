@@ -407,8 +407,8 @@ export type PrismaUser = { ... };
 
 **Fix:**
 ```bash
-npm install  # Re-link workspaces
-cd packages/shared && npm run build  # Build shared package
+pnpm install  # Re-link workspaces
+cd packages/shared && pnpm run build  # Build shared package
 ```
 
 ### "Module has no exported member 'User'"
@@ -427,8 +427,8 @@ export * from './types/user';  // ✅ Re-export all types
 
 **Fix:**
 ```bash
-npm run validate:monorepo  # Detect circular dependencies
-npx madge --circular --extensions ts packages/ apps/ infrastructure/
+pnpm run validate:monorepo  # Detect circular dependencies
+pnpm exec madge --circular --extensions ts packages/ apps/ infrastructure/
 ```
 
 ---

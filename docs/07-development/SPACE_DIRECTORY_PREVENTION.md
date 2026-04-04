@@ -45,11 +45,11 @@
 
 ### 影響を受けるプロセス
 
-- ❌ Next.js ビルド（`npm run build`）
-- ❌ Next.js 開発サーバー（`npm run dev`）
-- ❌ CDK デプロイ（`npm run cdk -- deploy`）
+- ❌ Next.js ビルド（`pnpm run build`）
+- ❌ Next.js 開発サーバー（`pnpm run dev`）
+- ❌ CDK デプロイ（`pnpm run cdk -- deploy`）
 - ❌ Turbo ビルド（`turbo run build`）
-- ❌ クリーンビルド（`npm run build:clean`）
+- ❌ クリーンビルド（`pnpm run build:clean`）
 
 ---
 
@@ -102,7 +102,7 @@
 bash scripts/clean-space-directories.sh
 
 # npm script経由
-npm run clean:spaces
+pnpm run clean:spaces
 ```
 
 **出力例:**
@@ -144,7 +144,7 @@ Directories failed:  0
 **実行方法:**
 ```bash
 # Lambda関数デプロイ前の検証（7項目）
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 
 # 出力例:
 # [CHECK 0/7] 空白文字を含むディレクトリの検証
@@ -163,7 +163,7 @@ npm run lambda:predeploy
 **実行方法:**
 ```bash
 # クリーンビルド（自動で空白チェック実行）
-npm run build:clean
+pnpm run build:clean
 
 # 出力例:
 # Step 0: 空白文字を含むディレクトリの検出・削除
@@ -218,11 +218,11 @@ mkdir -p infrastructure/cdk.out
 ```bash
 # Next.js
 cd apps/web
-npm run dev
+pnpm run dev
 
 # Lambda関数
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda
+pnpm run cdk -- deploy Prance-dev-ApiLambda
 ```
 
 ---
@@ -281,7 +281,7 @@ fi
 **コマンド:**
 ```bash
 # デイリーチェック
-npm run clean:spaces
+pnpm run clean:spaces
 
 # ウィークリーチェック
 find . -name "* *" -type d -not -path "*/node_modules/*" -not -path "*/.git/*"
@@ -303,15 +303,15 @@ sudo mv parent-dir parent-dir.broken-$(date +%s)
 
 # 3. 完全クリーン（最終手段）
 rm -rf .next cdk.out node_modules
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 ### Q2: 再発防止方法は？
 
 **A:**
-1. `npm run clean:spaces` をデイリー実行
-2. `npm run lambda:predeploy` でデプロイ前チェック
+1. `pnpm run clean:spaces` をデイリー実行
+2. `pnpm run lambda:predeploy` でデプロイ前チェック
 3. macOS Finderの使用を最小限に
 4. git操作でファイル管理
 
@@ -331,12 +331,12 @@ find . -name "*.broken-*" -type d -exec rm -rf {} +
 ## チェックリスト
 
 ### ビルド前
-- [ ] `npm run clean:spaces` を実行
+- [ ] `pnpm run clean:spaces` を実行
 - [ ] `.next` ディレクトリに空白なし
 - [ ] `cdk.out` ディレクトリに空白なし
 
 ### デプロイ前
-- [ ] `npm run lambda:predeploy` を実行
+- [ ] `pnpm run lambda:predeploy` を実行
 - [ ] CHECK 0/7（空白チェック）が成功
 - [ ] 全7項目のチェックが成功
 

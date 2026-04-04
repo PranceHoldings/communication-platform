@@ -4,7 +4,7 @@
 **環境:** Development (localhost:3000)
 **ブラウザ:** Chromium
 **実行時間:** 約8分
-**実行コマンド:** `npx playwright test --project=chromium --reporter=list`
+**実行コマンド:** `pnpm exec playwright test --project=chromium --reporter=list`
 
 ---
 

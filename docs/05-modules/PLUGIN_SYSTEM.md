@@ -117,7 +117,7 @@
    - ローカルテスト
 
 2. パッケージング
-   - npm build
+   - pnpm build
    - .zip ファイル生成（コード + マニフェスト）
 
 3. インストール
@@ -153,7 +153,7 @@
 ### インストール
 
 ```bash
-npm install @prance/plugin-sdk
+pnpm install @prance/plugin-sdk
 ```
 
 ### 基本構造

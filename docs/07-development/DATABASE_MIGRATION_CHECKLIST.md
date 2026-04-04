@@ -40,15 +40,15 @@ cd /workspaces/prance-communication-platform/packages/database
 ### Step 2: マイグレーションファイル生成
 
 ```bash
-npx prisma migrate dev --name <変更内容の簡潔な説明>
+pnpm exec prisma migrate dev --name <変更内容の簡潔な説明>
 ```
 
 **例:**
 
 ```bash
-npx prisma migrate dev --name add_recording_video_fields
-npx prisma migrate dev --name add_user_profile_fields
-npx prisma migrate dev --name rename_column_old_to_new
+pnpm exec prisma migrate dev --name add_recording_video_fields
+pnpm exec prisma migrate dev --name add_user_profile_fields
+pnpm exec prisma migrate dev --name rename_column_old_to_new
 ```
 
 **確認事項:**
@@ -60,7 +60,7 @@ npx prisma migrate dev --name rename_column_old_to_new
 ### Step 3: Prisma Client再生成
 
 ```bash
-npx prisma generate
+pnpm exec prisma generate
 ```
 
 **確認事項:**
@@ -72,7 +72,7 @@ npx prisma generate
 
 ```bash
 cd ../../infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **⏱️ 所要時間:** 約60-90秒
@@ -223,7 +223,7 @@ Lambda logs: "Unknown field: s3_key"
 # 1. Lambda関数で該当フィールドへのアクセスを一時的にコメントアウト
 # 2. Lambda関数を緊急デプロイ
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --hotswap
+pnpm run cdk -- deploy Prance-dev-ApiLambda --hotswap
 
 # 3. CloudWatch Logsで確認
 aws logs tail /aws/lambda/<function-name> --since 5m

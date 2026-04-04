@@ -28,7 +28,7 @@
 
 **Day 16の対応（不十分）:**
 - package.jsonに `@prisma/client` と `prisma` を追加
-- npm install & prisma generate実行
+- pnpm install & prisma generate実行
 - Lambda関数デプロイ
 - **結果:** デプロイ後もエラー継続
 
@@ -296,7 +296,7 @@ diff <(echo "$FRONTEND_LANGS") <(echo "$MESSAGE_DIRS")
 
 **実行結果:**
 ```bash
-$ npm run validate:languages
+$ pnpm run validate:languages
 
 [Step 1/4] Extracting Frontend language codes...
   Found: 10 languages

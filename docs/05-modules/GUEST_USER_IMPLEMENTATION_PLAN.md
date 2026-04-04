@@ -136,7 +136,7 @@
 
 ```bash
 cd packages/database
-npx prisma migrate dev --name add_guest_sessions
+pnpm exec prisma migrate dev --name add_guest_sessions
 ```
 
 **migration.sql:**
@@ -673,7 +673,7 @@ export const handler = async () => {
 **タスク:**
 
 - [ ] Prismaスキーマに `GuestSession`, `GuestSessionLog`, `GuestSessionStatus` 追加
-- [ ] マイグレーション生成: `npx prisma migrate dev --name add_guest_sessions`
+- [ ] マイグレーション生成: `pnpm exec prisma migrate dev --name add_guest_sessions`
 - [ ] マイグレーション実行・検証
 - [ ] `Session` モデルに `isGuestSession`, `guestSessionId` 追加
 - [ ] 単体テスト（スキーマ検証）
@@ -682,9 +682,9 @@ export const handler = async () => {
 
 ```bash
 cd packages/database
-npx prisma migrate dev --name add_guest_sessions
-npx prisma generate
-npm run test -- guest-session.test.ts
+pnpm exec prisma migrate dev --name add_guest_sessions
+pnpm exec prisma generate
+pnpm run test -- guest-session.test.ts
 ```
 
 #### Day 3-4: 共有ユーティリティ実装

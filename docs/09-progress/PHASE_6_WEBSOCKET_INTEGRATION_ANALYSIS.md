@@ -535,13 +535,13 @@ After implementing all fixes:
 
 1. **Deploy Lambda functions**:
    ```bash
-   npm run deploy:websocket
+   pnpm run deploy:websocket
    ```
 
 2. **Restart Next.js dev server**:
    ```bash
    pkill -f "next dev"
-   npm run dev
+   pnpm run dev
    ```
 
 3. **Test hierarchical fallback**:

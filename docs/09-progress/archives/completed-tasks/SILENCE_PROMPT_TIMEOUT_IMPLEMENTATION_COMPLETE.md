@@ -400,7 +400,7 @@ export interface Scenario {
 ```bash
 # Prisma schema反映確認
 cd packages/database
-npx prisma db pull
+pnpm exec prisma db pull
 
 # 新しいフィールド確認
 grep -A 2 "silence_prompt_timeout" prisma/schema.prisma
@@ -611,11 +611,11 @@ find /workspaces/prance-communication-platform -name "cdk.out.broken-*" -type d 
 
 ```bash
 # ESLint errors 確認
-npm run lint 2>&1 | head -200
+pnpm run lint 2>&1 | head -200
 
 # 修正候補:
 # 1. 一括修正（リスク高）
-#    npm run lint:fix
+#    pnpm run lint:fix
 #
 # 2. 段階的修正（推奨）
 #    - 1ファイルずつ修正

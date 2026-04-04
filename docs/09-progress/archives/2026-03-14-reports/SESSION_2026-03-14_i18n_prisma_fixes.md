@@ -71,8 +71,8 @@ const messages = {
 **実施した修正:**
 1. ✅ package.jsonに `@prisma/client: ^5.22.0` 追加
 2. ✅ package.jsonに `prisma: ^5.9.0` 追加
-3. ✅ `npm install` で依存関係インストール
-4. ✅ `npx prisma generate` でPrisma Client生成
+3. ✅ `pnpm install` で依存関係インストール
+4. ✅ `pnpm exec prisma generate` でPrisma Client生成
 5. ✅ Lambda関数デプロイ（193秒）
 6. ✅ 検証スクリプト強化（Prismaチェック追加）
 
@@ -279,7 +279,7 @@ const webSocketDefaultFunction = new lambda.Function(this, 'WebSocketDefaultFunc
         return [
           // Prisma Client生成
           `cd ${outputDir}`,
-          `npx prisma generate --schema=${inputDir}/../../../packages/database/prisma/schema.prisma`,
+          `pnpm exec prisma generate --schema=${inputDir}/../../../packages/database/prisma/schema.prisma`,
         ];
       },
     },

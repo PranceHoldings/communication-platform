@@ -311,7 +311,7 @@ If tests fail:
 
 1. **Check logs**: Identify which layer is failing
 2. **Revert changes**: `git revert HEAD` (4 commits)
-3. **Redeploy**: `npm run deploy:websocket`
+3. **Redeploy**: `pnpm run deploy:websocket`
 4. **Root cause analysis**: Review error messages and data flow
 
 ---

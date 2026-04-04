@@ -85,7 +85,7 @@ const handleSessionComplete = useCallback((_message: SessionCompleteMessage) => 
 **問題:**
 
 - `.env.local`の環境変数がLambda関数に反映されない
-- `npm run cdk -- deploy`がpredeploy hookをスキップ
+- `pnpm run cdk -- deploy`がpredeploy hookをスキップ
 
 **解決:**
 
@@ -143,7 +143,7 @@ const handleSessionComplete = useCallback((_message: SessionCompleteMessage) => 
 
    ```bash
    cd infrastructure/lambda/websocket/default
-   npm install @ffmpeg-installer/ffmpeg fluent-ffmpeg
+   pnpm install @ffmpeg-installer/ffmpeg fluent-ffmpeg
    ```
 
 2. `audio-processor.ts`に変換機能追加
@@ -352,7 +352,7 @@ curl -X POST "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL" 
 node infrastructure/scripts/sync-env.js
 
 # CDKデプロイ
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # 結果:
 # - デプロイ時間: 73.77秒
@@ -532,7 +532,7 @@ CONNECTIONS_TABLE_NAME=...
 ### 問題2: 環境変数未設定
 
 - **症状:** APIキーがLambda関数に反映されない
-- **原因:** `npm run cdk -- deploy`がpredeploy hookスキップ
+- **原因:** `pnpm run cdk -- deploy`がpredeploy hookスキップ
 - **修正:** dotenv統合 + sync-env.js自動同期
 
 ### 問題3: WebM → WAV変換エラー

@@ -56,15 +56,15 @@ git branch
 # 期待: * dev
 
 # 2. React 19バージョン確認（完全統一確認）
-npm ls react react-dom @react-three/fiber @tanstack/react-query 2>&1 | head -50
+pnpm list react react-dom @react-three/fiber @tanstack/react-query 2>&1 | head -50
 # 期待: すべてreact@19.2.4, react-dom@19.2.4を使用
 
 # 3. 開発サーバー起動（React 19環境）
-npm run dev
+pnpm run dev
 # 期待: ✓ Ready in XXXs
 
 # 4. E2Eテスト実行（React 19環境で検証）
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ---
@@ -219,11 +219,11 @@ git push origin staging
 
 # 2. Staging環境デプロイ
 cd infrastructure
-npm run deploy:staging
+pnpm run deploy:staging
 
 # 3. E2Eテスト実行（実環境）
 cd ../apps/web
-npm run test:e2e -- --grep="stage3"
+pnpm run test:e2e -- --grep="stage3"
 
 # 4. CloudWatch監視確認
 # AWS Console → CloudWatch → Dashboard: React19-Migration-staging

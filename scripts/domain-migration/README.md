@@ -244,7 +244,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
 ```bash
 cd infrastructure
-npm run cdk -- deploy Prance-dev-Dns --require-approval never
+pnpm run cdk -- deploy Prance-dev-Dns --require-approval never
 ```
 
 **確認:**
@@ -254,7 +254,7 @@ npm run cdk -- deploy Prance-dev-Dns --require-approval never
 #### 6.2 Certificate Stack（us-east-1）
 
 ```bash
-npm run cdk -- deploy Prance-dev-Certificate \
+pnpm run cdk -- deploy Prance-dev-Certificate \
   --require-approval never \
   --region us-east-1
 ```
@@ -276,7 +276,7 @@ aws acm describe-certificate \
 #### 6.3 Storage Stack（CloudFront）
 
 ```bash
-npm run cdk -- deploy Prance-dev-Storage --require-approval never
+pnpm run cdk -- deploy Prance-dev-Storage --require-approval never
 ```
 
 **確認:**
@@ -287,7 +287,7 @@ npm run cdk -- deploy Prance-dev-Storage --require-approval never
 #### 6.4 API Lambda Stack
 
 ```bash
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **確認:**
@@ -296,7 +296,7 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 #### 6.5 Cognito Stack
 
 ```bash
-npm run cdk -- deploy Prance-dev-Cognito --require-approval never
+pnpm run cdk -- deploy Prance-dev-Cognito --require-approval never
 ```
 
 **確認:**
@@ -432,11 +432,11 @@ cd /workspaces/prance-communication-platform/scripts/domain-migration
 **ロールバック後:**
 ```bash
 cd infrastructure
-npm run cdk -- deploy Prance-dev-Dns --require-approval never
-npm run cdk -- deploy Prance-dev-Certificate --require-approval never --region us-east-1
-npm run cdk -- deploy Prance-dev-Storage --require-approval never
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
-npm run cdk -- deploy Prance-dev-Cognito --require-approval never
+pnpm run cdk -- deploy Prance-dev-Dns --require-approval never
+pnpm run cdk -- deploy Prance-dev-Certificate --require-approval never --region us-east-1
+pnpm run cdk -- deploy Prance-dev-Storage --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-Cognito --require-approval never
 ```
 
 ---

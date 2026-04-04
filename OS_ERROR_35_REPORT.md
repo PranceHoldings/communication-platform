@@ -26,7 +26,7 @@
 
 **コマンド:**
 ```bash
-cd packages/shared && npm run build
+cd packages/shared && pnpm run build
 # tsc コンパイル時に失敗
 ```
 
@@ -43,7 +43,7 @@ cd packages/shared && npm run build
 
 **コマンド:**
 ```bash
-cd apps/web && npm run build
+cd apps/web && pnpm run build
 # next build 時に失敗
 ```
 
@@ -60,7 +60,7 @@ Prisma schema file: /workspaces/prance-communication-platform/packages/database/
 
 **コマンド:**
 ```bash
-cd packages/database && npx prisma generate
+cd packages/database && pnpm exec prisma generate
 # Prisma Client生成時に警告（警告のみで生成は成功）
 ```
 
@@ -80,7 +80,7 @@ turbo run build
 
 **コマンド:**
 ```bash
-npm run build
+pnpm run build
 # turbo がすべてのパッケージをビルド時に失敗
 ```
 
@@ -143,8 +143,8 @@ rm -rf .turbo apps/web/.turbo infrastructure/.turbo packages/*/.turbo
 ### 4. 個別パッケージビルド
 
 ```bash
-cd packages/shared && npm run build
-cd apps/web && npm run build
+cd packages/shared && pnpm run build
+cd apps/web && pnpm run build
 # 結果: どちらも os error 35 で失敗
 ```
 
@@ -152,8 +152,8 @@ cd apps/web && npm run build
 
 ```bash
 cd infrastructure
-npm install  # 成功
-npm run deploy:staging  # ルートの npm run build で失敗
+pnpm install  # 成功
+pnpm run deploy:staging  # ルートの pnpm run build で失敗
 ```
 
 ---
@@ -165,7 +165,7 @@ npm run deploy:staging  # ルートの npm run build で失敗
 ```bash
 cd infrastructure
 rm -rf node_modules
-npm install --legacy-peer-deps
+pnpm install --legacy-peer-deps
 # 結果: ✅ 成功（259パッケージインストール完了）
 ```
 
@@ -174,11 +174,11 @@ npm install --legacy-peer-deps
 ```bash
 cd infrastructure
 bash deploy.sh staging
-# 結果: ❌ 失敗（ルートディレクトリの npm run build でエラー）
+# 結果: ❌ 失敗（ルートディレクトリの pnpm run build でエラー）
 ```
 
 **問題点:**
-- `deploy.sh` がルートディレクトリの `npm run build` を実行
+- `deploy.sh` がルートディレクトリの `pnpm run build` を実行
 - ルートの node_modules が破損しているため失敗
 
 ---
@@ -210,8 +210,8 @@ git pull origin staging
 
 # 3. Staging環境デプロイ
 cd infrastructure
-npm install
-npm run deploy:staging
+pnpm install
+pnpm run deploy:staging
 ```
 
 ### Option 2: ローカルマシン
@@ -219,8 +219,8 @@ npm run deploy:staging
 ```bash
 git pull origin staging
 cd infrastructure
-npm install
-npm run deploy:staging
+pnpm install
+pnpm run deploy:staging
 ```
 
 ### Option 3: GitHub Actions CI/CD（長期的推奨）

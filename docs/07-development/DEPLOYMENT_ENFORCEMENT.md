@@ -41,10 +41,10 @@
 **使用方法:**
 ```bash
 # WebSocket Lambda関数（推奨）
-npm run deploy:websocket
+pnpm run deploy:websocket
 
 # 他のスタック
-npm run deploy:stack Prance-dev-ApiLambda
+pnpm run deploy:stack Prance-dev-ApiLambda
 
 # または直接実行
 ./scripts/cdk-deploy-wrapper.sh Prance-dev-Database
@@ -88,23 +88,23 @@ ls -la .git/hooks/pre-commit .git/hooks/pre-push
 **安全なコマンド:**
 ```bash
 # ✅ 推奨: WebSocket Lambda
-npm run deploy:websocket
+pnpm run deploy:websocket
 
 # ✅ 推奨: 他のスタック
-npm run deploy:stack <StackName>
+pnpm run deploy:stack <StackName>
 
 # ✅ 完全ビルド・デプロイ
-npm run build:deploy
+pnpm run build:deploy
 
 # ❌ 禁止: 直接CDKデプロイ
-npm run cdk:deploy
+pnpm run cdk:deploy
 # → エラーメッセージが表示されて停止
 ```
 
 **緊急時のアンセーフモード（非推奨）:**
 ```bash
 # 完全に理解している場合のみ使用
-npm run cdk:deploy:unsafe
+pnpm run cdk:deploy:unsafe
 ```
 
 ---
@@ -150,7 +150,7 @@ source ./scripts/enforce-deployment-rules.sh
 
 ```bash
 # 1. 手動デプロイスクリプト使用（必須）
-npm run deploy:websocket
+pnpm run deploy:websocket
 
 # または直接実行
 ./scripts/deploy-lambda-websocket-manual.sh
@@ -170,7 +170,7 @@ npm run deploy:websocket
 
 ```bash
 # 1. ラッパースクリプト使用（推奨）
-npm run deploy:stack Prance-dev-Database
+pnpm run deploy:stack Prance-dev-Database
 
 # 内部で自動実行される内容:
 # - 事前検証（pre-deploy-lambda-check.sh）
@@ -184,7 +184,7 @@ npm run deploy:stack Prance-dev-Database
 
 ```bash
 # 全スタックを順次デプロイ
-npm run build:deploy
+pnpm run build:deploy
 
 # 内部で実行:
 # 1. clean-build.sh - クリーンビルド
@@ -230,10 +230,10 @@ chmod +x .git/hooks/pre-push
 **解決策:**
 ```bash
 # WebSocket Lambda関数を再デプロイ
-npm run deploy:websocket
+pnpm run deploy:websocket
 
 # デプロイ後テストで確認
-npm run lambda:test prance-websocket-default-dev
+pnpm run lambda:test prance-websocket-default-dev
 ```
 
 ---
@@ -252,8 +252,8 @@ npm run lambda:test prance-websocket-default-dev
 
 **解決策:**
 ```bash
-npm run lambda:fix
-npm run lambda:validate
+pnpm run lambda:fix
+pnpm run lambda:validate
 ```
 
 **原因3: Prisma Clientが古い**
@@ -261,7 +261,7 @@ npm run lambda:validate
 **解決策:**
 ```bash
 cd packages/database
-npx prisma generate
+pnpm exec prisma generate
 cd ../..
 ```
 
@@ -273,19 +273,19 @@ cd ../..
 
 ```bash
 # 1. クリーンビルド
-npm run build:clean
+pnpm run build:clean
 
 # 2. Lambda依存関係修復
-npm run lambda:fix
+pnpm run lambda:fix
 
 # 3. Prisma Client再生成
-npm run db:generate
+pnpm run db:generate
 
 # 4. 環境変数検証
-npm run env:validate
+pnpm run env:validate
 
 # 5. 再デプロイ
-npm run deploy:websocket
+pnpm run deploy:websocket
 ```
 
 ---
@@ -294,15 +294,15 @@ npm run deploy:websocket
 
 ### デプロイ前（必須）
 
-- [ ] `npm run env:validate` 実行
-- [ ] `npm run lambda:validate` 実行
-- [ ] `npm run i18n:validate` 実行
+- [ ] `pnpm run env:validate` 実行
+- [ ] `pnpm run lambda:validate` 実行
+- [ ] `pnpm run i18n:validate` 実行
 - [ ] コードがコミット済み
-- [ ] Prismaスキーマ変更がある場合は`npm run db:generate`実行済み
+- [ ] Prismaスキーマ変更がある場合は`pnpm run db:generate`実行済み
 
 ### デプロイ後（推奨）
 
-- [ ] `npm run lambda:test <function-name>` 実行
+- [ ] `pnpm run lambda:test <function-name>` 実行
 - [ ] CloudWatch Logsでエラー確認
 - [ ] ブラウザで動作確認
 

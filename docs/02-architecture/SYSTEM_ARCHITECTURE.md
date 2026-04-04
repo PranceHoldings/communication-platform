@@ -1418,7 +1418,7 @@ DR環境（us-west-2）:
 
 # 手動フェイルオーバー（CDK）
 cd infrastructure
-npm run failover:dr
+pnpm run failover:dr
 
 # 内部処理:
 # - Aurora Reader昇格（Writer化）

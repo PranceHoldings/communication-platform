@@ -119,16 +119,16 @@ cd infrastructure
 cat .env | grep -E "GITHUB_REPO_URL|GITHUB_ACCESS_TOKEN"
 
 # 2. CDK Bootstrap（初回のみ）
-npm run cdk -- bootstrap
+pnpm run cdk -- bootstrap
 
 # 3. API Gateway Domain Stack デプロイ
-npm run cdk -- deploy Prance-dev-ApiDomains --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiDomains --require-approval never
 
 # 4. Amplify Stack デプロイ
-npm run cdk -- deploy Prance-dev-Amplify --require-approval never
+pnpm run cdk -- deploy Prance-dev-Amplify --require-approval never
 
 # 5. Storage Stack 再デプロイ（CloudFrontからカスタムドメイン削除）
-npm run cdk -- deploy Prance-dev-Storage --require-approval never
+pnpm run cdk -- deploy Prance-dev-Storage --require-approval never
 ```
 
 **推定時間:** 15-20分
@@ -256,7 +256,7 @@ curl https://api.dev.app.prance.jp/health
 
 ```bash
 # wscat インストール（未インストールの場合）
-npm install -g wscat
+pnpm install -g wscat
 
 # WebSocket接続テスト
 wscat -c wss://ws.dev.app.prance.jp/dev
@@ -267,7 +267,7 @@ wscat -c wss://ws.dev.app.prance.jp/dev
 
 ```bash
 cd apps/web
-npm run test:e2e -- stage1-basic-ui.spec.ts
+pnpm run test:e2e -- stage1-basic-ui.spec.ts
 ```
 
 ---
@@ -288,11 +288,11 @@ Build failed: Module not found: Can't resolve '@/lib/i18n/config'
 ```bash
 # buildSpecを修正
 # preBuildで:
-- npm ci
-- cd apps/web && npm ci
+- pnpm install --frozen-lockfile
+- cd apps/web && pnpm install --frozen-lockfile
 
 # buildで:
-- cd apps/web && npm run build
+- cd apps/web && pnpm run build
 ```
 
 ### Issue 2: DNS not resolving
@@ -336,7 +336,7 @@ aws apigatewayv2 get-api-mappings \
 
 # 再デプロイ
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiDomains --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiDomains --require-approval never
 ```
 
 ### Issue 4: Amplify "Provisioning" stuck
@@ -356,8 +356,8 @@ aws secretsmanager create-secret \
 
 # 3. Amplify Stack再デプロイ
 cd infrastructure
-npm run cdk -- destroy Prance-dev-Amplify
-npm run cdk -- deploy Prance-dev-Amplify --require-approval never
+pnpm run cdk -- destroy Prance-dev-Amplify
+pnpm run cdk -- deploy Prance-dev-Amplify --require-approval never
 ```
 
 ---

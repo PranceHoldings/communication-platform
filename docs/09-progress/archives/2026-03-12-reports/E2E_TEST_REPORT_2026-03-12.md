@@ -315,16 +315,16 @@ All tests passed without issues. No bugs or unexpected behavior detected.
 
 ```bash
 # Run all tests
-npx playwright test
+pnpm exec playwright test
 
 # Run WebSocket voice tests only
-npx playwright test websocket-voice-conversation
+pnpm exec playwright test websocket-voice-conversation
 
 # Run with UI
-npx playwright test --ui
+pnpm exec playwright test --ui
 
 # View HTML report
-npx playwright show-report
+pnpm exec playwright show-report
 ```
 
 ### Test Files

@@ -306,7 +306,7 @@ Session
 ### マイグレーション1: guest_sessions テーブル作成
 
 ```bash
-npx prisma migrate dev --name add_guest_sessions
+pnpm exec prisma migrate dev --name add_guest_sessions
 ```
 
 **生成されるSQL（予想）:**
@@ -456,9 +456,9 @@ ALTER TABLE "sessions" ADD CONSTRAINT "sessions_guest_session_id_fkey" FOREIGN K
 
 1. ✅ **Prismaスキーマドラフト作成** - このドキュメント
 2. ⏳ **レビュー・承認** - チームレビュー
-3. ⏳ **マイグレーション生成** - `npx prisma migrate dev`
+3. ⏳ **マイグレーション生成** - `pnpm exec prisma migrate dev`
 4. ⏳ **マイグレーション実行** - dev環境で検証
-5. ⏳ **Prisma Client再生成** - `npx prisma generate`
+5. ⏳ **Prisma Client再生成** - `pnpm exec prisma generate`
 6. ⏳ **Lambda関数実装開始** - Phase 2 Week 2
 
 ---

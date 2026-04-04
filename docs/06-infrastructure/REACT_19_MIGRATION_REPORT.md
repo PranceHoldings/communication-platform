@@ -104,7 +104,7 @@ mv apps/web/.next apps/web/.next-broken-20260402
 ### Step 5: Clean Install
 
 ```bash
-npm ci
+pnpm install --frozen-lockfile
 # Result: 877 packages installed
 # All packages using react@19.2.4
 ```
@@ -113,16 +113,16 @@ npm ci
 
 ```bash
 # TypeScript type checking
-cd apps/web && npx tsc --noEmit
+cd apps/web && pnpm exec tsc --noEmit
 # Result: 0 React-related errors ✅
 
 # Development server
-npm run dev
+pnpm run dev
 # Result: Started in 278s (initial compile)
 # HTTP 200 OK on http://localhost:3000 ✅
 
 # E2E tests
-npm run test:e2e
+pnpm run test:e2e
 # Result: 15/29 passed (51.7%)
 # Failures unrelated to React 19 ✅
 ```
@@ -135,7 +135,7 @@ npm run test:e2e
 
 **Before (React 18):**
 ```
-npm ls react
+pnpm list react
 ├── react@18.3.0
 ├─┬ @react-three/fiber@8.x
 │ └── react@18.3.0
@@ -147,7 +147,7 @@ npm ls react
 
 **After (React 19):**
 ```
-npm ls react
+pnpm list react
 └── react@19.2.4 (unified across all 877 packages) ✅
 ```
 
@@ -300,11 +300,11 @@ git revert HEAD~2..HEAD
 
 # 2. Clean install
 rm -rf node_modules apps/web/.next
-npm ci
+pnpm install --frozen-lockfile
 
 # 3. Verify
-npm run dev
-npm run test:e2e
+pnpm run dev
+pnpm run test:e2e
 ```
 
 **Estimated rollback time:** 10-15 minutes

@@ -266,7 +266,7 @@ console.error(`CRITICAL: Failed to delete lock ${lockKey}. TTL will clean up in 
 
 **デプロイコマンド:**
 ```bash
-npm run build:deploy
+pnpm run build:deploy
 ```
 
 ---

@@ -128,15 +128,15 @@ scripts/generate-api-e2e-tests.sh            # E2Eテスト自動生成
 
 ```bash
 # 個別検証
-npm run validate:api-responses
-npm run validate:api-types
+pnpm run validate:api-responses
+pnpm run validate:api-types
 
 # 統合検証
-npm run validate:api-contracts
+pnpm run validate:api-contracts
 
 # E2Eテスト自動生成・実行
 bash scripts/generate-api-e2e-tests.sh
-npm run test:e2e -- api-validation/
+pnpm run test:e2e -- api-validation/
 ```
 
 ### Layer 5: Pre-commit Hook
@@ -200,7 +200,7 @@ scripts/pre-commit-api-validation.sh
     "validate:api-contracts": "bash scripts/validate-api-contracts.sh",
     "validate:api-responses": "bash scripts/validate-lambda-responses.sh",
     "validate:api-types": "bash scripts/validate-api-type-usage.sh",
-    "pre-commit": "... && npm run validate:api-responses && ..."
+    "pre-commit": "... && pnpm run validate:api-responses && ..."
   }
 }
 ```
@@ -252,7 +252,7 @@ scripts/pre-commit-api-validation.sh
 ### 1. Lambda レスポンス構造検証
 
 ```bash
-$ npm run validate:api-responses
+$ pnpm run validate:api-responses
 
 🔍 Validating Lambda Response Structures...
 
@@ -268,7 +268,7 @@ Checking for JSON.stringify() without success field...
 ### 2. Frontend API 型使用検証
 
 ```bash
-$ npm run validate:api-types
+$ pnpm run validate:api-types
 
 🔍 Validating API Type Usage...
 
@@ -282,7 +282,7 @@ Checking Frontend API functions...
 ### 3. 統合検証
 
 ```bash
-$ npm run validate:api-contracts
+$ pnpm run validate:api-contracts
 
 ╔════════════════════════════════════════════════════════════╗
 ║          API CONTRACT VALIDATION SYSTEM                    ║

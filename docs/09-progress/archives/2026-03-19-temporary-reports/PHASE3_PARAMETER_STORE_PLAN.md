@@ -437,7 +437,7 @@ jobs:
         run: bash scripts/validate-env-consistency.sh
 
       - name: Validate Lambda dependencies
-        run: cd infrastructure && npm run lambda:predeploy
+        run: cd infrastructure && pnpm run lambda:predeploy
 
       - name: Validate deployment method
         run: bash scripts/validate-deployment-method.sh
@@ -447,7 +447,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to AWS
-        run: cd infrastructure && npm run deploy:production
+        run: cd infrastructure && pnpm run deploy:production
 ```
 
 ---

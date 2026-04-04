@@ -215,7 +215,7 @@ afterBundling(inputDir: string, outputDir: string): string[] {
 {
   "scripts": {
     "validate:bundling": "bash scripts/validate-cdk-bundling.sh",
-    "predeploy": "npm run validate:bundling && node scripts/sync-env.js"
+    "predeploy": "pnpm run validate:bundling && node scripts/sync-env.js"
   }
 }
 ```
@@ -308,19 +308,19 @@ Archive:  /tmp/lambda-code-fixed.zip
    `cp -r /asset-input/infrastructure/lambda/shared/new-module ${outputDir}/shared/`,
 
    # Step 3: 検証
-   npm run validate:bundling
+   pnpm run validate:bundling
 
    # Step 4: デプロイ
-   npm run deploy:dev
+   pnpm run deploy:dev
    ```
 
 2. **CDK設定変更時**
    ```bash
    # 必ず検証を実行
-   npm run validate:bundling
+   pnpm run validate:bundling
 
    # 検証合格後のみデプロイ
-   npm run deploy:dev
+   pnpm run deploy:dev
    ```
 
 3. **コミット前**

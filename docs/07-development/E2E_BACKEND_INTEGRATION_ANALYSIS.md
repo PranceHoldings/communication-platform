@@ -47,7 +47,7 @@ useEffect(() => {
 3. ❌ `isAuthenticated === true` - **WebSocket認証完了**
 
 **E2Eテストの現状:**
-- ✅ ローカルサーバー（`npm run dev`）起動
+- ✅ ローカルサーバー（`pnpm run dev`）起動
 - ❌ WebSocketサーバー（AWS IoT Core）未接続
 - 結果: `isConnected === false` → ACTIVE遷移せず → `recording-status`非表示
 
@@ -213,13 +213,13 @@ apps/web/tests/e2e/
 **実行戦略:**
 ```bash
 # 開発中 - Mock使用（高速、毎回実行）
-npm run test:e2e:mock
+pnpm run test:e2e:mock
 
 # Pull Request - Mock + Dev統合（中速、PR時実行）
-npm run test:e2e:integration
+pnpm run test:e2e:integration
 
 # Deployment - 全テスト（低速、Deploy前のみ）
-npm run test:e2e:full
+pnpm run test:e2e:full
 ```
 
 **利点:**

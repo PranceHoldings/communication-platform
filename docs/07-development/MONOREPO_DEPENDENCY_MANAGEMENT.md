@@ -25,7 +25,7 @@
 
 **症状:**
 ```bash
-npm run build
+pnpm run build
 # Module not found: Can't resolve '@dnd-kit/core'
 # Module not found: Can't resolve '@dnd-kit/sortable'
 # Module not found: Can't resolve '@dnd-kit/utilities'
@@ -199,7 +199,7 @@ prance-communication-platform/
 
 ```bash
 # 依存関係整合性チェック
-npm run validate:workspace-deps
+pnpm run validate:workspace-deps
 
 # 期待される出力:
 # ✅ All packages used in apps/web are properly declared
@@ -260,7 +260,7 @@ npm run validate:workspace-deps
 
 ```bash
 # .git/hooks/pre-commit
-npm run validate:workspace-deps || exit 1
+pnpm run validate:workspace-deps || exit 1
 ```
 
 #### package.json script
@@ -268,7 +268,7 @@ npm run validate:workspace-deps || exit 1
 ```json
 {
   "scripts": {
-    "pre-commit": "npm run validate:workspace-deps && npm run lint && npm run typecheck"
+    "pre-commit": "pnpm run validate:workspace-deps && pnpm run lint && pnpm run typecheck"
   }
 }
 ```
@@ -298,7 +298,7 @@ npm run validate:workspace-deps || exit 1
 
 **修正前のエラー:**
 ```bash
-npm run build
+pnpm run build
 # Module not found: Can't resolve '@dnd-kit/core'
 # Module not found: Can't resolve '@dnd-kit/sortable'
 # Module not found: Can't resolve '@dnd-kit/utilities'
@@ -306,7 +306,7 @@ npm run build
 
 **修正後の結果:**
 ```bash
-npm run validate:workspace-deps
+pnpm run validate:workspace-deps
 # ✅ All packages used in apps/web are properly declared
 # ⚠️  Found 2 warning(s) (Prisma duplicate - acceptable)
 ```
@@ -324,7 +324,7 @@ npm run validate:workspace-deps
 
 **症状:**
 ```bash
-npm run build
+pnpm run build
 # Module not found: Can't resolve '<package-name>'
 ```
 
@@ -346,11 +346,11 @@ jq '.dependencies["<package-name>"]' package.json
 ```bash
 # Option 1: apps/web に追加
 cd apps/web
-npm install <package-name>
+pnpm install <package-name>
 
 # Option 2: ルートから削除 + apps/web に追加
 # package.json を編集してから
-npm install
+pnpm install
 ```
 
 ### 問題: 型解決失敗
@@ -380,19 +380,19 @@ jq '.dependencies["<package-name>"] // .devDependencies["<package-name>"]' apps/
 ```bash
 # パッケージに型定義が含まれている場合
 cd apps/web
-npm install <package-name>
+pnpm install <package-name>
 
 # @types/<package-name> が必要な場合
 cd apps/web
-npm install --save-dev @types/<package-name>
+pnpm install --save-dev @types/<package-name>
 ```
 
 ### 問題: ビルドは成功するが、ランタイムエラー
 
 **症状:**
 ```bash
-npm run build  # ✅ Success
-npm run start
+pnpm run build  # ✅ Success
+pnpm run start
 # Error: Cannot find module '<package-name>'
 ```
 
@@ -420,11 +420,11 @@ module.exports = {
 };
 ```
 
-### 問題: npm install が失敗する
+### 問題: pnpm install が失敗する
 
 **症状:**
 ```bash
-npm install
+pnpm install
 # npm error code Unknown system error -35
 # npm error syscall mkdir
 ```
@@ -443,14 +443,14 @@ bash scripts/clean-space-directories.sh
 rm -rf node_modules apps/web/node_modules packages/*/node_modules infrastructure/node_modules
 
 # Step 3: 再インストール
-npm install
+pnpm install
 ```
 
 ### 問題: 検証スクリプトがエラーを報告する
 
 **症状:**
 ```bash
-npm run validate:workspace-deps
+pnpm run validate:workspace-deps
 # ❌ Found packages used in apps/web but declared in root package.json:
 #    - <package-name>
 ```
@@ -463,10 +463,10 @@ npm run validate:workspace-deps
 # apps/web/package.json に追加
 
 # Step 2: 再インストール
-npm install
+pnpm install
 
 # Step 3: 検証
-npm run validate:workspace-deps
+pnpm run validate:workspace-deps
 # ✅ All packages used in apps/web are properly declared
 ```
 
@@ -478,12 +478,12 @@ npm run validate:workspace-deps
 
 ```bash
 # ❌ 間違った方法（ルートから実行）
-npm install <package-name>
+pnpm install <package-name>
 
 # ✅ 正しい方法（ワークスペースを指定）
-npm install <package-name> --workspace=apps/web
+pnpm install <package-name> --workspace=apps/web
 # または
-cd apps/web && npm install <package-name>
+cd apps/web && pnpm install <package-name>
 ```
 
 ### 依存関係を削除する時
@@ -497,7 +497,7 @@ cd apps/web
 npm uninstall <package-name>
 
 # Step 3: 検証
-npm run validate:workspace-deps
+pnpm run validate:workspace-deps
 ```
 
 ### Monorepoパッケージを参照する時
@@ -542,9 +542,9 @@ npm run validate:workspace-deps
 
 ### npm コマンド
 ```bash
-npm run validate:workspace-deps  # 依存関係検証
-npm run build:clean              # クリーンビルド
-npm run pre-commit               # コミット前チェック
+pnpm run validate:workspace-deps  # 依存関係検証
+pnpm run build:clean              # クリーンビルド
+pnpm run pre-commit               # コミット前チェック
 ```
 
 ---

@@ -83,7 +83,7 @@ DATABASE_URL="postgresql://postgres:password@localhost:5432/prance_dev"
 psql postgresql://pranceadmin:xxx@xxx.rds.amazonaws.com:5432/prance
 
 # ❌ Prisma Migrateの直接実行
-cd packages/database && npx prisma migrate dev
+cd packages/database && pnpm exec prisma migrate dev
 ```
 
 **理由:**
@@ -104,7 +104,7 @@ bash scripts/db-query.sh --file scripts/queries/verification.sql
 bash scripts/db-query.sh --write "UPDATE scenarios SET ..." # 確認プロンプト表示
 
 # 統合デプロイスクリプト使用（マイグレーション）
-cd infrastructure && npm run deploy:dev-migration
+cd infrastructure && pnpm run deploy:dev-migration
 ```
 
 **セキュリティ機能:**
@@ -507,7 +507,7 @@ response.cookies.set(name, value, COOKIE_CONFIGS.locale.options);
 
 ```bash
 # 言語リスト同期検証
-npm run validate:languages
+pnpm run validate:languages
 
 # 期待結果: "All language lists are synchronized"
 ```
@@ -523,7 +523,7 @@ npm run validate:languages
 1. Frontend config の `locales` 配列に追加
 2. Lambda config の `LANGUAGES` 配列に追加
 3. Message directory 作成 (`apps/web/messages/{languageCode}/`)
-4. `npm run validate:languages` で検証
+4. `pnpm run validate:languages` で検証
 
 **効果:**
 - 言語追加時の同期漏れ防止
@@ -673,7 +673,7 @@ import { getTranslations } from 'next-intl/server';    // 使用禁止
 ```bash
 # Lambda依存関係検証（デプロイ前必須）
 cd infrastructure
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 
 # または個別検証
 bash scripts/validate-lambda-dependencies.sh prance-websocket-default-dev
@@ -692,7 +692,7 @@ bash scripts/validate-lambda-dependencies.sh prance-websocket-default-dev
 **依存関係破損時の修復:**
 
 ```bash
-npm run lambda:fix
+pnpm run lambda:fix
 ```
 
 **過去の失敗例（2026-03-11）:**
@@ -711,10 +711,10 @@ npm run lambda:fix
 ```bash
 # ✅ 正しいデプロイ方法（唯一の方法）
 cd infrastructure
-npm run deploy:websocket
+pnpm run deploy:websocket
 
 # または個別デプロイ
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **❌ 絶対禁止:**
@@ -981,7 +981,7 @@ aws lambda update-function-code \
 
 # ✅ 必ずこうする - CDK経由デプロイ
 cd infrastructure
-npm run deploy:websocket
+pnpm run deploy:websocket
 ```
 
 **なぜ手動zipが問題か:**
@@ -1061,8 +1061,8 @@ import { User, Avatar, ValidationError, NotFoundError } from '../shared/types';
 | **DRY原則**      | 同じロジックを2箇所にコピペ            | 共通関数を作成して両方で使用                  |
 | **DRY原則**      | 30行のソートロジックを重複             | `utils.ts` に共通関数化                       |
 | **Next.js**      | URLパス推測（`/scenarios`）            | 実装確認（`/dashboard/scenarios`）            |
-| **Lambda**       | 手動zipアップロード                    | `npm run deploy:websocket`（CDK経由）         |
-| **Lambda**       | デプロイ前に依存関係検証なし           | `npm run lambda:predeploy`（必須）            |
+| **Lambda**       | 手動zipアップロード                    | `pnpm run deploy:websocket`（CDK経由）         |
+| **Lambda**       | デプロイ前に依存関係検証なし           | `pnpm run lambda:predeploy`（必須）            |
 | **Database**     | `psql postgresql://localhost:5432`     | `bash scripts/db-query.sh "SELECT ..."`       |
 | **Database**     | RDS直接接続                            | Lambda経由アクセス                            |
 
@@ -1175,7 +1175,7 @@ bash scripts/validate-duplication.sh
 git commit -m "..."  # 自動的に検証
 
 # 自動実行（デプロイ前）
-npm run deploy:lambda  # 自動的に検証
+pnpm run deploy:lambda  # 自動的に検証
 ```
 
 **検証項目:**
@@ -1363,13 +1363,13 @@ bash scripts/validate-duplication.sh
 
 ```bash
 # 1. 調査せずにインストール
-npm install <package>  # ❌ 依存関係ツリーを確認していない
+pnpm install <package>  # ❌ 依存関係ツリーを確認していない
 
 # 2. 大きなライブラリを全体インストール
-npm install lodash  # ❌ 必要な関数だけコピーすべき
+pnpm install lodash  # ❌ 必要な関数だけコピーすべき
 
 # 3. 古いライブラリ
-npm install moment  # ❌ 非推奨、date-fnsまたは native Intl を使用
+pnpm install moment  # ❌ 非推奨、date-fnsまたは native Intl を使用
 ```
 
 ### ✅ 正しい手順
@@ -1395,7 +1395,7 @@ EOF
 # axios → native fetch（0 dependencies）
 
 # Step 5: 検証スクリプト実行
-npm run validate:deps-size
+pnpm run validate:deps-size
 ```
 
 ### 判断基準
@@ -1417,7 +1417,7 @@ npm run validate:deps-size
 
 ```bash
 # 依存関係サイズ検証（コミット前必須）
-npm run validate:deps-size
+pnpm run validate:deps-size
 
 # 期待される結果:
 # ✅ All dependencies are within acceptable limits
@@ -1502,7 +1502,7 @@ packages/database  → CANNOT import → anything except Prisma
 
 ```bash
 # Monorepo境界検証（コミット前必須）
-npm run validate:monorepo
+pnpm run validate:monorepo
 
 # 期待される結果:
 # ✅ All monorepo boundary validations passed
@@ -1581,7 +1581,7 @@ cat packages/database/prisma/schema.prisma | grep -A 20 "model User"
 
 ```bash
 # テスト実装検証（コミット前推奨）
-npm run validate:tests
+pnpm run validate:tests
 
 # 期待される結果:
 # ✅ All test assumptions verified
@@ -1607,7 +1607,7 @@ npm run validate:tests
 - 大きなライブラリ（20+ 依存）は避ける
 - ユーティリティライブラリは必要な関数のみコピー
 
-**Automation:** `npm run validate:deps-size`
+**Automation:** `pnpm run validate:deps-size`
 
 ### 原則2: ワークスペース境界の明確化（Clear Workspace Boundaries）
 
@@ -1618,7 +1618,7 @@ npm run validate:tests
 - infrastructure: バックエンド専用
 - packages/shared: 型定義のみ（ロジックなし）
 
-**Automation:** `npm run validate:monorepo`
+**Automation:** `pnpm run validate:monorepo`
 
 ### 原則3: 実装を見てからテスト（Implementation First, Then Test）
 
@@ -1629,7 +1629,7 @@ npm run validate:tests
 2. 実装を読む
 3. テストを書く
 
-**Automation:** `npm run validate:tests`
+**Automation:** `pnpm run validate:tests`
 
 ### 原則4: 自動化への投資（Invest in Automation）
 

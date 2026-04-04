@@ -138,7 +138,7 @@ export async function checkRateLimit(ipAddress: string, token?: string): Promise
 ### Deployment Command:
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 ### Deployment Result:

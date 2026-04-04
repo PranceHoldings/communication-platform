@@ -115,7 +115,7 @@ const commonEnvironment = {
 
 ```bash
 cd infrastructure/lambda/report
-npx ts-node test-ai-suggestions.ts
+pnpm exec ts-node test-ai-suggestions.ts
 ```
 
 ### 5. ドキュメント更新
@@ -270,7 +270,7 @@ npx ts-node test-ai-suggestions.ts
 ```bash
 # AI提案生成テスト（AWS認証情報が必要）
 cd infrastructure/lambda/report
-npx ts-node test-ai-suggestions.ts
+pnpm exec ts-node test-ai-suggestions.ts
 ```
 
 ### 2. Lambda関数テスト

@@ -420,7 +420,7 @@ bash scripts/create-cloudfront-secret.sh production
 
 # 2. WebSocket Lambda に STT_AUTO_DETECT_LANGUAGES 追加
 # infrastructure/lib/stacks/lambda-stack.ts 編集
-# npm run deploy:websocket -- --env production
+# pnpm run deploy:websocket -- --env production
 ```
 
 ### 1週間以内

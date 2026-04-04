@@ -90,7 +90,7 @@ Please update the following files with correct translations:
 ```
 
 **効果:**
-- `npm run build` 実行時、自動的に i18n 検証が実行される
+- `pnpm run build` 実行時、自動的に i18n 検証が実行される
 - 欠落キーがあればビルドが失敗（CI/CDで検出）
 
 ### 3. Pre-commit Hook統合
@@ -107,8 +107,8 @@ if [ -n "$STAGED_I18N_FILES" ]; then
     echo -e "${GREEN}✅ All translation keys are synchronized${NC}"
   else
     echo -e "${RED}❌ Translation keys are not synchronized${NC}"
-    echo "Run: cd apps/web && npm run i18n:validate"
-    echo "Auto-fix: cd apps/web && npm run i18n:fix"
+    echo "Run: cd apps/web && pnpm run i18n:validate"
+    echo "Auto-fix: cd apps/web && pnpm run i18n:fix"
     CHECKS_FAILED=1
   fi
 else
@@ -146,7 +146,7 @@ fi
 
 ```bash
 cd apps/web
-npm run i18n:fix
+pnpm run i18n:fix
 ```
 
 **結果:**
@@ -176,7 +176,7 @@ npm run i18n:fix
 **Step 4: 検証**
 
 ```bash
-npm run i18n:validate
+pnpm run i18n:validate
 ```
 
 **Step 5: コミット**
@@ -207,8 +207,8 @@ git commit -m "feat(i18n): add new key"
 ```
 [7/7] Validating i18n translation keys sync...
 ❌ Translation keys are not synchronized
-Run: cd apps/web && npm run i18n:validate
-Auto-fix: cd apps/web && npm run i18n:fix
+Run: cd apps/web && pnpm run i18n:validate
+Auto-fix: cd apps/web && pnpm run i18n:fix
 
 ❌ Pre-commit checks failed
 Fix the issues before committing.
@@ -218,7 +218,7 @@ Fix the issues before committing.
 
 ```bash
 cd apps/web
-npm run i18n:fix
+pnpm run i18n:fix
 # プレースホルダーが生成される
 
 # 適切な翻訳を追加
@@ -239,7 +239,7 @@ git commit -m "feat(i18n): add new key with translations"
 - name: Build Frontend
   run: |
     cd apps/web
-    npm run build  # prebuild で自動検証
+    pnpm run build  # prebuild で自動検証
 ```
 
 **欠落キーがある場合:**
@@ -271,11 +271,11 @@ chmod +x scripts/validate-i18n-keys.js
 - `[ZH-CN: reconnectFailed]` などがコミットされる
 
 **原因:**
-- `npm run i18n:fix` 実行後、適切な翻訳を追加していない
+- `pnpm run i18n:fix` 実行後、適切な翻訳を追加していない
 
 **解決:**
 - 全言語に適切な翻訳を追加
-- `npm run i18n:validate` で検証（プレースホルダーは検出されない）
+- `pnpm run i18n:validate` で検証（プレースホルダーは検出されない）
 - コードレビューで検出
 
 **推奨:**

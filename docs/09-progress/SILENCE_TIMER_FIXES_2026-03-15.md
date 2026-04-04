@@ -161,10 +161,10 @@ console.log('[ScenarioDetail] silenceTimeout:', data.silenceTimeout, 'type:', ty
 ```bash
 # 方法1: 全Lambda関数デプロイ
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # 方法2: 特定スタックのみデプロイ
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **推定時間:** 2-3分
@@ -200,7 +200,7 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never
 
 ```bash
 cd /workspaces/prance-communication-platform/infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 **確認:**
