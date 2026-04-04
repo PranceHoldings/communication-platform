@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 infrastructure/.env.backup.*
 .next-broken-*
+styles/generated/
+
+# Tailwind CSS (built on host Mac)
+styles/tailwind.output.css

@@ -1,10 +1,12 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-04-04 (Day 44 - 12:45 UTC)
+**最終更新:** 2026-04-04 (Day 44 - 16:00 UTC)
+**開発環境:** Mac上のDocker（Linux）
 **現在の Phase:** スクリプト統合 Phase 4 完全完了（60/60 完了、100%） 🎉🎉🎉
 **次のアクション:** Staging環境デプロイ準備
 **ステータス:** dev ブランチ、pnpm 移行完了、共有ライブラリ移行100%完了 ✅✅✅
-**開発サーバー:** http://localhost:3001 （System Error -35回避のためポート3001使用中）
+**開発サーバー:** http://localhost:3000
+**🔴 既知の問題:** Tailwind CSS System Error -35（未解決・継続中） - 回避策で開発継続
 
 ---
 
@@ -46,6 +48,21 @@ bash scripts/verify-environment.sh
 cat docs/07-development/KNOWN_ISSUES.md
 ```
 
+**🔴 Tailwind CSS System Error -35:**
+- **状態:** 回避策確立（Mac上のDocker環境固有の問題）
+- **影響:** Docker 内で Tailwind CSS ビルドが失敗（System Error -35）
+- **✅ 推奨回避策:** Mac ホスト上で Tailwind をビルド（2026-04-04発見）
+  ```bash
+  # Mac ターミナルで実行（バックグラウンド）
+  cd ~/Documents/GitHub/prance-communication-platform/apps/web
+  nohup bash scripts/build-tailwind-host.sh --watch > /tmp/tailwind-watch.log 2>&1 &
+  
+  # Docker 内で開発サーバー起動
+  pnpm run dev
+  ```
+- **フォールバック:** `globals.css`から`@tailwind`ディレクティブを削除（CSS変数のみ）
+- **根本原因:** Docker virtio-fs のカーネルレベル問題（Docker 内だけでの解決は不可能）
+
 **エラーが発生した場合:** [TROUBLESHOOTING.md](docs/07-development/TROUBLESHOOTING.md) を参照
 
 ### Step 3: 最新のコミット確認
@@ -78,10 +95,13 @@ pnpm list react react-dom @react-three/fiber @tanstack/react-query 2>&1 | head -
 pnpm run dev
 # 期待: ✓ Ready in XXXs
 
-# ⚠️ System Error -35発生時の回避策（KNOWN_ISSUES.md #6）
-# "Error: Unknown system error -35" が発生した場合:
-PORT=3001 pnpm run dev
-# → ポート3001で起動してエラー回避
+# 🔴 Tailwind CSS System Error -35について（KNOWN_ISSUES.md #6）
+# "Error: Unknown system error -35" が Docker 内で発生します:
+# → Docker on Mac環境固有の問題（virtio-fs カーネルレベル）
+# → ✅ 推奨: Mac ホスト上で Tailwind をビルド（別プロセス）
+#   bash scripts/build-tailwind-host.sh --watch（Mac ターミナル）
+# → フォールバック: globals.cssから@tailwindディレクティブを削除
+# → Mac ビルド方式なら完全な Tailwind 機能が使用可能
 
 # 4. E2Eテスト実行（React 19環境で検証）
 pnpm run test:e2e

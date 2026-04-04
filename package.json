@@ -10,6 +10,8 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
+    "dev:frontend": "turbo run dev --filter=@prance/web...",
+    "dev:infra": "turbo run dev --filter=infrastructure...",
     "dev:start": "bash scripts/start-dev-server.sh",
     "dev:stop": "bash scripts/stop-dev-server.sh",
     "prebuild": "bash scripts/validate-i18n-keys.sh --warn && mkdir -p packages/database/node_modules && cp -r node_modules/@prisma packages/database/node_modules/ 2>/dev/null || true && pnpm run db:generate",
@@ -44,6 +46,9 @@
     "clean:spaces": "bash scripts/clean-space-files-and-dirs.sh",
     "clean:lambda": "bash infrastructure/scripts/pre-deploy-clean.sh",
     "setup:dev": "pnpm install && pnpm run db:generate",
+    "install:all": "pnpm install",
+    "install:frontend": "pnpm install --filter=@prance/web --filter=@prance/database",
+    "install:infra": "pnpm install --filter=infrastructure --filter=@prance/database",
     "db:generate": "npx prisma generate --schema=packages/database/prisma/schema.prisma",
     "db:populate-defaults": "pnpm exec tsx scripts/populate-scenario-defaults.ts",
     "seed:recording": "pnpm exec tsx scripts/seed-test-recording.ts",
@@ -96,7 +101,7 @@
     "prettier": "^3.2.4",
     "tsx": "^4.21.0",
     "turbo": "^1.12.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.7.3"
   },
   "engines": {
     "node": ">=22.0.0",
@@ -110,7 +115,9 @@
       "react": "^19.2.4",
       "react-dom": "^19.2.4",
       "@types/react": "^19.2.14",
-      "@types/react-dom": "^19.2.3"
+      "@types/react-dom": "^19.2.3",
+      "typescript": "^5.7.3",
+      "@types/node": "^22.19.15"
     }
   },
   "packageManager": "pnpm@10.32.1"

@@ -56,9 +56,25 @@ const nextConfig = {
     NEXT_PUBLIC_APP_VERSION: '0.1.0-alpha',
   },
 
-  // Webpack設定（Three.js対応）
-  webpack: (config) => {
+  // Webpack設定（Three.js対応 + System Error -35対策）
+  webpack: (config, { isServer }) => {
     config.externals = [...(config.externals || []), { canvas: 'canvas' }];
+
+    // ファイルウォッチャーの範囲制限（System Error -35対策）
+    if (!isServer && config.watchOptions) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          '**/node_modules/**',
+          '**/.next/**',
+          '**/.git/**',
+          '**/playwright-report/**',
+          '**/test-results/**',
+          '**/test-output/**',
+        ],
+      };
+    }
+
     return config;
   },
 };

@@ -29,11 +29,11 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^22.0.0",
+    "@types/node": "^22.19.15",
     "@types/ws": "^8.5.13",
     "aws-cdk": "^2.1109.0",
     "dotenv": "^17.3.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.7.3"
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.1005.0",
