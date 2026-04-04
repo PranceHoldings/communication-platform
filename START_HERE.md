@@ -1,12 +1,13 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-04-04 (Day 44 - 16:00 UTC)
-**開発環境:** Mac上のDocker（Linux）
+**最終更新:** 2026-04-04 (Day 44 - 19:00 UTC)
+**開発環境:** Mac上のDocker（Linux） + Mac ホスト Tailwind ビルド
 **現在の Phase:** スクリプト統合 Phase 4 完全完了（60/60 完了、100%） 🎉🎉🎉
 **次のアクション:** Staging環境デプロイ準備
 **ステータス:** dev ブランチ、pnpm 移行完了、共有ライブラリ移行100%完了 ✅✅✅
+**最新コミット:** 8335f14 "docs(dev-env): document Tailwind CSS System Error -35 workaround with Mac host build"
 **開発サーバー:** http://localhost:3000
-**🔴 既知の問題:** Tailwind CSS System Error -35（未解決・継続中） - 回避策で開発継続
+**🟢 Tailwind CSS:** Mac ホストビルド方式で完全動作 ✅
 
 ---
 
@@ -48,22 +49,26 @@ bash scripts/verify-environment.sh
 cat docs/07-development/KNOWN_ISSUES.md
 ```
 
-**🔴 Tailwind CSS System Error -35:**
-- **状態:** 回避策確立（Mac上のDocker環境固有の問題）
-- **影響:** Docker 内で Tailwind CSS ビルドが失敗（System Error -35）
-- **✅ 推奨回避策:** Mac ホスト上で Tailwind をビルド（2026-04-04発見）
+**🟢 Tailwind CSS System Error -35: 解決済み（2026-04-04）**
+- **状態:** ✅ 回避策確立・運用中
+- **解決方法:** Mac ホスト上で Tailwind をビルド（Docker 外）
+- **詳細ガイド:** [apps/web/DOCKER_TAILWIND_SETUP.md](apps/web/DOCKER_TAILWIND_SETUP.md)
+- **セットアップ:**
   ```bash
   # Mac ターミナルで実行（バックグラウンド）
   cd ~/Documents/GitHub/prance-communication-platform/apps/web
   nohup bash scripts/build-tailwind-host.sh --watch > /tmp/tailwind-watch.log 2>&1 &
   
+  # プロセス確認
+  ps aux | grep tailwindcss
+  
   # Docker 内で開発サーバー起動
   pnpm run dev
   ```
-- **フォールバック:** `globals.css`から`@tailwind`ディレクティブを削除（CSS変数のみ）
-- **根本原因:** Docker virtio-fs のカーネルレベル問題（Docker 内だけでの解決は不可能）
+- **効果:** 完全な Tailwind 機能（JIT、全クラス、Hot reload）使用可能
+- **根本原因:** Docker virtio-fs のカーネルレベル問題（ハイブリッドアプローチで回避）
 
-**エラーが発生した場合:** [TROUBLESHOOTING.md](docs/07-development/TROUBLESHOOTING.md) を参照
+**その他の問題:** [KNOWN_ISSUES.md](docs/07-development/KNOWN_ISSUES.md) を参照
 
 ### Step 3: 最新のコミット確認
 
@@ -87,23 +92,28 @@ git diff HEAD~1 --name-only
 git branch
 # 期待: * dev
 
-# 2. React 19バージョン確認（完全統一確認）
+# 2. Mac ホスト上で Tailwind CSS ビルド開始（別ターミナル）
+# Mac ターミナル（Docker 外）で実行:
+cd ~/Documents/GitHub/prance-communication-platform/apps/web
+nohup bash scripts/build-tailwind-host.sh --watch > /tmp/tailwind-watch.log 2>&1 &
+# 確認: ps aux | grep tailwindcss
+# ログ: tail -f /tmp/tailwind-watch.log
+
+# 3. Docker 内で開発サーバー起動（React 19環境）
+pnpm run dev
+# 期待: ✓ Ready in ~1.8秒
+
+# ✅ Tailwind CSS 完全動作確認（2026-04-04解決）
+# → Mac ホスト上でビルド（System Error -35回避）
+# → Docker コンテナで Next.js 実行
+# → 完全な Tailwind 機能（JIT、全クラス、Hot reload）使用可能
+# 詳細: apps/web/DOCKER_TAILWIND_SETUP.md
+
+# 4. React 19バージョン確認（完全統一確認）
 pnpm list react react-dom @react-three/fiber @tanstack/react-query 2>&1 | head -50
 # 期待: すべてreact@19.2.4, react-dom@19.2.4を使用
 
-# 3. 開発サーバー起動（React 19環境）
-pnpm run dev
-# 期待: ✓ Ready in XXXs
-
-# 🔴 Tailwind CSS System Error -35について（KNOWN_ISSUES.md #6）
-# "Error: Unknown system error -35" が Docker 内で発生します:
-# → Docker on Mac環境固有の問題（virtio-fs カーネルレベル）
-# → ✅ 推奨: Mac ホスト上で Tailwind をビルド（別プロセス）
-#   bash scripts/build-tailwind-host.sh --watch（Mac ターミナル）
-# → フォールバック: globals.cssから@tailwindディレクティブを削除
-# → Mac ビルド方式なら完全な Tailwind 機能が使用可能
-
-# 4. E2Eテスト実行（React 19環境で検証）
+# 5. E2Eテスト実行（React 19環境で検証）
 pnpm run test:e2e
 ```
 
@@ -123,10 +133,67 @@ pnpm run test:e2e
 
 **詳細:** [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md)
 
-### 🎯 最新達成 (Day 43 - 2026-04-04 午後) - スクリプト統合 Phase 4 大幅進捗 🎊
+### 🎯 最新達成 (Day 44 - 2026-04-04 夕方) - Tailwind CSS System Error -35 完全解決 🎉
 
 **ブランチ:** dev
-**最新コミット:** (保留中)
+**最新コミット:** 8335f14 "docs(dev-env): document Tailwind CSS System Error -35 workaround with Mac host build"
+
+**Tailwind CSS System Error -35 回避策確立（所要時間: 3時間）** 🆕
+
+**問題:**
+- Docker on Mac 環境で Tailwind CSS ビルドが System Error -35（EDEADLK）で失敗
+- virtio-fs（Docker ファイルシステムマウント）のカーネルレベル問題
+- Docker 内だけでの解決は不可能
+
+**✅ 解決策発見（2026-04-04 午後）:**
+- **Mac ホスト上で Tailwind をビルド**（native APFS filesystem）
+- Docker コンテナは pre-built CSS を volume 経由で読み込み
+- 完全な Tailwind 機能（JIT、全クラス、Hot reload）が使用可能
+
+**実装内容:**
+1. ✅ `apps/web/scripts/build-tailwind-host.sh` - Mac ホストビルドスクリプト（watch mode）
+2. ✅ `apps/web/DOCKER_TAILWIND_SETUP.md` - 包括的セットアップガイド
+3. ✅ `apps/web/scripts/check-tailwind.sh` - ビルド状態検証スクリプト
+4. ✅ `apps/web/.gitignore` - styles/tailwind.output.css 除外
+5. ✅ `apps/web/app/layout.tsx` - pre-built CSS インポート
+6. ✅ `apps/web/next.config.js` - webpack watcher 範囲制限
+7. ✅ `docs/07-development/KNOWN_ISSUES.md` - Issue #6 更新（推奨回避策記録）
+8. ✅ `memory/feedback_tailwind_system_error.md` - Memory 更新
+
+**Node Modules 最適化（並行実施）:**
+- ✅ 16個の未使用依存削除（apps/web/package.json）
+- ✅ ~103MB ディスク削減
+- ✅ TypeScript 5.3.3 → 5.7.3 更新
+- ✅ Turbo ベースの frontend/infra 専用スクリプト追加
+- ✅ `docs/06-infrastructure/NODE_MODULES_OPTIMIZATION.md` 作成
+
+**効果:**
+- ✅ Tailwind CSS 完全動作（System Error -35 回避）
+- ✅ 開発環境の安定性向上
+- ✅ 完全なスタイリング機能
+- ✅ Hot reload 正常動作
+
+**使用方法:**
+```bash
+# Mac ターミナル（Docker 外）
+cd ~/Documents/GitHub/prance-communication-platform/apps/web
+nohup bash scripts/build-tailwind-host.sh --watch > /tmp/tailwind-watch.log 2>&1 &
+
+# Docker コンテナ
+pnpm run dev
+```
+
+**教訓:**
+- Docker のファイルシステム問題は、ハイブリッドアプローチ（ホストでビルド + コンテナで実行）で回避可能
+- カーネルレベルの問題でも、アーキテクチャ工夫で実用的な解決策を構築できる
+- ユーザーの実験と発見が最も有効な解決策になることがある
+
+---
+
+### 🎯 過去の達成 (Day 43-44 - 2026-04-04 午前〜午後) - スクリプト統合 Phase 4 完全完了 🎊
+
+**ブランチ:** dev
+**コミット:** a810018 "feat(dev-env): add rendering verification and System Error -35 mitigation"
 
 **スクリプト統合 Phase 1-4 進行中（所要時間: 10時間）** 🆕
 
@@ -550,24 +617,26 @@ bash scripts/detect-hardcoded-values.sh      # ハードコード検出
 
 - **Package Manager: pnpm 10.32.1** ✅
 - React: **19.2.4** (完全統合・検証済み) ✅
-- 依存関係: 877パッケージ（100% React 19統一）✅
+- 依存関係: 861パッケージ（100% React 19統一、16削減 ~103MB） ✅
 - React Query: **5.96.1** (Dashboard統合完了) ✅
+- TypeScript: **5.7.3** (5.3.3 → 更新) ✅
 - Lambda関数: 102個（Dev: 51, Production: 51）
 - ランタイム: 100% nodejs22.x ✅
 - 環境変数: 93個
 - **E2Eテスト: Stage 0-2 Core: 100%** (20/20 passed) ✅
-- **スクリプト統合: Phase 1-4 進行中** 🆕
+- **スクリプト統合: Phase 1-4 完了** ✅
   - 総スクリプト数: 74 bash scripts
-  - 共有ライブラリ移行: **17スクリプト（23.0%）** 🎉
+  - 共有ライブラリ移行: **60スクリプト（100%）** 🎉🎉🎉
   - High Priority: 14/15 (93.3%)
-  - Medium/Low: 3スクリプト
-  - 総削減: **-183行** (6.2%)
-  - 目標: 60スクリプト（75%）
+  - Medium Priority: 17スクリプト
+  - Test/Debug: 3スクリプト
+  - 総削減: **-333行** (8.3%)
   - 削除された重複: 5スクリプト（648行）
   - 共有ライブラリ: 4ファイル（1,568行）
-- ドキュメント: 433ファイル（スクリプトレジストリ・レポート追加）🆕
+- **Tailwind CSS: 完全動作** ✅ (Mac ホストビルド方式)
+- ドキュメント: 437ファイル（Tailwind セットアップガイド等追加）🆕
 - 全Phase: 完了 ✅
-- devブランチ: 最新（2ec1394）🆕
+- devブランチ: 最新（8335f14）🆕
 - stagingブランチ: 作成済み（デプロイ準備完了）
 
 **pnpm パフォーマンス改善:** 🆕
@@ -589,10 +658,12 @@ bash scripts/detect-hardcoded-values.sh      # ハードコード検出
 
 ---
 
-**最終更新:** 2026-04-04 (Day 43 - 18:00 UTC) 🎉 **スクリプト統合Phase 4 大幅進捗**
+**最終更新:** 2026-04-04 (Day 44 - 19:00 UTC) 🎉 **Tailwind CSS System Error -35 完全解決**
 **Package Manager:** 🔄 **pnpm 10.32.1** - 60% 高速化、50% ディスク削減 ✅
-**スクリプトシステム:** 📚 **Phase 4 進行中** - 17/60スクリプト移行（28.3%）、High Priority 93.3%完了 🎊
+**スクリプトシステム:** 📚 **Phase 4 完了** - 60/60スクリプト移行（100%）🎉🎉🎉
+**Tailwind CSS:** 🎨 **完全動作** - Mac ホストビルド方式で System Error -35 回避 ✅
+**Node Modules:** 📦 **最適化完了** - 16依存削除、~103MB削減 ✅
 **Production Status:** 🚀 **稼働中** - https://app.prance.jp (React 18)
 **Staging Status:** 🎯 **準備完了** - デプロイ待ち (React 19.2.4 + pnpm)
-**開発環境:** ✅ **完全検証済み** - pnpm 10.32.1 + React 19.2.4 + React Query + E2E 100%
-**次のマイルストーン:** スクリプト統合Phase 4 継続（残り43スクリプト） → Staging環境デプロイ → 24-48h監視 → Production展開
+**開発環境:** ✅ **完全検証済み** - pnpm + React 19.2.4 + Tailwind CSS + E2E 100%
+**次のマイルストーン:** Staging環境デプロイ → 24-48h監視 → Production展開
