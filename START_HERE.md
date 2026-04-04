@@ -1,9 +1,9 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-04-04 (Day 43 - 12:00 UTC)
-**現在の Phase:** pnpm 移行完了 ✅ | スクリプト統合 Phase 2-3完了 ✅ | React 19 Production準備完了 ✅
-**次のアクション:** スクリプト統合 Phase 4（既存スクリプトの共有ライブラリ移行） → Staging環境デプロイ
-**ステータス:** dev ブランチ、pnpm 10.32.1、共有ライブラリシステム構築完了 ✅
+**最終更新:** 2026-04-04 (Day 43 - 15:30 UTC)
+**現在の Phase:** スクリプト統合 Phase 4 進行中（3/15 完了） | Staging デプロイ準備中 🔄
+**次のアクション:** deploy.sh Prisma修正 → Staging環境デプロイ → スクリプト統合 Phase 4 継続
+**ステータス:** staging ブランチ、pnpm 移行完了、deploy.sh に Prisma 問題あり ⚠️
 
 ---
 
@@ -83,10 +83,25 @@ pnpm run test:e2e
 
 **詳細:** [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md)
 
-### 🎯 最新達成 (Day 43 - 2026-04-04 午後) - スクリプト統合システム構築完了 🎉
+### 🎯 最新達成 (Day 43 - 2026-04-04 午後) - スクリプト統合 Phase 4 開始 + deploy.sh pnpm 修正
 
-**ブランチ:** dev  
-**最新コミット:** 2ec1394 "docs(scripts): enhance documentation with registry and workflows (Phase 3 complete)"
+**ブランチ:** staging  
+**最新コミット:** 57066e1 "fix(infra): update deploy.sh to use pnpm instead of npm"
+
+**スクリプト統合 Phase 1-4 進行中（所要時間: 4.5時間）** 🆕
+
+**Phase 4: 既存スクリプトの共有ライブラリ移行（3/15 完了）**
+- ✅ validate-lambda-dependencies.sh 移行（173→152行、12%削減）
+- ✅ validate-language-sync.sh 移行（115→110行、5%削減）
+- ✅ validate-deployment-method.sh 移行（103→106行、-3%）
+- ✅ REGISTRY.json 更新（移行メタデータ追加）
+- ⚠️ 残り12個 High Priority スクリプト（目標: 60スクリプト、75%）
+
+**deploy.sh pnpm 修正** 🆕
+- ✅ npm install → pnpm install
+- ✅ npx prisma → pnpm exec prisma
+- ✅ npm run build → pnpm run build
+- ⚠️ Prisma Client 生成に問題あり（次回修正必要）
 
 **スクリプト統合 Phase 1-3完了（所要時間: 4時間）**
 
