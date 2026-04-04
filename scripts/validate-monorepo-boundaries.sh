@@ -162,7 +162,7 @@ fi
 log_section "Validation Summary"
 
 if [ "$ERRORS" -eq 0 ]; then
-  echo -e "${GREEN}✅ All monorepo boundary validations passed${NC}"
+  log_success "All monorepo boundary validations passed"
   echo ""
   echo "Workspace dependencies:"
   echo "  apps/web → packages/shared ✅"
@@ -170,7 +170,7 @@ if [ "$ERRORS" -eq 0 ]; then
   echo "  packages/shared → (none) ✅"
   exit 0
 else
-  echo -e "${RED}❌ $ERRORS boundary violation(s) detected${NC}"
+  log_error "$ERRORS boundary violation(s) detected"
   echo ""
   echo "Monorepo Rules:"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

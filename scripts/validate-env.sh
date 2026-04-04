@@ -152,15 +152,15 @@ check_required_vars "infrastructure/.env" "infrastructure/.env"
 log_section "検証結果"
 
 if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
-  echo -e "${GREEN}✅ 全ての検証に合格しました！${NC}"
+  log_success "全ての検証に合格しました！"
   print_counter_summary
   exit 0
 elif [ "$ERRORS" -eq 0 ]; then
-  echo -e "${YELLOW}⚠️  警告が ${WARNINGS} 件あります${NC}"
+  log_warning "警告が ${WARNINGS} 件あります"
   print_counter_summary
   exit 0
 else
-  echo -e "${RED}❌ エラーが ${ERRORS} 件、警告が ${WARNINGS} 件あります${NC}"
+  log_error "エラーが ${ERRORS} 件、警告が ${WARNINGS} 件あります"
   print_counter_summary
   echo ""
   echo "修正方法:"

@@ -251,8 +251,8 @@ done
 log_section "削除結果サマリー"
 
 echo ""
-echo -e "${GREEN}✓ 成功: $SUCCESS_COUNT${NC}"
-echo -e "${RED}✗ 失敗: $FAILED_COUNT${NC}"
+log_success "成功: $SUCCESS_COUNT"
+log_error "失敗: $FAILED_COUNT"
 echo ""
 
 if [ ${#FAILED_DIRS[@]} -gt 0 ]; then

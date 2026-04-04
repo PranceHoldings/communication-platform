@@ -26,13 +26,13 @@
 #   --include-broken Scan .broken-* directories (now default, kept for backwards compatibility)
 #
 
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
 
 # Options
 SCAN_ALL=false
@@ -69,7 +69,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     *)
-      echo -e "${RED}Unknown option: $1${NC}"
+      log_error "Unknown option: $1"
       exit 1
       ;;
   esac
@@ -81,19 +81,19 @@ FAILURE_LOG="/tmp/failed-deletions-$(date +%Y%m%d-%H%M%S).log"
 # Get project root
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$PROJECT_ROOT" ]; then
-  echo -e "${RED}Error: Not in a git repository${NC}"
+  log_error "Error: Not in a git repository"
   exit 1
 fi
 
 cd "$PROJECT_ROOT" || exit 1
 
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Cleaning Space-Containing Files & Directories${NC}"
-echo -e "${BLUE}============================================${NC}"
+log_info "============================================"
+log_info "Cleaning Space-Containing Files & Directories"
+log_info "============================================"
 echo ""
 
 if [ "$DRY_RUN" = true ]; then
-  echo -e "${YELLOW}DRY RUN MODE - No files will be modified${NC}"
+  log_warning "DRY RUN MODE - No files will be modified"
   echo ""
 fi
 
@@ -107,7 +107,7 @@ FAILED_DIRS=0
 # Define search paths
 if [ "$SCAN_ALL" = true ]; then
   SEARCH_PATHS=(".")
-  echo -e "${YELLOW}Scanning entire project...${NC}"
+  log_warning "Scanning entire project..."
 else
   SEARCH_PATHS=(
     "apps"
@@ -116,7 +116,7 @@ else
     "scripts"
     "docs"
   )
-  echo -e "${YELLOW}Scanning common paths: ${SEARCH_PATHS[*]}${NC}"
+  log_warning "Scanning common paths: ${SEARCH_PATHS[*]}"
 fi
 
 echo ""
@@ -139,9 +139,9 @@ FIND_EXCLUSIONS=(
 # Optionally exclude .broken-* (backwards compatibility)
 if [ "$INCLUDE_BROKEN" = false ]; then
   FIND_EXCLUSIONS+=(-not -path "*.broken-*")
-  echo -e "${YELLOW}Note: Excluding .broken-* directories${NC}"
+  log_warning "Note: Excluding .broken-* directories"
 else
-  echo -e "${YELLOW}Note: Including .broken-* directories for cleanup${NC}"
+  log_warning "Note: Including .broken-* directories for cleanup"
 fi
 
 for search_path in "${SEARCH_PATHS[@]}"; do
@@ -168,7 +168,7 @@ echo -e "Found: ${RED}${FOUND_FILES}${NC} files, ${RED}${FOUND_DIRS}${NC} direct
 echo ""
 
 if [ "$FOUND_FILES" -eq 0 ] && [ "$FOUND_DIRS" -eq 0 ]; then
-  echo -e "${GREEN}✅ No space-containing files or directories found${NC}"
+  log_success "No space-containing files or directories found"
   exit 0
 fi
 
@@ -179,7 +179,7 @@ echo -e "${BLUE}[2/4]${NC} Details of space-containing items..."
 echo ""
 
 if [ "$FOUND_FILES" -gt 0 ]; then
-  echo -e "${YELLOW}Files (${FOUND_FILES}):${NC}"
+  log_warning "Files (${FOUND_FILES}):"
   for file in "${FILES_WITH_SPACES[@]}"; do
     echo -e "  ${RED}✗${NC} ${file}"
   done
@@ -187,7 +187,7 @@ if [ "$FOUND_FILES" -gt 0 ]; then
 fi
 
 if [ "$FOUND_DIRS" -gt 0 ]; then
-  echo -e "${YELLOW}Directories (${FOUND_DIRS}):${NC}"
+  log_warning "Directories (${FOUND_DIRS}):"
   for dir in "${DIRS_WITH_SPACES[@]}"; do
     echo -e "  ${RED}✗${NC} ${dir}"
   done
@@ -200,12 +200,12 @@ fi
 if [ "$DRY_RUN" = false ] && [ "$FORCE" = false ]; then
   echo -e "${YELLOW}[3/4]${NC} Confirmation"
   echo ""
-  echo -e "${YELLOW}⚠️  Warning: This will remove or rename ${FOUND_FILES} files and ${FOUND_DIRS} directories${NC}"
+  log_warning "Warning: This will remove or rename ${FOUND_FILES} files and ${FOUND_DIRS} directories"
   echo ""
   read -p "Continue? (yes/no): " CONFIRM
 
   if [ "$CONFIRM" != "yes" ]; then
-    echo -e "${BLUE}Cancelled${NC}"
+    log_info "Cancelled"
     exit 0
   fi
   echo ""
@@ -378,7 +378,7 @@ remove_or_rename_dir() {
 
 # Process files
 if [ "$FOUND_FILES" -gt 0 ]; then
-  echo -e "${YELLOW}Processing files...${NC}"
+  log_warning "Processing files..."
   for file in "${FILES_WITH_SPACES[@]}"; do
     remove_or_rename_file "$file"
   done
@@ -387,7 +387,7 @@ fi
 
 # Process directories
 if [ "$FOUND_DIRS" -gt 0 ]; then
-  echo -e "${YELLOW}Processing directories...${NC}"
+  log_warning "Processing directories..."
   for dir in "${DIRS_WITH_SPACES[@]}"; do
     remove_or_rename_dir "$dir"
   done
@@ -397,9 +397,9 @@ fi
 # =============================================================================
 # Summary
 # =============================================================================
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Summary${NC}"
-echo -e "${BLUE}============================================${NC}"
+log_info "============================================"
+log_info "Summary"
+log_info "============================================"
 echo ""
 echo -e "Files found:           ${FOUND_FILES}"
 echo -e "Files cleaned:         ${GREEN}${CLEANED_FILES}${NC}"
@@ -413,22 +413,22 @@ echo ""
 TOTAL_FAILED=$((FAILED_FILES + FAILED_DIRS))
 
 if [ "$DRY_RUN" = true ]; then
-  echo -e "${BLUE}ℹ️  Dry run completed - no files were modified${NC}"
+  log_info "Dry run completed - no files were modified"
   exit 0
 fi
 
 if [ "$TOTAL_FAILED" -gt 0 ]; then
-  echo -e "${RED}❌ Cleanup incomplete (${TOTAL_FAILED} items failed)${NC}"
+  log_error "Cleanup incomplete (${TOTAL_FAILED} items failed)"
   echo ""
-  echo -e "${YELLOW}Failed items have been logged to:${NC}"
+  log_warning "Failed items have been logged to:"
   echo -e "  ${FAILURE_LOG}"
   echo ""
-  echo -e "${YELLOW}Possible reasons for failure:${NC}"
+  log_warning "Possible reasons for failure:"
   echo -e "  • Deep-nested directories with spaces (e.g., 'dir 2/subdir 2/')"
   echo -e "  • Files locked by running processes"
   echo -e "  • Filesystem-level issues (macOS Finder generated files)"
   echo ""
-  echo -e "${YELLOW}Recommended actions:${NC}"
+  log_warning "Recommended actions:"
   echo -e "  1. Review failed items: cat ${FAILURE_LOG}"
   echo -e "  2. Stop related processes: pkill -f 'node\\|npm'"
   echo -e "  3. Restart system if files are still locked"
@@ -436,7 +436,7 @@ if [ "$TOTAL_FAILED" -gt 0 ]; then
   echo ""
   exit 1
 else
-  echo -e "${GREEN}✅ All space-containing items cleaned successfully${NC}"
+  log_success "All space-containing items cleaned successfully"
   # Clean up empty failure log
   [ -f "$FAILURE_LOG" ] && rm -f "$FAILURE_LOG"
   exit 0

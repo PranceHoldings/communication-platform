@@ -187,11 +187,11 @@ echo "  Warnings: $WARNINGS"
 echo ""
 
 if [ "$ERRORS" -eq 0 ]; then
-  echo -e "${GREEN}✅ All translation keys validated successfully${NC}"
+  log_success "All translation keys validated successfully"
   exit 0
 else
   if [ "$WARN_ONLY" = true ]; then
-    echo -e "${YELLOW}⚠️  Translation key validation FAILED (--warn mode: not blocking)${NC}"
+    log_warning "Translation key validation FAILED (--warn mode: not blocking)"
     echo ""
     echo "Fix steps:"
     echo "  1. Add missing translation keys to the appropriate JSON files in apps/web/messages/"
@@ -199,7 +199,7 @@ else
     echo "  3. Re-run this script to verify: pnpm run validate:i18n-keys"
     exit 0
   else
-    echo -e "${RED}❌ Translation key validation FAILED${NC}"
+    log_error "Translation key validation FAILED"
     echo ""
     echo "Fix steps:"
     echo "  1. Add missing translation keys to the appropriate JSON files in apps/web/messages/"

@@ -81,10 +81,10 @@ fi
 # Summary
 echo ""
 if [ "$FAILED" -eq 0 ]; then
-  echo -e "${GREEN}✅ i18n system validation passed (system + keys)${NC}"
+  log_success "i18n system validation passed (system + keys)"
   exit 0
 else
-  echo -e "${RED}❌ i18n system validation FAILED${NC}"
+  log_error "i18n system validation FAILED"
   echo ""
   echo "Fix steps:"
   echo "  1. Remove next-intl imports: Replace with useI18n from '@/lib/i18n/provider'"

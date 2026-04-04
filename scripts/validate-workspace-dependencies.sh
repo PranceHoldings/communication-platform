@@ -190,15 +190,15 @@ log_section "Validation Summary"
 print_counter_summary
 
 if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
-    echo -e "${GREEN}✅ All validations passed!${NC}"
+    log_success "All validations passed!"
     echo ""
     exit 0
 else
     if [ "$ERRORS" -gt 0 ]; then
-        echo -e "${RED}❌ Found $ERRORS error(s)${NC}"
+        log_error "Found $ERRORS error(s)"
     fi
     if [ "$WARNINGS" -gt 0 ]; then
-        echo -e "${YELLOW}⚠️  Found $WARNINGS warning(s)${NC}"
+        log_warning "Found $WARNINGS warning(s)"
     fi
     echo ""
 

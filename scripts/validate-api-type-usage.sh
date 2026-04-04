@@ -91,7 +91,7 @@ echo ""
 print_separator
 
 if [ "$ERRORS" -eq 0 ]; then
-  echo -e "${GREEN}✅ API type usage is consistent${NC}"
+  log_success "API type usage is consistent"
   echo ""
   echo "Best practices:"
   echo "  1. Always import types from @prance/shared"
@@ -100,7 +100,7 @@ if [ "$ERRORS" -eq 0 ]; then
   echo ""
   exit 0
 else
-  echo -e "${RED}❌ Found ${ERRORS} type consistency violation(s)${NC}"
+  log_error "Found ${ERRORS} type consistency violation(s)"
   echo ""
   echo "Documentation:"
   echo "  - packages/shared/src/types/api.ts"

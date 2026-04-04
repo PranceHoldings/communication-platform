@@ -164,10 +164,10 @@ log_section "Validation Summary"
 print_counter_summary
 
 if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
-  echo -e "${GREEN}✅ All dependencies are within acceptable limits${NC}"
+  log_success "All dependencies are within acceptable limits"
   exit 0
 elif [ "$ERRORS" -eq 0 ]; then
-  echo -e "${YELLOW}⚠️  $WARNINGS warning(s) detected (non-blocking)${NC}"
+  log_warning "$WARNINGS warning(s) detected (non-blocking)"
   echo ""
   echo "Consider:"
   echo "1. Review flagged dependencies"
@@ -175,7 +175,7 @@ elif [ "$ERRORS" -eq 0 ]; then
   echo "3. Self-implement if possible (<100 lines)"
   exit 0
 else
-  echo -e "${RED}❌ $ERRORS validation error(s) detected${NC}"
+  log_error "$ERRORS validation error(s) detected"
   echo ""
   echo "Fix guide:"
   echo "1. Remove heavy dependencies: pnpm remove <package>"

@@ -124,11 +124,11 @@ fi
 print_separator
 
 if [ "$ERRORS" -eq 0 ]; then
-  echo -e "${GREEN}✅ All Lambda functions use standard response structure${NC}"
+  log_success "All Lambda functions use standard response structure"
   echo ""
   exit 0
 else
-  echo -e "${RED}❌ Found ${ERRORS} response structure violation(s)${NC}"
+  log_error "Found ${ERRORS} response structure violation(s)"
   echo ""
   echo "Documentation:"
   echo "  - infrastructure/lambda/shared/types/api-response.ts"

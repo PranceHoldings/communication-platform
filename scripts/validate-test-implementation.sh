@@ -198,7 +198,7 @@ fi
 log_section "Validation Summary"
 
 if [ "$WARNINGS" -eq 0 ]; then
-  echo -e "${GREEN}✅ All test implementation validations passed${NC}"
+  log_success "All test implementation validations passed"
   echo ""
   echo "Remember the principle:"
   echo "  1. Find implementation (find/grep)"
@@ -208,7 +208,7 @@ if [ "$WARNINGS" -eq 0 ]; then
   echo ""
   exit 0
 else
-  echo -e "${YELLOW}⚠️  $WARNINGS validation warning(s) detected${NC}"
+  log_warning "$WARNINGS validation warning(s) detected"
   echo ""
   echo "These warnings indicate potential mismatches between"
   echo "tests and implementation. They might be false positives"

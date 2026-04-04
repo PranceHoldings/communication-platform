@@ -7,14 +7,9 @@
 # 実行方法: ./scripts/pre-deploy-check.sh [--environment dev|staging|production]
 # =============================================================================
 
-set -e
-
-# カラー出力
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # 環境指定（デフォルト: dev）
 ENVIRONMENT="dev"
@@ -22,48 +17,23 @@ if [ "$1" == "--environment" ] && [ -n "$2" ]; then
   ENVIRONMENT="$2"
 fi
 
-# ヘルパー関数
-log_info() {
-  echo -e "${BLUE}[INFO]${NC} $1"
-}
+# Reset counters (PASSED=success, FAILED=failures, WARNINGS=warnings)
+reset_counters
 
-log_success() {
-  echo -e "${GREEN}[✓]${NC} $1"
-}
-
-log_warning() {
-  echo -e "${YELLOW}[⚠]${NC} $1"
-}
-
-log_error() {
-  echo -e "${RED}[✗]${NC} $1"
-}
-
-log_section() {
-  echo ""
-  echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-  echo -e "${BLUE}$1${NC}"
-  echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-}
-
-CHECKS_PASSED=0
-CHECKS_FAILED=0
-CHECKS_WARNING=0
-
-# チェック結果記録
+# チェック結果記録 (use shared library functions)
 pass_check() {
   log_success "$1"
-  CHECKS_PASSED=$((CHECKS_PASSED + 1))
+  increment_counter PASSED
 }
 
 fail_check() {
   log_error "$1"
-  CHECKS_FAILED=$((CHECKS_FAILED + 1))
+  increment_counter FAILED
 }
 
 warn_check() {
   log_warning "$1"
-  CHECKS_WARNING=$((CHECKS_WARNING + 1))
+  increment_counter WARNINGS
 }
 
 # =============================================================================
@@ -348,30 +318,30 @@ fi
 log_section "チェック結果サマリー"
 
 echo ""
-echo -e "${GREEN}✓ 成功: $CHECKS_PASSED${NC}"
-echo -e "${YELLOW}⚠ 警告: $CHECKS_WARNING${NC}"
-echo -e "${RED}✗ 失敗: $CHECKS_FAILED${NC}"
+echo -e "${GREEN}✓ 成功: $PASSED${NC}"
+echo -e "${YELLOW}⚠ 警告: $WARNINGS${NC}"
+echo -e "${RED}✗ 失敗: $FAILED${NC}"
 echo ""
 
-if [ "$CHECKS_FAILED" -gt 0 ]; then
-  echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+if [ "$FAILED" -gt 0 ]; then
+  print_separator "━" 42
   echo -e "${RED}デプロイ前チェック失敗${NC}"
-  echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  print_separator "━" 42
   echo ""
   log_error "デプロイ前に上記の問題を解決してください"
   exit 1
 else
-  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  print_separator "━" 42
   echo -e "${GREEN}デプロイ前チェック完了 ✓${NC}"
-  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  print_separator "━" 42
   echo ""
   log_success "デプロイ可能です"
   echo ""
-  echo -e "${BLUE}次のステップ:${NC}"
+  log_info "次のステップ:"
   echo -e "  ${GREEN}cd infrastructure && ./deploy.sh $ENVIRONMENT${NC}"
   echo ""
 
-  if [ "$CHECKS_WARNING" -gt 0 ]; then
+  if [ "$WARNINGS" -gt 0 ]; then
     log_warning "警告がありますが、デプロイは可能です"
   fi
 

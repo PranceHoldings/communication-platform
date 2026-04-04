@@ -9,21 +9,19 @@
 # Usage: bash scripts/deploy-lambda-websocket-manual.sh
 #
 
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 set -e
 
 # Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-MAGENTA='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m'
 
 # Get project root
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$PROJECT_ROOT" ]; then
-  echo -e "${RED}Error: Not in a git repository${NC}"
+  log_error "Error: Not in a git repository"
   exit 1
 fi
 
@@ -31,12 +29,12 @@ LAMBDA_DIR="$PROJECT_ROOT/infrastructure/lambda/websocket/default"
 FUNCTION_NAME="prance-websocket-default-dev"
 REGION="us-east-1"
 
-echo -e "${CYAN}============================================${NC}"
-echo -e "${CYAN}Lambda WebSocket Manual Deployment${NC}"
-echo -e "${CYAN}============================================${NC}"
+log_info "============================================"
+log_info "Lambda WebSocket Manual Deployment"
+log_info "============================================"
 echo ""
-echo -e "${YELLOW}⚠️  WARNING: This is a fallback deployment method${NC}"
-echo -e "${YELLOW}    Use this only when CDK deployment fails${NC}"
+log_warning "WARNING: This is a fallback deployment method"
+log_warning "    Use this only when CDK deployment fails"
 echo ""
 echo -e "Function: ${BLUE}$FUNCTION_NAME${NC}"
 echo -e "Region: ${BLUE}$REGION${NC}"
@@ -64,16 +62,16 @@ pnpm run db:generate > /dev/null 2>&1
 
 # Validation
 if [ ! -d "packages/database/node_modules/.prisma/client" ]; then
-  echo -e "${RED}✗ FAIL: Prisma Client not found${NC}"
+  log_error "FAIL: Prisma Client not found"
   exit 1
 fi
 
 if [ ! -f "packages/database/node_modules/.prisma/client/index.js" ]; then
-  echo -e "${RED}✗ FAIL: Prisma Client index.js not found${NC}"
+  log_error "FAIL: Prisma Client index.js not found"
   exit 1
 fi
 
-echo -e "${GREEN}✓ Prisma Client generated${NC}"
+log_success "Prisma Client generated"
 echo ""
 
 # =============================================================================
@@ -95,17 +93,17 @@ pnpm exec esbuild index.ts \
 
 # Validation
 if [ ! -f "dist/index.js" ]; then
-  echo -e "${RED}✗ FAIL: dist/index.js not found${NC}"
+  log_error "FAIL: dist/index.js not found"
   exit 1
 fi
 
 INDEX_SIZE=$(stat -c%s dist/index.js 2>/dev/null || stat -f%z dist/index.js)
 if [ "$INDEX_SIZE" -lt 1000000 ]; then
-  echo -e "${RED}✗ FAIL: index.js too small ($INDEX_SIZE bytes)${NC}"
+  log_error "FAIL: index.js too small ($INDEX_SIZE bytes)"
   exit 1
 fi
 
-echo -e "${GREEN}✓ esbuild completed ($(numfmt --to=iec-i --suffix=B $INDEX_SIZE 2>/dev/null || echo "$INDEX_SIZE bytes"))${NC}"
+log_success "esbuild completed ($(numfmt --to=iec-i --suffix=B $INDEX_SIZE 2>/dev/null || echo "$INDEX_SIZE bytes"))"
 echo ""
 
 # =============================================================================
@@ -122,16 +120,16 @@ cp dist/index.js.map deploy/ 2>/dev/null || true
 
 # Validation
 if [ ! -f "deploy/index.js" ]; then
-  echo -e "${RED}✗ FAIL: deploy/index.js not found${NC}"
+  log_error "FAIL: deploy/index.js not found"
   exit 1
 fi
 
 if [ ! -d "deploy/node_modules" ]; then
-  echo -e "${RED}✗ FAIL: deploy/node_modules not found${NC}"
+  log_error "FAIL: deploy/node_modules not found"
   exit 1
 fi
 
-echo -e "${GREEN}✓ Deploy directory prepared${NC}"
+log_success "Deploy directory prepared"
 echo ""
 
 # =============================================================================
@@ -146,14 +144,14 @@ echo -e "  Copying .prisma/client..."
 SOURCE_PRISMA="$PROJECT_ROOT/packages/database/node_modules/.prisma"
 
 if [ ! -d "$SOURCE_PRISMA/client" ]; then
-  echo -e "${RED}✗ FAIL: Source Prisma Client not found at $SOURCE_PRISMA/client${NC}"
+  log_error "FAIL: Source Prisma Client not found at $SOURCE_PRISMA/client"
   exit 1
 fi
 
 cp -r "$SOURCE_PRISMA" deploy/node_modules/
 
 if [ ! -d "deploy/node_modules/.prisma/client" ]; then
-  echo -e "${RED}✗ FAIL: Prisma Client copy failed${NC}"
+  log_error "FAIL: Prisma Client copy failed"
   exit 1
 fi
 
@@ -164,14 +162,14 @@ echo -e "  Copying @prisma module..."
 SOURCE_PRISMA_MODULE="$PROJECT_ROOT/node_modules/@prisma"
 
 if [ ! -d "$SOURCE_PRISMA_MODULE" ]; then
-  echo -e "${RED}✗ FAIL: Source @prisma module not found at $SOURCE_PRISMA_MODULE${NC}"
+  log_error "FAIL: Source @prisma module not found at $SOURCE_PRISMA_MODULE"
   exit 1
 fi
 
 cp -r "$SOURCE_PRISMA_MODULE" deploy/node_modules/
 
 if [ ! -d "deploy/node_modules/@prisma/client" ]; then
-  echo -e "${RED}✗ FAIL: @prisma module copy failed${NC}"
+  log_error "FAIL: @prisma module copy failed"
   exit 1
 fi
 
@@ -183,7 +181,7 @@ mkdir -p deploy/prisma
 cp "$PROJECT_ROOT/packages/database/prisma/schema.prisma" deploy/prisma/
 
 if [ ! -f "deploy/prisma/schema.prisma" ]; then
-  echo -e "${RED}✗ FAIL: schema.prisma copy failed${NC}"
+  log_error "FAIL: schema.prisma copy failed"
   exit 1
 fi
 
@@ -192,7 +190,7 @@ echo -e "${GREEN}  ✓ schema.prisma copied${NC}"
 # Step 4.4: package.json
 echo '{"dependencies":{"@prisma/client":"^5.22.0"}}' > deploy/package.json
 
-echo -e "${GREEN}✓ All Prisma files copied${NC}"
+log_success "All Prisma files copied"
 echo ""
 
 # =============================================================================
@@ -207,7 +205,7 @@ if [ -d "$LAMBDA_DIR/node_modules/ffmpeg-static" ]; then
   cp -r "$LAMBDA_DIR/node_modules/ffmpeg-static/"* deploy/node_modules/ffmpeg-static/
   echo -e "${GREEN}  ✓ ffmpeg-static copied${NC}"
 else
-  echo -e "${YELLOW}  ⚠ ffmpeg-static not found (may cause audio processing errors)${NC}"
+  log_warning "  ⚠ ffmpeg-static not found (may cause audio processing errors)"
 fi
 
 # Copy Azure Speech SDK (if exists)
@@ -216,7 +214,7 @@ if [ -d "$LAMBDA_DIR/node_modules/microsoft-cognitiveservices-speech-sdk" ]; the
   cp -r "$LAMBDA_DIR/node_modules/microsoft-cognitiveservices-speech-sdk/"* deploy/node_modules/microsoft-cognitiveservices-speech-sdk/
   echo -e "${GREEN}  ✓ microsoft-cognitiveservices-speech-sdk copied${NC}"
 else
-  echo -e "${YELLOW}  ⚠ microsoft-cognitiveservices-speech-sdk not found${NC}"
+  log_warning "  ⚠ microsoft-cognitiveservices-speech-sdk not found"
 fi
 
 echo ""
@@ -234,7 +232,7 @@ VALIDATION_FAILED=0
 
 # Check 1: index.js in root
 if [ ! -f "index.js" ]; then
-  echo -e "${RED}  ✗ FAIL: index.js not in root${NC}"
+  log_error "  ✗ FAIL: index.js not in root"
   VALIDATION_FAILED=1
 else
   echo -e "${GREEN}  ✓ index.js in root${NC}"
@@ -242,7 +240,7 @@ fi
 
 # Check 2: node_modules in root
 if [ ! -d "node_modules" ]; then
-  echo -e "${RED}  ✗ FAIL: node_modules not in root${NC}"
+  log_error "  ✗ FAIL: node_modules not in root"
   VALIDATION_FAILED=1
 else
   echo -e "${GREEN}  ✓ node_modules in root${NC}"
@@ -250,7 +248,7 @@ fi
 
 # Check 3: Prisma Client
 if [ ! -f "node_modules/.prisma/client/index.js" ]; then
-  echo -e "${RED}  ✗ FAIL: Prisma Client not found${NC}"
+  log_error "  ✗ FAIL: Prisma Client not found"
   VALIDATION_FAILED=1
 else
   echo -e "${GREEN}  ✓ Prisma Client found${NC}"
@@ -258,7 +256,7 @@ fi
 
 # Check 4: @prisma module
 if [ ! -d "node_modules/@prisma/client" ]; then
-  echo -e "${RED}  ✗ FAIL: @prisma module not found${NC}"
+  log_error "  ✗ FAIL: @prisma module not found"
   VALIDATION_FAILED=1
 else
   echo -e "${GREEN}  ✓ @prisma module found${NC}"
@@ -266,7 +264,7 @@ fi
 
 # Check 5: schema.prisma
 if [ ! -f "prisma/schema.prisma" ]; then
-  echo -e "${RED}  ✗ FAIL: schema.prisma not found${NC}"
+  log_error "  ✗ FAIL: schema.prisma not found"
   VALIDATION_FAILED=1
 else
   echo -e "${GREEN}  ✓ schema.prisma found${NC}"
@@ -275,7 +273,7 @@ fi
 # Check 6: File sizes
 INDEX_SIZE=$(stat -c%s index.js 2>/dev/null || stat -f%z index.js)
 if [ "$INDEX_SIZE" -lt 1000000 ]; then
-  echo -e "${RED}  ✗ FAIL: index.js too small ($INDEX_SIZE bytes)${NC}"
+  log_error "  ✗ FAIL: index.js too small ($INDEX_SIZE bytes)"
   VALIDATION_FAILED=1
 else
   echo -e "${GREEN}  ✓ index.js size OK ($INDEX_SIZE bytes)${NC}"
@@ -283,12 +281,12 @@ fi
 
 if [ $VALIDATION_FAILED -eq 1 ]; then
   echo ""
-  echo -e "${RED}✗ Validation failed${NC}"
+  log_error "Validation failed"
   exit 1
 fi
 
 echo ""
-echo -e "${GREEN}✓ All validation checks passed${NC}"
+log_success "All validation checks passed"
 echo ""
 
 cd ..
@@ -308,27 +306,27 @@ cd deploy
 zip -r ../lambda-deployment.zip . > /dev/null 2>&1
 cd ..
 
-echo -e "${GREEN}✓ ZIP created${NC}"
+log_success "ZIP created"
 echo ""
 
 # Validate ZIP structure using dedicated script
 if [ -f "$PROJECT_ROOT/scripts/validate-lambda-zip.sh" ]; then
   bash "$PROJECT_ROOT/scripts/validate-lambda-zip.sh" lambda-deployment.zip
 else
-  echo -e "${YELLOW}⚠ ZIP validation script not found, skipping detailed validation${NC}"
+  log_warning "ZIP validation script not found, skipping detailed validation"
 
   # Basic validation
   if ! unzip -l lambda-deployment.zip | grep -q "^.*[[:space:]]index.js$"; then
-    echo -e "${RED}✗ FAIL: index.js not in ZIP root${NC}"
+    log_error "FAIL: index.js not in ZIP root"
     exit 1
   fi
 
   if unzip -l lambda-deployment.zip | grep -q "deploy/"; then
-    echo -e "${RED}✗ FAIL: deploy/ directory found in ZIP${NC}"
+    log_error "FAIL: deploy/ directory found in ZIP"
     exit 1
   fi
 
-  echo -e "${GREEN}✓ ZIP structure validated${NC}"
+  log_success "ZIP structure validated"
 fi
 
 echo ""
@@ -378,7 +376,7 @@ else
 fi
 
 echo ""
-echo -e "${GREEN}✓ Deployment initiated${NC}"
+log_success "Deployment initiated"
 echo ""
 
 # Wait for deployment to complete
@@ -400,11 +398,11 @@ UPDATE_STATUS=$(aws lambda get-function \
   --output text)
 
 if [ "$STATE" == "Active" ] && [ "$UPDATE_STATUS" == "Successful" ]; then
-  echo -e "${GREEN}✓ Deployment successful${NC}"
+  log_success "Deployment successful"
   echo -e "  State: ${GREEN}$STATE${NC}"
   echo -e "  UpdateStatus: ${GREEN}$UPDATE_STATUS${NC}"
 else
-  echo -e "${YELLOW}⚠ Deployment status unclear${NC}"
+  log_warning "Deployment status unclear"
   echo -e "  State: $STATE"
   echo -e "  UpdateStatus: $UPDATE_STATUS"
 fi
@@ -421,7 +419,7 @@ echo ""
 if [ -f "$PROJECT_ROOT/scripts/post-deploy-lambda-test.sh" ]; then
   bash "$PROJECT_ROOT/scripts/post-deploy-lambda-test.sh" "$FUNCTION_NAME" "$REGION"
 else
-  echo -e "${YELLOW}⚠ Post-deployment test script not found${NC}"
+  log_warning "Post-deployment test script not found"
 
   # Basic test
   echo -e "Basic validation:"
@@ -439,10 +437,10 @@ else
     --output text 2>/dev/null || echo "")
 
   if echo "$PRISMA_ERROR" | grep -q "Cannot find module"; then
-    echo -e "${RED}✗ CRITICAL: Prisma Client not found in Lambda${NC}"
+    log_error "CRITICAL: Prisma Client not found in Lambda"
     exit 1
   else
-    echo -e "${GREEN}✓ No Prisma Client errors detected${NC}"
+    log_success "No Prisma Client errors detected"
   fi
 fi
 
@@ -452,17 +450,17 @@ echo ""
 # Summary
 # =============================================================================
 
-echo -e "${CYAN}============================================${NC}"
-echo -e "${CYAN}Deployment Summary${NC}"
-echo -e "${CYAN}============================================${NC}"
+log_info "============================================"
+log_info "Deployment Summary"
+log_info "============================================"
 echo ""
-echo -e "${GREEN}✅ Manual deployment completed successfully!${NC}"
+log_success "Manual deployment completed successfully!"
 echo ""
-echo -e "${BLUE}Next steps:${NC}"
+log_info "Next steps:"
 echo -e "1. Test in browser: http://localhost:3000"
 echo -e "2. Login and start a session"
 echo -e "3. Check Console for Phase 1.6 features"
 echo ""
-echo -e "${YELLOW}Note: Consider fixing the root cause of CDK bundling issue${NC}"
+log_warning "Note: Consider fixing the root cause of CDK bundling issue"
 echo -e "      to avoid manual deployment in the future"
 echo ""

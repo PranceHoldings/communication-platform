@@ -12,15 +12,14 @@
 # - リトライロジック: 複数戦略で削除試行
 # =============================================================================
 
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 set -e  # エラー時に即座に終了
 
 # カラー出力
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-MAGENTA='\033[0;35m'
-NC='\033[0m' # No Color
 
 # タイムスタンプ生成
 TIMESTAMP=$(date +%s)

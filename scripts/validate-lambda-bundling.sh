@@ -3,13 +3,13 @@
 # Lambda関数バンドル完全検証スクリプト
 # デプロイ前に esbuild + afterBundling + パッケージ構造を完全検証
 
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -21,7 +21,7 @@ echo "==================================================================${NC}"
 echo ""
 
 if ! command -v pnpm exec &> /dev/null; then
-    echo -e "${RED}✗ pnpm exec command not found${NC}"
+    log_error "pnpm exec command not found"
     exit 1
 fi
 
@@ -57,7 +57,7 @@ for func in "${CRITICAL_FUNCTIONS[@]}"; do
     FUNC_DIR=$(dirname "$ENTRY_FILE")
 
     if [ ! -f "$ENTRY_FILE" ]; then
-        echo -e "${YELLOW}⚠ Skipping $FUNC_NAME (file not found)${NC}"
+        log_warning "Skipping $FUNC_NAME (file not found)"
         WARNINGS_FOUND=$((WARNINGS_FOUND + 1))
         continue
     fi
@@ -87,15 +87,15 @@ for func in "${CRITICAL_FUNCTIONS[@]}"; do
 
         if [ -f "$BUNDLE_OUTPUT" ]; then
             BUNDLE_SIZE=$(stat -f%z "$BUNDLE_OUTPUT" 2>/dev/null || stat -c%s "$BUNDLE_OUTPUT" 2>/dev/null)
-            echo -e "${GREEN}✓ (${BUNDLE_SIZE} bytes)${NC}"
+            log_success "(${BUNDLE_SIZE} bytes)"
         else
-            echo -e "${RED}✗ index.js not generated${NC}"
+            log_error "index.js not generated"
             cat "$TEMP_DIR/${FUNC_NAME}-bundle.log"
             ERRORS_FOUND=$((ERRORS_FOUND + 1))
             continue
         fi
     else
-        echo -e "${RED}✗ FAILED${NC}"
+        log_error "FAILED"
         cat "$TEMP_DIR/${FUNC_NAME}-bundle.log"
         ERRORS_FOUND=$((ERRORS_FOUND + 1))
         continue
@@ -135,7 +135,7 @@ for func in "${CRITICAL_FUNCTIONS[@]}"; do
 
         echo -e "${GREEN}✓${NC}"
     else
-        echo -e "${YELLOW}⚠ Skipped (not websocket-default)${NC}"
+        log_warning "Skipped (not websocket-default)"
     fi
 
     # Step 3: パッケージ構造検証
@@ -186,13 +186,13 @@ for func in "${CRITICAL_FUNCTIONS[@]}"; do
     # index.js が require('@prisma/client') している場合のチェック
     if grep -q "require.*@prisma/client" "$BUNDLE_OUTPUT" 2>/dev/null; then
         if [ -f "$PACKAGE_DIR/node_modules/.prisma/client/index.js" ]; then
-            echo -e "${GREEN}✓ Prisma Client available${NC}"
+            log_success "Prisma Client available"
         else
-            echo -e "${RED}✗ Prisma Client MISSING but required${NC}"
+            log_error "Prisma Client MISSING but required"
             ERRORS_FOUND=$((ERRORS_FOUND + 1))
         fi
     else
-        echo -e "${GREEN}✓ No Prisma dependency${NC}"
+        log_success "No Prisma dependency"
     fi
 
     echo ""
@@ -216,7 +216,7 @@ for file in "${CRITICAL_SHARED[@]}"; do
     if [ -f "$SHARED_FILE" ]; then
         echo -n "  Checking $(basename $file)... "
         if pnpm exec tsc --noEmit --skipLibCheck "$SHARED_FILE" 2>&1 | grep -q "error TS"; then
-            echo -e "${RED}✗ Syntax error${NC}"
+            log_error "Syntax error"
             pnpm exec tsc --noEmit --skipLibCheck "$SHARED_FILE" 2>&1 | grep "error TS" | head -3
             ERRORS_FOUND=$((ERRORS_FOUND + 1))
         else
@@ -235,9 +235,9 @@ echo ""
 
 cd "$PROJECT_ROOT/infrastructure"
 if pnpm run build > /tmp/cdk-build.log 2>&1; then
-    echo -e "${GREEN}✓ CDK stack compiles successfully${NC}"
+    log_success "CDK stack compiles successfully"
 else
-    echo -e "${RED}✗ CDK stack compilation failed${NC}"
+    log_error "CDK stack compilation failed"
     tail -20 /tmp/cdk-build.log
     ERRORS_FOUND=$((ERRORS_FOUND + 1))
 fi
@@ -257,7 +257,7 @@ echo "  Warnings: $WARNINGS_FOUND"
 echo ""
 
 if [ "$ERRORS_FOUND" -eq 0 ]; then
-    echo -e "${GREEN}✅ All validations passed - Safe to deploy!${NC}"
+    log_success "All validations passed - Safe to deploy!"
     echo ""
     echo "Deploy command:"
     echo "  cd infrastructure && pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never"
@@ -265,7 +265,7 @@ if [ "$ERRORS_FOUND" -eq 0 ]; then
     echo "Estimated deployment time: ~3 minutes"
     exit 0
 else
-    echo -e "${RED}❌ Found $ERRORS_FOUND critical error(s)${NC}"
+    log_error "Found $ERRORS_FOUND critical error(s)"
     echo ""
     echo "Deployment will fail. Please fix the errors above."
     echo ""
