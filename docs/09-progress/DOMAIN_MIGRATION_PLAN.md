@@ -425,7 +425,7 @@ oAuth: {
 
 ```bash
 cd infrastructure
-npm run cdk -- deploy Prance-dev-Dns --require-approval never
+pnpm run cdk -- deploy Prance-dev-Dns --require-approval never
 ```
 
 **確認:**
@@ -436,7 +436,7 @@ npm run cdk -- deploy Prance-dev-Dns --require-approval never
 
 ```bash
 # CloudFront用証明書はus-east-1に作成する必要がある
-npm run cdk -- deploy Prance-dev-Certificate \
+pnpm run cdk -- deploy Prance-dev-Certificate \
   --require-approval never \
   --region us-east-1
 ```
@@ -457,7 +457,7 @@ aws acm describe-certificate \
 #### Step 3.3: Storage Stack（CloudFront）デプロイ
 
 ```bash
-npm run cdk -- deploy Prance-dev-Storage --require-approval never
+pnpm run cdk -- deploy Prance-dev-Storage --require-approval never
 ```
 
 **確認:**
@@ -468,7 +468,7 @@ npm run cdk -- deploy Prance-dev-Storage --require-approval never
 #### Step 3.4: API Lambda Stackデプロイ
 
 ```bash
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **確認:**
@@ -477,7 +477,7 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 #### Step 3.5: Cognito Stackデプロイ
 
 ```bash
-npm run cdk -- deploy Prance-dev-Cognito --require-approval never
+pnpm run cdk -- deploy Prance-dev-Cognito --require-approval never
 ```
 
 **確認:**
@@ -519,7 +519,7 @@ echo | openssl s_client -connect dev.app.prance.jp:443 -servername dev.app.pranc
    ```bash
    # 開発サーバー起動
    cd apps/web
-   npm run dev
+   pnpm run dev
 
    # ブラウザでアクセス: http://localhost:3000
    ```
@@ -610,11 +610,11 @@ cp infrastructure/lib/config.ts.backup infrastructure/lib/config.ts
 #### 2. CDKスタックを再デプロイ
 
 ```bash
-npm run cdk -- deploy Prance-dev-Dns --require-approval never
-npm run cdk -- deploy Prance-dev-Certificate --require-approval never --region us-east-1
-npm run cdk -- deploy Prance-dev-Storage --require-approval never
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
-npm run cdk -- deploy Prance-dev-Cognito --require-approval never
+pnpm run cdk -- deploy Prance-dev-Dns --require-approval never
+pnpm run cdk -- deploy Prance-dev-Certificate --require-approval never --region us-east-1
+pnpm run cdk -- deploy Prance-dev-Storage --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-Cognito --require-approval never
 ```
 
 #### 3. DNS確認

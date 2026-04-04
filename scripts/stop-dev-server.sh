@@ -7,7 +7,7 @@
 #
 # Usage:
 #   bash scripts/stop-dev-server.sh
-#   npm run dev:stop  # via package.json
+#   pnpm run dev:stop  # via package.json
 ###############################################################################
 
 set -e

@@ -47,7 +47,7 @@ aws lambda update-function-code \
 ```bash
 # WebSocket Lambda関数のデプロイ
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # CDKが自動的に実行する処理:
 # 1. esbuildでトランスパイル (index.ts → index.js)
@@ -68,7 +68,7 @@ npm run deploy:lambda
 rm -rf infrastructure/cdk.out/
 
 # 再デプロイ
-cd infrastructure && npm run deploy:lambda
+cd infrastructure && pnpm run deploy:lambda
 ```
 
 **デプロイ前の検証:**
@@ -84,7 +84,7 @@ bash scripts/validate-deployment-method.sh
 
 **チェックリスト:**
 
-- [ ] CDK経由でデプロイしている？（`npm run deploy:lambda`）
+- [ ] CDK経由でデプロイしている？（`pnpm run deploy:lambda`）
 - [ ] 手動zipファイルが存在しない？（`validate-deployment-method.sh`実行）
 - [ ] デプロイ後、Lambda関数のLastModifiedタイムスタンプを確認？
 - [ ] CloudWatch Logsでエラーがないか確認？
@@ -97,10 +97,10 @@ bash scripts/validate-deployment-method.sh
 
 ```bash
 # Dev環境（マイグレーション統合デプロイ）
-npm run deploy:dev-migration
+pnpm run deploy:dev-migration
 
 # Production環境（マイグレーション統合デプロイ）
-npm run deploy:production-migration
+pnpm run deploy:production-migration
 ```
 
 **統合スクリプトが自動実行する内容:**
@@ -115,14 +115,14 @@ npm run deploy:production-migration
 ```bash
 # Step 1: マイグレーションファイル生成
 cd packages/database
-npx prisma migrate dev --name <変更内容の説明>
+pnpm exec prisma migrate dev --name <変更内容の説明>
 
 # Step 2: Prisma Client再生成
-npx prisma generate
+pnpm exec prisma generate
 
 # Step 3: Lambda関数デプロイ（マイグレーション適用）
 cd ../../infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # Step 4: データベースマイグレーション実行
 aws lambda invoke --function-name prance-db-migration-dev \
@@ -187,7 +187,7 @@ git add . && ./scripts/validate-env.sh && git commit -m "..."
 
 # Step 2: Next.js再起動
 pkill -f "next dev"
-npm run dev
+pnpm run dev
 
 # Step 3: Lambda関数への反映
 cd infrastructure
@@ -203,10 +203,10 @@ cd infrastructure
 ```bash
 # デプロイ前に必ず実行
 cd infrastructure
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 
 # 破損時は修復
-npm run lambda:fix
+pnpm run lambda:fix
 
 # クリーンビルド時はLambda node_modulesも再インストール
 ```
@@ -363,28 +363,28 @@ Prance-dev-ApiLambda        # Lambda関数（20+ functions）
 
 ```bash
 # 1. ネットワーク
-npm run cdk -- deploy Prance-dev-Network --require-approval never
+pnpm run cdk -- deploy Prance-dev-Network --require-approval never
 
 # 2. 認証
-npm run cdk -- deploy Prance-dev-Cognito --require-approval never
+pnpm run cdk -- deploy Prance-dev-Cognito --require-approval never
 
 # 3. データベース
-npm run cdk -- deploy Prance-dev-Database --require-approval never
+pnpm run cdk -- deploy Prance-dev-Database --require-approval never
 
 # 4. ストレージ
-npm run cdk -- deploy Prance-dev-Storage --require-approval never
+pnpm run cdk -- deploy Prance-dev-Storage --require-approval never
 
 # 5. DynamoDB
-npm run cdk -- deploy Prance-dev-DynamoDB --require-approval never
+pnpm run cdk -- deploy Prance-dev-DynamoDB --require-approval never
 
 # 6. API Gateway
-npm run cdk -- deploy Prance-dev-ApiGateway --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiGateway --require-approval never
 
 # 7. Lambda関数
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # または全て一括
-npm run deploy:dev
+pnpm run deploy:dev
 ```
 
 ---
@@ -518,7 +518,7 @@ this.scenariosGetFunction = new nodejs.NodejsFunction(this, 'ScenariosGetFunctio
       // Prisma Clientの生成とコピー
       beforeBundling(inputDir: string, outputDir: string): string[] {
         return [
-          'cd ../../../packages/database && npx prisma generate',
+          'cd ../../../packages/database && pnpm exec prisma generate',
         ];
       },
       afterBundling(inputDir: string, outputDir: string): string[] {
@@ -767,7 +767,7 @@ cat /tmp/result.json
 
 ```
 原因: TypeScriptファイルがトランスパイルされていない
-解決: CDK経由でデプロイ（npm run deploy:lambda）
+解決: CDK経由でデプロイ（pnpm run deploy:lambda）
 ```
 
 **2. Prisma Client not found**

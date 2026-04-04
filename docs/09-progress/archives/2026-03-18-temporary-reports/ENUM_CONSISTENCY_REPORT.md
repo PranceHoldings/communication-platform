@@ -219,7 +219,7 @@ export type UserRole = 'SUPER_ADMIN' | 'CLIENT_ADMIN' | 'CLIENT_USER' | 'GUEST';
 ```
 
 **影響範囲:**
-- packages/shared のビルド: `npm run build`
+- packages/shared のビルド: `pnpm run build`
 - 全Lambda関数の再デプロイ（共有型更新のため）
 - フロントエンドの再ビルド
 
@@ -344,13 +344,13 @@ const [filter, setFilter] = useState<'all' | SessionStatus>('all');
 
 ```bash
 # 共有パッケージ
-cd packages/shared && npm run build
+cd packages/shared && pnpm run build
 
 # フロントエンド
-cd apps/web && npm run type-check
+cd apps/web && pnpm run type-check
 
 # Lambda関数（インフラ）
-cd infrastructure && npx tsc --noEmit
+cd infrastructure && pnpm exec tsc --noEmit
 ```
 
 #### 4.2 インライン定義検出
@@ -371,7 +371,7 @@ grep -rn "'ACTIVE'\s*|\s*'PROCESSING'" --include="*.ts" --include="*.tsx" | grep
 #### 4.3 E2Eテスト
 
 ```bash
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 **推定時間:** 15分
@@ -478,7 +478,7 @@ chmod +x scripts/validate-enum-consistency.sh
 bash scripts/validate-enum-consistency.sh
 
 # CI/CDパイプライン統合
-npm run validate:enums
+pnpm run validate:enums
 ```
 
 **package.json に追加:**
@@ -498,7 +498,7 @@ npm run validate:enums
 ### Phase 1: 共有型修正
 
 - [ ] packages/shared/src/types/index.ts に 'GUEST' 追加
-- [ ] `npm run build` 実行（packages/shared）
+- [ ] `pnpm run build` 実行（packages/shared）
 - [ ] TypeScript型チェック成功
 
 ### Phase 2: Lambda修正
@@ -507,7 +507,7 @@ npm run validate:enums
 - [ ] infrastructure/lambda/auth/login/index.ts 修正
 - [ ] infrastructure/lambda/auth/register/index.ts 修正
 - [ ] infrastructure/lambda/shared/auth/jwt.ts 修正
-- [ ] `npx tsc --noEmit` 成功（infrastructure）
+- [ ] `pnpm exec tsc --noEmit` 成功（infrastructure）
 
 ### Phase 3: Frontend修正
 
@@ -516,7 +516,7 @@ npm run validate:enums
 - [ ] apps/web/app/dashboard/avatars/[id]/edit/page.tsx 修正
 - [ ] apps/web/app/dashboard/sessions/new/page.tsx 修正
 - [ ] apps/web/app/dashboard/sessions/page.tsx 修正
-- [ ] `npm run type-check` 成功（apps/web）
+- [ ] `pnpm run type-check` 成功（apps/web）
 
 ### Phase 4: 検証
 
@@ -537,7 +537,7 @@ npm run validate:enums
    - 検証スクリプト作成・統合
 
 3. **継続的改善:**
-   - コミット前に `npm run validate:enums` 実行
+   - コミット前に `pnpm run validate:enums` 実行
    - CI/CDパイプラインに統合
    - コードレビューでインライン定義をチェック
 

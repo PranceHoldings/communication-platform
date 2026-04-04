@@ -77,11 +77,11 @@
 | `fix-inconsistencies.sh` | コード不整合自動修正 | 低 | ⚠️ 検討 |
 | `detect-inconsistencies.sh` | コード不整合検出 | 低 | ⚠️ 検討 |
 | `cleanup-broken-files.sh` | 破損ファイルクリーンアップ | 低 | ✅ 保持（緊急時用） |
-| `clean-space-directories.sh` | 空白含有ディレクトリ削除 | 低 | ✅ 保持（ビルド前実行） |
+| `clean-space-files-and-dirs.sh` | 空白含有ディレクトリ削除 | 低 | ✅ 保持（ビルド前実行） |
 | `auto-fix-and-test.sh` | 自動修正 + テスト | 低 | ⚠️ 目的不明確 |
 
 **推奨アクション:**
-- ✅ **保持:** `fix-lambda-node-modules.sh`, `cleanup-broken-files.sh`, `clean-space-directories.sh`
+- ✅ **保持:** `fix-lambda-node-modules.sh`, `cleanup-broken-files.sh`, `clean-space-files-and-dirs.sh`
 - ⚠️ **統合検討:** `fix-inconsistencies.sh` + `detect-inconsistencies.sh` → 1スクリプトに統合可能？
 - ⚠️ **利用状況確認:** `auto-fix-and-test.sh` の目的と使用頻度を確認
 
@@ -108,7 +108,7 @@
 | スクリプト | 目的 | 使用頻度 | 統合候補 |
 |-----------|------|---------|---------|
 | `run-e2e-tests.sh` | E2Eテスト実行 | 高 | ✅ 保持 |
-| `get-auth-token.sh` | JWT認証トークン取得 | 高 | ✅ 保持（ユーティリティ） |
+| `get-auth-token.js` | JWT認証トークン取得 | 高 | ✅ 保持（ユーティリティ） |
 
 **推奨アクション:**
 - ✅ **全て保持:** テストに必須

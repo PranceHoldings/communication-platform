@@ -353,7 +353,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: pnpm run test:e2e
 ```
 
 ### 6. ドキュメント駆動開発の徹底（優先度: 高）

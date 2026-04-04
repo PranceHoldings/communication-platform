@@ -172,13 +172,13 @@ export function validateResponseStructure<T>(response: any): StandardAPIResponse
 
 ```bash
 # Lambda レスポンス構造検証
-npm run validate:api-responses
+pnpm run validate:api-responses
 
 # Frontend 型使用検証
-npm run validate:api-types
+pnpm run validate:api-types
 
 # 統合検証（全て）
-npm run validate:api-contracts
+pnpm run validate:api-contracts
 ```
 
 ### コミット前自動検証
@@ -248,13 +248,13 @@ export async function getMyEndpoint(): Promise<MyNewResponse> {
 
 ```bash
 # 型チェック
-npm run validate:api-contracts
+pnpm run validate:api-contracts
 
 # E2Eテスト自動生成
 bash scripts/generate-api-e2e-tests.sh
 
 # E2Eテスト実行
-npm run test:e2e -- api-validation/
+pnpm run test:e2e -- api-validation/
 ```
 
 ---

@@ -221,15 +221,15 @@ else
     echo ""
     echo "1. Fix misplaced dependencies:"
     echo "   cd apps/web"
-    echo "   npm install <missing-package>"
+    echo "   pnpm install <missing-package>"
     echo ""
     echo "2. Remove duplicate dependencies:"
     echo "   # Remove from root package.json if used in workspace"
     echo "   # Or remove from workspace if it's a shared build tool"
     echo ""
     echo "3. Run clean build:"
-    echo "   npm run build:clean"
-    echo "   npm run build"
+    echo "   pnpm run build:clean"
+    echo "   pnpm run build"
     echo ""
 
     exit 1

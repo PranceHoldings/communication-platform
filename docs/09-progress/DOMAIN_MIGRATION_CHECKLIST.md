@@ -193,7 +193,7 @@
 - [ ] デプロイ
   ```bash
   cd infrastructure
-  npm run cdk -- deploy Prance-dev-Dns --require-approval never
+  pnpm run cdk -- deploy Prance-dev-Dns --require-approval never
   ```
 
 - [ ] 出力確認
@@ -205,7 +205,7 @@
 
 - [ ] デプロイ（us-east-1）
   ```bash
-  npm run cdk -- deploy Prance-dev-Certificate \
+  pnpm run cdk -- deploy Prance-dev-Certificate \
     --require-approval never \
     --region us-east-1
   ```
@@ -227,7 +227,7 @@
 
 - [ ] デプロイ
   ```bash
-  npm run cdk -- deploy Prance-dev-Storage --require-approval never
+  pnpm run cdk -- deploy Prance-dev-Storage --require-approval never
   ```
 
 - [ ] 出力確認
@@ -246,7 +246,7 @@
 
 - [ ] デプロイ
   ```bash
-  npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+  pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
   ```
 
 - [ ] Lambda環境変数確認
@@ -261,7 +261,7 @@
 
 - [ ] デプロイ
   ```bash
-  npm run cdk -- deploy Prance-dev-Cognito --require-approval never
+  pnpm run cdk -- deploy Prance-dev-Cognito --require-approval never
   ```
 
 - [ ] User Pool Client確認
@@ -307,7 +307,7 @@
 - [ ] 開発サーバー起動
   ```bash
   cd apps/web
-  npm run dev
+  pnpm run dev
   ```
 
 - [ ] ブラウザアクセス
@@ -433,11 +433,11 @@
 - [ ] CDKスタック再デプロイ
   ```bash
   cd infrastructure
-  npm run cdk -- deploy Prance-dev-Dns --require-approval never
-  npm run cdk -- deploy Prance-dev-Certificate --require-approval never --region us-east-1
-  npm run cdk -- deploy Prance-dev-Storage --require-approval never
-  npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
-  npm run cdk -- deploy Prance-dev-Cognito --require-approval never
+  pnpm run cdk -- deploy Prance-dev-Dns --require-approval never
+  pnpm run cdk -- deploy Prance-dev-Certificate --require-approval never --region us-east-1
+  pnpm run cdk -- deploy Prance-dev-Storage --require-approval never
+  pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+  pnpm run cdk -- deploy Prance-dev-Cognito --require-approval never
   ```
 
 - [ ] 動作確認

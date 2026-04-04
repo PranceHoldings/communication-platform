@@ -153,7 +153,7 @@ const chartBuffer = await generateTimelineChart({
 ```bash
 # ローカルでPDF生成テスト
 cd infrastructure/lambda/report
-npx ts-node test-generate.ts
+pnpm exec ts-node test-generate.ts
 ```
 
 ```typescript
@@ -170,7 +170,7 @@ console.log('PDF size:', pdf.length);
 ```bash
 # AI提案生成テスト（AWS認証情報が必要）
 cd infrastructure/lambda/report
-npx ts-node test-ai-suggestions.ts
+pnpm exec ts-node test-ai-suggestions.ts
 ```
 
 ```typescript

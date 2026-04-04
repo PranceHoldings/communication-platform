@@ -1116,7 +1116,7 @@ apps/web/messages/
 
 **検証:**
 ```bash
-npm run validate:i18n
+pnpm run validate:i18n
 # Result: 551 total keys (84 benchmark + 467 others), 0 missing keys ✅
 ```
 

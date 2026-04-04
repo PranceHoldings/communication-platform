@@ -75,7 +75,7 @@ error TS2786: 'Button' cannot be used as a JSX component.
 
 **解決方法:**
 - ルート package.json に overrides 追加
-- `npm install` で全 workspace の型定義を React 19 に統一
+- `pnpm install` で全 workspace の型定義を React 19 に統一
 
 ---
 
@@ -83,7 +83,7 @@ error TS2786: 'Button' cannot be used as a JSX component.
 
 ### TypeScript型チェック
 ```bash
-$ cd apps/web && npx tsc --noEmit
+$ cd apps/web && pnpm exec tsc --noEmit
 ```
 
 **結果**: ✅ React 19型エラー解消
@@ -92,7 +92,7 @@ $ cd apps/web && npx tsc --noEmit
 
 ### 開発サーバー起動
 ```bash
-$ npm run dev
+$ pnpm run dev
 ```
 
 **結果**: ✅ 正常起動
@@ -107,7 +107,7 @@ $ npm run dev
 
 ### ビルド
 ```bash
-$ npm run build
+$ pnpm run build
 ```
 
 **結果**: ⏳ 未完了
@@ -141,7 +141,7 @@ $ npm run build
 ## 🔴 残課題
 
 ### 1. ビルドのハング問題
-**症状**: `npm run build` が Next.js起動後にハング
+**症状**: `pnpm run build` が Next.js起動後にハング
 **再現性**: 3回連続で再現
 **調査状況**: 
 - TypeScriptエラーではない（型チェックは通過）
@@ -170,13 +170,13 @@ $ npm run build
 git checkout dev
 
 # 2. 現状確認
-npm ls react react-dom @react-three/fiber
+pnpm list react react-dom @react-three/fiber
 
 # 3. ビルド問題の調査
-npm run build -- --debug 2>&1 | tee /tmp/build-debug.log
+pnpm run build -- --debug 2>&1 | tee /tmp/build-debug.log
 
 # 4. ビルド成功後、E2Eテスト実行
-npm run test:e2e -- tests/e2e/integration/websocket-connection.spec.ts
+pnpm run test:e2e -- tests/e2e/integration/websocket-connection.spec.ts
 ```
 
 ---

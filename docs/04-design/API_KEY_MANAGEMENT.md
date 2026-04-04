@@ -55,7 +55,7 @@ cd /workspaces/prance-communication-platform/infrastructure
 ./deploy.sh dev
 
 # または
-npm run deploy:dev
+pnpm run deploy:dev
 ```
 
 #### オプションB: npm scripts を使用
@@ -64,7 +64,7 @@ npm run deploy:dev
 cd /workspaces/prance-communication-platform/infrastructure
 
 # predeploy フックが自動的に sync-env.js を実行
-npm run deploy
+pnpm run deploy
 ```
 
 #### オプションC: CDK直接実行
@@ -76,13 +76,13 @@ cd /workspaces/prance-communication-platform/infrastructure
 node scripts/sync-env.js
 
 # その後CDK実行
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **自動化の仕組み:**
 
 1. `deploy.sh` → 冒頭で自動的に`.env.local`をコピー
-2. `npm run deploy` → `predeploy`フックで`sync-env.js`を実行
+2. `pnpm run deploy` → `predeploy`フックで`sync-env.js`を実行
 3. `scripts/sync-env.js` → コピー + APIキー検証
 
 ### 3. 新しいAPIキーの追加
@@ -111,7 +111,7 @@ cd infrastructure
 ./deploy.sh dev
 
 # または
-npm run deploy
+pnpm run deploy
 ```
 
 **重要:** `infrastructure/.env`への手動コピーは不要です。デプロイスクリプトが自動的に処理します。

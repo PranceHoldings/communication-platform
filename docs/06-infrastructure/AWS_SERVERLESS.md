@@ -983,15 +983,15 @@ export AWS_REGION=us-east-1
 
 # CDK Bootstrap (初回のみ)
 cd infrastructure
-npm run bootstrap
+pnpm run bootstrap
 
 # デプロイ (全スタック)
-npm run deploy
+pnpm run deploy
 
 # 個別スタックデプロイ
-npm run deploy:network
-npm run deploy:database
-npm run deploy:lambda
+pnpm run deploy:network
+pnpm run deploy:database
+pnpm run deploy:lambda
 ```
 
 ### CI/CD Pipeline
@@ -1014,13 +1014,13 @@ jobs:
         with:
           node-version: '20'
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Build
-        run: npm run build
+        run: pnpm run build
       - name: CDK Deploy
         run: |
           cd infrastructure
-          npm run deploy -- --require-approval never
+          pnpm run deploy -- --require-approval never
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

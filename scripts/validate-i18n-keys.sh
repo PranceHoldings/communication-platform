@@ -217,7 +217,7 @@ else
     echo "Fix steps:"
     echo "  1. Add missing translation keys to the appropriate JSON files in apps/web/messages/"
     echo "  2. Ensure all keys follow the 'category.key' pattern"
-    echo "  3. Re-run this script to verify: npm run validate:i18n-keys"
+    echo "  3. Re-run this script to verify: pnpm run validate:i18n-keys"
     exit 0
   else
     echo -e "${RED}❌ Translation key validation FAILED${NC}"
@@ -225,7 +225,7 @@ else
     echo "Fix steps:"
     echo "  1. Add missing translation keys to the appropriate JSON files in apps/web/messages/"
     echo "  2. Ensure all keys follow the 'category.key' pattern"
-    echo "  3. Re-run this script to verify: npm run validate:i18n-keys"
+    echo "  3. Re-run this script to verify: pnpm run validate:i18n-keys"
     echo ""
     echo "To run in non-blocking mode (for development): bash scripts/validate-i18n-keys.sh --warn"
     exit 1

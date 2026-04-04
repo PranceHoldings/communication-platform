@@ -19,13 +19,13 @@ rm -rf apps/web/.next
 # Install dependencies (if not already installed)
 if [ ! -d "node_modules" ]; then
   echo "Installing dependencies..."
-  npm ci
+  pnpm install --frozen-lockfile
 fi
 
 # Build Next.js app
 echo "Building Next.js app..."
 cd apps/web
-npm run build
+pnpm run build
 
 # Verify standalone build
 if [ ! -d ".next/standalone" ]; then
@@ -41,4 +41,4 @@ echo "  - Standalone server: apps/web/.next/standalone"
 echo "  - Static assets: apps/web/.next/static"
 echo "  - Public files: apps/web/public"
 echo ""
-echo "Next step: Deploy with 'npm run deploy:nextjs' from infrastructure/"
+echo "Next step: Deploy with 'pnpm run deploy:nextjs' from infrastructure/"

@@ -126,12 +126,12 @@ Completion Rate: 10/10 (100%)
 ### テスト実行準備
 ```bash
 # Playwright依存関係インストール完了
-npm install -D @playwright/test ✅
-npx playwright install chromium ✅
+pnpm install -D @playwright/test ✅
+pnpm exec playwright install chromium ✅
 ```
 
 ### テスト実行要件
-- [ ] 開発サーバー起動（`npm run dev`）
+- [ ] 開発サーバー起動（`pnpm run dev`）
 - [ ] テストアカウント作成・確認
 - [ ] 環境変数設定
   ```bash
@@ -224,11 +224,11 @@ time curl -X GET "https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api
 ```bash
 # 開発サーバー起動
 cd /workspaces/prance-communication-platform
-npm run dev
+pnpm run dev
 
 # 別ターミナルでE2Eテスト実行
 cd apps/web
-npx playwright test tests/e2e/phase1.6.1-integration.spec.ts --reporter=list
+pnpm exec playwright test tests/e2e/phase1.6.1-integration.spec.ts --reporter=list
 ```
 
 ### 3. ユーザーテスト準備

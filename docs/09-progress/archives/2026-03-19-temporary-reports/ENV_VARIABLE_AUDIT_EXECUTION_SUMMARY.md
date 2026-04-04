@@ -149,7 +149,7 @@ aws lambda get-function-configuration \
 
 **検証結果:**
 ```bash
-bash scripts/validate-env-consistency.sh
+bash scripts/validate-env-consistency-comprehensive.sh
 
 ✅ .env.exampleに定義: 40個
 ✅ コードで使用:       40個
@@ -203,7 +203,7 @@ bash scripts/validate-env-consistency.sh
 ```yaml
 # .github/workflows/env-validation.yml
 - name: Validate environment variables
-  run: bash scripts/validate-env-consistency.sh
+  run: bash scripts/validate-env-consistency-comprehensive.sh
 
 # .github/workflows/deploy.yml
 jobs:
@@ -251,7 +251,7 @@ jobs:
 
 ## 🔍 検証ツール構築完了
 
-### 1. validate-env-consistency.sh ✅
+### 1. validate-env-consistency-comprehensive.sh ✅
 
 **機能:**
 - .env.exampleから変数抽出（49個 → 40個対応）
@@ -267,7 +267,7 @@ jobs:
 
 **実行:**
 ```bash
-bash scripts/validate-env-consistency.sh
+bash scripts/validate-env-consistency-comprehensive.sh
 # Exit code 0: 成功
 # Exit code 1: エラー検出
 ```

@@ -340,7 +340,7 @@ docs/01-getting-started/             ← 初心者向けガイド
 ```bash
 # 統合デプロイスクリプト使用（自動化）
 cd infrastructure
-npm run deploy:dev-migration
+pnpm run deploy:dev-migration
 ```
 
 > 詳細手順: [infrastructure/CLAUDE.md - Rule 1](infrastructure/CLAUDE.md)
@@ -366,8 +366,8 @@ ln -s ../../scripts/prisma-schema-guard.sh .git/hooks/pre-commit
 **必須実行:**
 ```bash
 ./scripts/validate-env.sh          # 検証
-npm run env:consistency            # 整合性チェック
-pkill -f "next dev" && npm run dev  # Next.js再起動
+pnpm run env:consistency            # 整合性チェック
+pkill -f "next dev" && pnpm run dev  # Next.js再起動
 cd infrastructure && ./deploy.sh dev # Lambda反映
 ```
 
@@ -408,7 +408,7 @@ const url = `https://bucket.s3.${region}.${getAwsEndpointSuffix()}/${key}`;
 bash scripts/detect-hardcoded-values.sh
 
 # 環境変数整合性チェック（8項目）
-npm run env:consistency
+pnpm run env:consistency
 ```
 
 **新規環境変数追加手順:**
@@ -487,7 +487,7 @@ grep -r "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" | grep -v 
 2. 型定義（packages/shared）
 3. バックエンド実装（GET/UPDATE API + DEFAULT_SETTINGS）
 4. フロントエンド実装（型定義 + フォーム）
-5. 検証（`npm run validate:ui-settings`）
+5. 検証（`pnpm run validate:ui-settings`）
 
 **教訓:** デフォルト値は「最も便利な値」に設定（有効化 > 無効化）。
 
@@ -501,7 +501,7 @@ grep -r "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" | grep -v 
 
 **✅ 正しい方法:**
 ```bash
-cd infrastructure && npm run deploy:lambda
+cd infrastructure && pnpm run deploy:lambda
 # CDKが自動実行: esbuildトランスパイル → bundling → 最適化zip → Lambda更新
 ```
 
@@ -629,7 +629,7 @@ grep -r "import.*useI18n.*from.*@/lib/i18n" apps/web --count  # useI18n使用確
 #### 9. 言語リスト同期検証
 **必須同期:** Frontend config/Lambda config/Message directories の3箇所
 
-**検証:** `npm run validate:languages`
+**検証:** `pnpm run validate:languages`
 
 > 詳細: [scripts/validate-language-sync.sh](scripts/validate-language-sync.sh)
 
@@ -640,9 +640,9 @@ grep -r "import.*useI18n.*from.*@/lib/i18n" apps/web --count  # useI18n使用確
 
 **コミット前必須:**
 ```bash
-npm run consistency:check    # 不整合検出
-npm run consistency:fix      # 自動修正
-npm run pre-commit           # 全チェック
+pnpm run consistency:check    # 不整合検出
+pnpm run consistency:fix      # 自動修正
+pnpm run pre-commit           # 全チェック
 ```
 
 > 詳細: [docs/04-design/CONSISTENCY_GUIDELINES.md](docs/04-design/CONSISTENCY_GUIDELINES.md)
@@ -675,17 +675,17 @@ grep -rn "^export interface \(User\|Avatar\)" apps/web infrastructure/lambda --i
 
 ```bash
 # 1. ローカル開発
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 
 # 2. ビルド・テスト
-npm run build
-npm run test
-npm run lint
+pnpm run build
+pnpm run test
+pnpm run lint
 
 # 3. インフラデプロイ (CDK)
 cd infrastructure
-npm run deploy:dev
+pnpm run deploy:dev
 
 # 4. コミット・プッシュ
 git add .
@@ -718,7 +718,7 @@ git push origin main
 - ユーティリティライブラリは必要な関数のみコピー
 - Tree-shakeable なライブラリを優先
 
-**Automation:** `npm run validate:deps-size`
+**Automation:** `pnpm run validate:deps-size`
 
 **判断基準:**
 
@@ -759,7 +759,7 @@ packages/database  → CANNOT import → anything except Prisma
 - packages/shared: 型定義のみ（interfaces, types, enums, validation schemas）
 - 共有ロジックは各ワークスペースで独立実装
 
-**Automation:** `npm run validate:monorepo`
+**Automation:** `pnpm run validate:monorepo`
 
 **よくある違反例:**
 - ❌ Frontend が Lambda utility 関数を import → AWS SDK が bundle に含まれる（5MB増加）
@@ -797,7 +797,7 @@ import type { User } from '@prance/shared';
 3. URL/フィールド名/レスポンス構造を確認
 4. その後テストを書く
 
-**Automation:** `npm run validate:tests`
+**Automation:** `pnpm run validate:tests`
 
 **テスト作成前チェックリスト:**
 - [ ] 実装ファイルを見つけた（find/ls コマンド実行済み）
@@ -846,13 +846,13 @@ import type { User } from '@prance/shared';
 # 検証スクリプト例（200-300行が目安）
 scripts/validate-workspace-dependencies.sh  # 236行、8チェック
 scripts/validate-schema-interface-implementation.sh  # 220行、5チェック
-scripts/validate-env-consistency.sh  # 210行、6チェック
+scripts/validate-env-consistency-comprehensive.sh  # 210行、6チェック
 ```
 
 **Pre-commit hookに統合:**
 ```bash
 # .git/hooks/pre-commit
-npm run validate:all  # すべての検証を自動実行
+pnpm run validate:all  # すべての検証を自動実行
 ```
 
 ### 設計原則の適用方法
@@ -861,19 +861,19 @@ npm run validate:all  # すべての検証を自動実行
 
 1. **依存関係追加時:**
    ```bash
-   npm info <package> dependencies  # 依存関係確認
-   npm run validate:deps-size       # 検証
+   pnpm info <package> dependencies  # 依存関係確認
+   pnpm run validate:deps-size       # 検証
    ```
 
 2. **コード変更時:**
    ```bash
-   npm run validate:monorepo  # 境界チェック
-   npm run validate:tests     # テスト実装チェック
+   pnpm run validate:monorepo  # 境界チェック
+   pnpm run validate:tests     # テスト実装チェック
    ```
 
 3. **コミット前:**
    ```bash
-   npm run pre-commit  # 全チェック自動実行
+   pnpm run pre-commit  # 全チェック自動実行
    ```
 
 **コードレビュー時の確認:**

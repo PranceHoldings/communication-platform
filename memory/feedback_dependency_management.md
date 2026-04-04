@@ -47,7 +47,7 @@ If the answer to any of these is NO, reconsider.
 ### For Small Utilities (lodash, moment, etc.)
 ```bash
 # ❌ Bad: Install entire library
-npm install lodash
+pnpm install lodash
 
 # ✅ Good: Copy only what you need
 # Create utils/array.ts with the 3 functions you need
@@ -56,21 +56,21 @@ npm install lodash
 ### For UI Components
 ```bash
 # ❌ Bad: Large component library
-npm install @material-ui/core  # 50+ dependencies
+pnpm install @material-ui/core  # 50+ dependencies
 
 # ✅ Good: Use headless UI + Tailwind
-npm install @headlessui/react  # 2 dependencies
+pnpm install @headlessui/react  # 2 dependencies
 # Style with Tailwind CSS
 ```
 
 ### For Date/Time
 ```bash
 # ❌ Bad: Heavy library
-npm install moment  # 20+ dependencies, deprecated
+pnpm install moment  # 20+ dependencies, deprecated
 
 # ✅ Good: Modern native or lightweight
 # Use native Intl.DateTimeFormat
-# OR: npm install date-fns  # Tree-shakeable, 0 dependencies
+# OR: pnpm install date-fns  # Tree-shakeable, 0 dependencies
 ```
 
 ## Detection
@@ -78,16 +78,16 @@ npm install moment  # 20+ dependencies, deprecated
 ### Automated Check
 ```bash
 # Run before accepting any PR with package.json changes
-npm run validate:deps-size
+pnpm run validate:deps-size
 ```
 
 ### Manual Review
 ```bash
 # Check dependency tree before installing
-npm info <package> dependencies
+pnpm info <package> dependencies
 
 # Count direct + transitive dependencies
-npm ls <package> --depth=5 | grep -c "─"
+pnpm list <package> --depth=5 | grep -c "─"
 ```
 
 ## Threshold Guidelines
@@ -161,8 +161,8 @@ for file in $(git diff --name-only HEAD | grep package.json); do
   
   for dep in $ADDED; do
     # Get dependency count
-    DIRECT=$(npm info $dep dependencies | grep -c ":")
-    TRANSITIVE=$(npm ls $dep --depth=5 2>/dev/null | grep -c "─")
+    DIRECT=$(pnpm info $dep dependencies | grep -c ":")
+    TRANSITIVE=$(pnpm list $dep --depth=5 2>/dev/null | grep -c "─")
     
     if [ $DIRECT -gt 20 ] || [ $TRANSITIVE -gt 100 ]; then
       echo "🚨 Heavy dependency detected: $dep"
@@ -208,10 +208,10 @@ If implementation time > 8 hours → Accept dependency (with careful selection)
 **Check every month:**
 ```bash
 # List all dependencies and their sizes
-npm ls --depth=0 --long
+pnpm list --depth=0 --long
 
 # Identify unused dependencies
-npx depcheck
+pnpm exec depcheck
 
 # Find duplicate dependencies
 npm dedupe --dry-run

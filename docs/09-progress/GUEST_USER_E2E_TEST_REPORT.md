@@ -180,7 +180,7 @@ All tests passed consistently across multiple runs during development.
 
 **View Report:**
 ```bash
-npx playwright show-report
+pnpm exec playwright show-report
 # or
 open playwright-report/index.html
 ```

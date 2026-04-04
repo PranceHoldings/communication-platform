@@ -220,7 +220,7 @@ START_HERE.md (UPDATED)
 
 **検証結果:**
 ```bash
-$ npm run validate:languages
+$ pnpm run validate:languages
 ✅ Frontend and Lambda language lists match
 ✅ Frontend config and message directories match
 ✅ All counts match (10 languages)
@@ -246,14 +246,14 @@ $ npm run validate:languages
 ```bash
 # 依存関係インストール（Prisma engines）
 cd /workspaces/prance-communication-platform
-npm install
+pnpm install
 
 # マイグレーション実行
 cd packages/database
-npx prisma migrate dev --name add_session_error_model
+pnpm exec prisma migrate dev --name add_session_error_model
 
 # Prisma Client再生成
-npx prisma generate
+pnpm exec prisma generate
 
 # 期待される出力:
 # ✅ Prisma schema loaded from prisma/schema.prisma
@@ -291,10 +291,10 @@ CREATE INDEX "session_errors_created_at_idx" ON "session_errors"("created_at");
 cd /workspaces/prance-communication-platform/infrastructure
 
 # 統合デプロイスクリプト使用（推奨）
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # または手動でCDK
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **デプロイ対象:**
@@ -316,7 +316,7 @@ npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```bash
 # Dev環境Frontend起動
 cd /workspaces/prance-communication-platform
-npm run dev
+pnpm run dev
 
 # ブラウザ: http://localhost:3000
 # 1. /dashboard/scenarios に移動
@@ -372,17 +372,17 @@ bash scripts/db-query.sh "SELECT * FROM session_errors ORDER BY created_at DESC 
 # エラー: Cannot find module '@prisma/engines'
 # 解決:
 cd /workspaces/prance-communication-platform
-npm install
+pnpm install
 cd packages/database
-npm install @prisma/client
-npx prisma generate
+pnpm install @prisma/client
+pnpm exec prisma generate
 ```
 
 **問題2: Lambda デプロイ時に「no changes」**
 ```bash
 # CDKが変更を検出しない場合
 rm -rf infrastructure/cdk.out/
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 **問題3: WebSocket接続エラー**

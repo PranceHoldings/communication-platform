@@ -358,18 +358,18 @@ wait
 ```bash
 # 全Phase 1.6.1テスト実行
 cd apps/web
-npx playwright test phase1.6.1-integration.spec.ts
+pnpm exec playwright test phase1.6.1-integration.spec.ts
 
 # 特定グループのみ実行
-npx playwright test -g "Recording Reliability"
-npx playwright test -g "Scenario Validation"
-npx playwright test -g "Scenario Cache"
+pnpm exec playwright test -g "Recording Reliability"
+pnpm exec playwright test -g "Scenario Validation"
+pnpm exec playwright test -g "Scenario Cache"
 
 # ヘッドレスモード無効（ブラウザ表示）
-npx playwright test phase1.6.1-integration.spec.ts --headed
+pnpm exec playwright test phase1.6.1-integration.spec.ts --headed
 
 # デバッグモード
-npx playwright test phase1.6.1-integration.spec.ts --debug
+pnpm exec playwright test phase1.6.1-integration.spec.ts --debug
 ```
 
 ### パフォーマンステスト実行
@@ -443,7 +443,7 @@ bash scripts/performance-test.sh > performance-results-$(date +%Y%m%d).log 2>&1
 ### immediate（実施準備完了）
 1. **E2Eテスト実行**
    ```bash
-   npx playwright test phase1.6.1-integration.spec.ts
+   pnpm exec playwright test phase1.6.1-integration.spec.ts
    ```
 
 2. **パフォーマンステスト実行**
@@ -489,7 +489,7 @@ bash scripts/performance-test.sh > performance-results-$(date +%Y%m%d).log 2>&1
 ### 1. E2Eテスト実行前の準備
 ```bash
 # Playwrightブラウザインストール（初回のみ）
-npx playwright install
+pnpm exec playwright install
 
 # テスト用環境変数設定
 export TEST_USER_EMAIL="test@example.com"
@@ -497,7 +497,7 @@ export TEST_USER_PASSWORD="TestPassword123!"
 export BASE_URL="http://localhost:3000"
 
 # Dev server起動
-npm run dev
+pnpm run dev
 ```
 
 ### 2. パフォーマンステスト実行環境
@@ -523,9 +523,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
-      - run: npm ci
-      - run: npx playwright install
-      - run: npm run test:e2e
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install
+      - run: pnpm run test:e2e
 ```
 
 ---

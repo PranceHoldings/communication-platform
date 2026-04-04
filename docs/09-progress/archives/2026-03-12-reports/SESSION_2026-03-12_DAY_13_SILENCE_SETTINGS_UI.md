@@ -264,7 +264,7 @@ COMMENT ON COLUMN "scenarios"."min_silence_duration" IS 'Minimum silence duratio
 
 ```bash
 cd /workspaces/prance-communication-platform
-npm run dev
+pnpm run dev
 ```
 
 ### Step 2: Access Scenario Edit Page
@@ -355,7 +355,7 @@ pkill -9 -f "next dev"
 rm -rf .turbo node_modules/.cache
 
 # Restart
-cd apps/web && npm run dev
+cd apps/web && pnpm run dev
 ```
 
 ---
@@ -426,7 +426,7 @@ grep -r "silenceThreshold.*0\.05" apps/web
 
 **Pattern for adding fields to WebSocket messages:**
 1. Update shared type definition (`@prance/shared`)
-2. Rebuild shared package: `cd packages/shared && npm run build`
+2. Rebuild shared package: `cd packages/shared && pnpm run build`
 3. Update useWebSocket hook options interface
 4. Update authenticate message construction
 5. Update SessionPlayer hook call
@@ -477,7 +477,7 @@ grep -r "silenceThreshold.*0\.05" apps/web
 1. **Start Next.js Server**
    ```bash
    cd /workspaces/prance-communication-platform
-   npm run dev
+   pnpm run dev
    ```
 
 2. **Test UI Adjustment**
@@ -488,7 +488,7 @@ grep -r "silenceThreshold.*0\.05" apps/web
 
 3. **Deploy Lambda Functions**
    - Clean up cdk.out directory
-   - Deploy: `cd infrastructure && npm run cdk -- deploy Prance-dev-ApiLambda`
+   - Deploy: `cd infrastructure && pnpm run cdk -- deploy Prance-dev-ApiLambda`
    - Run migration: `aws lambda invoke --function-name prance-db-migration-dev ...`
 
 ### Future Improvements

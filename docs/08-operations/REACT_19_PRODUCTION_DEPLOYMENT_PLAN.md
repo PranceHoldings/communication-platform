@@ -60,7 +60,7 @@ git push origin staging
 
 # 2. Deploy to Staging
 cd infrastructure
-npm run deploy:staging
+pnpm run deploy:staging
 
 # 3. Verify deployment
 curl https://staging.app.prance.jp
@@ -93,7 +93,7 @@ curl https://staging.app.prance.jp
 
 # 2. Deploy to Production
 cd infrastructure
-npm run deploy:production
+pnpm run deploy:production
 
 # 3. Enable gradual rollout
 # CloudFront Lambda@Edge function routes 10% traffic to new version
@@ -129,7 +129,7 @@ npm run deploy:production
 
 # Deploy configuration change
 cd infrastructure
-npm run deploy:production -- --skip-build
+pnpm run deploy:production -- --skip-build
 ```
 
 **Monitoring (48 hours):**
@@ -156,7 +156,7 @@ npm run deploy:production -- --skip-build
 
 # Final deployment
 cd infrastructure
-npm run deploy:production -- --skip-build
+pnpm run deploy:production -- --skip-build
 
 # Remove feature flag (cleanup)
 # After 1 week of stable operation
@@ -196,7 +196,7 @@ aws lambda list-versions-by-function \
 
 # 2. Rollback to previous version
 cd infrastructure
-npm run deploy:production -- --version-alias previous
+pnpm run deploy:production -- --version-alias previous
 
 # 3. Verify rollback
 curl https://app.prance.jp
@@ -208,9 +208,9 @@ curl https://app.prance.jp
 git revert HEAD~3..HEAD  # Revert last 3 commits
 
 # 2. Rebuild and deploy
-npm run build
+pnpm run build
 cd infrastructure
-npm run deploy:production
+pnpm run deploy:production
 
 # 3. Verify
 curl https://app.prance.jp

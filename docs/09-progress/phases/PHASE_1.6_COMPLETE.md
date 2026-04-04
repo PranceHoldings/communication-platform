@@ -248,7 +248,7 @@ docs/
 
 ```bash
 cd infrastructure
-npm run cdk -- deploy Prance-dev-DynamoDB --require-approval never
+pnpm run cdk -- deploy Prance-dev-DynamoDB --require-approval never
 ```
 
 **検証項目:**
@@ -282,7 +282,7 @@ npm run cdk -- deploy Prance-dev-DynamoDB --require-approval never
 
 ```bash
 cd apps/web
-npm run test:e2e -- session-error-handling.spec.ts
+pnpm run test:e2e -- session-error-handling.spec.ts
 ```
 
 **期待結果:**

@@ -131,7 +131,7 @@ const weights = await this.getWeights(criteria); // Added await
 **Command:**
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 **Result:**

@@ -20,7 +20,7 @@ echo ""
 # Step 2: Check if dev server is running
 echo "📋 Step 2: Checking dev server..."
 if ! curl -s http://localhost:3000 > /dev/null; then
-  echo "❌ Dev server is not running. Please start it with 'npm run dev'"
+  echo "❌ Dev server is not running. Please start it with 'pnpm run dev'"
   exit 1
 fi
 echo "✅ Dev server is running"
@@ -29,7 +29,7 @@ echo ""
 # Step 3: Run WebSocket integration tests
 echo "📋 Step 3: Running WebSocket integration tests..."
 cd apps/web
-npx playwright test integration/websocket-connection.spec.ts --workers=1 --reporter=line
+pnpm exec playwright test integration/websocket-connection.spec.ts --workers=1 --reporter=line
 
 # Check exit code
 EXIT_CODE=$?

@@ -165,7 +165,7 @@ infrastructure/lib/api-lambda-stack.ts
 
 # 2. Deployed Lambda functions
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # 3. Executed database migration
 aws lambda invoke --function-name prance-db-migration-dev \
@@ -175,7 +175,7 @@ aws lambda invoke --function-name prance-db-migration-dev \
 
 # 4. Regenerated Prisma Client
 cd packages/database
-npx prisma generate
+pnpm exec prisma generate
 ```
 
 ---

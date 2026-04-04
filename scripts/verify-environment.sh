@@ -167,8 +167,8 @@ if [ $FAILED -eq 0 ]; then
   echo -e "${GREEN}✅ All environment checks passed${NC}"
   echo ""
   echo "You can now proceed with:"
-  echo "  npm run dev          # Start development server"
-  echo "  npm run test:e2e     # Run E2E tests"
+  echo "  pnpm run dev          # Start development server"
+  echo "  pnpm run test:e2e     # Run E2E tests"
   exit 0
 else
   echo -e "${RED}❌ Some checks failed. Please fix the issues above.${NC}"

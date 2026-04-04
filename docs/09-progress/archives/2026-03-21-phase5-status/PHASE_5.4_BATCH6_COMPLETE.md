@@ -99,7 +99,7 @@ export async function getDefaultSttConfidence(): Promise<number> {
 **Deployment Command:**
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 **Expected Deployment Time:** ~2 minutes (1 function update)

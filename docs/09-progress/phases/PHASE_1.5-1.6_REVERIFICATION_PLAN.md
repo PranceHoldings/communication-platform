@@ -100,7 +100,7 @@ Phase 4（ベンチマークシステム）を完了しましたが、Phase 1（
 
 ```bash
 cd /workspaces/prance-communication-platform
-npm run dev
+pnpm run dev
 ```
 
 **期待される出力:**
@@ -138,7 +138,7 @@ curl http://localhost:3000/
 
 ```bash
 cd apps/web
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 #### 2.2 結果記録
@@ -270,7 +270,7 @@ aws s3 ls s3://prance-recordings-dev/ --recursive | grep ".webm"
 **解析機能の確認:**
 ```bash
 # RDS に解析データが保存されているか
-npx prisma studio
+pnpm exec prisma studio
 
 # Analysis テーブルを確認
 # sessionId に対応する分析結果が存在するか
@@ -402,7 +402,7 @@ aws logs tail /aws/lambda/prance-websocket-default-dev --follow --filter-pattern
 
 ```bash
 # 修正後、再度E2Eテスト実行
-npm run test:e2e
+pnpm run test:e2e
 
 # 結果をスクリーンショット・テキストで保存
 # playwright-report/ ディレクトリに自動保存される

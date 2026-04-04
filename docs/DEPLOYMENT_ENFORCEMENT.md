@@ -24,9 +24,9 @@ The system enforces validation by wrapping all deployment commands through a val
 
 ```bash
 # ❌ DO NOT use these commands directly
-npx cdk deploy Prance-dev-ApiLambda
-npx cdk deploy --all
-cd infrastructure && npx cdk deploy
+pnpm exec cdk deploy Prance-dev-ApiLambda
+pnpm exec cdk deploy --all
+cd infrastructure && pnpm exec cdk deploy
 ```
 
 **Why blocked:**
@@ -39,9 +39,9 @@ cd infrastructure && npx cdk deploy
 
 ```bash
 # ❌ DO NOT rely on manual validation
-npm run lambda:predeploy  # Run manually
+pnpm run lambda:predeploy  # Run manually
 # ... (forget to run)
-npx cdk deploy            # Deploy anyway
+pnpm exec cdk deploy            # Deploy anyway
 ```
 
 **Why unreliable:**
@@ -57,14 +57,14 @@ npx cdk deploy            # Deploy anyway
 
 ```bash
 # ✅ Root-level deployment (RECOMMENDED)
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # ✅ Infrastructure-level deployment
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # ✅ Full stack deployment
-npm run deploy:dev
+pnpm run deploy:dev
 ```
 
 **Why safe:**
@@ -113,7 +113,7 @@ CDK Wrapper (scripts/cdk-wrapper.sh)
 
 **Purpose:** Prevent TypeScript compilation errors from macOS Finder auto-generated files
 
-**Command:** `npm run clean:spaces`
+**Command:** `pnpm run clean:spaces`
 
 **What it checks:**
 - No directories with spaces in names
@@ -122,14 +122,14 @@ CDK Wrapper (scripts/cdk-wrapper.sh)
 
 **Fix if failed:**
 ```bash
-npm run clean:spaces
+pnpm run clean:spaces
 ```
 
 ### CHECK 2: Lambda Dependencies
 
 **Purpose:** Ensure all Lambda SDK dependencies are properly installed
 
-**Command:** `npm run lambda:validate`
+**Command:** `pnpm run lambda:validate`
 
 **What it checks:**
 - Azure Speech SDK (`microsoft-cognitiveservices-speech-sdk`)
@@ -138,15 +138,15 @@ npm run clean:spaces
 
 **Fix if failed:**
 ```bash
-npm run lambda:fix
-npm run lambda:validate
+pnpm run lambda:fix
+pnpm run lambda:validate
 ```
 
 ### CHECK 3: CDK Bundling Configuration
 
 **Purpose:** Verify CDK bundling paths are correct
 
-**Command:** `npm run validate:bundling`
+**Command:** `pnpm run validate:bundling`
 
 **What it checks:**
 - No wrong path patterns (`/asset-input/shared/`)
@@ -157,7 +157,7 @@ npm run lambda:validate
 ```bash
 # Check the error message for specific issues
 cd infrastructure
-npm run validate:bundling
+pnpm run validate:bundling
 ```
 
 ---
@@ -168,7 +168,7 @@ npm run validate:bundling
 
 ```bash
 # From project root
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # Output:
 # ============================================
@@ -199,16 +199,16 @@ npm run deploy:lambda
 ```bash
 # From infrastructure directory
 cd infrastructure
-npm run deploy
+pnpm run deploy
 
 # Or from root
-npm run deploy:dev
+pnpm run deploy:dev
 ```
 
 ### Example 3: Validation Failure
 
 ```bash
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # Output:
 # ============================================
@@ -220,7 +220,7 @@ npm run deploy:lambda
 # [1/3] Checking for space-containing directories...
 #   ✗ Space-containing directories found
 #
-# Run: npm run clean:spaces
+# Run: pnpm run clean:spaces
 #
 # [Deployment BLOCKED]
 ```
@@ -236,7 +236,7 @@ If you absolutely must bypass validation (e.g., emergency hotfix), use:
 ```bash
 # ONLY use in emergency situations
 cd infrastructure
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
 
 # ⚠️  WARNING: This bypasses ALL validations
 # ⚠️  Use at your own risk
@@ -274,21 +274,21 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never
 1. **Read this document first**
 2. **Try a test deployment:**
    ```bash
-   npm run deploy:lambda
+   pnpm run deploy:lambda
    ```
 3. **Observe the validation process**
 4. **Understand each check's purpose**
-5. **Never use direct `npx cdk` commands**
+5. **Never use direct `pnpm exec cdk` commands**
 
 ### For Existing Team Members
 
 1. **Update your habits:**
-   - Old: `npx cdk deploy`
-   - New: `npm run deploy:lambda`
+   - Old: `pnpm exec cdk deploy`
+   - New: `pnpm run deploy:lambda`
 
 2. **Update your scripts/documentation:**
-   - Replace all `npx cdk deploy` references
-   - Use `npm run deploy:lambda` instead
+   - Replace all `pnpm exec cdk deploy` references
+   - Use `pnpm run deploy:lambda` instead
 
 3. **Report issues:**
    - If validation fails incorrectly
@@ -298,7 +298,7 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never
 
 ## 🔍 Troubleshooting
 
-### Q: "npm run deploy:lambda is slow"
+### Q: "pnpm run deploy:lambda is slow"
 
 **A:** Validation adds ~10-30 seconds. This is intentional to prevent hours of debugging deployment failures.
 
@@ -307,9 +307,9 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never
 **A:** Try:
 ```bash
 # Clean and rebuild
-npm run build:clean
-npm run lambda:fix
-npm run deploy:lambda
+pnpm run build:clean
+pnpm run lambda:fix
+pnpm run deploy:lambda
 ```
 
 ### Q: "Can I add custom validations?"

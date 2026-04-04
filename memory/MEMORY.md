@@ -15,7 +15,7 @@ This directory contains feedback files that capture important lessons learned fr
 - Before adding dependency: Can we implement in <100 lines?
 - Avoid packages with >10 direct dependencies
 - Prefer tree-shakeable libraries
-- Use `npm run validate:deps-size` before commit
+- Use `pnpm run validate:deps-size` before commit
 
 **Past Success:** shadcn/ui (0 deps) vs Material-UI (50+ deps)
 
@@ -30,7 +30,7 @@ This directory contains feedback files that capture important lessons learned fr
 - apps/web → CAN import → packages/shared (types only)
 - apps/web → CANNOT import → infrastructure
 - packages/shared → Only type definitions, no runtime logic
-- Use `npm run validate:monorepo` before commit
+- Use `pnpm run validate:monorepo` before commit
 
 **Past Failure:** Frontend imported Lambda utility → 5MB AWS SDK in bundle
 
@@ -46,7 +46,7 @@ This directory contains feedback files that capture important lessons learned fr
 2. Read implementation code
 3. Verify routes/endpoints/fields
 4. Then write tests
-- Use `npm run validate:tests` to catch assumptions
+- Use `pnpm run validate:tests` to catch assumptions
 
 **Past Failure:** Assumed Next.js route `/dashboard/sessions` → Actual: `/sessions` → 3 hours wasted
 
@@ -127,8 +127,8 @@ Track design principle application, measure ROI, identify improvements
     "validate:deps-size": "bash scripts/validate-dependency-size.sh",
     "validate:monorepo": "bash scripts/validate-monorepo-boundaries.sh",
     "validate:tests": "bash scripts/validate-test-implementation.sh",
-    "validate:design-principles": "npm run validate:deps-size && npm run validate:monorepo && npm run validate:tests",
-    "pre-commit": "npm run validate:design-principles && npm run lint && npm run typecheck"
+    "validate:design-principles": "pnpm run validate:deps-size && pnpm run validate:monorepo && pnpm run validate:tests",
+    "pre-commit": "pnpm run validate:design-principles && pnpm run lint && pnpm run typecheck"
   }
 }
 ```

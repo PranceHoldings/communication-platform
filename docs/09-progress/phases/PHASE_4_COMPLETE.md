@@ -232,7 +232,7 @@ Phase 4（ベンチマークシステム）の全8サブフェーズを完了し
 
 **検証:**
 ```bash
-npm run validate:i18n
+pnpm run validate:i18n
 # Result: 551 total keys, 0 missing keys ✅
 ```
 
@@ -272,7 +272,7 @@ npm run validate:i18n
 **コマンド:**
 ```bash
 cd infrastructure
-npx cdk deploy Prance-production-DynamoDB Prance-production-ApiLambda \
+pnpm exec cdk deploy Prance-production-DynamoDB Prance-production-ApiLambda \
   --context environment=production \
   --require-approval never
 ```

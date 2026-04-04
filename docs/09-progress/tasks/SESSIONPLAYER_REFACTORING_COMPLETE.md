@@ -169,7 +169,7 @@ if (isConnectedRef.current && !pendingSessionEnd && endSessionRef.current) {
 
 ```bash
 cd /workspaces/prance-communication-platform/apps/web
-npx tsc --noEmit --skipLibCheck
+pnpm exec tsc --noEmit --skipLibCheck
 # ✅ No errors
 ```
 

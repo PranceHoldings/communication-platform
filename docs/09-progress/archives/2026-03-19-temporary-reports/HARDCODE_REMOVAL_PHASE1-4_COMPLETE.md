@@ -352,7 +352,7 @@ bash scripts/register-cloudfront-public-key.sh dev
 **Lambda関数デプロイ:**
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 **環境変数検証:**
@@ -365,7 +365,7 @@ bash scripts/validate-lambda-env-vars.sh prance-session-analysis-dev
 **E2Eテスト実行:**
 ```bash
 cd apps/web
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ---

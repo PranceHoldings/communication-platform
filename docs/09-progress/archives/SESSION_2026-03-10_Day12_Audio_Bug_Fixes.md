@@ -225,7 +225,7 @@ websocketDefaultFunction.addToRolePolicy(
 **デプロイ:**
 ```bash
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **デプロイ結果:**

@@ -100,7 +100,7 @@
 
 # Step 2: Next.js再起動
 pkill -f "next dev"
-npm run dev
+pnpm run dev
 
 # Step 3: Lambda関数への反映
 cd infrastructure

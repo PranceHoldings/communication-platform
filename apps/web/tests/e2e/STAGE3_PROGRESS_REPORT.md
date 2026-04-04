@@ -183,7 +183,7 @@ bash scripts/verify-environment.sh
 
 # Stage 3テスト実行（現状確認）
 cd apps/web
-npm run test:e2e -- stage3-real-websocket.spec.ts --reporter=line
+pnpm run test:e2e -- stage3-real-websocket.spec.ts --reporter=line
 ```
 
 ### Step 2: 状況把握

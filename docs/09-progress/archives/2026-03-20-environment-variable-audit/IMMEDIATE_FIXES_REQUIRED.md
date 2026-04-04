@@ -93,7 +93,7 @@ git diff infrastructure/lib/api-lambda-stack.ts
 
 # 2. Deploy
 cd infrastructure
-npm run deploy:websocket
+pnpm run deploy:websocket
 
 # 3. Verify environment variables are set
 aws lambda get-function-configuration \

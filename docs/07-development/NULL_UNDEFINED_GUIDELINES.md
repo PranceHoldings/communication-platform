@@ -240,10 +240,10 @@ const { connect } = useWebSocket({
 
 ```bash
 # 1. 型エラーチェック
-npm run typecheck
+pnpm run typecheck
 
 # 2. データフロー検証
-npm run validate:ui-settings
+pnpm run validate:ui-settings
 
 # 3. 実稼働テスト
 # - デフォルト設定（undefined → null）

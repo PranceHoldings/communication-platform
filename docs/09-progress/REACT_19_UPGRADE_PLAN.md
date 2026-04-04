@@ -111,24 +111,24 @@
 }
 ```
 
-### Step 2: npm install
+### Step 2: pnpm install
 ```bash
-npm install
+pnpm install
 ```
 
 ### Step 3: ビルドエラーの確認・修正
 ```bash
-npm run build
+pnpm run build
 ```
 
 ### Step 4: TypeScriptエラーの修正
 ```bash
-npm run typecheck
+pnpm run typecheck
 ```
 
 ### Step 5: E2Eテスト実行
 ```bash
-npm run test:e2e -- websocket-connection.spec.ts
+pnpm run test:e2e -- websocket-connection.spec.ts
 ```
 
 ---

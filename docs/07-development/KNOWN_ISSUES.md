@@ -52,7 +52,7 @@ Error: Unknown system error -35: Unknown system error -35, read
 
 **仮説2: Turbo（Monorepo Build Tool）の競合**
 ```
-npm run dev
+pnpm run dev
 → turbo run dev
 → x io error: Resource deadlock would occur (os error 35)
 ```
@@ -73,16 +73,16 @@ pkill -9 node
 # .nextとnode_modules完全削除（時間がかかる）
 rm -rf apps/web/.next
 rm -rf node_modules
-npm install
+pnpm install
 
 # Next.js再起動
-cd apps/web && PORT=3000 npx next dev
+cd apps/web && PORT=3000 pnpm exec next dev
 ```
 
 **Option C: 別のポートで起動**
 ```bash
 # ポート3000の競合を回避
-cd apps/web && PORT=3001 npx next dev
+cd apps/web && PORT=3001 pnpm exec next dev
 ```
 
 #### 重要な注記
@@ -102,7 +102,7 @@ cd apps/web && PORT=3001 npx next dev
 **実施内容:**
 1. 開発サーバー起動確認
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 2. 全ページ正常レンダリング確認（/, /login, /404）
 3. 起動時間: 1.87秒（高速）
@@ -193,13 +193,13 @@ Error: net::ERR_CONNECTION_REFUSED at http://localhost:3000/login
 **Step 1: 環境準備と基本確認**
 ```bash
 # 1. 開発サーバー起動
-npm run dev
+pnpm run dev
 
 # 2. サーバー起動待機（20秒）
 sleep 20
 
 # 3. E2Eテスト実行
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 **Step 2: 結果分析**
@@ -226,9 +226,9 @@ npm run test:e2e
 **E2Eテスト実行時:**
 ```bash
 # 必ず開発サーバーを起動してから実行
-npm run dev &
+pnpm run dev &
 sleep 20
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 #### 教訓
@@ -262,9 +262,9 @@ npm run test:e2e
 **回避策:**
 ```bash
 # 開発サーバー起動後、20秒待機してからテスト実行
-npm run dev &
+pnpm run dev &
 sleep 20
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 **根本解決:**
@@ -382,7 +382,7 @@ aws s3 cp combined-test.webm \
 
 **問題詳細:**
 - npm prepare hookが3重に実行されていた
-- clean-deploy.sh → npm install → prepare hook → prepare.sh → npm ci → prepare hook（無限ループ）
+- clean-deploy.sh → pnpm install → prepare hook → prepare.sh → pnpm install --frozen-lockfile → prepare hook（無限ループ）
 
 **根本解決:**
 - prepare hookを廃止
@@ -421,7 +421,7 @@ aws s3 cp combined-test.webm \
 # 開発サーバー停止 + キャッシュクリア
 ps aux | grep "next dev" | awk '{print $2}' | xargs kill
 rm -rf .next
-npm run dev
+pnpm run dev
 ```
 
 **結果:**

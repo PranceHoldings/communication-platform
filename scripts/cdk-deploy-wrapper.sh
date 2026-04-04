@@ -89,7 +89,7 @@ echo ""
 # Build infrastructure
 echo -e "${BLUE}Step 3/4: Building infrastructure...${NC}"
 cd infrastructure
-npm run build
+pnpm run build
 cd ..
 echo -e "${GREEN}✓ Infrastructure built${NC}"
 echo ""
@@ -97,7 +97,7 @@ echo ""
 # Deploy with CDK
 echo -e "${BLUE}Step 4/4: Deploying stack: $STACK_NAME${NC}"
 cd infrastructure
-npm run cdk -- deploy "$STACK_NAME" --require-approval never
+pnpm run cdk -- deploy "$STACK_NAME" --require-approval never
 DEPLOY_EXIT_CODE=$?
 cd ..
 

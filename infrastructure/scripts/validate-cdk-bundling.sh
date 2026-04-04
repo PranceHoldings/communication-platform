@@ -72,7 +72,7 @@ echo ""
 # Check 4: Verify CDK stack compiles
 echo "[CHECK 4] Verifying CDK stack compiles..."
 cd "$ROOT_DIR/infrastructure"
-if npm run build > /dev/null 2>&1; then
+if pnpm run build > /dev/null 2>&1; then
   echo -e "${GREEN}✓ CDK stack compiles successfully${NC}"
 else
   echo -e "${RED}✗ ERROR: CDK stack compilation failed${NC}"
@@ -88,7 +88,7 @@ if [ $ERRORS -eq 0 ]; then
   echo -e "${GREEN}✅ All checks passed${NC}"
   echo ""
   echo "Safe to deploy:"
-  echo "  cd infrastructure && npx cdk deploy Prance-dev-ApiLambda --require-approval never"
+  echo "  cd infrastructure && pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never"
   exit 0
 else
   echo -e "${RED}❌ $ERRORS error(s) found${NC}"

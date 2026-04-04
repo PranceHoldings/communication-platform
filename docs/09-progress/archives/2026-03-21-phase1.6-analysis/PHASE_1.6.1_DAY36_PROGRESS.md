@@ -507,7 +507,7 @@ bash scripts/sync-env-vars.sh
 ```bash
 # 新しいLambda関数（preview）を含む全関数を再デプロイ
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 ### 4. キャッシュウォーミング（オプション）

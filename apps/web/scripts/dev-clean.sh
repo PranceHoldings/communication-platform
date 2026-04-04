@@ -43,11 +43,11 @@ echo ""
 
 # Step 3: Build
 echo -e "${YELLOW}[3/4] Building application...${NC}"
-npm run build
+pnpm run build
 echo -e "${GREEN}  ✓ Build completed${NC}"
 echo ""
 
 # Step 4: Start development server
 echo -e "${YELLOW}[4/4] Starting development server on port 3000...${NC}"
 echo ""
-PORT=3000 npm run dev
+PORT=3000 pnpm run dev

@@ -29,7 +29,7 @@
 ### デプロイコマンド
 ```bash
 cd /workspaces/prance-communication-platform/infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### 期待される変更
@@ -209,7 +209,7 @@ fields context.attempts, context.totalDelay
 ```bash
 # ローカルビルド確認
 cd /workspaces/prance-communication-platform/apps/web
-npm run build
+pnpm run build
 
 # Amplify Hosting経由でデプロイ（または手動）
 git push origin main
@@ -249,7 +249,7 @@ git push origin main
 ### Lambda関数デプロイ失敗
 1. ログ確認: `/tmp/deploy-day12.log`
 2. CloudFormation スタック確認: AWS Console
-3. ロールバック: `npm run cdk -- deploy Prance-dev-ApiLambda --rollback`
+3. ロールバック: `pnpm run cdk -- deploy Prance-dev-ApiLambda --rollback`
 
 ### E2Eテスト失敗
 1. ブラウザコンソール確認（F12）

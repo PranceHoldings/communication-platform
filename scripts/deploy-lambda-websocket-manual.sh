@@ -60,7 +60,7 @@ echo -e "${MAGENTA}[STEP 1/8]${NC} Prisma Client Generation"
 echo ""
 
 cd "$PROJECT_ROOT"
-npm run db:generate > /dev/null 2>&1
+pnpm run db:generate > /dev/null 2>&1
 
 # Validation
 if [ ! -d "packages/database/node_modules/.prisma/client" ]; then
@@ -84,7 +84,7 @@ echo -e "${MAGENTA}[STEP 2/8]${NC} esbuild Build"
 echo ""
 
 cd "$LAMBDA_DIR"
-npx esbuild index.ts \
+pnpm exec esbuild index.ts \
   --bundle \
   --platform=node \
   --target=es2020 \

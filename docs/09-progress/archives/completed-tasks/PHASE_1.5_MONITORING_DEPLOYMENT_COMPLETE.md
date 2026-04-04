@@ -83,7 +83,7 @@ https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#alarmsV2:
 
 **使用方法:**
 ```bash
-npm run perf:dashboard
+pnpm run perf:dashboard
 ```
 
 **ファイル:** `scripts/create-cloudwatch-alarms.sh`
@@ -95,10 +95,10 @@ npm run perf:dashboard
 **使用方法:**
 ```bash
 # アラームのみ作成
-npm run perf:alarms
+pnpm run perf:alarms
 
 # メール通知付き
-npm run perf:alarms -- --email your@email.com
+pnpm run perf:alarms -- --email your@email.com
 ```
 
 ### 4. パフォーマンステスト修正
@@ -154,7 +154,7 @@ npm run perf:alarms -- --email your@email.com
 scripts/
 ├── performance-test.ts                # パフォーマンステストスクリプト（修正済み）
 ├── collect-metrics.sh                 # CloudWatch メトリクス収集
-├── get-auth-token.sh                  # 認証トークン取得
+├── get-auth-token.js                  # 認証トークン取得
 ├── create-cloudwatch-dashboard.sh     # Dashboard自動作成 🆕
 └── create-cloudwatch-alarms.sh        # Alarms自動作成 🆕
 
@@ -241,19 +241,19 @@ docs/
 
 ```bash
 # パフォーマンステスト
-export AUTH_TOKEN=$(./scripts/get-auth-token.sh)
-npm run perf:test              # 単一セッション
-npm run perf:load              # 10並行負荷テスト
-npm run perf:test -- --verbose # 詳細ログ
+export AUTH_TOKEN=$(./scripts/get-auth-token.js)
+pnpm run perf:test              # 単一セッション
+pnpm run perf:load              # 10並行負荷テスト
+pnpm run perf:test -- --verbose # 詳細ログ
 
 # CloudWatch メトリクス確認
-npm run perf:metrics           # 過去1時間
-npm run perf:metrics -- --hours 24  # 過去24時間
+pnpm run perf:metrics           # 過去1時間
+pnpm run perf:metrics -- --hours 24  # 過去24時間
 
 # Monitoring作成（初回のみ）
-npm run perf:dashboard         # Dashboard作成
-npm run perf:alarms            # Alarms作成
-npm run perf:alarms -- --email user@example.com  # メール通知付き
+pnpm run perf:dashboard         # Dashboard作成
+pnpm run perf:alarms            # Alarms作成
+pnpm run perf:alarms -- --email user@example.com  # メール通知付き
 ```
 
 ---
@@ -283,8 +283,8 @@ aws cloudwatch delete-alarms --alarm-names \
   dev-websocket-throttles
 
 # 再作成
-npm run perf:dashboard
-npm run perf:alarms
+pnpm run perf:dashboard
+pnpm run perf:alarms
 ```
 
 ---

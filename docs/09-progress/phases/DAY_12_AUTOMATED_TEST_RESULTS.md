@@ -268,11 +268,11 @@ aws secretsmanager list-secrets --query "SecretList[?Name.contains(@, 'database'
 ```bash
 # jest.config.js作成
 cd infrastructure
-npm install --save-dev jest ts-jest @types/jest
-npx ts-jest config:init
+pnpm install --save-dev jest ts-jest @types/jest
+pnpm exec ts-jest config:init
 
 # テスト再実行
-npm test
+pnpm test
 ```
 
 **期待結果:**

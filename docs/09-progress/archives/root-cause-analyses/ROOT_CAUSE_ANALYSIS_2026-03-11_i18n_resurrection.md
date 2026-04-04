@@ -18,7 +18,7 @@ Type error: Cannot find module 'next-intl/server' or its corresponding type decl
 ```
 
 ### 発見経緯
-- `npm run build:clean` 実行時に `apps/web/` のビルドが失敗
+- `pnpm run build:clean` 実行時に `apps/web/` のビルドが失敗
 - `apps/web/i18n/request.ts` が存在していた
 - **このディレクトリは過去に削除されたはずだった**
 
@@ -135,14 +135,14 @@ infrastructure/*.broken-*
 {
   "scripts": {
     "i18n:validate": "bash scripts/validate-i18n-system.sh",
-    "pre-commit": "npm run i18n:validate && npm run consistency:validate && npm run lint && npm run typecheck"
+    "pre-commit": "pnpm run i18n:validate && pnpm run consistency:validate && pnpm run lint && pnpm run typecheck"
   }
 }
 ```
 
 **効果:**
-- ✅ `npm run pre-commit` で自動実行
-- ✅ 単体でも実行可能 (`npm run i18n:validate`)
+- ✅ `pnpm run pre-commit` で自動実行
+- ✅ 単体でも実行可能 (`pnpm run i18n:validate`)
 
 ### 4. ドキュメント化（知識共有）
 
@@ -248,21 +248,21 @@ apps/web/i18n/
 
 3. **検証スクリプト実行:**
    ```bash
-   npm run i18n:validate
+   pnpm run i18n:validate
    # 期待: FAILEDと表示され、削除を促す
    ```
 
 4. **削除後の確認:**
    ```bash
    rm -rf apps/web/i18n
-   npm run i18n:validate
+   pnpm run i18n:validate
    # 期待: ✅ i18n system validation passed
    ```
 
 ### 実行結果
 
 ```bash
-$ npm run i18n:validate
+$ pnpm run i18n:validate
 
 > prance-communication-platform@0.1.0-alpha i18n:validate
 > bash scripts/validate-i18n-system.sh

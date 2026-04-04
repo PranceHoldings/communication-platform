@@ -22,17 +22,17 @@ Please verify your changes follow our design principles:
 ### 1. Dependency Management
 - [ ] **No new heavy dependencies** - New dependencies have <10 direct dependencies
 - [ ] **Self-implementation considered** - Evaluated if feature could be implemented in <100 lines
-- [ ] **Validated dependency size** - Ran `npm run validate:deps-size` ✅
+- [ ] **Validated dependency size** - Ran `pnpm run validate:deps-size` ✅
 
 ### 2. Monorepo Boundaries
 - [ ] **No cross-domain imports** - Frontend doesn't import backend, and vice versa
 - [ ] **Shared types only in packages/shared** - No runtime logic in shared package
-- [ ] **Validated boundaries** - Ran `npm run validate:monorepo` ✅
+- [ ] **Validated boundaries** - Ran `pnpm run validate:monorepo` ✅
 
 ### 3. Test Implementation
 - [ ] **Implementation verified** - Read actual implementation before writing tests
 - [ ] **No assumptions** - Verified routes, endpoints, and field names exist
-- [ ] **Validated tests** - Ran `npm run validate:tests` ✅
+- [ ] **Validated tests** - Ran `pnpm run validate:tests` ✅
 
 ### 4. Automation
 - [ ] **Repetitive tasks automated** - Created scripts for tasks repeated ≥2 times
@@ -43,7 +43,7 @@ Please verify your changes follow our design principles:
 **Run all design principle validations:**
 
 ```bash
-npm run validate:design-principles
+pnpm run validate:design-principles
 ```
 
 **Results:**
@@ -55,16 +55,16 @@ npm run validate:design-principles
 
 ## Test Results
 
-- [ ] **Build successful** - `npm run build` passes
-- [ ] **All tests pass** - `npm run test` passes
-- [ ] **No lint errors** - `npm run lint` passes
-- [ ] **Type check passes** - `npm run typecheck` passes
-- [ ] **Pre-commit hooks pass** - `npm run pre-commit` passes
+- [ ] **Build successful** - `pnpm run build` passes
+- [ ] **All tests pass** - `pnpm run test` passes
+- [ ] **No lint errors** - `pnpm run lint` passes
+- [ ] **Type check passes** - `pnpm run typecheck` passes
+- [ ] **Pre-commit hooks pass** - `pnpm run pre-commit` passes
 
 ## Schema Changes (if applicable)
 
 - [ ] **Prisma schema updated** - Modified `packages/database/prisma/schema.prisma`
-- [ ] **Migration created** - Ran `npx prisma migrate dev`
+- [ ] **Migration created** - Ran `pnpm exec prisma migrate dev`
 - [ ] **Types updated** - Updated `packages/shared/src/types/index.ts`
 - [ ] **Validated schema-first** - Ran `bash scripts/validate-schema-interface-implementation.sh`
 
@@ -73,7 +73,7 @@ npm run validate:design-principles
 - [ ] **Added to .env.local** - New environment variables added
 - [ ] **Not hardcoded** - No hardcoded values in code
 - [ ] **env-validator updated** - Added getter functions if needed
-- [ ] **Validated consistency** - Ran `npm run env:consistency`
+- [ ] **Validated consistency** - Ran `pnpm run env:consistency`
 
 ## Deployment Checklist (if applicable)
 

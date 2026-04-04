@@ -255,8 +255,8 @@ aws lambda get-function-configuration \
 ```bash
 # Prisma Clientを直接使用して確認（要データベース接続）
 cd packages/database
-npx prisma db pull  # スキーマをデータベースから取得
-npx prisma migrate status  # マイグレーション状況確認
+pnpm exec prisma db pull  # スキーマをデータベースから取得
+pnpm exec prisma migrate status  # マイグレーション状況確認
 ```
 
 **代替方法（Lambda経由）:**
@@ -269,7 +269,7 @@ cat /tmp/migration-result.json
 
 **対応:**
 - [ ] マイグレーション適用状況を確認
-- [ ] 未適用の場合、`npx prisma migrate deploy` を実行
+- [ ] 未適用の場合、`pnpm exec prisma migrate deploy` を実行
 
 ---
 
@@ -544,10 +544,10 @@ initialGreetingCompleted: true  // ✅ (初回挨拶完了後)
 cd packages/database
 
 # マイグレーション状況確認
-npx prisma migrate status
+pnpm exec prisma migrate status
 
 # 未適用のマイグレーションがある場合
-npx prisma migrate deploy
+pnpm exec prisma migrate deploy
 ```
 
 **期待結果:**
@@ -630,7 +630,7 @@ enabled: status === 'ACTIVE' && initialGreetingCompleted && effectiveEnableSilen
 1. ブラウザコンソールでWebSocketエラーを確認
 2. Lambda関数を再デプロイ:
    ```bash
-   npm run deploy:websocket
+   pnpm run deploy:websocket
    ```
 3. CloudWatch Logsでエラーを確認
 

@@ -298,14 +298,14 @@ describe('cleanupChunks', () => {
 ```bash
 # 1. 単体テスト
 cd infrastructure/lambda/shared
-npm run test -- chunk-utils
+pnpm run test -- chunk-utils
 
 # 2. TypeScriptコンパイル
-npm run build
+pnpm run build
 
 # 3. Lambda デプロイ
 cd ../../
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # 4. 動作確認
 aws logs tail /aws/lambda/prance-websocket-default-dev --since 5m --follow
@@ -385,11 +385,11 @@ interface ConnectionData {
 ```bash
 # 1. TypeScriptコンパイル（エラーチェック）
 cd infrastructure/lambda/websocket/default
-npm run build
+pnpm run build
 
 # 2. Lambda デプロイ
 cd ../../
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # 3. E2Eテスト
 # セッション開始 → 発話 → speech_end → AI応答 → session_end → 完了
@@ -596,7 +596,7 @@ git revert <commit-hash>
 git push origin main
 
 # Redeploy previous version
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 **Phase B失敗時:**

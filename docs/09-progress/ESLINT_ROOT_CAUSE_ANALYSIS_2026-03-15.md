@@ -268,9 +268,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run typecheck
 ```
 
 #### 2.2 Pre-deployチェック強化
@@ -279,10 +279,10 @@ jobs:
 # scripts/pre-deploy-check.sh（既存）
 # 以下を追加:
 echo "Running lint check..."
-npm run lint || exit 1
+pnpm run lint || exit 1
 
 echo "Running type check..."
-npm run typecheck || exit 1
+pnpm run typecheck || exit 1
 ```
 
 #### 2.3 VSCode設定追加
@@ -305,9 +305,9 @@ npm run typecheck || exit 1
 ```markdown
 # 必須チェックリスト（コミット前）
 
-1. [ ] `npm run lint` → 0エラー
-2. [ ] `npm run typecheck` → 0エラー
-3. [ ] `npm run test` → 全パス
+1. [ ] `pnpm run lint` → 0エラー
+2. [ ] `pnpm run typecheck` → 0エラー
+3. [ ] `pnpm run test` → 全パス
 4. [ ] Pre-commit hook有効化確認
 ```
 

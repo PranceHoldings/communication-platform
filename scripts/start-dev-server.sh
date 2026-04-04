@@ -14,7 +14,7 @@
 #
 # Usage:
 #   bash scripts/start-dev-server.sh
-#   npm run dev:start  # via package.json
+#   pnpm run dev:start  # via package.json
 #
 # Exit codes:
 #   0 - Server started successfully and responding
@@ -65,7 +65,7 @@ cd "$APP_DIR"
 > "$LOG_FILE"
 
 # Start server in background
-PORT=${PORT} npm run dev > "$LOG_FILE" 2>&1 &
+PORT=${PORT} pnpm run dev > "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 
 echo -e "${GREEN}✓ Server process started (PID: ${SERVER_PID})${NC}"

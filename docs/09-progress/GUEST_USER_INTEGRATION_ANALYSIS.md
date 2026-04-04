@@ -555,7 +555,7 @@ infrastructure/lambda/shared/
 2. **マイグレーション生成:**
    ```bash
    cd packages/database
-   npx prisma migrate dev --name add_guest_sessions
+   pnpm exec prisma migrate dev --name add_guest_sessions
    ```
 
 3. **マイグレーション実行・検証:**

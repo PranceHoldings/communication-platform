@@ -122,7 +122,7 @@ aws lambda get-function-configuration \
 
 ```bash
 # デプロイ前チェック（7項目）
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 
 # ✅ CHECK 1/7: 環境変数検証
 # ✅ CHECK 2/7: Lambda依存関係
@@ -154,7 +154,7 @@ const websocketDefaultFunction = new nodejs.NodejsFunction(this, 'WebSocketDefau
 **デプロイ:**
 ```bash
 cd infrastructure
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ---
@@ -298,8 +298,8 @@ Audio URL: https:///sessions/.../audio.mp3  ← ドメイン欠如
 - [ ] ローカル環境変数検証: `bash scripts/validate-env.sh`
 - [ ] Lambda環境変数検証: `bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev`
 - [ ] CLOUDFRONT_DOMAINが設定されているか確認
-- [ ] デプロイ前全検証: `npm run lambda:predeploy`
-- [ ] CDKデプロイ: `cd infrastructure && npx cdk deploy Prance-dev-ApiLambda`
+- [ ] デプロイ前全検証: `pnpm run lambda:predeploy`
+- [ ] CDKデプロイ: `cd infrastructure && pnpm exec cdk deploy Prance-dev-ApiLambda`
 - [ ] デプロイ後テスト: `bash scripts/post-deploy-lambda-test.sh prance-websocket-default-dev`
 - [ ] ブラウザで音声再生確認
 

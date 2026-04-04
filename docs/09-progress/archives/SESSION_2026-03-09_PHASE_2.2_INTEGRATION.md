@@ -198,7 +198,7 @@ export const handler = async (event: any) => {
 - @prisma/client
 
 **build.sh:**
-- npm install --production
+- pnpm install --production
 - Prisma Client コピー
 
 #### 2. GET /sessions/:id/analysis - 解析結果取得
@@ -468,10 +468,10 @@ cp infrastructure/lib/api-lambda-stack.ts.backup2 infrastructure/lib/api-lambda-
 cd infrastructure
 
 # TypeScriptビルド確認
-npm run build
+pnpm run build
 
 # CDKデプロイ
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # 所要時間: 約20-30分
 ```

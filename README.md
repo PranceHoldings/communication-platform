@@ -84,7 +84,7 @@ localhost:3000 (Next.js) → AWS Lambda API → AWS RDS Aurora
 
 ```bash
 # 1. 依存関係インストール
-npm install
+pnpm install
 
 # 2. 環境変数設定
 cp .env.example .env.local
@@ -92,12 +92,12 @@ cp .env.example .env.local
 
 # 3. AWS CDKデプロイ（初回のみ）
 cd infrastructure
-npx cdk bootstrap
-npm run deploy
+pnpm exec cdk bootstrap
+pnpm run deploy
 
 # 4. ローカル開発サーバー起動
 cd ../apps/web
-npm run dev
+pnpm run dev
 # → http://localhost:3000
 ```
 
@@ -142,19 +142,19 @@ prance-communication-platform/
 
 ```bash
 cd infrastructure
-npm run cdk -- deploy --all --require-approval never
+pnpm run cdk -- deploy --all --require-approval never
 ```
 
 ### ステージング環境
 
 ```bash
-npm run deploy:staging
+pnpm run deploy:staging
 ```
 
 ### プロダクション環境
 
 ```bash
-npm run deploy:production
+pnpm run deploy:production
 ```
 
 詳細は [デプロイメントガイド](docs/08-operations/DEPLOYMENT.md) を参照してください。
@@ -268,12 +268,12 @@ git checkout -b feature/realtime-conversation
 # → 各機能は独立したモジュールとして実装
 
 # テスト実行
-npm test
+pnpm test
 
 # コミット前チェック（CODING_RULES.md参照）
-npm run lint
-npm run typecheck
-npm run consistency:check
+pnpm run lint
+pnpm run typecheck
+pnpm run consistency:check
 
 # コミット
 git add .

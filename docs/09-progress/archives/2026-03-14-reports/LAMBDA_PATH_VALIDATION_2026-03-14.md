@@ -288,9 +288,9 @@ bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev
 
 **File:** `docs/07-development/LAMBDA_DEPLOY_CHECKLIST.md`
 
-- [ ] Run `npm run db:generate` (Prisma Client)
-- [ ] Run `npm run build` (TypeScript compilation)
-- [ ] Run `npx cdk synth` (CDK validation)
+- [ ] Run `pnpm run db:generate` (Prisma Client)
+- [ ] Run `pnpm run build` (TypeScript compilation)
+- [ ] Run `pnpm exec cdk synth` (CDK validation)
 - [ ] Check bundling paths use `${inputDir}`, not `/asset-input`
 - [ ] Verify shared modules are copied
 - [ ] Test Lambda function invocation after deploy
@@ -301,7 +301,7 @@ bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev
 
 ```bash
 # Post-deployment smoke tests
-npm run test:lambda:smoke
+pnpm run test:lambda:smoke
 
 # Checks:
 1. Invoke each Lambda function

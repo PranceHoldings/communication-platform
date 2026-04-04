@@ -138,11 +138,11 @@ Lambda: セッション終了処理
 ```bash
 # Step 1: Prisma Client再生成
 cd /workspaces/prance-communication-platform/packages/database
-npx prisma generate
+pnpm exec prisma generate
 
 # Step 2: Lambda関数デプロイ（マイグレーション適用）
 cd ../../infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # Step 3: データベースマイグレーション実行
 aws lambda invoke --function-name prance-db-migration-dev \

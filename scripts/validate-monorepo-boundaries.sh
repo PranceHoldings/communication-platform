@@ -4,7 +4,7 @@
 #
 # Purpose: Enforce strict boundaries between monorepo workspaces
 # When to run: Pre-commit hook, PR checks, manual review
-# How to run: npm run validate:monorepo
+# How to run: pnpm run validate:monorepo
 #
 
 set -e

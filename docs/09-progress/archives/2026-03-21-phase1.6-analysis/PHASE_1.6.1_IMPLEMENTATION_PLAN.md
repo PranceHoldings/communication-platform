@@ -992,7 +992,7 @@ for i in $(seq 1 $TOTAL_SESSIONS); do
   echo "Testing session $i/$TOTAL_SESSIONS..."
 
   # セッション実行
-  SESSION_ID=$(npx playwright test phase1.6.1-recording-reliability.spec.ts --grep "should handle chunk transmission" | grep "Session ID" | awk '{print $3}')
+  SESSION_ID=$(pnpm exec playwright test phase1.6.1-recording-reliability.spec.ts --grep "should handle chunk transmission" | grep "Session ID" | awk '{print $3}')
 
   # データベース確認
   RESULT=$(psql $DATABASE_URL -t -c "SELECT status, metadata FROM sessions WHERE id = '$SESSION_ID'")

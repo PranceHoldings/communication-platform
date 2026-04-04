@@ -237,8 +237,8 @@ bash scripts/db-query.sh "SELECT id, email, role FROM users LIMIT 5"
 ```bash
 # CDKで全スタックをデプロイ
 cd infrastructure
-npx cdk deploy Prance-dev-Storage --require-approval never  # S3バケット
-npx cdk deploy Prance-dev-ApiLambda --require-approval never  # Lambda関数
+pnpm exec cdk deploy Prance-dev-Storage --require-approval never  # S3バケット
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never  # Lambda関数
 ```
 
 ### Lambda関数のみ更新
@@ -246,7 +246,7 @@ npx cdk deploy Prance-dev-ApiLambda --require-approval never  # Lambda関数
 ```bash
 # Lambda関数コード変更後
 cd infrastructure
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ---
@@ -261,7 +261,7 @@ aws lambda get-function --function-name prance-db-query-dev
 
 # デプロイされていない場合
 cd infrastructure
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### エラー: "Bucket not found"
@@ -272,7 +272,7 @@ aws s3 ls | grep prance-db-queries
 
 # 存在しない場合
 cd infrastructure
-npx cdk deploy Prance-dev-Storage --require-approval never
+pnpm exec cdk deploy Prance-dev-Storage --require-approval never
 ```
 
 ### エラー: "Can't reach database server"

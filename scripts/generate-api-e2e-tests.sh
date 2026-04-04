@@ -201,5 +201,5 @@ EOF
 echo -e "${GREEN}✅ Test file generated: $OUTPUT_DIR/api-response-structure.spec.ts${NC}"
 echo ""
 echo "Run tests:"
-echo "  npm run test:e2e -- api-validation/"
+echo "  pnpm run test:e2e -- api-validation/"
 echo ""

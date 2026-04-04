@@ -13,7 +13,7 @@
 **問題:** クリーンビルド後に依存関係エラーが発生
 
 ```bash
-npm run build
+pnpm run build
 # Module not found: Can't resolve '@dnd-kit/core'
 # Module not found: Can't resolve '@dnd-kit/sortable'
 # Module not found: Can't resolve '@dnd-kit/utilities'
@@ -104,7 +104,7 @@ npm run build
 
 **実行例:**
 ```bash
-npm run validate:workspace-deps
+pnpm run validate:workspace-deps
 
 # 出力:
 # ✅ All packages used in apps/web are properly declared
@@ -118,7 +118,7 @@ npm run validate:workspace-deps
 ```json
 {
   "scripts": {
-    "pre-commit": "npm run i18n:validate && npm run lambda:validate && npm run lint && npm run typecheck"
+    "pre-commit": "pnpm run i18n:validate && pnpm run lambda:validate && pnpm run lint && pnpm run typecheck"
   }
 }
 ```
@@ -128,7 +128,7 @@ npm run validate:workspace-deps
 {
   "scripts": {
     "validate:workspace-deps": "bash scripts/validate-workspace-dependencies.sh",
-    "pre-commit": "npm run validate:workspace-deps && npm run i18n:validate && npm run lambda:validate && npm run lint && npm run typecheck"
+    "pre-commit": "pnpm run validate:workspace-deps && pnpm run i18n:validate && pnpm run lambda:validate && pnpm run lint && pnpm run typecheck"
   }
 }
 ```
@@ -141,7 +141,7 @@ npm run validate:workspace-deps
 
 ### 修正前
 ```bash
-npm run build
+pnpm run build
 # ❌ Module not found: Can't resolve '@dnd-kit/core'
 # ❌ Module not found: Can't resolve '@dnd-kit/sortable'
 # ❌ Module not found: Can't resolve '@dnd-kit/utilities'
@@ -150,7 +150,7 @@ npm run build
 
 ### 修正後
 ```bash
-npm run validate:workspace-deps
+pnpm run validate:workspace-deps
 # ✅ All packages used in apps/web are properly declared
 # ⚠️  Found 2 warning(s)
 #    - @prisma/client (root + infrastructure) ← 許容される重複
@@ -281,9 +281,9 @@ npm run validate:workspace-deps
 
 ### スクリプト
 ```bash
-npm run validate:workspace-deps  # 依存関係検証
-npm run build:clean              # クリーンビルド
-npm run pre-commit               # コミット前チェック
+pnpm run validate:workspace-deps  # 依存関係検証
+pnpm run build:clean              # クリーンビルド
+pnpm run pre-commit               # コミット前チェック
 ```
 
 ### 関連Issue

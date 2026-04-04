@@ -72,7 +72,7 @@ fi
 echo -e "${BLUE}[3/$TOTAL_CHECKS]${NC} Compiling shared packages..."
 
 cd packages/shared
-if npm run build > /tmp/shared-build.log 2>&1; then
+if pnpm run build > /tmp/shared-build.log 2>&1; then
   echo -e "${GREEN}  ✓ Shared packages compiled successfully${NC}"
   ((PASSED_CHECKS++))
 else
@@ -88,7 +88,7 @@ cd ../..
 echo -e "${BLUE}[4/$TOTAL_CHECKS]${NC} Compiling Frontend..."
 
 cd apps/web
-if npm run build > /tmp/web-build.log 2>&1; then
+if pnpm run build > /tmp/web-build.log 2>&1; then
   echo -e "${GREEN}  ✓ Frontend compiled successfully${NC}"
   ((PASSED_CHECKS++))
 else
@@ -104,7 +104,7 @@ cd ../..
 echo -e "${BLUE}[5/$TOTAL_CHECKS]${NC} Compiling Lambda functions..."
 
 cd infrastructure
-if npm run build > /tmp/lambda-build.log 2>&1; then
+if pnpm run build > /tmp/lambda-build.log 2>&1; then
   echo -e "${GREEN}  ✓ Lambda functions compiled successfully${NC}"
   ((PASSED_CHECKS++))
 else

@@ -32,7 +32,7 @@
 
 ```bash
 # コミット前の全検証
-npm run pre-commit
+pnpm run pre-commit
 
 # 個別検証
 bash scripts/validate-env.sh
@@ -105,7 +105,7 @@ bash scripts/validate-env.sh
 
 ```bash
 cd infrastructure
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 
 # または直接
 bash scripts/validate-lambda-dependencies.sh prance-scenarios-get-dev
@@ -122,7 +122,7 @@ bash scripts/validate-lambda-dependencies.sh prance-scenarios-get-dev
 
 ```bash
 # 依存関係破損時の修復
-npm run lambda:fix
+pnpm run lambda:fix
 ```
 
 #### validate-language-sync.sh
@@ -132,7 +132,7 @@ npm run lambda:fix
 **実行:**
 
 ```bash
-npm run validate:languages
+pnpm run validate:languages
 
 # または直接
 bash scripts/validate-language-sync.sh
@@ -159,10 +159,10 @@ bash scripts/validate-language-sync.sh
 **実行:**
 
 ```bash
-npm run validate:ui-settings
+pnpm run validate:ui-settings
 
 # 特定フィールドのみ検証
-npm run validate:ui-settings -- --field silencePromptTimeout
+pnpm run validate:ui-settings -- --field silencePromptTimeout
 ```
 
 **検証項目:**
@@ -400,7 +400,7 @@ Directories failed:    0
 ✅ All space-containing items cleaned successfully
 ```
 
-#### clean-space-directories.sh
+#### clean-space-files-and-dirs.sh
 
 **用途:** ディレクトリ名に空白を含むディレクトリを削除（ディレクトリのみ）
 
@@ -412,7 +412,7 @@ Directories failed:    0
 **実行:**
 
 ```bash
-bash scripts/clean-space-directories.sh
+bash scripts/clean-space-files-and-dirs.sh
 ```
 
 **⚠️ 注意:**

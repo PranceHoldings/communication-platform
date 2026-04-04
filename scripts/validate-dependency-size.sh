@@ -4,7 +4,7 @@
 #
 # Purpose: Validate that new dependencies are lightweight and justified
 # When to run: Before adding dependencies, pre-commit hook, PR checks
-# How to run: npm run validate:deps-size
+# How to run: pnpm run validate:deps-size
 #
 
 set -e
@@ -69,7 +69,7 @@ count_dependencies() {
   if [ "$DIRECT_COUNT" -gt "$MAX_DIRECT_DEPS" ]; then
     echo "❌ Direct dependencies ($DIRECT_COUNT) exceed limit ($MAX_DIRECT_DEPS)"
     echo "   Consider:"
-    echo "   - Removing unused dependencies: npx depcheck"
+    echo "   - Removing unused dependencies: pnpm exec depcheck"
     echo "   - Using lighter alternatives"
     echo "   - Self-implementing small utilities"
     ERRORS=$((ERRORS + 1))
@@ -94,11 +94,11 @@ count_dependencies() {
       fi
 
       # Get dependency info
-      DEP_INFO=$(npm info "$DEP" --json 2>/dev/null || echo "{}")
+      DEP_INFO=$(pnpm info "$DEP" --json 2>/dev/null || echo "{}")
 
       # Count transitive dependencies (this is approximate)
-      # We use npm ls which shows the full tree
-      TRANSITIVE_COUNT=$(npm ls "$DEP" --depth=5 2>/dev/null | grep -c "─" || echo "0")
+      # We use pnpm list which shows the full tree
+      TRANSITIVE_COUNT=$(pnpm list "$DEP" --depth=5 2>/dev/null | grep -c "─" || echo "0")
 
       # Get package size
       UNPACKED_SIZE=$(echo "$DEP_INFO" | jq -r '.dist.unpackedSize // 0' 2>/dev/null)
@@ -186,7 +186,7 @@ else
   echo "❌ $ERRORS validation error(s) detected"
   echo ""
   echo "Fix guide:"
-  echo "1. Remove heavy dependencies: npm uninstall <package>"
+  echo "1. Remove heavy dependencies: pnpm remove <package>"
   echo "2. Find lighter alternatives: https://npmtrends.com"
   echo "3. Self-implement small utilities"
   echo "4. Use tree-shakeable versions (e.g., lodash-es)"

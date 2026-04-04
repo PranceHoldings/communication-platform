@@ -36,12 +36,12 @@
 # Webpackキャッシュクリア + 開発サーバー再起動
 ps aux | grep "next dev" | awk '{print $2}' | xargs kill
 rm -rf apps/web/.next
-npm run dev
+pnpm run dev
 
 # 20秒待機後、各Stage実行
-npx playwright test tests/e2e/stage2-mocked-integration.spec.ts --workers=3
-npx playwright test tests/e2e/stage3-full-e2e.spec.ts --workers=3
-npx playwright test tests/e2e/stage5-analysis-report.spec.ts --workers=3
+pnpm exec playwright test tests/e2e/stage2-mocked-integration.spec.ts --workers=3
+pnpm exec playwright test tests/e2e/stage3-full-e2e.spec.ts --workers=3
+pnpm exec playwright test tests/e2e/stage5-analysis-report.spec.ts --workers=3
 ```
 
 **問題:**
@@ -236,7 +236,7 @@ aws logs tail /aws/lambda/prance-websocket-default-dev --follow
 
 **4. 手動テスト（ブラウザで確認）**
 ```bash
-npm run dev
+pnpm run dev
 # http://localhost:3000 でセッション開始を試行
 # ブラウザコンソールでエラー確認
 ```

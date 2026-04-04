@@ -289,14 +289,14 @@ packages/database/prisma/schema.prisma
 
 # 2. Regenerated Prisma Client
 cd packages/database
-npx prisma generate
+pnpm exec prisma generate
 
 # 3. Updated CDK stack configuration
 infrastructure/lib/api-lambda-stack.ts
 
 # 4. Deployed Lambda functions
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # 5. Executed database migration
 aws lambda invoke --function-name prance-db-migration-dev \
