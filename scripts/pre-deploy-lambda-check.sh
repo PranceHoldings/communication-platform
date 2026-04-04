@@ -5,29 +5,20 @@
 # Prevents 500 errors in production
 #
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-MAGENTA='\033[0;35m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Get project root
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$PROJECT_ROOT" ]; then
-  echo -e "${RED}Error: Not in a git repository${NC}"
+  log_error "Not in a git repository"
   exit 1
 fi
 
 cd "$PROJECT_ROOT" || exit 1
 
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Pre-Deploy Lambda Validation${NC}"
-echo -e "${BLUE}============================================${NC}"
-echo ""
+log_section "Pre-Deploy Lambda Validation"
 
 TOTAL_CHECKS=0
 FAILED_CHECKS=0
@@ -36,7 +27,7 @@ FAILED_CHECKS=0
 # Check 0: Space-Containing Directories (CRITICAL)
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 0/7]${NC} 空白文字を含むディレクトリの検証"
+log_info "[CHECK 0/7] 空白文字を含むディレクトリの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -f "scripts/clean-space-files-and-dirs.sh" ]; then
@@ -55,7 +46,7 @@ fi
 # Check 1: Environment Variables
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 1/7]${NC} 環境変数の検証"
+log_info "[CHECK 1/7] 環境変数の検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -f "scripts/validate-env.sh" ]; then
@@ -73,7 +64,7 @@ fi
 # Check 2: Lambda Dependencies
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 2/7]${NC} Lambda依存関係の検証"
+log_info "[CHECK 2/7] Lambda依存関係の検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -f "scripts/validate-lambda-dependencies.sh" ]; then
@@ -93,7 +84,7 @@ fi
 # Check 3: i18n System
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 3/7]${NC} i18nシステムの検証"
+log_info "[CHECK 3/7] i18nシステムの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -f "scripts/validate-i18n-system.sh" ]; then
@@ -111,7 +102,7 @@ fi
 # Check 4: TypeScript Build
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 4/7]${NC} TypeScriptビルドの検証"
+log_info "[CHECK 4/7] TypeScriptビルドの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -d "infrastructure/lib" ]; then
@@ -132,7 +123,7 @@ fi
 # Check 5: Prisma Client
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 5/7]${NC} Prisma Clientの検証"
+log_info "[CHECK 5/7] Prisma Clientの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 if [ -d "packages/database/node_modules/.prisma/client" ]; then
@@ -147,7 +138,7 @@ fi
 # Check 6: CDK Synthesize
 # =============================================================================
 
-echo -e "${MAGENTA}[CHECK 6/7]${NC} CDK Synthesizeの検証"
+log_info "[CHECK 6/7] CDK Synthesizeの検証"
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
 cd infrastructure
@@ -161,29 +152,46 @@ fi
 cd ..
 
 # =============================================================================
+# Check 7: Manual Zip Files (CRITICAL)
+# =============================================================================
+
+log_info "[CHECK 7/7] 手動zipファイルの検証"
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+if [ -f "scripts/validate-deployment-method.sh" ]; then
+  if bash scripts/validate-deployment-method.sh > /dev/null 2>&1; then
+    echo -e "  ${GREEN}✓${NC} デプロイ方法: OK"
+  else
+    echo -e "  ${RED}✗${NC} デプロイ方法: FAILED"
+    echo -e "  ${YELLOW}→ Remove manual zip files before deploying${NC}"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+  fi
+else
+  echo -e "  ${YELLOW}⚠${NC} 検証スクリプトなし（スキップ）"
+fi
+
+# =============================================================================
 # Summary
 # =============================================================================
 
 echo ""
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Validation Summary${NC}"
-echo -e "${BLUE}============================================${NC}"
+log_section "Validation Summary"
 echo ""
 echo -e "Total checks: ${TOTAL_CHECKS}"
 echo -e "Failed: ${FAILED_CHECKS}"
 echo ""
 
 if [ "$FAILED_CHECKS" -eq 0 ]; then
-  echo -e "${GREEN}✅ All pre-deploy checks passed${NC}"
+  log_success "All pre-deploy checks passed"
   echo ""
-  echo -e "${BLUE}Ready to deploy:${NC}"
+  log_info "Ready to deploy:"
   echo -e "  ${GREEN}cd infrastructure && pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never${NC}"
   echo ""
   exit 0
 else
-  echo -e "${RED}❌ Pre-deploy checks FAILED${NC}"
+  log_error "Pre-deploy checks FAILED"
   echo ""
-  echo -e "${YELLOW}Fix the issues above before deploying${NC}"
+  log_warning "Fix the issues above before deploying"
   echo ""
   exit 1
 fi
