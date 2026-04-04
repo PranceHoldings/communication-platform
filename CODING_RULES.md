@@ -1376,11 +1376,11 @@ pnpm install moment  # ❌ 非推奨、date-fnsまたは native Intl を使用
 
 ```bash
 # Step 1: 依存関係ツリーを確認
-npm info <package> dependencies
-npm info <package> peerDependencies
+pnpm info <package> dependencies
+pnpm info <package> peerDependencies
 
 # Step 2: サイズを確認
-npm info <package> dist.unpackedSize
+pnpm info <package> dist.unpackedSize
 
 # Step 3: 自己実装を検討（100行以内なら自己実装）
 cat > packages/shared/src/utils/array.ts <<EOF

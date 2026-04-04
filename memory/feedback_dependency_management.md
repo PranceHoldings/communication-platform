@@ -84,7 +84,7 @@ pnpm run validate:deps-size
 ### Manual Review
 ```bash
 # Check dependency tree before installing
-npm info <package> dependencies
+pnpm info <package> dependencies
 
 # Count direct + transitive dependencies
 pnpm list <package> --depth=5 | grep -c "─"
@@ -161,7 +161,7 @@ for file in $(git diff --name-only HEAD | grep package.json); do
   
   for dep in $ADDED; do
     # Get dependency count
-    DIRECT=$(npm info $dep dependencies | grep -c ":")
+    DIRECT=$(pnpm info $dep dependencies | grep -c ":")
     TRANSITIVE=$(pnpm list $dep --depth=5 2>/dev/null | grep -c "─")
     
     if [ $DIRECT -gt 20 ] || [ $TRANSITIVE -gt 100 ]; then

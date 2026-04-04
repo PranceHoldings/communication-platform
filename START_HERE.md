@@ -189,7 +189,7 @@ pnpm run test:e2e
 ### 過去の達成 (Day 41 - 2026-03-31)
 
 **TypeScript型安全性確立・ビルド修復:**
-- ✅ 壊れた依存関係の完全修復（npm ci実行）
+- ✅ 壊れた依存関係の完全修復（pnpm install --frozen-lockfile実行）
 - ✅ 40以上のTypeScript型エラー修正
 - ✅ caniuse-lite MODULE_NOT_FOUND問題解決
 - ✅ Optional chaining (?.) 追加（10箇所以上）

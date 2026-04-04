@@ -861,7 +861,7 @@ pnpm run validate:all  # すべての検証を自動実行
 
 1. **依存関係追加時:**
    ```bash
-   npm info <package> dependencies  # 依存関係確認
+   pnpm info <package> dependencies  # 依存関係確認
    pnpm run validate:deps-size       # 検証
    ```
 

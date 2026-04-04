@@ -494,7 +494,7 @@ grep -rn "from '<package-name>" apps/web --include="*.ts" --include="*.tsx"
 
 # Step 2: 使用されていないことを確認してから削除
 cd apps/web
-npm uninstall <package-name>
+pnpm remove <package-name>
 
 # Step 3: 検証
 pnpm run validate:workspace-deps

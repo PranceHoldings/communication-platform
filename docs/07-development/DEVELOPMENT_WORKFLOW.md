@@ -78,7 +78,7 @@ claude
 # - [CODING_RULES.md](../../CODING_RULES.md) のチェックリスト確認
 
 # 5. テスト実行
-npm test
+pnpm test
 
 # 6. ドキュメント更新
 # - 必要に応じて CLAUDE.md 更新
@@ -327,7 +327,7 @@ pnpm run dev
 cd apps/web && pnpm run dev
 
 # テスト実行（全体）
-npm test
+pnpm test
 
 # Lint
 pnpm run lint

@@ -104,13 +104,13 @@ Why 3: なぜファイルが削除されずに残っているのか？
 → 複数のプロセスが同時にnode_modulesにアクセスしている
 
 Why 4: なぜ複数のプロセスが同時にアクセスしているのか？
-→ npm installが複数回実行されている
+→ pnpm installが複数回実行されている
 
-Why 5: なぜnpm installが複数回実行されているのか？
-→ npm prepare hookが自動的に実行され、prepare.sh内でnpm ciを呼び出し、
+Why 5: なぜpnpm installが複数回実行されているのか？
+→ pnpm prepare hookが自動的に実行され、prepare.sh内でpnpm install --frozen-lockfileを呼び出し、
    それが再びprepare hookを発動させる（無限ループ）
 
-根本原因: npm prepare hookとnpm ci/installの循環依存
+根本原因: pnpm prepare hookとpnpm install --frozen-lockfile/installの循環依存
 ```
 
 **チェックリスト:**
@@ -141,11 +141,11 @@ mv node_modules node_modules.broken
 
 **✅ 根本解決の例:**
 ```bash
-# npm prepare hookを削除（根本原因を排除）
+# pnpm prepare hookを削除（根本原因を排除）
 # package.json から "prepare" スクリプトを削除
 
 # --ignore-scripts で明示的に制御
-pnpm install --ignore-scripts
+ppnpm install --ignore-scripts
 
 # deploy scriptでビルドステップを明示的に実行
 # prepare.shを廃止し、deploy.sh内で直接実行
@@ -220,13 +220,13 @@ remove_directory_robust() {
 **根本原因分析:**
 ```
 clean-deploy.sh
-  → pnpm install
+  → ppnpm install
     → prepare hook (1回目)
       → prepare.sh
-        → pnpm install --frozen-lockfile
+        → ppnpm install --frozen-lockfile
           → prepare hook (2回目)
             → prepare.sh
-              → pnpm install --frozen-lockfile
+              → ppnpm install --frozen-lockfile
                 → prepare hook (3回目) → ENOTEMPTY
 ```
 
@@ -235,12 +235,12 @@ clean-deploy.sh
 # 1. package.jsonからprepare hookを削除
 - "prepare": "cd infrastructure && ./prepare.sh"
 
-# 2. npm installに--ignore-scriptsフラグを追加
-pnpm install --ignore-scripts
+# 2. pnpm installに--ignore-scriptsフラグを追加
+ppnpm install --ignore-scripts
 
 # 3. ビルドステップを明示的に実行
 cd "$PROJECT_ROOT"
-pnpm install --ignore-scripts
+ppnpm install --ignore-scripts
 cd "$PROJECT_ROOT/packages/database"
 pnpm exec prisma generate
 cd "$PROJECT_ROOT"

@@ -1202,11 +1202,11 @@ export function AIInsights({ benchmark, sessionId }: Props) {
 ```bash
 # 統計ユーティリティテスト
 cd infrastructure/lambda/shared/utils
-npm test -- statistics.test.ts
+pnpm test -- statistics.test.ts
 
 # API統合テスト
 cd apps/web
-npm test -- benchmark.test.ts
+pnpm test -- benchmark.test.ts
 ```
 
 ### 2. E2Eテスト

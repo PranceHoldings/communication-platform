@@ -189,7 +189,7 @@
 - **utils/__tests__/** - ユーティリティテスト（8ファイル、30+テスト）
 - **analysis/__tests__/** - 解析ロジックテスト（audio-analyzer.test.ts）
 - **フレームワーク:** Jest
-- **実行:** `cd infrastructure && npm test`（将来実装予定）
+- **実行:** `cd infrastructure && pnpm test`（将来実装予定）
 
 ### docs/08-operations/ - 運用ガイド
 - **DEPLOYMENT.md** - デプロイメント

@@ -268,7 +268,7 @@ git checkout -b feature/realtime-conversation
 # → 各機能は独立したモジュールとして実装
 
 # テスト実行
-npm test
+pnpm test
 
 # コミット前チェック（CODING_RULES.md参照）
 pnpm run lint

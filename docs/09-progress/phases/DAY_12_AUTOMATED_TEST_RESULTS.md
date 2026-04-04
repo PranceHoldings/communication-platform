@@ -272,7 +272,7 @@ pnpm install --save-dev jest ts-jest @types/jest
 pnpm exec ts-jest config:init
 
 # テスト再実行
-npm test
+pnpm test
 ```
 
 **期待結果:**
