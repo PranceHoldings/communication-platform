@@ -25,11 +25,11 @@ import {
   getOptionalEnv,
   getOptionalEnvAsNumber,
   getEnvironmentName,
+  getRateLimitAttemptWindowMs,
 } from './env-validator';
 import {
   getRateLimitMaxAttempts,
   getRateLimitLockoutDurationMs,
-  getRateLimitAttemptWindowMs,
 } from './runtime-config-loader';
 
 // DynamoDB Client
