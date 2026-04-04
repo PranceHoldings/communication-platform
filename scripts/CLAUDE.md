@@ -923,6 +923,82 @@ scripts/archive/
 
 ---
 
+## 🔧 CI/CD統合
+
+### Pre-commit Hook設定
+
+**共有ライブラリ検証をGit pre-commit hookに統合済み（2026-04-05）**
+
+#### 自動チェック項目（8項目）
+
+```bash
+# Git pre-commit hook が自動実行するチェック
+[0/8] Schema-First Validation
+[1/8] Hardcoded Values
+[2/8] Environment Variables Consistency
+[3/8] Single Source of Truth (.env.local)
+[4/8] Duplication Management
+[5/8] ESLint on staged files
+[6/8] TypeScript Type Check
+[7/8] i18n Translation Keys Sync
+[8/8] Shared Library Usage ← 🆕 2026-04-05追加
+```
+
+#### Hook設定方法
+
+**既に設定済みの場合:**
+```bash
+# シンボリックリンク確認
+ls -la .git/hooks/pre-commit
+# → ../../scripts/git-hooks/pre-commit へのリンク
+```
+
+**新規設定（未設定の場合）:**
+```bash
+# シンボリックリンクを作成
+ln -sf ../../scripts/git-hooks/pre-commit .git/hooks/pre-commit
+
+# または install-git-hooks.sh を実行
+bash scripts/install-git-hooks.sh
+```
+
+**動作確認:**
+```bash
+# スクリプトファイルを変更してコミット
+echo "# test" >> scripts/test.sh
+git add scripts/test.sh
+git commit -m "test"
+
+# 期待される動作:
+# [8/8] Validating shared library usage in scripts...
+# ✅ All scripts use shared library correctly
+```
+
+#### Hook無効化（一時的）
+
+```bash
+# オプション1: --no-verify フラグ
+git commit --no-verify -m "message"
+
+# オプション2: 環境変数
+SKIP_PRECOMMIT=1 git commit -m "message"
+
+# ⚠️ 注意: 通常は無効化しないでください
+# 検証をスキップするとコード品質が低下します
+```
+
+#### Hook更新
+
+```bash
+# Git hookスクリプトを更新した場合
+# シンボリックリンクなので自動的に反映されます
+
+# 確認
+bash .git/hooks/pre-commit
+```
+
+---
+
 ## 📚 関連ドキュメント
 
 - [データベースクエリシステム](../docs/07-development/DATABASE_QUERY_SYSTEM.md)
