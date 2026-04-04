@@ -17,6 +17,7 @@ export BLUE='\033[0;34m'
 export MAGENTA='\033[0;35m'
 export CYAN='\033[0;36m'
 export WHITE='\033[1;37m'
+export BOLD='\033[1m'
 export NC='\033[0m' # No Color
 
 # ==============================================================================

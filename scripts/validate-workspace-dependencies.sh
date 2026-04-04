@@ -1,26 +1,16 @@
 #!/bin/bash
 
-# Validate Workspace Dependencies Script
+# Validate Workspace Dependencies Script (v2 - Shared Library版)
 # Purpose: Detect misplaced dependencies in monorepo workspaces
 # Usage: bash scripts/validate-workspace-dependencies.sh
 
-set -e
-
+# Load shared library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-echo "🔍 Validating Workspace Dependencies..."
-echo ""
-
-ERRORS=0
-WARNINGS=0
-
-# Color codes
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+log_section "Validating Workspace Dependencies"
 
 # Function to check if a package is declared in package.json
 check_package_declared() {
@@ -51,8 +41,7 @@ extract_external_imports() {
         grep -E "^[a-zA-Z@]" || true
 }
 
-echo "📦 Phase 1: Analyzing apps/web dependencies..."
-echo ""
+log_step "Phase 1" "Analyzing apps/web dependencies"
 
 # Find all TypeScript files in apps/web (excluding build artifacts)
 WEB_TS_FILES=$(find "$PROJECT_ROOT/apps/web" -type f \( -name "*.ts" -o -name "*.tsx" \) \
@@ -95,7 +84,7 @@ done
 
 # Report missing packages
 if [ ${#MISSING_IN_WEB[@]} -gt 0 ]; then
-    echo -e "${RED}❌ Found packages used in apps/web but declared in root package.json:${NC}"
+    log_error "Found packages used in apps/web but declared in root package.json:"
     for pkg in "${MISSING_IN_WEB[@]}"; do
         echo "   - $pkg"
         # Find example usage
@@ -103,16 +92,15 @@ if [ ${#MISSING_IN_WEB[@]} -gt 0 ]; then
         if [ ! -z "$example" ]; then
             echo -e "${BLUE}     Example: $example${NC}"
         fi
+        increment_counter ERRORS
     done
     echo ""
-    ERRORS=$((ERRORS + ${#MISSING_IN_WEB[@]}))
 else
-    echo -e "${GREEN}✅ All packages used in apps/web are properly declared${NC}"
+    log_success "All packages used in apps/web are properly declared"
     echo ""
 fi
 
-echo "📦 Phase 2: Checking for duplicate dependencies..."
-echo ""
+log_step "Phase 2" "Checking for duplicate dependencies"
 
 # Check for packages declared in both root and workspaces
 WORKSPACES=("apps/web" "infrastructure" "packages/database" "packages/shared")
@@ -134,23 +122,22 @@ for workspace in "${WORKSPACES[@]}"; do
 done
 
 if [ ${#DUPLICATES[@]} -gt 0 ]; then
-    echo -e "${YELLOW}⚠️  Found duplicate dependencies (declared in both root and workspace):${NC}"
+    log_warning "Found duplicate dependencies (declared in both root and workspace):"
     for dup in "${DUPLICATES[@]}"; do
         echo "   - $dup"
+        increment_counter WARNINGS
     done
     echo ""
-    echo -e "${BLUE}ℹ️  Recommendation:${NC}"
+    log_info "Recommendation:"
     echo "   - If used by workspace, declare ONLY in workspace package.json"
     echo "   - If shared build tool, declare ONLY in root devDependencies"
     echo ""
-    WARNINGS=$((WARNINGS + ${#DUPLICATES[@]}))
 else
-    echo -e "${GREEN}✅ No duplicate dependencies found${NC}"
+    log_success "No duplicate dependencies found"
     echo ""
 fi
 
-echo "📦 Phase 3: Checking infrastructure dependencies..."
-echo ""
+log_step "Phase 3" "Checking infrastructure dependencies"
 
 # Check if infrastructure uses frontend packages
 INFRA_TS_FILES=$(find "$PROJECT_ROOT/infrastructure/lambda" -type f \( -name "*.ts" \) \
@@ -184,35 +171,33 @@ for file in $INFRA_TS_FILES; do
 done
 
 if [ ${#MISPLACED_INFRA[@]} -gt 0 ]; then
-    echo -e "${RED}❌ Found frontend packages imported in infrastructure/lambda:${NC}"
+    log_error "Found frontend packages imported in infrastructure/lambda:"
     for item in "${MISPLACED_INFRA[@]}"; do
         echo "   - $item"
+        increment_counter ERRORS
     done
     echo ""
-    echo -e "${BLUE}ℹ️  Note: 'react' in report/generator.ts is acceptable (used by @react-pdf/renderer)${NC}"
+    log_info "Note: 'react' in report/generator.ts is acceptable (used by @react-pdf/renderer)"
     echo ""
-    ERRORS=$((ERRORS + ${#MISPLACED_INFRA[@]}))
 else
-    echo -e "${GREEN}✅ No misplaced frontend packages found in infrastructure${NC}"
-    echo -e "${BLUE}ℹ️  Note: 'react' in report/generator.ts is acceptable (used by @react-pdf/renderer)${NC}"
+    log_success "No misplaced frontend packages found in infrastructure"
+    log_info "Note: 'react' in report/generator.ts is acceptable (used by @react-pdf/renderer)"
     echo ""
 fi
 
 # Summary
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📊 Validation Summary"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
+log_section "Validation Summary"
+print_counter_summary
 
-if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
+if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
     echo -e "${GREEN}✅ All validations passed!${NC}"
     echo ""
     exit 0
 else
-    if [ $ERRORS -gt 0 ]; then
+    if [ "$ERRORS" -gt 0 ]; then
         echo -e "${RED}❌ Found $ERRORS error(s)${NC}"
     fi
-    if [ $WARNINGS -gt 0 ]; then
+    if [ "$WARNINGS" -gt 0 ]; then
         echo -e "${YELLOW}⚠️  Found $WARNINGS warning(s)${NC}"
     fi
     echo ""

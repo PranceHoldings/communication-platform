@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# UI設定項目とデータベース同期検証スクリプト
+# UI設定項目とデータベース同期検証スクリプト (v2 - Shared Library版)
 #
 # Usage:
 #   bash scripts/validate-ui-settings-sync.sh                    # 全フィールド検証
@@ -10,15 +10,11 @@
 #   0: 全ての検証に合格
 #   1: 検証エラーあり
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
-# Color codes
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Counters
+# Counters (specific to this script)
 TOTAL_CHECKS=0
 PASSED_CHECKS=0
 FAILED_CHECKS=0
@@ -42,10 +38,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo "========================================"
-echo "UI Settings Database Sync Validation"
-echo "========================================"
-echo ""
+log_section "UI Settings Database Sync Validation"
 
 if [ -n "$FIELD_NAME" ]; then
   echo "🔍 Validating field: $FIELD_NAME"
@@ -64,18 +57,18 @@ check_field() {
   TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 
   if [ ! -f "$file" ]; then
-    echo -e "${RED}❌ $description: File not found${NC}"
+    log_error "$description: File not found"
     echo "   File: $file"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
     return 1
   fi
 
   if grep -q "$pattern" "$file"; then
-    echo -e "${GREEN}✅ $description${NC}"
+    log_success "$description"
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
     return 0
   else
-    echo -e "${RED}❌ $description${NC}"
+    log_error "$description"
     echo "   File: $file"
     echo "   Pattern: $pattern"
     FAILED_CHECKS=$((FAILED_CHECKS + 1))
@@ -100,7 +93,7 @@ FIELDS=(
 if [ -n "$FIELD_NAME" ]; then
   FIELDS=($(printf '%s\n' "${FIELDS[@]}" | grep "^$FIELD_NAME:"))
   if [ ${#FIELDS[@]} -eq 0 ]; then
-    echo -e "${YELLOW}⚠️  Field '$FIELD_NAME' not found in known fields${NC}"
+    log_warning "Field '$FIELD_NAME' not found in known fields"
     echo "   This might be a new field. Manual verification recommended."
     exit 0
   fi
@@ -111,9 +104,9 @@ for FIELD_SPEC in "${FIELDS[@]}"; do
   IFS=':' read -r FIELD ENTITY HAS_ORG_DEFAULT <<< "$FIELD_SPEC"
 
   echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  print_separator
   echo "Field: $FIELD (Entity: $ENTITY)"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  print_separator
   echo ""
 
   # Convert to different naming conventions
@@ -281,11 +274,7 @@ for FIELD_SPEC in "${FIELDS[@]}"; do
 done
 
 # Summary
-echo ""
-echo "========================================"
-echo "Validation Summary"
-echo "========================================"
-echo ""
+log_section "Validation Summary"
 echo "Total checks: $TOTAL_CHECKS"
 echo -e "${GREEN}Passed: $PASSED_CHECKS${NC}"
 

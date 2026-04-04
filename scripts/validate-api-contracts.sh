@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# API Contract Validator (Master Script)
+# API Contract Validator (Master Script) (v2 - Shared Library版)
 #
 # Ensures complete type safety between Frontend and Lambda
 # Prevents caller/callee mismatches at compile time and runtime
@@ -12,15 +12,9 @@
 #   1 - Validation failed
 #
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo ""
 echo -e "${BOLD}${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
@@ -35,8 +29,6 @@ echo -e "${BOLD}${BLUE}╚══════════════════
 echo ""
 
 TOTAL_CHECKS=5
-PASSED_CHECKS=0
-FAILED_CHECKS=0
 
 # ============================================================
 # Check 1: Lambda Response Structure
@@ -45,11 +37,11 @@ echo -e "${BLUE}[1/$TOTAL_CHECKS]${NC} Validating Lambda response structures..."
 
 if bash scripts/validate-lambda-responses.sh > /tmp/lambda-responses.log 2>&1; then
   echo -e "${GREEN}  ✓ Lambda response structures valid${NC}"
-  ((PASSED_CHECKS++))
+  increment_counter PASSED
 else
   echo -e "${RED}  ✗ Lambda response structure validation failed${NC}"
   cat /tmp/lambda-responses.log
-  ((FAILED_CHECKS++))
+  increment_counter FAILED
 fi
 
 # ============================================================
@@ -59,11 +51,11 @@ echo -e "${BLUE}[2/$TOTAL_CHECKS]${NC} Validating Frontend API type usage..."
 
 if bash scripts/validate-api-type-usage.sh > /tmp/api-type-usage.log 2>&1; then
   echo -e "${GREEN}  ✓ Frontend API type usage valid${NC}"
-  ((PASSED_CHECKS++))
+  increment_counter PASSED
 else
   echo -e "${RED}  ✗ API type usage validation failed${NC}"
   cat /tmp/api-type-usage.log
-  ((FAILED_CHECKS++))
+  increment_counter FAILED
 fi
 
 # ============================================================
@@ -74,11 +66,11 @@ echo -e "${BLUE}[3/$TOTAL_CHECKS]${NC} Compiling shared packages..."
 cd packages/shared
 if pnpm run build > /tmp/shared-build.log 2>&1; then
   echo -e "${GREEN}  ✓ Shared packages compiled successfully${NC}"
-  ((PASSED_CHECKS++))
+  increment_counter PASSED
 else
   echo -e "${RED}  ✗ Shared packages compilation failed${NC}"
   cat /tmp/shared-build.log | head -20
-  ((FAILED_CHECKS++))
+  increment_counter FAILED
 fi
 cd ../..
 
@@ -90,11 +82,11 @@ echo -e "${BLUE}[4/$TOTAL_CHECKS]${NC} Compiling Frontend..."
 cd apps/web
 if pnpm run build > /tmp/web-build.log 2>&1; then
   echo -e "${GREEN}  ✓ Frontend compiled successfully${NC}"
-  ((PASSED_CHECKS++))
+  increment_counter PASSED
 else
   echo -e "${RED}  ✗ Frontend compilation failed${NC}"
   cat /tmp/web-build.log | head -20
-  ((FAILED_CHECKS++))
+  increment_counter FAILED
 fi
 cd ../..
 
@@ -106,11 +98,11 @@ echo -e "${BLUE}[5/$TOTAL_CHECKS]${NC} Compiling Lambda functions..."
 cd infrastructure
 if pnpm run build > /tmp/lambda-build.log 2>&1; then
   echo -e "${GREEN}  ✓ Lambda functions compiled successfully${NC}"
-  ((PASSED_CHECKS++))
+  increment_counter PASSED
 else
   # TypeScript errors are expected due to @types issues, ignore
   echo -e "${YELLOW}  ⚠ Lambda compilation has warnings (ignored)${NC}"
-  ((PASSED_CHECKS++))
+  increment_counter PASSED
 fi
 cd ..
 
@@ -122,8 +114,8 @@ echo -e "${BLUE}╔════════════════════�
 echo -e "${BLUE}║                     VALIDATION SUMMARY                     ║${NC}"
 echo -e "${BLUE}╠════════════════════════════════════════════════════════════╣${NC}"
 
-if [ $FAILED_CHECKS -eq 0 ]; then
-  echo -e "${BLUE}║${NC}  ${GREEN}✅ ALL CHECKS PASSED (${PASSED_CHECKS}/${TOTAL_CHECKS})${NC}                             ${BLUE}║${NC}"
+if [ "$FAILED" -eq 0 ]; then
+  echo -e "${BLUE}║${NC}  ${GREEN}✅ ALL CHECKS PASSED (${PASSED}/${TOTAL_CHECKS})${NC}                             ${BLUE}║${NC}"
   echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
   echo ""
   echo -e "${GREEN}${BOLD}🎉 API contracts are consistent${NC}"
@@ -138,7 +130,7 @@ if [ $FAILED_CHECKS -eq 0 ]; then
   echo ""
   exit 0
 else
-  echo -e "${BLUE}║${NC}  ${RED}❌ VALIDATION FAILED (${PASSED_CHECKS}/${TOTAL_CHECKS} passed, ${FAILED_CHECKS} failed)${NC}      ${BLUE}║${NC}"
+  echo -e "${BLUE}║${NC}  ${RED}❌ VALIDATION FAILED (${PASSED}/${TOTAL_CHECKS} passed, ${FAILED} failed)${NC}      ${BLUE}║${NC}"
   echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
   echo ""
   echo -e "${RED}${BOLD}⚠️  COMMIT BLOCKED${NC}"

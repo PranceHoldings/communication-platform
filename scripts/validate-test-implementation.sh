@@ -1,24 +1,22 @@
 #!/bin/bash
 #
-# validate-test-implementation.sh
+# validate-test-implementation.sh (v2 - Shared Library版)
 #
 # Purpose: Ensure tests are written based on actual implementation, not assumptions
 # When to run: Pre-commit hook (recommended), PR checks, before writing tests
 # How to run: pnpm run validate:tests
 #
 
-set -e
-
+# Load shared library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 PROJECT_ROOT="$SCRIPT_DIR/.."
 
-echo "🔍 Validating test implementation assumptions..."
-echo "========================================"
-
-WARNINGS=0
+log_section "Validating test implementation assumptions"
 
 # Check 1: Test files reference actual routes
-echo "[1/3] Checking route references in tests..."
+log_step "1/3" "Checking route references in tests"
 
 if [ -d "$PROJECT_ROOT/apps/web/tests" ]; then
   # Extract routes from tests (Playwright style)
@@ -28,7 +26,7 @@ if [ -d "$PROJECT_ROOT/apps/web/tests" ]; then
     2>/dev/null | grep -oP '["'"'"']/[^"'"'"'\)]+' | tr -d '"'"'" | sort -u || echo "")
 
   if [ -z "$TEST_ROUTES" ]; then
-    echo "ℹ️  No route references found in tests"
+    log_info "No route references found in tests"
   else
     echo "Found $(echo "$TEST_ROUTES" | wc -l) unique route(s) in tests"
 
@@ -95,23 +93,22 @@ if [ -d "$PROJECT_ROOT/apps/web/tests" ]; then
       fi
 
       if [ "$FOUND" = false ]; then
-        echo "⚠️  Test references route '$ROUTE' but no matching page.tsx found"
+        log_warning "Test references route '$ROUTE' but no matching page.tsx found"
         echo "    Verify this route exists or is a dynamic route"
-        WARNINGS=$((WARNINGS + 1))
+        increment_counter WARNINGS
       fi
     done
 
-    if [ $WARNINGS -eq 0 ]; then
-      echo "✅ All route references appear valid"
+    if [ "$WARNINGS" -eq 0 ]; then
+      log_success "All route references appear valid"
     fi
   fi
 else
-  echo "ℹ️  No test directory found"
+  log_info "No test directory found"
 fi
 
 # Check 2: Test files reference actual API endpoints
-echo ""
-echo "[2/3] Checking API endpoint references in tests..."
+log_step "2/3" "Checking API endpoint references in tests"
 
 if [ -d "$PROJECT_ROOT/apps/web/tests" ]; then
   # Extract API endpoints from tests
@@ -121,7 +118,7 @@ if [ -d "$PROJECT_ROOT/apps/web/tests" ]; then
     2>/dev/null | grep -oP '["'"'"']/api/[^"'"'"'\)]+' | tr -d '"'"'" | sort -u || echo "")
 
   if [ -z "$TEST_APIS" ]; then
-    echo "ℹ️  No API endpoint references found in tests"
+    log_info "No API endpoint references found in tests"
   else
     echo "Found $(echo "$TEST_APIS" | wc -l) unique API endpoint(s) in tests"
 
@@ -141,24 +138,23 @@ if [ -d "$PROJECT_ROOT/apps/web/tests" ]; then
       fi
 
       if [ ! -d "$LAMBDA_DIR" ]; then
-        echo "⚠️  Test references API '$API' but no Lambda function found"
+        log_warning "Test references API '$API' but no Lambda function found"
         echo "    Expected: infrastructure/lambda/${CLEAN_API}"
         echo "    Verify this endpoint exists or is dynamically routed"
-        WARNINGS=$((WARNINGS + 1))
+        increment_counter WARNINGS
       fi
     done
 
-    if [ $WARNINGS -eq 0 ]; then
-      echo "✅ All API endpoint references appear valid"
+    if [ "$WARNINGS" -eq 0 ]; then
+      log_success "All API endpoint references appear valid"
     fi
   fi
 else
-  echo "ℹ️  No test directory found"
+  log_info "No test directory found"
 fi
 
 # Check 3: Test fixtures match Prisma schema (basic check)
-echo ""
-echo "[3/3] Checking test fixtures against Prisma schema..."
+log_step "3/3" "Checking test fixtures against Prisma schema"
 
 if [ -d "$PROJECT_ROOT/apps/web/tests/fixtures" ]; then
   # Extract field names from test fixtures
@@ -168,7 +164,7 @@ if [ -d "$PROJECT_ROOT/apps/web/tests/fixtures" ]; then
     2>/dev/null | grep -oP '^\s*\K\w+(?=:)' | sort -u || echo "")
 
   if [ -z "$FIXTURE_FIELDS" ]; then
-    echo "ℹ️  No fixture fields found"
+    log_info "No fixture fields found"
   else
     echo "Found $(echo "$FIXTURE_FIELDS" | wc -l) unique field(s) in fixtures"
 
@@ -179,33 +175,30 @@ if [ -d "$PROJECT_ROOT/apps/web/tests/fixtures" ]; then
       if echo "$FIXTURE_FIELDS" | grep -q "^$FIELD$"; then
         # Check if this field exists in Prisma schema
         if ! grep -q "\\b$FIELD\\b" "$PROJECT_ROOT/packages/database/prisma/schema.prisma" 2>/dev/null; then
-          echo "⚠️  Test fixture uses field '$FIELD' not found in Prisma schema"
+          log_warning "Test fixture uses field '$FIELD' not found in Prisma schema"
           echo "    Verify this field exists or use correct field name"
           echo "    Common mistakes:"
           echo "      - username → email or fullName"
           echo "      - imageUrl → thumbnailUrl"
           echo "      - firstName/lastName → fullName"
-          WARNINGS=$((WARNINGS + 1))
+          increment_counter WARNINGS
         fi
       fi
     done
 
-    if [ $WARNINGS -eq 0 ]; then
-      echo "✅ No obvious field name mismatches detected"
+    if [ "$WARNINGS" -eq 0 ]; then
+      log_success "No obvious field name mismatches detected"
     fi
   fi
 else
-  echo "ℹ️  No test fixtures directory found"
+  log_info "No test fixtures directory found"
 fi
 
 # Summary
-echo ""
-echo "========================================"
-echo "Validation Summary"
-echo "========================================"
+log_section "Validation Summary"
 
-if [ $WARNINGS -eq 0 ]; then
-  echo "✅ All test implementation validations passed"
+if [ "$WARNINGS" -eq 0 ]; then
+  echo -e "${GREEN}✅ All test implementation validations passed${NC}"
   echo ""
   echo "Remember the principle:"
   echo "  1. Find implementation (find/grep)"
@@ -215,7 +208,7 @@ if [ $WARNINGS -eq 0 ]; then
   echo ""
   exit 0
 else
-  echo "⚠️  $WARNINGS validation warning(s) detected"
+  echo -e "${YELLOW}⚠️  $WARNINGS validation warning(s) detected${NC}"
   echo ""
   echo "These warnings indicate potential mismatches between"
   echo "tests and implementation. They might be false positives"

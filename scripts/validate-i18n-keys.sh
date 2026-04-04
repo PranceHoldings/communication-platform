@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# i18n Translation Keys Validation Script
+# i18n Translation Keys Validation Script (v2 - Shared Library版)
 # Purpose: Validate that all translation keys used in code exist in translation files
 # Root Cause (2026-03-14): Original script only checked for next-intl, not key existence
 #
@@ -9,7 +9,9 @@
 #   bash validate-i18n-keys.sh --warn   # Warn only (for development)
 #
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Check for --warn flag
 WARN_ONLY=false
@@ -17,31 +19,18 @@ if [ "$1" = "--warn" ]; then
   WARN_ONLY=true
 fi
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
 # Get project root (where .git directory is)
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$PROJECT_ROOT" ]; then
-  echo -e "${RED}Error: Not in a git repository${NC}"
-  exit 1
+  die "Not in a git repository"
 fi
 
-cd "$PROJECT_ROOT" || exit 1
+cd "$PROJECT_ROOT" || die "Failed to cd to project root"
 
-echo "============================================"
-echo "i18n Translation Keys Validation"
-echo "============================================"
-echo ""
-
-ERRORS=0
-WARNINGS=0
+log_section "i18n Translation Keys Validation"
 
 # Step 1: Extract all translation keys used in code
-echo -e "${BLUE}[Step 1/4]${NC} Extracting translation keys from code..."
+log_step "1/4" "Extracting translation keys from code"
 
 # Find all t('key') and t("key") patterns
 TEMP_KEYS="/tmp/i18n-keys-used-$$.txt"
@@ -53,15 +42,13 @@ find apps/web/app apps/web/components apps/web/lib -name "*.tsx" -o -name "*.ts"
   sort -u > "$TEMP_KEYS" || touch "$TEMP_KEYS"
 
 KEYS_COUNT=$(wc -l < "$TEMP_KEYS" | tr -d ' ')
-echo "  Found $KEYS_COUNT unique translation keys in code"
-echo ""
+log_info "Found $KEYS_COUNT unique translation keys in code"
 
 # Step 2: Check translation files exist
-echo -e "${BLUE}[Step 2/4]${NC} Checking translation files..."
+log_step "2/4" "Checking translation files"
 
 if [ ! -d "apps/web/messages" ]; then
-  echo -e "${RED}  ✗ messages/ directory not found${NC}"
-  ((ERRORS++))
+  log_error "messages/ directory not found"
   exit 1
 fi
 
@@ -70,8 +57,7 @@ LANG_DIRS=$(find apps/web/messages -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
 LANG_COUNT=$(echo "$LANG_DIRS" | wc -l | tr -d ' ')
 
 if [ "$LANG_COUNT" -eq 0 ]; then
-  echo -e "${RED}  ✗ No language directories found in messages/${NC}"
-  ((ERRORS++))
+  log_error "No language directories found in messages/"
   exit 1
 fi
 
@@ -80,10 +66,9 @@ for lang_dir in $LANG_DIRS; do
   lang=$(basename "$lang_dir")
   echo "    - $lang"
 done
-echo ""
 
 # Step 3: Validate keys for each language
-echo -e "${BLUE}[Step 3/4]${NC} Validating translation keys..."
+log_step "3/4" "Validating translation keys"
 
 for lang_dir in $LANG_DIRS; do
   lang=$(basename "$lang_dir")
@@ -98,7 +83,7 @@ for lang_dir in $LANG_DIRS; do
 
   if [ -z "$TRANSLATION_FILES" ]; then
     echo -e "  ${RED}✗ No translation files found${NC}"
-    ((ERRORS++))
+    increment_counter ERRORS
     continue
   fi
 
@@ -141,19 +126,17 @@ for lang_dir in $LANG_DIRS; do
       echo -e "    ${RED}- $missing_key${NC}"
     done
     ((LANG_ERRORS++))
-    ((ERRORS++))
+    increment_counter ERRORS
   fi
 
   # Cleanup
   rm -f "$TEMP_LANG_KEYS"
 done
 
-echo ""
-
 # Step 4: Check for unused keys (warnings only)
 # Skip this step if SKIP_UNUSED_CHECK is set (it can be slow with many keys)
 if [ "${SKIP_UNUSED_CHECK:-0}" = "0" ]; then
-  echo -e "${BLUE}[Step 4/4]${NC} Checking for unused translation keys..."
+  log_step "4/4" "Checking for unused translation keys"
 
   for lang_dir in $LANG_DIRS; do
   lang=$(basename "$lang_dir")
@@ -184,23 +167,19 @@ if [ "${SKIP_UNUSED_CHECK:-0}" = "0" ]; then
   done < "$TEMP_LANG_KEYS"
 
   if [ ${#UNUSED_KEYS[@]} -gt 0 ]; then
-    echo -e "  ${YELLOW}⚠ $lang: ${#UNUSED_KEYS[@]} unused keys (not an error, but consider cleanup)${NC}"
-    ((WARNINGS++))
+    log_warning "$lang: ${#UNUSED_KEYS[@]} unused keys (not an error, but consider cleanup)"
   fi
 
   rm -f "$TEMP_LANG_KEYS"
   done
 else
-  echo -e "${BLUE}[Step 4/4]${NC} Skipping unused key check (SKIP_UNUSED_CHECK=1)"
+  log_step "4/4" "Skipping unused key check (SKIP_UNUSED_CHECK=1)"
 fi
 
 # Cleanup
 rm -f "$TEMP_KEYS"
 
-echo ""
-echo "============================================"
-echo "Validation Summary"
-echo "============================================"
+log_section "Validation Summary"
 echo "  Translation keys used in code: $KEYS_COUNT"
 echo "  Languages checked: $LANG_COUNT"
 echo "  Errors: $ERRORS"
