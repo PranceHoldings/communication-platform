@@ -9,6 +9,7 @@
     "infrastructure"
   ],
   "scripts": {
+    "preinstall": "node -e \"const e=process.env.npm_execpath||''; if(e && !e.includes('pnpm')){console.error('\\x1b[31m\\n[Error] npm は使用禁止です。pnpm を使用してください:\\n  pnpm install\\n\\x1b[0m');process.exit(1)}\"",
     "dev": "turbo run dev",
     "dev:frontend": "turbo run dev --filter=@prance/web...",
     "dev:infra": "turbo run dev --filter=infrastructure...",
