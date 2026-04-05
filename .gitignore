@@ -78,6 +78,7 @@ cdk.out.old-*
 *.d.ts
 !jest.config.js
 !infrastructure/scripts/*.js
+!apps/web/tailwind.config.js
 infrastructure/cdk-outputs.json
 
 # Lambda build artifacts

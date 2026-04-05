@@ -29,6 +29,9 @@ fi
 # Create output directory if not exists
 mkdir -p "$WEB_DIR/styles"
 
+# Run from WEB_DIR so tailwind.config.js is found
+cd "$WEB_DIR"
+
 # Check for --watch flag
 if [ "$1" = "--watch" ]; then
     echo "👀 Watch mode enabled (Press Ctrl+C to stop)"
