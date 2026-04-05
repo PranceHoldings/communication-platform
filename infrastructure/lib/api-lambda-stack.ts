@@ -959,7 +959,7 @@ export class ApiLambdaStack extends cdk.Stack {
       bundling: prismaBundlingConfig,
       environment: {
         ...commonEnvironment,
-        ANALYSIS_FUNCTION_NAME: `prance-sessions-analysis-${props.environment}`,
+        ANALYSIS_LAMBDA_FUNCTION_NAME: `prance-sessions-analysis-${props.environment}`,
       },
     });
 
@@ -999,8 +999,6 @@ export class ApiLambdaStack extends cdk.Stack {
         minify: props.environment === 'production',
         sourceMap: true,
         target: 'es2020',
-        // 🔧 FIX: Use Docker bundling to avoid ENOTEMPTY errors with deep node_modules
-        forceDockerBundling: true,
         externalModules: ['aws-sdk', '@aws-sdk/*'],
         nodeModules: [
           '@prisma/client',
@@ -1344,6 +1342,9 @@ export class ApiLambdaStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(300), // Increased for video processing (5 minutes)
       memorySize: 3008, // Increased for video processing with ffmpeg
       ephemeralStorageSize: cdk.Size.gibibytes(10), // Large storage for video chunk processing
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
       tracing: lambda.Tracing.ACTIVE,
       logRetention:
         props.environment === 'production'
@@ -1392,9 +1393,39 @@ export class ApiLambdaStack extends cdk.Stack {
         // Scenario Validation Configuration
         MIN_PROMPT_LENGTH: process.env.MIN_PROMPT_LENGTH!,
         MAX_PROMPT_LENGTH: process.env.MAX_PROMPT_LENGTH!,
+        MAX_CONVERSATION_TURNS: process.env.MAX_CONVERSATION_TURNS!,
+        MAX_SESSION_DURATION_SEC: process.env.MAX_SESSION_DURATION_SEC!,
+        MAX_RETRY_ATTEMPTS: process.env.MAX_RETRY_ATTEMPTS!,
         // Analysis Configuration
-        ANALYSIS_FUNCTION_NAME: `prance-sessions-analysis-${props.environment}`,
+        ANALYSIS_LAMBDA_FUNCTION_NAME: `prance-sessions-analysis-${props.environment}`,
         ENABLE_AUTO_ANALYSIS: process.env.ENABLE_AUTO_ANALYSIS!,
+        // WebSocket ACK tuning (fallback if runtime config DB keys are missing)
+        WS_ACK_TIMEOUT_MS: process.env.WS_ACK_TIMEOUT_MS!,
+        WS_MAX_RETRIES: process.env.WS_MAX_RETRIES!,
+        // Runtime config env var fallbacks (Phase 5 Aurora RDS is primary source;
+        // these fallbacks prevent errors during cold start or DB unavailability)
+        MAX_RESULTS: process.env.MAX_RESULTS!,
+        VIDEO_CHUNK_BATCH_SIZE: process.env.VIDEO_CHUNK_BATCH_SIZE!,
+        ANALYSIS_BATCH_SIZE: process.env.ANALYSIS_BATCH_SIZE!,
+        CLAUDE_TEMPERATURE: process.env.CLAUDE_TEMPERATURE!,
+        CLAUDE_MAX_TOKENS: process.env.CLAUDE_MAX_TOKENS!,
+        MAX_AUTO_DETECT_LANGUAGES: process.env.MAX_AUTO_DETECT_LANGUAGES!,
+        TTS_STABILITY: process.env.TTS_STABILITY!,
+        TTS_SIMILARITY_BOOST: process.env.TTS_SIMILARITY_BOOST!,
+        DEFAULT_STT_CONFIDENCE: process.env.DEFAULT_STT_CONFIDENCE!,
+        SILENCE_THRESHOLD: process.env.SILENCE_THRESHOLD!,
+        MIN_PAUSE_DURATION_SEC: process.env.MIN_PAUSE_DURATION_SEC!,
+        OPTIMAL_PAUSE_SEC: process.env.OPTIMAL_PAUSE_SEC!,
+        AUDIO_SAMPLE_RATE: process.env.AUDIO_SAMPLE_RATE!,
+        EMOTION_WEIGHT: process.env.EMOTION_WEIGHT!,
+        AUDIO_WEIGHT: process.env.AUDIO_WEIGHT!,
+        CONTENT_WEIGHT: process.env.CONTENT_WEIGHT!,
+        DELIVERY_WEIGHT: process.env.DELIVERY_WEIGHT!,
+        MIN_CONFIDENCE_THRESHOLD: process.env.MIN_CONFIDENCE_THRESHOLD!,
+        MIN_QUALITY_THRESHOLD: process.env.MIN_QUALITY_THRESHOLD!,
+        DYNAMODB_VIDEO_LOCK_TTL_SECONDS: process.env.DYNAMODB_VIDEO_LOCK_TTL_SECONDS!,
+        DYNAMODB_CONNECTION_TTL_SECONDS: process.env.DYNAMODB_CONNECTION_TTL_SECONDS!,
+        DEFAULT_CHUNK_DURATION_MS: process.env.DEFAULT_CHUNK_DURATION_MS!,
       },
       bundling: {
         minify: props.environment === 'production',
@@ -1406,7 +1437,7 @@ export class ApiLambdaStack extends cdk.Stack {
           beforeBundling(_inputDir: string, _outputDir: string): string[] {
             return [];
           },
-          afterBundling(inputDir: string, outputDir: string): string[] {
+          afterBundling(_inputDir: string, outputDir: string): string[] {
             // Use absolute path from __dirname to avoid inputDir confusion
             const projectRoot = path.join(__dirname, '../..');
             return [
@@ -1426,9 +1457,11 @@ export class ApiLambdaStack extends cdk.Stack {
               `cp -r ${projectRoot}/infrastructure/lambda/shared/types ${outputDir}/shared/ 2>/dev/null || true`,
               `cp -r ${projectRoot}/infrastructure/lambda/shared/utils ${outputDir}/shared/ 2>/dev/null || true`,
               // Note: shared/scenario is bundled by esbuild, NOT copied
-              // Copy ffmpeg binaries (use inputDir for node_modules access)
-              `cp ${projectRoot}/infrastructure/lambda/websocket/default/node_modules/ffmpeg-static/ffmpeg ${outputDir}/ffmpeg 2>/dev/null || echo "Warning: ffmpeg binary not found"`,
-              `chmod +x ${outputDir}/ffmpeg 2>/dev/null || true`,
+              // Download Linux arm64 ffmpeg binary directly from GitHub releases.
+              // CDK nodeModules installs ffmpeg-static with --ignore-scripts, so the postinstall
+              // download doesn't run automatically. We read the release tag from package.json and
+              // download the correct platform binary (linux-arm64) explicitly.
+              `FFMPEG_VERSION=$(node -e "const p=require('${outputDir}/node_modules/ffmpeg-static/package.json'); console.log(p['ffmpeg-static']['binary-release-tag'])") && echo "[ffmpeg] Downloading linux-arm64 binary for version $FFMPEG_VERSION..." && curl -fsSL "https://github.com/eugeneware/ffmpeg-static/releases/download/$FFMPEG_VERSION/ffmpeg-linux-arm64.gz" | gunzip > "${outputDir}/ffmpeg" && chmod +x "${outputDir}/ffmpeg" && echo "[ffmpeg] Binary downloaded successfully: $(file ${outputDir}/ffmpeg | head -c 100)" || echo "ERROR: Failed to download ffmpeg linux-arm64 binary"`,
             ];
           },
           beforeInstall(): string[] {
@@ -1436,6 +1469,16 @@ export class ApiLambdaStack extends cdk.Stack {
           },
         },
       },
+    });
+
+    // Provisioned Concurrency alias for websocketDefaultFunction to eliminate VPC cold starts.
+    // Root cause of 2026-04-05 incident: VPC cold start (~26s) exceeded frontend ACK retry window (15s).
+    // Provisioned Concurrency keeps warm instances ready so the first invocation doesn't cold-start.
+    // NOTE: The WebSocket API integration must point to this alias ARN, not the function ARN.
+    const websocketDefaultAlias = new lambda.Alias(this, 'WebSocketDefaultAlias', {
+      aliasName: 'live',
+      version: this.websocketDefaultFunction.currentVersion,
+      provisionedConcurrentExecutions: props.environment === 'production' ? 5 : 2,
     });
 
     // DynamoDB permissions for WebSocket handlers
@@ -2472,10 +2515,11 @@ export class ApiLambdaStack extends cdk.Stack {
       integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${websocketDisconnectFunction.functionArn}/invocations`,
     });
 
+    // Use alias ARN so invocations hit the provisioned-concurrency-enabled alias, not $LATEST.
     const defaultIntegration = new apigatewayv2.CfnIntegration(this, 'DefaultIntegration', {
       apiId: this.webSocketApi.ref,
       integrationType: 'AWS_PROXY',
-      integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${this.websocketDefaultFunction.functionArn}/invocations`,
+      integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${websocketDefaultAlias.functionArn}/invocations`,
     });
 
     // WebSocket Routes
@@ -2536,7 +2580,8 @@ export class ApiLambdaStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`,
     });
 
-    this.websocketDefaultFunction.addPermission('WebSocketDefaultPermission', {
+    // Permission must be on the alias (not the function) since the integration points to alias ARN.
+    websocketDefaultAlias.addPermission('WebSocketDefaultPermission', {
       principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
       action: 'lambda:InvokeFunction',
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.webSocketApi.ref}/*`,

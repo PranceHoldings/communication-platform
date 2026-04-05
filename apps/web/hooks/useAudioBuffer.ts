@@ -17,6 +17,7 @@ interface BufferedChunk {
   data: ArrayBuffer;
   timestamp: number;
   sequenceNumber: number;
+  chunkId?: string;
 }
 
 const DEFAULT_CONFIG: AudioBufferConfig = {
@@ -26,7 +27,7 @@ const DEFAULT_CONFIG: AudioBufferConfig = {
 };
 
 export function useAudioBuffer(
-  sendChunk: (data: ArrayBuffer, timestamp: number) => void,
+  sendChunk: (data: ArrayBuffer, timestamp: number, chunkId?: string) => void,
   config: Partial<AudioBufferConfig> = {}
 ) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
@@ -51,7 +52,7 @@ export function useAudioBuffer(
 
       // Send all buffered chunks
       for (const chunk of chunksToSend) {
-        sendChunk(chunk.data, chunk.timestamp);
+        sendChunk(chunk.data, chunk.timestamp, chunk.chunkId);
       }
 
       console.log(
@@ -66,11 +67,12 @@ export function useAudioBuffer(
    * Add chunk to buffer and flush if needed
    */
   const addChunk = useCallback(
-    (data: ArrayBuffer, timestamp: number) => {
+    (data: ArrayBuffer, timestamp: number, chunkId?: string) => {
       const chunk: BufferedChunk = {
         data,
         timestamp,
         sequenceNumber: sequenceNumberRef.current++,
+        chunkId,
       };
 
       bufferRef.current.push(chunk);

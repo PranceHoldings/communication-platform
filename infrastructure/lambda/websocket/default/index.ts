@@ -36,9 +36,12 @@ import {
   getS3Bucket,
   getCloudFrontDomain,
   getAwsEndpointSuffix,
+  getWsAckTimeoutMsDefault,
+  getWsMaxRetriesDefault,
 } from '../../shared/utils/env-validator';
 import { checkRateLimit, RateLimitProfiles } from '../../shared/utils/rate-limiter';
 import { getAwsRegion, getBedrockRegion, getSttAutoDetectLanguages, getEnableAutoAnalysis } from '../../shared/config';
+import { LANGUAGE_DEFAULTS, DYNAMODB_DEFAULTS } from '../../shared/config/defaults';
 
 // Lambda function version
 const LAMBDA_VERSION = '1.1.4'; // Day 36: Fixed CLOUDFRONT eager evaluation
@@ -395,6 +398,23 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           errorAttemptCount: 0, // Initialize error counter
         });
 
+        // Fetch WebSocket behavior tuning values from runtime config (DB-backed, admin-configurable).
+        // These are sent to the frontend so it uses whatever the admin has set without redeployment.
+        // Fallback to env vars / hardcoded defaults if DB keys are missing (prevents auth failure).
+        let wsAckTimeoutMs = getWsAckTimeoutMsDefault();
+        let wsMaxRetries = getWsMaxRetriesDefault();
+        try {
+          const { getWsAckTimeoutMs, getWsMaxRetries } = await import('../../shared/utils/runtime-config-loader');
+          const [fetchedTimeout, fetchedRetries] = await Promise.all([
+            getWsAckTimeoutMs(),
+            getWsMaxRetries(),
+          ]);
+          wsAckTimeoutMs = fetchedTimeout;
+          wsMaxRetries = fetchedRetries;
+        } catch (configError) {
+          console.warn('[authenticate] Runtime config fetch failed, using defaults:', configError instanceof Error ? configError.message : configError);
+        }
+
         // Send authenticated response
         await sendToConnection(connectionId, {
           type: 'authenticated',
@@ -405,6 +425,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           silencePromptTimeout,
           enableSilencePrompt,
           initialSilenceTimeout,
+          wsAckTimeoutMs, // Frontend ACK timeout per retry attempt (ms)
+          wsMaxRetries,   // Frontend max ACK retries
         });
 
         // If initial greeting is provided, generate TTS and send audio

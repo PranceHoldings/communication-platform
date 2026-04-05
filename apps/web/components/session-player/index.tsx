@@ -88,6 +88,9 @@ function sanitizeThumbnailUrl(thumbnailUrl: string | undefined): string | undefi
   return thumbnailUrl;
 }
 
+// Build-time constants from env vars
+const WS_AUTH_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_WS_AUTH_TIMEOUT_MS ?? '15000', 10);
+
 export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps) {
   const { t } = useI18n();
   const { getErrorMessage, getMicrophoneInstructions } = useErrorMessage();
@@ -161,9 +164,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   });
   const ackTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  // ACK tracking constants
-  const ACK_TIMEOUT_MS = 5000; // 5 seconds
-  const MAX_RETRIES = 3;
+  // ACK tracking values — received from backend via 'authenticated' message so super admins
+  // can tune them via the runtime configs UI without redeploying the frontend.
+  // Env-var-backed defaults (WS_ACK_TIMEOUT_MS / WS_MAX_RETRIES) are used until the
+  // authenticated message arrives.
+  const [wsAckTimeoutMs, setWsAckTimeoutMs] = useState<number>(
+    parseInt(process.env.NEXT_PUBLIC_WS_ACK_TIMEOUT_MS ?? '5000', 10)
+  );
+  const [wsMaxRetries, setWsMaxRetries] = useState<number>(
+    parseInt(process.env.NEXT_PUBLIC_WS_MAX_RETRIES ?? '6', 10)
+  );
+  const ACK_TIMEOUT_MS = wsAckTimeoutMs;
+  const MAX_RETRIES = wsMaxRetries;
 
   // Silence management state
   const [initialGreetingCompleted, setInitialGreetingCompleted] = useState(false);
@@ -195,13 +207,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const sendMessageRef = useRef<((message: Record<string, unknown>) => void) | null>(null);
   const sendSpeechEndRef = useRef<(() => void) | null>(null);
   // REMOVED: sendAudioDataRef - Dual audio flow unification (2026-03-12)
-  const sendVideoChunkRef = useRef<((chunk: Blob, timestamp: number) => Promise<void>) | null>(
+  const sendVideoChunkRef = useRef<((chunk: Blob, timestamp: number, chunkId?: string) => Promise<void>) | null>(
     null
   );
   const endSessionRef = useRef<(() => void) | null>(null);
   const restartRecordingRef = useRef<(() => void) | null>(null);
-  const isMicRecordingRef = useRef<boolean>(false);
-
+  // Ref to forward ACKs to useAudioRecorder's internal tracking (avoids hooks ordering issue)
+  const audioRecorderChunkAckRef = useRef<((chunkId: string, status: string) => void) | null>(null);
   // トークン取得
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -221,14 +233,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
     // Implement 500ms grace period with final check
     setTimeout(() => {
-      // Final check: ensure AI is not playing and user is not speaking
+      // Final check: ensure AI is not playing and not processing
+      // Note: isMicRecording is NOT checked here — the mic is always recording during an active
+      // session (MediaRecorder restarts between turns). useSilenceTimer already handles blocking
+      // via isAIPlaying and isProcessing, so no additional check is needed here.
       if (isPlayingAudio) {
         console.log('[SessionPlayer] Silence timeout canceled: AI is playing audio');
-        return;
-      }
-
-      if (isMicRecordingRef.current) {
-        console.log('[SessionPlayer] Silence timeout canceled: User is speaking');
         return;
       }
 
@@ -593,9 +603,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           }
           console.error('[SessionPlayer] Audio playback error:', error);
           console.error('[SessionPlayer] Audio error details:', {
-            error: audioRef.current?.error,
+            errorCode: audioRef.current?.error?.code,
+            errorMessage: audioRef.current?.error?.message,
             networkState: audioRef.current?.networkState,
             readyState: audioRef.current?.readyState,
+            src: audioRef.current?.src?.substring(0, 100),
           });
           toast.error(t('sessions.player.messages.audioPlaybackError'));
 
@@ -875,12 +887,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
           // Resend chunk
           if (pending.type === 'audio') {
-            audioBufferRef.current?.addChunk(pending.data, pending.timestamp);
+            audioBufferRef.current?.addChunk(pending.data, pending.timestamp, chunkId);
           } else {
-            // Video chunk resend
+            // Video chunk resend (pass chunkId so server ACK matches pending tracking)
             sendVideoChunkRef.current?.(
               new Blob([pending.data]),
-              pending.timestamp
+              pending.timestamp,
+              chunkId
             );
           }
 
@@ -908,6 +921,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         status,
         error: error?.code,
       });
+
+      // Forward to useAudioRecorder's internal ACK handler to clear its own pending tracking
+      audioRecorderChunkAckRef.current?.(chunkId, status);
 
       setPendingChunks(prev => {
         const pending = prev.get(chunkId);
@@ -955,13 +971,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   );
 
   const handleAuthenticated = useCallback(
-    (sessionId: string, receivedInitialGreeting?: string) => {
+    (sessionId: string, receivedInitialGreeting?: string, receivedWsAckTimeoutMs?: number, receivedWsMaxRetries?: number) => {
       console.log('[SessionPlayer] WebSocket authenticated:', {
         sessionId,
         hasInitialGreeting: !!receivedInitialGreeting,
+        wsAckTimeoutMs: receivedWsAckTimeoutMs,
+        wsMaxRetries: receivedWsMaxRetries,
       });
       setIsAuthenticated(true);
       isAuthenticatedRef.current = true;
+
+      // Apply runtime config values from backend if provided
+      if (receivedWsAckTimeoutMs !== undefined) setWsAckTimeoutMs(receivedWsAckTimeoutMs);
+      if (receivedWsMaxRetries !== undefined) setWsMaxRetries(receivedWsMaxRetries);
 
       // If initial greeting is provided, Lambda will automatically:
       // 1. Send avatar_response_final (transcript will be added by handleAvatarResponse)
@@ -980,7 +1002,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       toast.success(t('sessions.player.messages.authenticated'));
     },
-    [t]
+    [t, setWsAckTimeoutMs, setWsMaxRetries]
   );
 
   // Phase 1.6.1: Handle partial recording notification
@@ -1020,6 +1042,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   } = useWebSocket({
     sessionId: session.id,
     token: token || '',
+    scenarioTitle: scenario.title,
     scenarioPrompt: (scenario.configJson as any)?.systemPrompt, // Extract system prompt from scenario config
     scenarioLanguage: scenario.language,
     initialGreeting: scenario.initialGreeting ?? undefined, // Initial AI greeting from scenario (null → undefined)
@@ -1052,7 +1075,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   });
 
   // Phase 1.6: Audio buffer for batching chunks (reduces network requests by 80%)
-  const sendAudioChunkToWebSocket = useCallback((data: ArrayBuffer, timestamp: number) => {
+  const sendAudioChunkToWebSocket = useCallback((data: ArrayBuffer, timestamp: number, chunkId?: string) => {
     if (sendMessageRef.current && isConnectedRef.current && isAuthenticatedRef.current) {
       const bytes = new Uint8Array(data);
       let binary = '';
@@ -1061,12 +1084,17 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       }
       const base64 = btoa(binary);
 
+      // Extract sequence number from chunkId (format: "audio-{seq}-{timestamp}")
+      // This preserves the monotonically-increasing sequence across the session
+      const seqFromChunkId = chunkId ? parseInt(chunkId.split('-')[1] ?? '0', 10) : 0;
+
       sendMessageRef.current({
         type: 'audio_chunk_realtime',
         data: base64,
         timestamp,
-        sequenceNumber: 0, // Batched chunks don't need individual sequence numbers
+        sequenceNumber: seqFromChunkId,
         contentType: 'audio/webm;codecs=opus',
+        chunkId, // Required for server ACK tracking
       });
     }
   }, []);
@@ -1197,7 +1225,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           });
 
           // 2. Send via WebSocket (through audioBuffer)
-          audioBuffer.addChunk(arrayBuffer, timestamp);
+          audioBuffer.addChunk(arrayBuffer, timestamp, chunkId);
 
           // 3. Update statistics
           setChunkStats(prev => ({
@@ -1325,6 +1353,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     pauseRecording,
     resumeRecording,
     restartRecording,
+    handleChunkAck: audioRecorderHandleChunkAck,
     error: recordingError,
   } = useAudioRecorder({
     enableRealtime: true, // Enable real-time audio chunk sending
@@ -1337,6 +1366,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     isAiRespondingRef: isPlayingAudioRef, // Ref for real-time AI audio state (fixes closure issue)
     bypassSpeechDetection: process.env.NEXT_PUBLIC_BYPASS_SPEECH_DETECTION === 'true', // Bypass for E2E tests
   });
+
+  // Keep ref in sync so handleChunkAck (defined earlier) can forward ACKs to useAudioRecorder
+  audioRecorderChunkAckRef.current = audioRecorderHandleChunkAck;
 
   // Audio Visualizer統合
   const {
@@ -1439,17 +1471,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     restartRecordingRef.current = restartRecording;
   }, [restartRecording]);
 
-  // Sync isMicRecording to ref for handleSilenceTimeout
-  useEffect(() => {
-    isMicRecordingRef.current = isMicRecording;
-  }, [isMicRecording]);
-
-  // Cleanup visualizer on unmount
+  // Cleanup audio resources on unmount — ensures intervals are cleared even if
+  // the component is unmounted before the user explicitly stops the session
   useEffect(() => {
     return () => {
+      stopRecording();
       stopVisualizer();
     };
-  }, [stopVisualizer]);
+  }, [stopRecording, stopVisualizer]);
 
   // Update ARIA live region when status changes
   useEffect(() => {
@@ -1655,6 +1684,15 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       stopVisualizer();
       console.log('[SessionPlayer] Audio visualizer stopped');
 
+      // 2b. Stop any currently playing AI audio immediately
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        setIsPlayingAudio(false);
+        isPlayingAudioRef.current = false;
+        console.log('[SessionPlayer] AI audio playback stopped');
+      }
+
       // 3. Stop video recording if active
       if (recordingStatus === 'recording' || recordingStatus === 'paused') {
         try {
@@ -1715,7 +1753,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       toast.success(t('sessions.player.messages.sessionEnded'));
     }
-  }, [status, isMicRecording, stopRecording, stopVisualizer, t]);
+  }, [status, isMicRecording, stopRecording, stopVisualizer, t, setIsPlayingAudio]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1859,7 +1897,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           });
 
           // 2. Send via WebSocket
-          await sendVideoChunkRef.current(chunk, timestamp);
+          await sendVideoChunkRef.current(chunk, timestamp, chunkId);
 
           // 3. Update statistics
           setChunkStats(prev => ({
@@ -2056,17 +2094,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     }
   }, [status, isConnected, t]);
 
-  // Authentication timeout - 接続後5秒以内に認証が完了しない場合はタイムアウト
+  // Authentication timeout - 接続後、認証が完了しない場合はタイムアウト
+  // NEXT_PUBLIC_WS_AUTH_TIMEOUT_MS で設定（デフォルト15秒）
+  // 15s accounts for Lambda cold start (2-4s) + scenario validation + TTS generation (2-4s)
   useEffect(() => {
     if (isConnected && !isAuthenticated && status === 'READY') {
       const timeoutId = setTimeout(() => {
         if (isConnected && !isAuthenticated) {
-          console.error('[SessionPlayer] Authentication timeout after 5 seconds');
+          console.error(`[SessionPlayer] Authentication timeout after ${WS_AUTH_TIMEOUT_MS}ms`);
           setStatus('IDLE');
           disconnect();
           toast.error(t('sessions.player.messages.authenticationTimeout'));
         }
-      }, 5000); // 5 seconds
+      }, WS_AUTH_TIMEOUT_MS);
 
       return () => clearTimeout(timeoutId);
     }

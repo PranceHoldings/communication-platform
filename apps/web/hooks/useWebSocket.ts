@@ -8,6 +8,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type {
   AuthenticateMessage,
+  AuthenticatedMessage,
+  AuthenticationFailedMessage,
   TranscriptMessage,
   AvatarResponseMessage,
   AudioResponseMessage,
@@ -39,6 +41,7 @@ export type {
 interface UseWebSocketOptions {
   sessionId: string;
   token: string;
+  scenarioTitle?: string; // Scenario title for validation
   scenarioPrompt?: string; // System prompt from scenario
   scenarioLanguage?: string; // Scenario language
   initialGreeting?: string; // Initial AI greeting from scenario
@@ -55,7 +58,7 @@ interface UseWebSocketOptions {
   onSessionComplete?: (message: SessionCompleteMessage) => void;
   onError?: (message: ErrorMessage) => void;
   onNoSpeechDetected?: (message: { message: string; timestamp: number }) => void; // New: No speech detected guidance
-  onAuthenticated?: (sessionId: string, initialGreeting?: string) => void;
+  onAuthenticated?: (sessionId: string, initialGreeting?: string, wsAckTimeoutMs?: number, wsMaxRetries?: number) => void;
   onChunkAck?: (message: ChunkAckMessage) => void; // Phase 1.6.1: Chunk ACK tracking
   onRecordingPartial?: (message: RecordingPartialMessage) => void; // Phase 1.6.1 Day 34: Partial recording notification
   onSessionLimitReached?: (message: SessionLimitReachedMessage) => void; // Phase 1.6.1 Day 36: Max conversation turns
@@ -72,7 +75,7 @@ interface UseWebSocketReturn {
   sendMessage: (message: Record<string, unknown>) => void;
   sendAudioChunk: (data: ArrayBuffer, timestamp: number) => void;
   // sendAudioData: (audioBlob: Blob) => Promise<void>; // REMOVED: Dual audio flow unification (2026-03-12)
-  sendVideoChunk: (data: Blob, timestamp: number) => Promise<void>;
+  sendVideoChunk: (data: Blob, timestamp: number, chunkId?: string) => Promise<void>;
   sendUserSpeech: (text: string, confidence: number) => void;
   sendSpeechEnd: () => void;
   endSession: () => void;
@@ -83,6 +86,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const {
     sessionId,
     token,
+    scenarioTitle,
     scenarioPrompt,
     scenarioLanguage,
     initialGreeting,
@@ -168,8 +172,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     onAIFallbackRef.current = onAIFallback;
   });
 
-  // WebSocket endpoint from environment variable
-  const wsEndpoint = process.env.NEXT_PUBLIC_WS_ENDPOINT || 'ws://localhost:3001';
+  // WebSocket endpoint from environment variable (required - no hardcoded fallback per Rule 2-B)
+  const wsEndpoint = process.env.NEXT_PUBLIC_WS_ENDPOINT!;
 
   // Debug log
   useEffect(() => {
@@ -264,18 +268,42 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             console.log('Pong received');
             break;
 
+          case 'authentication_failed':
+            {
+              const failMsg = message as AuthenticationFailedMessage;
+              const failDetails = failMsg.details?.map(e => e.message).join(', ') || failMsg.error || 'Scenario validation failed';
+              console.error('[useWebSocket] Authentication failed:', failDetails);
+              setError(`Session setup failed: ${failDetails}`);
+              onErrorRef.current?.({
+                type: 'error',
+                code: 'AUTHENTICATION_FAILED',
+                message: `Session setup failed: ${failDetails}`,
+                details: failDetails,
+              });
+              // Close WebSocket - no point keeping a connection that failed authentication.
+              // Use code 1008 (Policy Violation). Setting wsRef.current = null prevents
+              // the onclose handler from triggering an automatic reconnect attempt.
+              if (wsRef.current) {
+                wsRef.current.close(1000, 'Authentication failed');
+                wsRef.current = null;
+              }
+            }
+            break;
+
           case 'authenticated':
             console.log('[useWebSocket] Entered authenticated case');
             console.log('[useWebSocket] Authentication confirmed:', message);
-            const authMessage = message as any;
+            const authMessage = message as AuthenticatedMessage;
             const authSessionId = authMessage.sessionId;
             const authInitialGreeting = authMessage.initialGreeting;
+            const authWsAckTimeoutMs = authMessage.wsAckTimeoutMs;
+            const authWsMaxRetries = authMessage.wsMaxRetries;
             console.log('[useWebSocket] authSessionId:', authSessionId);
             console.log('[useWebSocket] authInitialGreeting:', authInitialGreeting);
             console.log('[useWebSocket] onAuthenticatedRef.current exists:', !!onAuthenticatedRef.current);
             if (authSessionId) {
               console.log('[useWebSocket] Calling onAuthenticatedRef.current with sessionId:', authSessionId);
-              onAuthenticatedRef.current?.(authSessionId, authInitialGreeting);
+              onAuthenticatedRef.current?.(authSessionId, authInitialGreeting, authWsAckTimeoutMs, authWsMaxRetries);
             } else {
               console.warn('[useWebSocket] No authSessionId, skipping callback');
             }
@@ -315,11 +343,24 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
           case 'chunk_ack':
             // Phase 1.6.1: Unified ACK for audio/video chunks
-            console.log('[WebSocket] Chunk ACK received:', {
-              chunkId: (message as ChunkAckMessage).chunkId,
-              status: (message as ChunkAckMessage).status,
-            });
-            onChunkAckRef.current?.(message as ChunkAckMessage);
+            {
+              const ackChunkId = (message as ChunkAckMessage).chunkId;
+              console.log('[WebSocket] Chunk ACK received:', {
+                chunkId: ackChunkId,
+                status: (message as ChunkAckMessage).status,
+              });
+
+              // Clear useWebSocket's own internal video chunk tracking (if present)
+              const internalPending = pendingChunksRef.current.get(ackChunkId);
+              if (internalPending) {
+                if (internalPending.timeoutHandle) {
+                  clearTimeout(internalPending.timeoutHandle);
+                }
+                pendingChunksRef.current.delete(ackChunkId);
+              }
+
+              onChunkAckRef.current?.(message as ChunkAckMessage);
+            }
             break;
 
           case 'recording_partial':
@@ -415,6 +456,11 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             console.log('  Audio Processing:', (message as any).audioProcessing);
             break;
 
+          case 'validation_warning':
+            // Non-fatal scenario configuration warnings (sent during authentication)
+            console.warn('[WebSocket] Scenario validation warnings:', (message as any).warnings);
+            break;
+
           default:
             console.warn('Unknown WebSocket message type:', (message as any).type, message);
         }
@@ -439,7 +485,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       return;
     }
 
-    if (isConnecting) {
+    // Use wsRef to check CONNECTING state (avoids stale closure issue with isConnecting state)
+    if (wsRef.current?.readyState === WebSocket.CONNECTING) {
       console.log('[useWebSocket] WebSocket connection already in progress');
       return;
     }
@@ -467,6 +514,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         const authenticateMsg: AuthenticateMessage = {
           type: 'authenticate',
           sessionId: sessionId,
+          scenarioTitle,
           scenarioPrompt,
           scenarioLanguage,
           initialGreeting,
@@ -479,6 +527,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         };
         ws.send(JSON.stringify(authenticateMsg));
         console.log('[WebSocket] Sent authenticate with scenario data:', {
+          title: scenarioTitle,
           hasPrompt: !!scenarioPrompt,
           language: scenarioLanguage,
           hasInitialGreeting: !!initialGreeting,
@@ -644,7 +693,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 
   // Phase 1.6: Send video chunk with tracking
   const sendVideoChunkWithTracking = useCallback(
-    async (chunk: Blob, timestamp: number, retryPending?: PendingChunk): Promise<void> => {
+    async (chunk: Blob, timestamp: number, retryPending?: PendingChunk, callerChunkId?: string): Promise<void> => {
       try {
         // Convert Blob to ArrayBuffer
         const arrayBuffer = await chunk.arrayBuffer();
@@ -660,8 +709,9 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
         // Use 30KB (30,720 bytes) as safe limit to leave room for JSON overhead
         const MAX_CHUNK_SIZE = 30 * 1024; // 30KB
 
-        // Generate unique chunk ID or reuse for retry
-        const chunkId = retryPending?.chunkId || `${timestamp}-${crypto.randomUUID()}`;
+        // Use caller-provided chunkId (from session-player) for consistent ACK tracking,
+        // fall back to retry pending ID or generate a new one
+        const chunkId = retryPending?.chunkId || callerChunkId || `${timestamp}-${crypto.randomUUID()}`;
         const sequenceNumber = retryPending?.sequenceNumber || sequenceNumberRef.current++;
 
         // Calculate total parts needed
@@ -745,8 +795,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   );
 
   const sendVideoChunk = useCallback(
-    async (chunk: Blob, timestamp: number): Promise<void> => {
-      await sendVideoChunkWithTracking(chunk, timestamp);
+    async (chunk: Blob, timestamp: number, chunkId?: string): Promise<void> => {
+      await sendVideoChunkWithTracking(chunk, timestamp, undefined, chunkId);
     },
     [sendVideoChunkWithTracking]
   );

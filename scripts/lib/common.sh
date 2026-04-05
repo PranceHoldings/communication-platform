@@ -44,19 +44,19 @@ increment_counter() {
   local counter_name=$1
   case "$counter_name" in
     PASSED|passed)
-      ((PASSED++))
+      PASSED=$((PASSED + 1))
       ;;
     FAILED|failed)
-      ((FAILED++))
+      FAILED=$((FAILED + 1))
       ;;
     ERRORS|errors)
-      ((ERRORS++))
+      ERRORS=$((ERRORS + 1))
       ;;
     WARNINGS|warnings)
-      ((WARNINGS++))
+      WARNINGS=$((WARNINGS + 1))
       ;;
     SKIPPED|skipped)
-      ((SKIPPED++))
+      SKIPPED=$((SKIPPED + 1))
       ;;
     *)
       echo -e "${RED}Unknown counter: $counter_name${NC}" >&2

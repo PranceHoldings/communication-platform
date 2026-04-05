@@ -83,6 +83,10 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  // Ref for raw audio level — rAF loop writes here, never calls setState
+  const audioLevelRef = useRef(0);
+  // Separate interval to push audioLevel into React state at ~10fps
+  const audioLevelIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const sequenceNumberRef = useRef(0);
 
@@ -236,6 +240,15 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       return;
     }
 
+    // CRITICAL: Clear the audio level interval BEFORE stopping the old recorder.
+    // The old recorder's onstop is nulled out below (to suppress final chunk),
+    // so its clearInterval would never run. Clear it explicitly here to prevent
+    // interval accumulation across multiple speech turns.
+    if (audioLevelIntervalRef.current) {
+      clearInterval(audioLevelIntervalRef.current);
+      audioLevelIntervalRef.current = null;
+    }
+
     const stream = streamRef.current;
     const timesliceMs = enableRealtime ? 1000 : undefined;
     const currentMimeType = mediaRecorderRef.current.mimeType;
@@ -274,7 +287,10 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     // IMPORTANT: Set speechEndSent to TRUE to prevent speech_end until first chunk is sent
     // ============================================================
 
-    sequenceNumberRef.current = 0;
+    // NOTE: Do NOT reset sequenceNumberRef here. The server tracks expectedAudioSequence
+    // for the entire session duration. Resetting to 0 causes all post-restart chunks to be
+    // rejected as duplicates (seq 0 < server's accumulated expectedAudioSequence).
+    // sequenceNumberRef continues from wherever it left off.
     speechEndSentRef.current = true; // Prevent speech_end until first chunk is sent
     lastSpeechTimeRef.current = Date.now();
     speechStartTimeRef.current = null; // Reset speech start tracking
@@ -376,6 +392,10 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
+      if (audioLevelIntervalRef.current) {
+        clearInterval(audioLevelIntervalRef.current);
+        audioLevelIntervalRef.current = null;
+      }
     };
 
     // Start new recorder
@@ -385,6 +405,13 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     } else {
       newRecorder.start();
     }
+
+    // Restart the audio level interval for the new recorder.
+    // The rAF loop (monitorAudioLevel) continues uninterrupted since it uses
+    // the shared analyserRef. We only need to re-establish the setState interval.
+    audioLevelIntervalRef.current = setInterval(() => {
+      setAudioLevel(audioLevelRef.current);
+    }, 100);
 
     logger.logRestartPhase3Started(newRecorder.state);
   }, [enableRealtime, onAudioChunk, onError, onRecordingComplete, logger]);
@@ -398,10 +425,10 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     analyserRef.current.getByteFrequencyData(dataArray);
 
-    // Calculate average volume (0-1)
+    // Calculate average volume (0-1) and store in ref only — no setState in rAF loop
     const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
     const normalizedLevel = average / 255;
-    setAudioLevel(normalizedLevel);
+    audioLevelRef.current = normalizedLevel;
 
     // Silence detection and low volume warning
     if (enableRealtime) {
@@ -679,6 +706,10 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
           cancelAnimationFrame(animationFrameRef.current);
           animationFrameRef.current = null;
         }
+        if (audioLevelIntervalRef.current) {
+          clearInterval(audioLevelIntervalRef.current);
+          audioLevelIntervalRef.current = null;
+        }
       };
 
       mediaRecorderRef.current = mediaRecorder;
@@ -710,8 +741,13 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         recorderState: mediaRecorder.state,
       });
 
-      // Start audio level monitoring
+      // Start audio level monitoring (rAF loop writes to ref only)
       monitorAudioLevel();
+      // Interval to push audioLevel into React state at ~10fps — decoupled from rAF
+      if (audioLevelIntervalRef.current) clearInterval(audioLevelIntervalRef.current);
+      audioLevelIntervalRef.current = setInterval(() => {
+        setAudioLevel(audioLevelRef.current);
+      }, 100);
     } catch (err) {
       // Handle getUserMedia specific errors with detailed messages
       let errorCode = 'RECORDING_FAILED';

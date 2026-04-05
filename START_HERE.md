@@ -1,11 +1,11 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-04-04 (Day 44 - 19:00 UTC)
+**最終更新:** 2026-04-06 (Day 46 - WebSocketバグ修正（未デプロイ）)
 **開発環境:** Mac上のDocker（Linux） + Mac ホスト Tailwind ビルド
 **現在の Phase:** スクリプト統合 Phase 4 完全完了（60/60 完了、100%） 🎉🎉🎉
-**次のアクション:** Staging環境デプロイ準備
-**ステータス:** dev ブランチ、pnpm 移行完了、共有ライブラリ移行100%完了 ✅✅✅
-**最新コミット:** 8335f14 "docs(dev-env): document Tailwind CSS System Error -35 workaround with Mac host build"
+**次のアクション:** バグ修正コミット＆Lambda デプロイ → 動作確認
+**ステータス:** dev ブランチ、フロントエンド修正済み（未コミット）、Lambda修正未デプロイ ⚠️
+**最新コミット:** 8d6505e "feat: block npm usage via preinstall script"
 **開発サーバー:** http://localhost:3000
 **🟢 Tailwind CSS:** Mac ホストビルド方式で完全動作 ✅
 
@@ -133,7 +133,99 @@ pnpm run test:e2e
 
 **詳細:** [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md)
 
-### 🎯 最新達成 (Day 44 - 2026-04-04 夕方) - Tailwind CSS System Error -35 完全解決 🎉
+### 🎯 最新達成 (Day 46 - 2026-04-06) - WebSocket音声バグ修正（未デプロイ） ⚠️
+
+**ブランチ:** dev
+**未コミット変更あり** - 次回セッションでコミット＆デプロイが必要
+
+**フロントエンド修正（コミット待ち）:**
+
+1. **✅ 沈黙プロンプト バグ修正** (`apps/web/components/session-player/index.tsx`)
+   - **問題:** `handleSilenceTimeout` 内の `isMicRecordingRef.current` チェックが常に `true` → 沈黙プロンプトが一切送信されなかった
+   - **原因:** `isRecording` (useAudioRecorder) はセッション中常に `true`（`restartRecording()` が old recorder の `onstop` を null にするため `setIsRecording(false)` が呼ばれない）
+   - **修正:** `isMicRecordingRef.current` チェックを削除（`useSilenceTimer` が `isAIPlaying`/`isProcessing` で既にブロック処理済み）
+   - **効果:** 沈黙15秒後に AI がプロンプトを発するようになる（`effectiveSilencePromptTimeout` = デフォルト15秒）
+   - **変更ファイル:** `handleSilenceTimeout` 関数（旧 `isMicRecordingRef` 宣言・useEffect も削除）
+
+2. **✅ エラー表示修正** (`apps/web/components/error-guidance.tsx`)
+   - `SPEECH_END_PROCESSING_ERROR` → `'api'` カテゴリにマップ（`SPEECH`, `PROCESSING` パターン追加）
+
+3. **✅ i18n キー追加** (全10言語の `errors.json`)
+   - `errors.unknown.title` / `errors.unknown.message` が全言語ファイルに存在しなかった → 追加済み
+   - 対象: `ja, en, zh-CN, zh-TW, ko, fr, de, es, pt, it`
+
+4. **✅ 音声再生エラーロギング改善** (`apps/web/components/session-player/index.tsx`)
+   - `MediaError` の `code`/`message` が non-enumerable → `{}` でログ出力されていた → 明示的にプロパティを展開してログ出力
+
+**Lambda修正（デプロイ待ち）:**
+
+5. **⚠️ STT遅延修正（コード変更済み・未デプロイ）** (`infrastructure/lambda/shared/audio/stt-azure.ts`)
+   - `EndSilenceTimeoutMs`: 2000ms → 1000ms（-1秒）
+   - `InitialSilenceTimeout`: 3000ms → 1000ms（-2秒）
+   - **合計: 最大3秒短縮**
+   - **デプロイ方法:** `cd infrastructure && pnpm run deploy:lambda`（CDK経由のみ）
+
+**DB確認結果:**
+- 全シナリオ: `silence_prompt_timeout = null`（デフォルト15秒が適用される）
+- 全組織: `settings = {}`（デフォルト値が適用される）
+- → `effectiveSilencePromptTimeout = 15` 秒が正しく適用される
+
+**次回セッションの最初にやること:**
+```bash
+# 1. 変更を確認
+git diff --stat
+
+# 2. コミット
+git add apps/web/components/session-player/index.tsx \
+        apps/web/components/error-guidance.tsx \
+        apps/web/messages/*/errors.json \
+        infrastructure/lambda/shared/audio/stt-azure.ts
+git commit -m "fix(session): fix silence prompt never firing due to isMicRecordingRef always true"
+
+# 3. Lambda デプロイ（STT修正を反映）
+cd infrastructure && pnpm run deploy:lambda
+
+# 4. ブラウザで動作確認
+# - セッション開始 → AI挨拶後、15秒無音 → AIがプロンプト発話するか確認
+# - 発話後のSTT遅延が短くなったか確認（2-3秒 → 0-1秒）
+```
+
+---
+
+### 🎯 最新達成 (Day 45 - 2026-04-05) - WebSocket修正・デプロイ完了 🎉
+
+**ブランチ:** dev
+**最新コミット:** 8d6505e "feat: block npm usage via preinstall script"
+
+**WebSocket 総合修正（6箇所）完了・デプロイ済み**
+
+**Lambda修正（Critical）:**
+- ✅ `infrastructure/lambda/websocket/default/index.ts` - `LANGUAGE_DEFAULTS`, `DYNAMODB_DEFAULTS` import追加（未import→ReferenceError修正）
+
+**フロントエンド修正:**
+- ✅ `apps/web/hooks/useWebSocket.ts` - stale closure修正（`isConnecting` state → `wsRef.current.readyState`チェックに変更）
+- ✅ `apps/web/hooks/useWebSocket.ts` - `authentication_failed`時にWebSocket即座クローズ処理追加
+- ✅ `apps/web/hooks/useWebSocket.ts` - `AuthenticatedMessage`型使用（`as any`キャスト削除）
+- ✅ `apps/web/hooks/useWebSocket.ts` - ハードコードURLフォールバック削除（`NEXT_PUBLIC_WS_ENDPOINT!`のみ使用）
+- ✅ `apps/web/components/session-player/index.tsx` - 認証タイムアウト 5000ms → 15000ms（Lambda cold start対応）
+
+**i18n修正:**
+- ✅ `apps/web/components/connection-status.tsx` - `connectionStatus.*` → `common.connectionStatus.*`（全7箇所）
+
+**スクリプト修正:**
+- ✅ `scripts/lib/common.sh` - `((COUNTER++))` → `COUNTER=$((COUNTER + 1))`（set -e下でexit code 1を防止）
+- ✅ `scripts/validate-duplication.sh` - Next.js API routes `apps/web/app/api/` を正当な`fetch()`として除外
+- ✅ `infrastructure/scripts/cdk-wrapper.sh` - CDK esbuildが管理するためlambda:validateをスキップ
+- ✅ `infrastructure/lib/api-lambda-stack.ts` - `forceDockerBundling: true`削除（Docker不使用環境対応）
+
+**デプロイ結果:**
+- ✅ CDK deploy完了（213.97秒）
+- ✅ `prance-websocket-default-v2-dev` Lambda更新完了
+- ✅ API Gateway dev stage 新規デプロイ適用（旧Lambdaの参照を修正）
+
+---
+
+### 🎯 過去の達成 (Day 44 - 2026-04-04 夕方) - Tailwind CSS System Error -35 完全解決 🎉
 
 **ブランチ:** dev
 **最新コミット:** 8335f14 "docs(dev-env): document Tailwind CSS System Error -35 workaround with Mac host build"
@@ -443,7 +535,41 @@ pnpm run dev
 
 ## 🎯 次のアクション
 
-### 0. スクリプト統合 Phase 4 - 既存スクリプトの共有ライブラリ移行 🔴 推奨（進行中）
+### 0. 🔴 最優先: Day 46のバグ修正をコミット＆デプロイ
+
+```bash
+# 変更内容確認
+git diff --stat
+
+# コミット（4ファイル + 10言語ファイル）
+git add apps/web/components/session-player/index.tsx \
+        apps/web/components/error-guidance.tsx \
+        apps/web/messages/ja/errors.json \
+        apps/web/messages/en/errors.json \
+        apps/web/messages/zh-CN/errors.json \
+        apps/web/messages/zh-TW/errors.json \
+        apps/web/messages/ko/errors.json \
+        apps/web/messages/fr/errors.json \
+        apps/web/messages/de/errors.json \
+        apps/web/messages/es/errors.json \
+        apps/web/messages/pt/errors.json \
+        apps/web/messages/it/errors.json \
+        infrastructure/lambda/shared/audio/stt-azure.ts
+git commit -m "fix(session): fix silence prompt never firing and reduce STT latency"
+
+# Lambda デプロイ（STT修正を反映）
+cd infrastructure && pnpm run deploy:lambda
+
+# 動作確認
+# - セッション開始後、15秒無音 → AI がプロンプト発話するか確認
+# - STT遅延が短縮されたか確認
+```
+
+**修正内容の詳細:** 上記「Day 46 最新達成」セクション参照
+
+---
+
+### 1. スクリプト統合 Phase 4 - 既存スクリプトの共有ライブラリ移行 🔴 推奨（進行中）
 
 **目的:** validate-*.sh スクリプトを共有ライブラリに移行（コード重複削減）
 
@@ -658,7 +784,7 @@ bash scripts/detect-hardcoded-values.sh      # ハードコード検出
 
 ---
 
-**最終更新:** 2026-04-04 (Day 44 - 19:00 UTC) 🎉 **Tailwind CSS System Error -35 完全解決**
+**最終更新:** 2026-04-06 (Day 46) ⚠️ **未コミット修正あり → 次回セッションでコミット＆デプロイ必要**
 **Package Manager:** 🔄 **pnpm 10.32.1** - 60% 高速化、50% ディスク削減 ✅
 **スクリプトシステム:** 📚 **Phase 4 完了** - 60/60スクリプト移行（100%）🎉🎉🎉
 **Tailwind CSS:** 🎨 **完全動作** - Mac ホストビルド方式で System Error -35 回避 ✅

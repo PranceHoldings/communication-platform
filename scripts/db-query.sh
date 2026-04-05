@@ -91,8 +91,8 @@ if [ $(echo "$SQL" | wc -l) -gt 10 ]; then
 fi
 echo ""
 
-# Confirm for write operations
-if [ "$READ_ONLY" = false ]; then
+# Confirm for write operations (skip if --force or FORCE=true)
+if [ "$READ_ONLY" = false ] && [ "${FORCE:-false}" != "true" ] && [[ "$*" != *"--force"* ]]; then
   log_warning "⚠️  WARNING: Write operations enabled"
   if ! confirm "Continue"; then
     echo "Cancelled"

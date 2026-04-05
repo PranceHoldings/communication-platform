@@ -17,13 +17,16 @@ import * as fs from 'fs';
  * @throws {Error} If ffmpeg binary cannot be found
  */
 export function getFFmpegPath(): string {
-  // Priority 1: Environment variable (recommended)
+  // Priority 1: Environment variable — verify the file actually exists before trusting it
   if (process.env.FFMPEG_PATH) {
-    console.log('[FFmpegHelper] Using FFMPEG_PATH from environment:', process.env.FFMPEG_PATH);
-    return process.env.FFMPEG_PATH;
+    if (fs.existsSync(process.env.FFMPEG_PATH)) {
+      console.log('[FFmpegHelper] Using FFMPEG_PATH from environment:', process.env.FFMPEG_PATH);
+      return process.env.FFMPEG_PATH;
+    }
+    console.warn('[FFmpegHelper] FFMPEG_PATH set but file not found:', process.env.FFMPEG_PATH, '— falling through to next option');
   }
 
-  // Priority 2: /var/task/ffmpeg (CDK deployment target)
+  // Priority 2: /var/task/ffmpeg (CDK afterBundling copies binary here)
   if (fs.existsSync('/var/task/ffmpeg')) {
     console.log('[FFmpegHelper] Found ffmpeg at /var/task/ffmpeg (CDK deployment)');
     return '/var/task/ffmpeg';
@@ -35,11 +38,14 @@ export function getFFmpegPath(): string {
     return '/opt/bin/ffmpeg';
   }
 
-  // Priority 4: npm package (ffmpeg-static)
+  // Priority 4: npm package (ffmpeg-static) — last resort, path resolves to node_modules/ffmpeg-static/ffmpeg
   try {
-    const ffmpegPath = require('ffmpeg-static');
-    console.log('[FFmpegHelper] Using ffmpeg-static package:', ffmpegPath);
-    return ffmpegPath;
+    const ffmpegPath = require('ffmpeg-static') as string | null;
+    if (ffmpegPath && fs.existsSync(ffmpegPath)) {
+      console.log('[FFmpegHelper] Using ffmpeg-static package:', ffmpegPath);
+      return ffmpegPath;
+    }
+    console.warn('[FFmpegHelper] ffmpeg-static resolved path does not exist:', ffmpegPath);
   } catch (error) {
     console.error('[FFmpegHelper] ffmpeg-static package not found:', error);
   }
@@ -47,7 +53,7 @@ export function getFFmpegPath(): string {
   // All attempts failed
   throw new Error(
     'ffmpeg binary not found. Checked:\n' +
-      '  1. FFMPEG_PATH environment variable\n' +
+      `  1. FFMPEG_PATH env var: ${process.env.FFMPEG_PATH || '(not set)'}\n` +
       '  2. /var/task/ffmpeg (CDK deployment)\n' +
       '  3. /opt/bin/ffmpeg (Lambda Layer)\n' +
       '  4. ffmpeg-static npm package\n' +

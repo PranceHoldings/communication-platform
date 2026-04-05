@@ -168,11 +168,17 @@ fi
 echo -e "${YELLOW}[7/8]${NC} Checking frontend API call duplication..."
 
 # Check for direct fetch() calls bypassing API client
-DIRECT_FETCH=$(grep -rn "fetch(" apps/web/app apps/web/components --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v node_modules | wc -l || echo "0")
+# Exclude apps/web/app/api/ — those are Next.js API routes (server-side proxy/handlers)
+# that legitimately call fetch() to proxy requests to the backend Lambda.
+DIRECT_FETCH=$(grep -rn "fetch(" apps/web/app apps/web/components --include="*.ts" --include="*.tsx" 2>/dev/null \
+  | grep -v node_modules \
+  | grep -v "apps/web/app/api/" \
+  | wc -l || echo "0")
 
 if [ "$DIRECT_FETCH" -gt 0 ]; then
   log_error "Found $DIRECT_FETCH direct fetch() calls (should use API client)"
-  grep -rn "fetch(" apps/web/app apps/web/components --include="*.ts" --include="*.tsx" | grep -v node_modules | head -5
+  grep -rn "fetch(" apps/web/app apps/web/components --include="*.ts" --include="*.tsx" \
+    | grep -v node_modules | grep -v "apps/web/app/api/" | head -5
 else
   log_success "All API calls go through centralized client"
 fi
