@@ -55,9 +55,11 @@ export class AzureSpeechToText {
     // Enable profanity filtering
     this.config.setProfanity(sdk.ProfanityOption.Masked);
 
-    // 🔧 初期サイレンスタイムアウト設定（フォールバック用、デフォルト: 1000ms）
-    // 注: 音声の無音部分は ffmpeg silenceremove でトリミング済みなので短い値で十分
-    const initialSilenceTimeout = options.initialSilenceTimeout || 1000;
+    // 🔧 初期サイレンスタイムアウト設定（フォールバック用、デフォルト: 5000ms）
+    // 注: 音声の無音部分は ffmpeg silenceremove でトリミング済みだが、
+    // ブラウザのマイクノイズフロアや短い無音区間が残る場合があるため余裕を持たせる
+    // Day 46で1000msに短縮したが音声認識失敗の原因となったため5000msに戻す
+    const initialSilenceTimeout = options.initialSilenceTimeout || 5000;
     this.config.setProperty(
       sdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs,
       String(initialSilenceTimeout)

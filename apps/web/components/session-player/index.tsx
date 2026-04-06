@@ -488,6 +488,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleAudioResponse = useCallback(
     (message: AudioResponseMessage) => {
+      // セッション完了後は音声再生をスキップ（レースコンディション防止）
+      if (status === 'COMPLETED') {
+        console.log('[SessionPlayer] Ignoring audio_response - session is already completed');
+        return;
+      }
+
       // セッション停止後は音声再生をスキップ（UX改善）
       if (pendingSessionEnd) {
         console.log('[SessionPlayer] Session stopped by user, skipping AI audio response');
@@ -646,7 +652,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         toast.error(t('sessions.player.messages.audioPlaybackError'));
       }
     },
-    [t, initialGreetingCompleted]
+    [t, initialGreetingCompleted, status]
   );
 
   const handleError = useCallback(
@@ -2622,7 +2628,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         >
           {status === 'IDLE' && (
             <button
-              onClick={handleStart}
+              onClick={() => handleStart()}
               data-testid="start-button"
               className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 flex items-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               aria-label={t('sessions.player.actions.start') + ' (Space)'}
@@ -2667,7 +2673,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           {status === 'PAUSED' && (
             <>
               <button
-                onClick={handleStart}
+                onClick={() => handleStart()}
                 className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                 aria-label={t('sessions.player.actions.resume') + ' (P or Space)'}
               >
