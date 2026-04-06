@@ -1507,10 +1507,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   }, [processingStage, t]);
 
   // Session control handlers (defined before keyboard shortcuts useEffect)
-  const handleStart = useCallback(async () => {
+  const handleStart = useCallback(async (skipValidation = false) => {
     console.log('[SessionPlayer] handleStart called', {
       token: token ? 'exists' : 'missing',
       status,
+      skipValidation,
     });
 
     // Check browser capabilities
@@ -1534,7 +1535,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       console.log('[SessionPlayer] Starting WebSocket connection...');
 
       // Phase 1.6.1 Day 36: Scenario validation (skip if already confirmed)
-      if (!validationConfirmed) {
+      if (!validationConfirmed && !skipValidation) {
         console.log('[SessionPlayer] Validating scenario before start...');
         const validation = validateScenario(scenario as any);
 
@@ -1639,8 +1640,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     setConfirmDialog({ isOpen: false, warnings: '' });
     setValidationConfirmed(true);
 
-    // Re-trigger handleStart (will skip validation this time)
-    setTimeout(() => handleStart(), 100);
+    // Re-trigger handleStart with skipValidation=true to avoid stale closure issue
+    setTimeout(() => handleStart(true), 100);
   }, [handleStart]);
 
   const handleCancelValidation = useCallback(() => {

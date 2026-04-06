@@ -88,6 +88,12 @@ export class SessionPlayerPage {
    */
   async startSession(): Promise<void> {
     await this.startButton.click();
+    // Handle scenario validation warning dialog if it appears
+    const confirmDialog = this.page.locator('[data-testid="confirm-dialog"]');
+    const isDialogVisible = await confirmDialog.isVisible({ timeout: 2000 }).catch(() => false);
+    if (isDialogVisible) {
+      await this.page.locator('[data-testid="confirm-dialog-confirm"]').click();
+    }
   }
 
   /**
