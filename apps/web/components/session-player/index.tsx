@@ -199,6 +199,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const avatarRef = useRef<AvatarRendererRef>(null);
   const avatarCanvasRef = useRef<HTMLCanvasElement | null>(null); // AvatarRendererから取得したcanvasを保持
   const userVideoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null); // カメラストリーム保持（停止時に使用）
   const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null); // VideoComposerから受け取ったcanvasを保持（useVideoRecorderに渡す）
 
   // WebSocket value refs (to break circular dependencies)
@@ -1599,11 +1600,17 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           audio: false, // 音声は useAudioRecorder で取得済み
         });
 
+        // ストリーム取得成功 → カメラはON（play()の成否に関わらず）
+        cameraStreamRef.current = stream;
+        setIsCameraActive(true);
+        console.log('[SessionPlayer] User camera stream obtained');
+
         if (userVideoRef.current) {
           userVideoRef.current.srcObject = stream;
-          await userVideoRef.current.play();
-          setIsCameraActive(true);
-          console.log('[SessionPlayer] User camera started');
+          // play()失敗はプレビュー表示の問題のみ。カメラ自体は有効
+          userVideoRef.current.play().catch(e => {
+            console.warn('[SessionPlayer] Camera preview play failed (non-critical):', e);
+          });
         }
       } catch (error) {
         console.error('[SessionPlayer] Failed to get user camera:', error);
@@ -1727,16 +1734,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         }
       }
 
-      // 4. Stop user camera
-      if (userVideoRef.current && userVideoRef.current.srcObject) {
-        const stream = userVideoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => {
+      // 4. Stop user camera（cameraStreamRefから停止し、確実にカメラをOFFにする）
+      const cameraStream = cameraStreamRef.current || userVideoRef.current?.srcObject as MediaStream | null;
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => {
           track.stop();
           console.log('[SessionPlayer] Stopped camera track:', track.kind);
         });
-        userVideoRef.current.srcObject = null;
-        setIsCameraActive(false);
+        cameraStreamRef.current = null;
       }
+      if (userVideoRef.current) {
+        userVideoRef.current.srcObject = null;
+      }
+      setIsCameraActive(false);
 
       // 5. If audio was recording, send speech_end and wait for transcript before sending session_end
       if (wasRecording) {
