@@ -455,6 +455,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       setStatus('COMPLETED');
       setIsAuthenticated(false);
       isAuthenticatedRef.current = false;
+      // Clear any stuck processing state
+      setIsProcessing(false);
+      setProcessingStage('idle');
+      setProcessingMessage('');
       toast.success(t('sessions.player.messages.sessionCompleted'));
 
       // Clear timeout
@@ -607,15 +611,22 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           if (needsCleanup) {
             URL.revokeObjectURL(audioUrl);
           }
-          console.error('[SessionPlayer] Audio playback error:', error);
-          console.error('[SessionPlayer] Audio error details:', {
-            errorCode: audioRef.current?.error?.code,
-            errorMessage: audioRef.current?.error?.message,
-            networkState: audioRef.current?.networkState,
-            readyState: audioRef.current?.readyState,
-            src: audioRef.current?.src?.substring(0, 100),
-          });
-          toast.error(t('sessions.player.messages.audioPlaybackError'));
+
+          // MEDIA_ERR_ABORTED (code 1) happens when src is cleared on session stop — expected, not an error
+          const isAborted = audioRef.current?.error?.code === 1 || !audioRef.current?.src;
+          if (isAborted) {
+            console.log('[SessionPlayer] Audio playback aborted (session stopped)');
+          } else {
+            console.error('[SessionPlayer] Audio playback error:', error);
+            console.error('[SessionPlayer] Audio error details:', {
+              errorCode: audioRef.current?.error?.code,
+              errorMessage: audioRef.current?.error?.message,
+              networkState: audioRef.current?.networkState,
+              readyState: audioRef.current?.readyState,
+              src: audioRef.current?.src?.substring(0, 100),
+            });
+            toast.error(t('sessions.player.messages.audioPlaybackError'));
+          }
 
           // Still mark initial greeting as complete even if audio playback fails
           if (!initialGreetingCompleted) {
@@ -631,6 +642,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         });
 
         audioRef.current.play().catch(error => {
+          // AbortError happens when src is cleared on session stop — expected, not a real error
+          if ((error as Error)?.name === 'AbortError') {
+            console.log('[SessionPlayer] Audio play aborted (session stopped)');
+            setIsPlayingAudio(false);
+            isPlayingAudioRef.current = false;
+            return;
+          }
           console.error('[SessionPlayer] Failed to play audio (Promise rejected):', error);
           console.error('[SessionPlayer] Error details:', {
             name: (error as Error).name,
