@@ -30,6 +30,9 @@ export const S3_PATH_PREFIXES = {
   /** Real-time audio chunks (Phase 1.5) */
   REALTIME_CHUNKS: 'realtime-chunks',
 
+  /** Audio input chunks from WebSocket stream (timestamp-based naming) */
+  AUDIO_CHUNKS: 'audio-chunks',
+
   /** Video chunks (Phase 2) */
   VIDEO_CHUNKS: 'video-chunks',
 
@@ -48,6 +51,11 @@ export const S3_PATH_PREFIXES = {
   /** Temporary chunk parts */
   CHUNKS_TEMP: 'chunks/temp',
 } as const;
+
+/**
+ * Non-session S3 path prefixes (top-level buckets for different content types)
+ */
+export const S3_REPORT_PREFIX = 'reports/sessions' as const;
 
 /**
  * Audio file types for S3 key generation
@@ -189,4 +197,41 @@ export function getTempChunkPartKey(sessionId: string, chunkId: string, partInde
  */
 export function getTempChunkPartPrefix(sessionId: string, chunkId: string): string {
   return `${getSessionRootPrefix(sessionId)}${S3_PATH_PREFIXES.CHUNKS_TEMP}/${chunkId}/`;
+}
+
+/**
+ * Generate S3 key for a WebSocket audio or video chunk
+ * Format: sessions/{id}/audio-chunks/{timestamp}-{chunkNumber}.{ext}
+ *      or sessions/{id}/video-chunks/{timestamp}-{chunkNumber}.{ext}
+ *
+ * @param sessionId - Session ID
+ * @param chunkType - 'audio' or 'video'
+ * @param timestamp - Unix timestamp (ms)
+ * @param chunkNumber - Chunk sequence number
+ * @param extension - File extension (e.g., 'webm')
+ * @returns S3 key (e.g., 'sessions/abc123/audio-chunks/1772952987123-5.webm')
+ */
+export function getChunkKey(
+  sessionId: string,
+  chunkType: 'audio' | 'video',
+  timestamp: number,
+  chunkNumber: number,
+  extension: string
+): string {
+  const folder =
+    chunkType === 'video' ? S3_PATH_PREFIXES.VIDEO_CHUNKS : S3_PATH_PREFIXES.AUDIO_CHUNKS;
+  return `${getSessionRootPrefix(sessionId)}${folder}/${timestamp}-${chunkNumber}.${extension}`;
+}
+
+/**
+ * Generate S3 key for a PDF report
+ * Format: reports/sessions/{id}/report-{timestamp}.pdf
+ *
+ * @param sessionId - Session ID
+ * @param timestamp - Timestamp for uniqueness (default: Date.now())
+ * @returns S3 key (e.g., 'reports/sessions/abc123/report-1772952987123.pdf')
+ */
+export function getReportKey(sessionId: string, timestamp?: number): string {
+  const ts = timestamp || Date.now();
+  return `${S3_REPORT_PREFIX}/${sessionId}/report-${ts}.pdf`;
 }

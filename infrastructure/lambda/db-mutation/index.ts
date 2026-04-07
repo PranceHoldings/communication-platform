@@ -90,9 +90,9 @@ const PRESET_QUERIES: Record<string, string> = {
       gen_random_uuid(),
       $1,  -- sessionId
       'COMBINED',
-      'recordings/' || $1 || '/combined-test.webm',
-      'https://' || $2 || '/recordings/' || $1 || '/combined-test.webm',  -- cdnDomain (s3_url now uses CDN)
-      'https://' || $2 || '/recordings/' || $1 || '/combined-test.webm',  -- cdnDomain
+      'sessions/' || $1 || '/recording.webm',
+      'https://' || $2 || '/sessions/' || $1 || '/recording.webm',  -- cdnDomain (s3_url now uses CDN)
+      'https://' || $2 || '/sessions/' || $1 || '/recording.webm',  -- cdnDomain
       5242880, 120, 'webm', '1280x720', 24,
       'COMPLETED', NOW(), NOW()
     ) ON CONFLICT DO NOTHING;

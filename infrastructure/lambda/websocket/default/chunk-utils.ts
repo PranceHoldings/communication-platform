@@ -4,6 +4,7 @@
  */
 
 import { getVideoChunkBatchSize, getAnalysisBatchSize } from '../../shared/utils/runtime-config-loader';
+import { getChunkKey } from '../../shared/config/s3-paths';
 
 /**
  * S3 Object interface (minimal subset for chunk operations)
@@ -164,7 +165,7 @@ export function generateChunkKey(
   chunkNumber: number,
   extension: string
 ): string {
-  return `sessions/${sessionId}/${chunkType}-chunks/${timestamp}-${chunkNumber}.${extension}`;
+  return getChunkKey(sessionId, chunkType, timestamp, chunkNumber, extension);
 }
 
 /**

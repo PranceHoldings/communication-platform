@@ -12,6 +12,7 @@ import { ReportData, ReportGenerationOptions } from './types';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getAwsRegion, getS3Bucket } from '../shared/utils/env-validator';
 import { generateProtectedUrl } from '../shared/utils/url-generator';
+import { getReportKey } from '../shared/config/s3-paths';
 
 const s3Client = new S3Client({ region: getAwsRegion() });
 const BUCKET_NAME = getS3Bucket();
@@ -78,7 +79,7 @@ export async function generateAndUploadReport(
   const pdfBuffer = await generateReport(data, options);
 
   // Upload to S3
-  const pdfKey = `reports/sessions/${data.session.id}/report-${Date.now()}.pdf`;
+  const pdfKey = getReportKey(data.session.id);
   await s3Client.send(
     new PutObjectCommand({
       Bucket: BUCKET_NAME,

@@ -8,6 +8,7 @@
 import { Handler } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
 import { generateCdnUrl } from '../../shared/utils/url-generator';
+import { getRecordingKey } from '../../shared/config/s3-paths';
 import { getCloudFrontDomain } from '../../shared/utils/env-validator';
 
 const prisma = new PrismaClient();
@@ -105,7 +106,7 @@ export const handler: Handler<SeedEvent, SeedResponse> = async event => {
     if (session.recordings.length === 0) {
       console.log('Creating recording...');
 
-      const mockS3Key = `recordings/${session.id}/combined-${Date.now()}.webm`;
+      const mockS3Key = getRecordingKey(session.id, 'webm');
       const mockS3Url = generateCdnUrl(mockS3Key);
       const mockCdnUrl = generateCdnUrl(mockS3Key);
 

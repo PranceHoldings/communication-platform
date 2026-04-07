@@ -5,6 +5,8 @@
  * Prevents hardcoded S3 URLs and ensures CloudFront usage
  */
 
+import { getRecordingKey, getReportKey } from '../config/s3-paths';
+
 /**
  * Generate public CDN URL for static content
  * Uses CloudFront distribution
@@ -50,7 +52,7 @@ export async function generateRecordingUrl(
   sessionId: string,
   expiresIn: number = 3600
 ): Promise<string> {
-  const key = `recordings/${sessionId}.webm`;
+  const key = getRecordingKey(sessionId);
   return generateProtectedUrl(key, expiresIn);
 }
 
@@ -62,7 +64,9 @@ export async function generateReportUrl(
   sessionId: string,
   expiresIn: number = 7200
 ): Promise<string> {
-  const key = `reports/${sessionId}.pdf`;
+  // Note: getReportKey uses a timestamp suffix; callers that have a stored key
+  // should pass that key directly to generateProtectedUrl / generateCdnUrl instead.
+  const key = getReportKey(sessionId);
   return generateProtectedUrl(key, expiresIn);
 }
 
