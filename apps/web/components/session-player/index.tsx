@@ -88,6 +88,9 @@ function sanitizeThumbnailUrl(thumbnailUrl: string | undefined): string | undefi
   return thumbnailUrl;
 }
 
+// Build-time constants from env vars
+const WS_AUTH_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_WS_AUTH_TIMEOUT_MS ?? '15000', 10);
+
 export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps) {
   const { t } = useI18n();
   const { getErrorMessage, getMicrophoneInstructions } = useErrorMessage();
@@ -110,6 +113,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [token, setToken] = useState<string | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const isPlayingAudioRef = useRef(false); // Ref for real-time access in callbacks
+  const audioStoppedByUserRef = useRef(false); // Set true when user stops session, suppresses onerror toast
   const [pendingSessionEnd, setPendingSessionEnd] = useState(false);
   const [shouldSendSessionEnd, setShouldSendSessionEnd] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -161,9 +165,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   });
   const ackTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  // ACK tracking constants
-  const ACK_TIMEOUT_MS = 5000; // 5 seconds
-  const MAX_RETRIES = 3;
+  // ACK tracking values — received from backend via 'authenticated' message so super admins
+  // can tune them via the runtime configs UI without redeploying the frontend.
+  // Env-var-backed defaults (WS_ACK_TIMEOUT_MS / WS_MAX_RETRIES) are used until the
+  // authenticated message arrives.
+  const [wsAckTimeoutMs, setWsAckTimeoutMs] = useState<number>(
+    parseInt(process.env.NEXT_PUBLIC_WS_ACK_TIMEOUT_MS ?? '5000', 10)
+  );
+  const [wsMaxRetries, setWsMaxRetries] = useState<number>(
+    parseInt(process.env.NEXT_PUBLIC_WS_MAX_RETRIES ?? '6', 10)
+  );
+  const ACK_TIMEOUT_MS = wsAckTimeoutMs;
+  const MAX_RETRIES = wsMaxRetries;
 
   // Silence management state
   const [initialGreetingCompleted, setInitialGreetingCompleted] = useState(false);
@@ -187,6 +200,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const avatarRef = useRef<AvatarRendererRef>(null);
   const avatarCanvasRef = useRef<HTMLCanvasElement | null>(null); // AvatarRendererから取得したcanvasを保持
   const userVideoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null); // カメラストリーム保持（停止時に使用）
   const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null); // VideoComposerから受け取ったcanvasを保持（useVideoRecorderに渡す）
 
   // WebSocket value refs (to break circular dependencies)
@@ -195,13 +209,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const sendMessageRef = useRef<((message: Record<string, unknown>) => void) | null>(null);
   const sendSpeechEndRef = useRef<(() => void) | null>(null);
   // REMOVED: sendAudioDataRef - Dual audio flow unification (2026-03-12)
-  const sendVideoChunkRef = useRef<((chunk: Blob, timestamp: number) => Promise<void>) | null>(
+  const sendVideoChunkRef = useRef<((chunk: Blob, timestamp: number, chunkId?: string) => Promise<void>) | null>(
     null
   );
   const endSessionRef = useRef<(() => void) | null>(null);
   const restartRecordingRef = useRef<(() => void) | null>(null);
-  const isMicRecordingRef = useRef<boolean>(false);
-
+  // Ref to forward ACKs to useAudioRecorder's internal tracking (avoids hooks ordering issue)
+  const audioRecorderChunkAckRef = useRef<((chunkId: string, status: string) => void) | null>(null);
   // トークン取得
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -221,14 +235,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
     // Implement 500ms grace period with final check
     setTimeout(() => {
-      // Final check: ensure AI is not playing and user is not speaking
+      // Final check: ensure AI is not playing and not processing
+      // Note: isMicRecording is NOT checked here — the mic is always recording during an active
+      // session (MediaRecorder restarts between turns). useSilenceTimer already handles blocking
+      // via isAIPlaying and isProcessing, so no additional check is needed here.
       if (isPlayingAudio) {
         console.log('[SessionPlayer] Silence timeout canceled: AI is playing audio');
-        return;
-      }
-
-      if (isMicRecordingRef.current) {
-        console.log('[SessionPlayer] Silence timeout canceled: User is speaking');
         return;
       }
 
@@ -286,7 +298,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           }
         });
       } else if (message.type === 'transcript_final') {
-        // 確定トランスクリプト
+        // セッション停止済みの場合、UIへの追加とAI処理をスキップ
+        if (message.speaker === 'USER' && pendingSessionEnd) {
+          console.log('[SessionPlayer] Transcript received after session stop, skipping UI update and sending session_end');
+          setIsProcessing(false);
+          setProcessingStage('idle');
+          setProcessingMessage('');
+          if (isConnectedRef.current && endSessionRef.current) {
+            endSessionRef.current();
+          }
+          return;
+        }
+
+        // 確定トランスクリプトをUIに追加
         setTranscript(prev => {
           const filtered = prev.filter(item => !item.partial || item.speaker !== message.speaker);
           return [
@@ -301,37 +325,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           ];
         });
 
-        // STT complete, check if session was stopped by user
+        // 通常のフロー: AI処理に進む
         if (message.speaker === 'USER') {
-          if (pendingSessionEnd) {
-            // セッション停止後の文字起こし - AI処理はスキップ
-            console.log(
-              '[SessionPlayer] Transcript received after session stop, sending session_end'
-            );
-            setIsProcessing(false);
-            setProcessingStage('idle');
-            setProcessingMessage('');
-
-            // Send session_end immediately
-            if (isConnectedRef.current && endSessionRef.current) {
-              endSessionRef.current();
-            }
-            return;
-          }
-
-          // 通常のフロー: AI処理に進む
           setProcessingStage('ai');
           setProcessingMessage('');
-          // Reset isProcessing flag - speech_end processing is complete
           setIsProcessing(false);
           console.log('[SessionPlayer] speech_end processing complete, silence timer can resume');
-        }
-
-        // If session end is pending, trigger it now after receiving transcript
-        if (pendingSessionEnd && message.speaker === 'USER') {
-          console.log('[SessionPlayer] Transcript received, will send session_end');
-          setPendingSessionEnd(false);
-          setShouldSendSessionEnd(true);
         }
       }
     },
@@ -404,16 +403,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         }
         processingStartTimeRef.current = null;
 
-        // Check if this is the initial greeting (first AI message)
+        // Mark initial greeting as complete when text arrives.
+        // The silence timer already pauses while isPlayingAudio=true, so it's safe to enable
+        // immediately — if audio follows, the timer waits; if TTS fails (no audio), timer starts.
         if (!initialGreetingCompleted) {
+          setInitialGreetingCompleted(true);
           console.log(
-            '[SessionPlayer] Initial AI greeting completed, silence timer will start after audio playback'
+            '[SessionPlayer] Initial AI greeting text received — initialGreetingCompleted=true. ' +
+            'Silence timer will wait for audio to finish (isPlayingAudio gates the timer).'
           );
-          // Note: We'll set initialGreetingCompleted=true when audio playback finishes
         }
       }
     },
-    [initialGreetingCompleted]
+    [initialGreetingCompleted, setInitialGreetingCompleted]
   );
 
   const handleProcessingUpdate = useCallback(
@@ -445,6 +447,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       setStatus('COMPLETED');
       setIsAuthenticated(false);
       isAuthenticatedRef.current = false;
+      // Clear any stuck processing state
+      setIsProcessing(false);
+      setProcessingStage('idle');
+      setProcessingMessage('');
       toast.success(t('sessions.player.messages.sessionCompleted'));
 
       // Clear timeout
@@ -478,6 +484,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
   const handleAudioResponse = useCallback(
     (message: AudioResponseMessage) => {
+      // セッション完了後は音声再生をスキップ（レースコンディション防止）
+      if (status === 'COMPLETED') {
+        console.log('[SessionPlayer] Ignoring audio_response - session is already completed');
+        return;
+      }
+
       // セッション停止後は音声再生をスキップ（UX改善）
       if (pendingSessionEnd) {
         console.log('[SessionPlayer] Session stopped by user, skipping AI audio response');
@@ -591,13 +603,26 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           if (needsCleanup) {
             URL.revokeObjectURL(audioUrl);
           }
-          console.error('[SessionPlayer] Audio playback error:', error);
-          console.error('[SessionPlayer] Audio error details:', {
-            error: audioRef.current?.error,
-            networkState: audioRef.current?.networkState,
-            readyState: audioRef.current?.readyState,
-          });
-          toast.error(t('sessions.player.messages.audioPlaybackError'));
+
+          // MEDIA_ERR_ABORTED (code 1) or intentional stop (audioStoppedByUserRef) — expected, not an error
+          const isAborted =
+            audioStoppedByUserRef.current ||
+            audioRef.current?.error?.code === 1 ||
+            status === 'COMPLETED';
+          if (isAborted) {
+            audioStoppedByUserRef.current = false; // reset after handling
+            console.log('[SessionPlayer] Audio playback aborted (session stopped)');
+          } else {
+            console.error('[SessionPlayer] Audio playback error:', error);
+            console.error('[SessionPlayer] Audio error details:', {
+              errorCode: audioRef.current?.error?.code,
+              errorMessage: audioRef.current?.error?.message,
+              networkState: audioRef.current?.networkState,
+              readyState: audioRef.current?.readyState,
+              src: audioRef.current?.src?.substring(0, 100),
+            });
+            toast.error(t('sessions.player.messages.audioPlaybackError'));
+          }
 
           // Still mark initial greeting as complete even if audio playback fails
           if (!initialGreetingCompleted) {
@@ -613,6 +638,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         });
 
         audioRef.current.play().catch(error => {
+          // AbortError happens when src is cleared on session stop — expected, not a real error
+          if ((error as Error)?.name === 'AbortError') {
+            console.log('[SessionPlayer] Audio play aborted (session stopped)');
+            setIsPlayingAudio(false);
+            isPlayingAudioRef.current = false;
+            return;
+          }
           console.error('[SessionPlayer] Failed to play audio (Promise rejected):', error);
           console.error('[SessionPlayer] Error details:', {
             name: (error as Error).name,
@@ -634,7 +666,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         toast.error(t('sessions.player.messages.audioPlaybackError'));
       }
     },
-    [t, initialGreetingCompleted]
+    [t, initialGreetingCompleted, status]
   );
 
   const handleError = useCallback(
@@ -670,6 +702,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         setProcessingStage('idle');
         setProcessingMessage('');
         console.log('[SessionPlayer] Processing flags reset, silence timer can resume');
+        // If user stopped session, finalize it even though there was no audio
+        if (pendingSessionEnd) {
+          console.log('[SessionPlayer] Non-critical error after session stop - sending session_end');
+          if (isConnectedRef.current && endSessionRef.current) {
+            endSessionRef.current();
+          }
+        }
         return; // Don't show toast for expected silence
       }
 
@@ -708,49 +747,45 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           : undefined,
       });
     },
-    [getErrorMessage, getMicrophoneInstructions, t]
+    [pendingSessionEnd, getErrorMessage, getMicrophoneInstructions, t]
   );
 
   const handleNoSpeechDetected = useCallback(
     (_message: { message: string; timestamp: number }) => {
-      // Not an error - just guidance for user
-      console.log('[SessionPlayer] No speech detected - providing user guidance');
-
       // Reset processing flag
       setIsProcessing(false);
       setProcessingStage('idle');
       setProcessingMessage('');
 
-      // Show user-friendly guidance message
-      const guidanceMessage = t('sessions.player.noSpeech.guidance', {
-        defaultValue: 'No speech detected. Please speak louder or move closer to your microphone.',
-      });
+      // If session stop was requested, send session_end now (no transcript will arrive)
+      if (pendingSessionEnd) {
+        console.log('[SessionPlayer] No speech detected after session stop - sending session_end');
+        if (isConnectedRef.current && endSessionRef.current) {
+          endSessionRef.current();
+        }
+        return;
+      }
 
-      toast.warning(guidanceMessage, {
+      // Not stopping — just guidance for user (audio too quiet or no speech detected)
+      console.log('[SessionPlayer] No speech detected - providing user guidance');
+
+      toast.warning(t('sessions.player.noSpeech.guidance'), {
         duration: 6000,
         action: {
-          label: t('sessions.player.noSpeech.showTips', { defaultValue: 'Show Tips' }),
+          label: t('sessions.player.noSpeech.showTips'),
           onClick: () => {
             const tips = [
-              t('sessions.player.noSpeech.tip1', {
-                defaultValue: '• Speak louder and more clearly',
-              }),
-              t('sessions.player.noSpeech.tip2', {
-                defaultValue: '• Move closer to your microphone (10-20cm)',
-              }),
-              t('sessions.player.noSpeech.tip3', {
-                defaultValue: '• Check your microphone volume settings',
-              }),
-              t('sessions.player.noSpeech.tip4', {
-                defaultValue: '• Ensure your microphone is not muted',
-              }),
+              t('sessions.player.noSpeech.tip1'),
+              t('sessions.player.noSpeech.tip2'),
+              t('sessions.player.noSpeech.tip3'),
+              t('sessions.player.noSpeech.tip4'),
             ].join('\n');
             toast.info(tips, { duration: 10000 });
           },
         },
       });
     },
-    [t]
+    [pendingSessionEnd, t]
   );
 
   // Phase 1.6.1 Day 36: Handle session limit reached
@@ -875,12 +910,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
           // Resend chunk
           if (pending.type === 'audio') {
-            audioBufferRef.current?.addChunk(pending.data, pending.timestamp);
+            audioBufferRef.current?.addChunk(pending.data, pending.timestamp, chunkId);
           } else {
-            // Video chunk resend
+            // Video chunk resend (pass chunkId so server ACK matches pending tracking)
             sendVideoChunkRef.current?.(
               new Blob([pending.data]),
-              pending.timestamp
+              pending.timestamp,
+              chunkId
             );
           }
 
@@ -908,6 +944,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         status,
         error: error?.code,
       });
+
+      // Forward to useAudioRecorder's internal ACK handler to clear its own pending tracking
+      audioRecorderChunkAckRef.current?.(chunkId, status);
 
       setPendingChunks(prev => {
         const pending = prev.get(chunkId);
@@ -955,13 +994,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   );
 
   const handleAuthenticated = useCallback(
-    (sessionId: string, receivedInitialGreeting?: string) => {
+    (sessionId: string, receivedInitialGreeting?: string, receivedWsAckTimeoutMs?: number, receivedWsMaxRetries?: number) => {
       console.log('[SessionPlayer] WebSocket authenticated:', {
         sessionId,
         hasInitialGreeting: !!receivedInitialGreeting,
+        wsAckTimeoutMs: receivedWsAckTimeoutMs,
+        wsMaxRetries: receivedWsMaxRetries,
       });
       setIsAuthenticated(true);
       isAuthenticatedRef.current = true;
+
+      // Apply runtime config values from backend if provided
+      if (receivedWsAckTimeoutMs !== undefined) setWsAckTimeoutMs(receivedWsAckTimeoutMs);
+      if (receivedWsMaxRetries !== undefined) setWsMaxRetries(receivedWsMaxRetries);
 
       // If initial greeting is provided, Lambda will automatically:
       // 1. Send avatar_response_final (transcript will be added by handleAvatarResponse)
@@ -980,7 +1025,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       toast.success(t('sessions.player.messages.authenticated'));
     },
-    [t]
+    [t, setWsAckTimeoutMs, setWsMaxRetries]
   );
 
   // Phase 1.6.1: Handle partial recording notification
@@ -1020,6 +1065,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   } = useWebSocket({
     sessionId: session.id,
     token: token || '',
+    scenarioTitle: scenario.title,
     scenarioPrompt: (scenario.configJson as any)?.systemPrompt, // Extract system prompt from scenario config
     scenarioLanguage: scenario.language,
     initialGreeting: scenario.initialGreeting ?? undefined, // Initial AI greeting from scenario (null → undefined)
@@ -1052,7 +1098,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   });
 
   // Phase 1.6: Audio buffer for batching chunks (reduces network requests by 80%)
-  const sendAudioChunkToWebSocket = useCallback((data: ArrayBuffer, timestamp: number) => {
+  const sendAudioChunkToWebSocket = useCallback((data: ArrayBuffer, timestamp: number, chunkId?: string) => {
     if (sendMessageRef.current && isConnectedRef.current && isAuthenticatedRef.current) {
       const bytes = new Uint8Array(data);
       let binary = '';
@@ -1061,12 +1107,17 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       }
       const base64 = btoa(binary);
 
+      // Extract sequence number from chunkId (format: "audio-{seq}-{timestamp}")
+      // This preserves the monotonically-increasing sequence across the session
+      const seqFromChunkId = chunkId ? parseInt(chunkId.split('-')[1] ?? '0', 10) : 0;
+
       sendMessageRef.current({
         type: 'audio_chunk_realtime',
         data: base64,
         timestamp,
-        sequenceNumber: 0, // Batched chunks don't need individual sequence numbers
+        sequenceNumber: seqFromChunkId,
         contentType: 'audio/webm;codecs=opus',
+        chunkId, // Required for server ACK tracking
       });
     }
   }, []);
@@ -1197,7 +1248,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           });
 
           // 2. Send via WebSocket (through audioBuffer)
-          audioBuffer.addChunk(arrayBuffer, timestamp);
+          audioBuffer.addChunk(arrayBuffer, timestamp, chunkId);
 
           // 3. Update statistics
           setChunkStats(prev => ({
@@ -1325,6 +1376,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     pauseRecording,
     resumeRecording,
     restartRecording,
+    handleChunkAck: audioRecorderHandleChunkAck,
     error: recordingError,
   } = useAudioRecorder({
     enableRealtime: true, // Enable real-time audio chunk sending
@@ -1337,6 +1389,9 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     isAiRespondingRef: isPlayingAudioRef, // Ref for real-time AI audio state (fixes closure issue)
     bypassSpeechDetection: process.env.NEXT_PUBLIC_BYPASS_SPEECH_DETECTION === 'true', // Bypass for E2E tests
   });
+
+  // Keep ref in sync so handleChunkAck (defined earlier) can forward ACKs to useAudioRecorder
+  audioRecorderChunkAckRef.current = audioRecorderHandleChunkAck;
 
   // Audio Visualizer統合
   const {
@@ -1439,17 +1494,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     restartRecordingRef.current = restartRecording;
   }, [restartRecording]);
 
-  // Sync isMicRecording to ref for handleSilenceTimeout
-  useEffect(() => {
-    isMicRecordingRef.current = isMicRecording;
-  }, [isMicRecording]);
-
-  // Cleanup visualizer on unmount
+  // Cleanup audio resources on unmount — ensures intervals are cleared even if
+  // the component is unmounted before the user explicitly stops the session
   useEffect(() => {
     return () => {
+      stopRecording();
       stopVisualizer();
     };
-  }, [stopVisualizer]);
+  }, [stopRecording, stopVisualizer]);
 
   // Update ARIA live region when status changes
   useEffect(() => {
@@ -1478,10 +1530,11 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   }, [processingStage, t]);
 
   // Session control handlers (defined before keyboard shortcuts useEffect)
-  const handleStart = useCallback(async () => {
+  const handleStart = useCallback(async (skipValidation = false) => {
     console.log('[SessionPlayer] handleStart called', {
       token: token ? 'exists' : 'missing',
       status,
+      skipValidation,
     });
 
     // Check browser capabilities
@@ -1505,7 +1558,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       console.log('[SessionPlayer] Starting WebSocket connection...');
 
       // Phase 1.6.1 Day 36: Scenario validation (skip if already confirmed)
-      if (!validationConfirmed) {
+      if (!validationConfirmed && !skipValidation) {
         console.log('[SessionPlayer] Validating scenario before start...');
         const validation = validateScenario(scenario as any);
 
@@ -1545,11 +1598,17 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           audio: false, // 音声は useAudioRecorder で取得済み
         });
 
+        // ストリーム取得成功 → カメラはON（play()の成否に関わらず）
+        cameraStreamRef.current = stream;
+        setIsCameraActive(true);
+        console.log('[SessionPlayer] User camera stream obtained');
+
         if (userVideoRef.current) {
           userVideoRef.current.srcObject = stream;
-          await userVideoRef.current.play();
-          setIsCameraActive(true);
-          console.log('[SessionPlayer] User camera started');
+          // play()失敗はプレビュー表示の問題のみ。カメラ自体は有効
+          userVideoRef.current.play().catch(e => {
+            console.warn('[SessionPlayer] Camera preview play failed (non-critical):', e);
+          });
         }
       } catch (error) {
         console.error('[SessionPlayer] Failed to get user camera:', error);
@@ -1610,8 +1669,8 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     setConfirmDialog({ isOpen: false, warnings: '' });
     setValidationConfirmed(true);
 
-    // Re-trigger handleStart (will skip validation this time)
-    setTimeout(() => handleStart(), 100);
+    // Re-trigger handleStart with skipValidation=true to avoid stale closure issue
+    setTimeout(() => handleStart(true), 100);
   }, [handleStart]);
 
   const handleCancelValidation = useCallback(() => {
@@ -1655,6 +1714,16 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       stopVisualizer();
       console.log('[SessionPlayer] Audio visualizer stopped');
 
+      // 2b. Stop any currently playing AI audio immediately
+      if (audioRef.current) {
+        audioStoppedByUserRef.current = true; // suppress onerror toast for this intentional stop
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        setIsPlayingAudio(false);
+        isPlayingAudioRef.current = false;
+        console.log('[SessionPlayer] AI audio playback stopped');
+      }
+
       // 3. Stop video recording if active
       if (recordingStatus === 'recording' || recordingStatus === 'paused') {
         try {
@@ -1664,16 +1733,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         }
       }
 
-      // 4. Stop user camera
-      if (userVideoRef.current && userVideoRef.current.srcObject) {
-        const stream = userVideoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => {
+      // 4. Stop user camera（cameraStreamRefから停止し、確実にカメラをOFFにする）
+      const cameraStream = cameraStreamRef.current || userVideoRef.current?.srcObject as MediaStream | null;
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => {
           track.stop();
           console.log('[SessionPlayer] Stopped camera track:', track.kind);
         });
-        userVideoRef.current.srcObject = null;
-        setIsCameraActive(false);
+        cameraStreamRef.current = null;
       }
+      if (userVideoRef.current) {
+        userVideoRef.current.srcObject = null;
+      }
+      setIsCameraActive(false);
 
       // 5. If audio was recording, send speech_end and wait for transcript before sending session_end
       if (wasRecording) {
@@ -1715,7 +1787,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       toast.success(t('sessions.player.messages.sessionEnded'));
     }
-  }, [status, isMicRecording, stopRecording, stopVisualizer, t]);
+  }, [status, isMicRecording, stopRecording, stopVisualizer, t, setIsPlayingAudio]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1794,8 +1866,27 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       if (status === 'ACTIVE' || status === 'PAUSED' || status === 'READY') {
         console.log('[SessionPlayer] Browser closing - triggering session cleanup');
 
-        // Trigger session stop immediately
+        // Trigger session stop via WebSocket (best-effort)
         handleStop();
+
+        // Fallback: fire a keepalive REST request so the session is ended
+        // even if the WebSocket is already disconnected or closes before the
+        // message reaches the server.
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+        if (token && apiBase && session?.id) {
+          fetch(`${apiBase}/sessions/${session.id}/end`, { // keepalive-fetch: intentional direct fetch for beforeunload
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({}),
+            keepalive: true, // ensures the request completes even after page unload
+          }).catch(() => {
+            // Silently ignore — the disconnect Lambda is the final safety net
+          });
+        }
 
         // Show browser confirmation dialog to give time for cleanup
         event.preventDefault();
@@ -1822,7 +1913,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [status, handleStop]);
+  }, [status, handleStop, session]);
 
   // 録画機能 - ビデオチャンクハンドラー (Phase 1.6.1: ACK tracking with retry)
   const handleVideoChunk = useCallback(
@@ -1859,7 +1950,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           });
 
           // 2. Send via WebSocket
-          await sendVideoChunkRef.current(chunk, timestamp);
+          await sendVideoChunkRef.current(chunk, timestamp, chunkId);
 
           // 3. Update statistics
           setChunkStats(prev => ({
@@ -2032,7 +2123,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           startVideoRecording().catch(err => {
             console.error('[SessionPlayer] Failed to start video recording:', err);
             console.error('[SessionPlayer] Video recording error details:', err.message, err.stack);
-            toast.warning('ビデオ録画の開始に失敗しました（音声は正常に動作します）');
+            toast.warning(t('sessions.player.recording.messages.startFailed'));
           });
         } else {
           console.warn('[SessionPlayer] Composite canvas not ready, skipping video recording');
@@ -2056,17 +2147,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     }
   }, [status, isConnected, t]);
 
-  // Authentication timeout - 接続後5秒以内に認証が完了しない場合はタイムアウト
+  // Authentication timeout - 接続後、認証が完了しない場合はタイムアウト
+  // NEXT_PUBLIC_WS_AUTH_TIMEOUT_MS で設定（デフォルト15秒）
+  // 15s accounts for Lambda cold start (2-4s) + scenario validation + TTS generation (2-4s)
   useEffect(() => {
     if (isConnected && !isAuthenticated && status === 'READY') {
       const timeoutId = setTimeout(() => {
         if (isConnected && !isAuthenticated) {
-          console.error('[SessionPlayer] Authentication timeout after 5 seconds');
+          console.error(`[SessionPlayer] Authentication timeout after ${WS_AUTH_TIMEOUT_MS}ms`);
           setStatus('IDLE');
           disconnect();
           toast.error(t('sessions.player.messages.authenticationTimeout'));
         }
-      }, 5000); // 5 seconds
+      }, WS_AUTH_TIMEOUT_MS);
 
       return () => clearTimeout(timeoutId);
     }
@@ -2581,7 +2674,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         >
           {status === 'IDLE' && (
             <button
-              onClick={handleStart}
+              onClick={() => handleStart()}
               data-testid="start-button"
               className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 flex items-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               aria-label={t('sessions.player.actions.start') + ' (Space)'}
@@ -2626,7 +2719,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           {status === 'PAUSED' && (
             <>
               <button
-                onClick={handleStart}
+                onClick={() => handleStart()}
                 className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                 aria-label={t('sessions.player.actions.resume') + ' (P or Space)'}
               >
@@ -2690,6 +2783,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               </button>
               <button
                 onClick={handleStop}
+                data-testid="stop-button"
                 className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                 aria-label={t('sessions.player.actions.stop') + ' (Space or Escape)'}
               >
@@ -2711,7 +2805,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           )}
 
           {status === 'COMPLETED' && (
-            <div className="text-center py-2">
+            <div className="text-center py-2" data-testid="session-ended">
               <p className="text-lg font-semibold text-gray-700">
                 {t('sessions.player.completed.title')}
               </p>

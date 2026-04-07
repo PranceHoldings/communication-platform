@@ -11,7 +11,15 @@ interface SessionFixture {
   testSessionId: string;
   testSessionWithRecordingId: string;
   testSessionWithTimerId: string;
+  greetingTestSessionId: string;
 }
+
+/**
+ * Greeting scenario and avatar IDs for stage3-part2 tests.
+ * The scenario has initialGreeting + systemPrompt configured.
+ */
+const GREETING_SCENARIO_ID = '4c781d7a-3bba-483f-88a2-c929ba6480e4';
+const GREETING_AVATAR_ID = 'af54feb4-86e3-4597-ae78-3a40b14f545a';
 
 /**
  * Known test session with recordings for E2E tests
@@ -19,9 +27,21 @@ interface SessionFixture {
  */
 const KNOWN_TEST_SESSION_WITH_RECORDING = '44040076-ebb5-4579-b019-e81c0ad1713c';
 
+/**
+ * E2E Test scenario with initialGreeting + systemPrompt configured.
+ * Used by testSessionId fixture for Stage 3 full E2E tests.
+ * Scenario: "E2E Test - Complete Scenario"
+ */
+const E2E_TEST_SCENARIO_ID = '050dcffe-d4c6-4ddf-9c88-fff799220d73';
+const E2E_TEST_AVATAR_ID = 'af54feb4-86e3-4597-ae78-3a40b14f545a';
+
 export const test = base.extend<SessionFixture>({
   testSessionId: async ({ authenticatedPage }, use) => {
-    // Fetch any session from the API
+    // Provide a session where the SessionPlayer UI is rendered (status = ACTIVE).
+    // Strategy:
+    //   1. Check recent sessions for an ACTIVE one.
+    //   2. If none exists, create a fresh session using the most recent session's
+    //      scenarioId + avatarId so we always have a predictable ACTIVE session.
     try {
       const accessToken = await authenticatedPage.evaluate(() => {
         return localStorage.getItem('accessToken');
@@ -40,14 +60,16 @@ export const test = base.extend<SessionFixture>({
         );
       }
 
-      console.log(`🔑 Access Token: ${accessToken.substring(0, 20)}...`);
-      console.log(`🌐 API URL: ${apiUrl}/sessions?limit=1`);
+      const authHeaders = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      };
 
-      const response = await authenticatedPage.request.get(`${apiUrl}/sessions?limit=1`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+      console.log(`🔑 Access Token: ${accessToken.substring(0, 20)}...`);
+      console.log(`🌐 API URL: ${apiUrl}/sessions?limit=10`);
+
+      const response = await authenticatedPage.request.get(`${apiUrl}/sessions?limit=10`, {
+        headers: authHeaders,
       });
 
       console.log(`📡 Response Status: ${response.status()}`);
@@ -59,10 +81,19 @@ export const test = base.extend<SessionFixture>({
       }
 
       const data = await response.json();
-      console.log(`📦 Sessions API Response: ${JSON.stringify(data).substring(0, 300)}...`);
-
       const sessions = data.data?.sessions || data.sessions || [];
       console.log(`📊 Found ${sessions.length} sessions`);
+
+      // Prefer an ACTIVE session — it renders SessionPlayer (the component under test)
+      const activeSession = sessions.find((s: any) => s.status === 'ACTIVE');
+      if (activeSession) {
+        console.log(`✅ Found ACTIVE session: ${activeSession.id}`);
+        await use(activeSession.id);
+        return;
+      }
+
+      // No ACTIVE session — create one so the page shows SessionPlayer
+      console.log('⚠️  No ACTIVE session found. Creating a fresh session for UI tests...');
 
       if (sessions.length === 0) {
         throw new Error(
@@ -70,14 +101,29 @@ export const test = base.extend<SessionFixture>({
         );
       }
 
-      const sessionId = sessions[0].id;
-      console.log(`✅ Using test session ID: ${sessionId}`);
+      // Always create new sessions with the known E2E test scenario for predictable behavior
+      const createResponse = await authenticatedPage.request.post(`${apiUrl}/sessions`, {
+        headers: authHeaders,
+        data: { scenarioId: E2E_TEST_SCENARIO_ID, avatarId: E2E_TEST_AVATAR_ID },
+      });
 
-      await use(sessionId);
+      if (!createResponse.ok()) {
+        // Fall back to any session if creation fails
+        console.warn(`⚠️  Session creation failed (${createResponse.status()}). Falling back to most recent session.`);
+        console.log(`✅ Using fallback session ID: ${sessions[0].id}`);
+        await use(sessions[0].id);
+        return;
+      }
+
+      const created = await createResponse.json();
+      const newSessionId = (created.data || created).id;
+      console.log(`✅ Created fresh ACTIVE session: ${newSessionId}`);
+      await use(newSessionId);
+
     } catch (error) {
-      console.error('Failed to fetch test session:', error);
+      console.error('Failed to fetch/create test session:', error);
       throw new Error(
-        'Could not fetch test session. Ensure the API is running and at least one session exists.'
+        'Could not obtain a test session. Ensure the API is running and at least one session exists.'
       );
     }
   },
@@ -266,6 +312,52 @@ export const test = base.extend<SessionFixture>({
     } catch (error) {
       console.error('Failed to fetch test session for timer:', error);
       throw new Error('Could not fetch test session for timer tests.');
+    }
+  },
+
+  greetingTestSessionId: async ({ authenticatedPage }, use) => {
+    // Always create a fresh ACTIVE session using the greeting scenario.
+    // A new session is required per test because each test run completes the session
+    // (changing status to COMPLETED), which makes the session unusable for subsequent runs.
+    try {
+      const accessToken = await authenticatedPage.evaluate(() => {
+        return localStorage.getItem('accessToken');
+      });
+
+      if (!accessToken) {
+        throw new Error('No access token found in localStorage');
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        throw new Error('NEXT_PUBLIC_API_URL is required');
+      }
+
+      const authHeaders = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      };
+
+      console.log(`🎙️  Creating fresh session for greeting test (scenario: ${GREETING_SCENARIO_ID})`);
+
+      const createResponse = await authenticatedPage.request.post(`${apiUrl}/sessions`, {
+        headers: authHeaders,
+        data: { scenarioId: GREETING_SCENARIO_ID, avatarId: GREETING_AVATAR_ID },
+      });
+
+      if (!createResponse.ok()) {
+        const body = await createResponse.text();
+        throw new Error(`Failed to create greeting test session: ${createResponse.status()} - ${body}`);
+      }
+
+      const created = await createResponse.json();
+      const newSessionId = (created.data || created).id;
+      console.log(`✅ Created fresh greeting test session: ${newSessionId}`);
+
+      await use(newSessionId);
+    } catch (error) {
+      console.error('Failed to create greeting test session:', error);
+      throw new Error(`Could not create greeting test session: ${error}`);
     }
   },
 });

@@ -4,29 +4,22 @@
 # Purpose: Extract missing keys from English language files only
 #
 
-set -e
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$PROJECT_ROOT" ]; then
-  echo -e "${RED}Error: Not in a git repository${NC}"
+  log_error "Not in a git repository"
   exit 1
 fi
 
 cd "$PROJECT_ROOT" || exit 1
 
-echo "============================================"
-echo "Extract Missing Keys - English Only"
-echo "============================================"
-echo ""
+log_section "Extract Missing Keys - English Only"
 
 # Step 1: Extract all translation keys used in code
-echo -e "${BLUE}[Step 1/3]${NC} Extracting translation keys from code..."
+log_step 1 "Extracting translation keys from code..."
 
 TEMP_KEYS="/tmp/i18n-keys-used-$$.txt"
 find apps/web/app apps/web/components apps/web/lib -name "*.tsx" -o -name "*.ts" 2>/dev/null | \
@@ -37,11 +30,11 @@ find apps/web/app apps/web/components apps/web/lib -name "*.tsx" -o -name "*.ts"
   sort -u > "$TEMP_KEYS" || touch "$TEMP_KEYS"
 
 KEYS_COUNT=$(wc -l < "$TEMP_KEYS" | tr -d ' ')
-echo "  Found $KEYS_COUNT unique translation keys in code"
+log_info "Found $KEYS_COUNT unique translation keys in code"
 echo ""
 
 # Step 2: Extract keys from English translation files
-echo -e "${BLUE}[Step 2/3]${NC} Extracting keys from English translation files..."
+log_step 2 "Extracting keys from English translation files..."
 
 TEMP_EN_KEYS="/tmp/i18n-keys-en-$$.txt"
 > "$TEMP_EN_KEYS"
@@ -60,11 +53,11 @@ for json_file in $TRANSLATION_FILES; do
 done
 
 EN_KEYS_COUNT=$(wc -l < "$TEMP_EN_KEYS" | tr -d ' ')
-echo "  Found $EN_KEYS_COUNT keys in English translation files"
+log_info "Found $EN_KEYS_COUNT keys in English translation files"
 echo ""
 
 # Step 3: Find missing keys
-echo -e "${BLUE}[Step 3/3]${NC} Finding missing keys in English..."
+log_step 3 "Finding missing keys in English..."
 
 MISSING_KEYS=()
 MISSING_BY_CATEGORY=()
@@ -85,18 +78,16 @@ while IFS= read -r key; do
 done < "$TEMP_KEYS"
 
 echo ""
-echo "============================================"
-echo "Missing Keys Summary"
-echo "============================================"
+log_section "Missing Keys Summary"
 echo "  Total keys used: $KEYS_COUNT"
 echo "  Total keys in English: $EN_KEYS_COUNT"
 echo "  Missing keys: ${#MISSING_KEYS[@]}"
 echo ""
 
 if [ ${#MISSING_KEYS[@]} -eq 0 ]; then
-  echo -e "${GREEN}✅ All keys found in English translation files${NC}"
+  log_success "All keys found in English translation files"
 else
-  echo -e "${RED}Missing ${#MISSING_KEYS[@]} keys in English:${NC}"
+  log_error "Missing ${#MISSING_KEYS[@]} keys in English:"
   echo ""
 
   # Group by category (simpler approach without associative arrays)
@@ -106,7 +97,7 @@ else
   for category in $CATEGORIES; do
     category_keys=$(printf '%s\n' "${MISSING_KEYS[@]}" | grep "^$category\.")
     count=$(echo "$category_keys" | wc -l | tr -d ' ')
-    echo -e "${YELLOW}[$category] - $count keys:${NC}"
+    log_warning "[$category] - $count keys:"
     echo "$category_keys" | sed 's/^/  /'
     echo ""
   done
@@ -123,7 +114,7 @@ else
     echo "$key" >> "$OUTPUT_FILE"
   done
 
-  echo -e "${GREEN}Saved to: $OUTPUT_FILE${NC}"
+  log_success "Saved to: $OUTPUT_FILE"
 fi
 
 # Cleanup

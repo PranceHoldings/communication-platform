@@ -68,7 +68,8 @@ export class SessionPlayerPage {
 
     // Transcript
     this.transcript = page.locator('[data-testid="transcript"]').first();
-    this.transcriptMessages = page.locator('[data-testid="transcript-message"]');
+    // Match both AI messages (data-testid="ai-message") and USER messages (data-testid="transcript-message")
+    this.transcriptMessages = page.locator('[data-testid="transcript-message"], [data-testid="ai-message"]');
 
     // Duration
     this.duration = page.locator('[data-testid="session-duration"]').first();
@@ -87,6 +88,12 @@ export class SessionPlayerPage {
    */
   async startSession(): Promise<void> {
     await this.startButton.click();
+    // Handle scenario validation warning dialog if it appears
+    const confirmDialog = this.page.locator('[data-testid="confirm-dialog"]');
+    const isDialogVisible = await confirmDialog.isVisible({ timeout: 2000 }).catch(() => false);
+    if (isDialogVisible) {
+      await this.page.locator('[data-testid="confirm-dialog-confirm"]').click();
+    }
   }
 
   /**

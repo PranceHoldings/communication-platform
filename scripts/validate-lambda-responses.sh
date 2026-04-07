@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Lambda Response Structure Validator
+# Lambda Response Structure Validator (v2 - Shared Library版)
 #
 # Validates that all Lambda functions return standard response structure.
 # Detects direct response construction (forbidden pattern).
@@ -10,20 +10,13 @@
 #   1 - Direct response construction detected
 #
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 LAMBDA_DIR="infrastructure/lambda"
-ERROR_COUNT=0
 
-echo ""
-echo "🔍 Validating Lambda Response Structures..."
-echo ""
+log_section "Validating Lambda Response Structures"
 
 # ============================================================
 # Pattern 1: Direct response construction (FORBIDDEN)
@@ -39,13 +32,13 @@ DIRECT_RESPONSES=$(grep -rn "return {" "$LAMBDA_DIR" --include="*.ts" --exclude-
   | grep -v "// ALLOWED:" || true)
 
 if [ -n "$DIRECT_RESPONSES" ]; then
-  echo -e "${RED}❌ Direct response construction detected:${NC}"
+  log_error "Direct response construction detected:"
   echo "$DIRECT_RESPONSES" | while IFS= read -r line; do
     echo "  $line"
-    ((ERROR_COUNT++))
+    increment_counter ERRORS
   done
   echo ""
-  echo -e "${YELLOW}FIX: Use successResponse() or errorResponse()${NC}"
+  log_warning "FIX: Use successResponse() or errorResponse()"
   echo "Example:"
   echo "  return successResponse({ items: data });"
   echo ""
@@ -64,13 +57,13 @@ INVALID_JSON=$(grep -rn "JSON.stringify({" "$LAMBDA_DIR" --include="*.ts" --excl
   | grep -v ".eslintrc.js" || true)
 
 if [ -n "$INVALID_JSON" ]; then
-  echo -e "${YELLOW}⚠️  JSON.stringify() without success field:${NC}"
+  log_warning "JSON.stringify() without success field:"
   echo "$INVALID_JSON" | while IFS= read -r line; do
     echo "  $line"
-    ((ERROR_COUNT++))
+    increment_counter ERRORS
   done
   echo ""
-  echo -e "${YELLOW}FIX: Ensure response has { success: true/false } structure${NC}"
+  log_warning "FIX: Ensure response has { success: true/false } structure"
   echo ""
 fi
 
@@ -87,7 +80,7 @@ for handler in $LAMBDA_HANDLERS; do
   if grep -q "return" "$handler" && grep -q "statusCode" "$handler"; then
     # Check if it imports response utilities
     if ! grep -q "from.*shared/utils/response" "$handler"; then
-      echo -e "${YELLOW}⚠️  Missing import: $handler${NC}"
+      log_warning "Missing import: $handler"
       ((MISSING_IMPORTS++))
     fi
   fi
@@ -95,10 +88,12 @@ done
 
 if [ $MISSING_IMPORTS -gt 0 ]; then
   echo ""
-  echo -e "${YELLOW}FIX: Import response utilities:${NC}"
+  log_warning "FIX: Import response utilities:"
   echo "  import { successResponse, errorResponse } from '../../shared/utils/response';"
   echo ""
-  ((ERROR_COUNT += MISSING_IMPORTS))
+  for ((i=0; i<MISSING_IMPORTS; i++)); do
+    increment_counter ERRORS
+  done
 fi
 
 # ============================================================
@@ -112,13 +107,13 @@ MISSING_RETURN_TYPES=$(grep -rn "export const handler = async" "$LAMBDA_DIR" --i
   | grep -v "shared/" || true)
 
 if [ -n "$MISSING_RETURN_TYPES" ]; then
-  echo -e "${YELLOW}⚠️  Lambda handlers without explicit return types:${NC}"
+  log_warning "Lambda handlers without explicit return types:"
   echo "$MISSING_RETURN_TYPES" | while IFS= read -r line; do
     echo "  $line"
-    ((ERROR_COUNT++))
+    increment_counter ERRORS
   done
   echo ""
-  echo -e "${YELLOW}FIX: Add explicit return type:${NC}"
+  log_warning "FIX: Add explicit return type:"
   echo "  export const handler = async (event): Promise<StandardLambdaResponse<MyDataType>> => {"
   echo ""
 fi
@@ -126,14 +121,14 @@ fi
 # ============================================================
 # Summary
 # ============================================================
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_separator
 
-if [ "$ERROR_COUNT" -eq 0 ]; then
-  echo -e "${GREEN}✅ All Lambda functions use standard response structure${NC}"
+if [ "$ERRORS" -eq 0 ]; then
+  log_success "All Lambda functions use standard response structure"
   echo ""
   exit 0
 else
-  echo -e "${RED}❌ Found ${ERROR_COUNT} response structure violation(s)${NC}"
+  log_error "Found ${ERRORS} response structure violation(s)"
   echo ""
   echo "Documentation:"
   echo "  - infrastructure/lambda/shared/types/api-response.ts"

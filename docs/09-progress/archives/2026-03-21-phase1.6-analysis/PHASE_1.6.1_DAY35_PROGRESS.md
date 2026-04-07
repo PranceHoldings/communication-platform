@@ -458,7 +458,7 @@ bash scripts/sync-env-vars.sh
 ```bash
 # Lambda関数再デプロイ必要
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 ### 3. フロントエンド対応

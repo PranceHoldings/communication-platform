@@ -165,6 +165,7 @@ export default function NewScenarioPage() {
       {/* Form */}
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="bg-white rounded-lg border border-gray-200 p-6 space-y-6"
       >
         {/* Title */}

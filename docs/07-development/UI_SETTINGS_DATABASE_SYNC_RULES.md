@@ -46,12 +46,12 @@ model Scenario {
 ```
 
 - [ ] **1.2 マイグレーション作成**
-  - [ ] `npx prisma migrate dev --name add_<feature>_settings`
+  - [ ] `pnpm exec prisma migrate dev --name add_<feature>_settings`
   - [ ] マイグレーションファイルを確認（デフォルト値が意図通りか）
   - [ ] 既存データへの影響を検証
 
 - [ ] **1.3 Prisma Client再生成**
-  - [ ] `npx prisma generate`
+  - [ ] `pnpm exec prisma generate`
   - [ ] 型定義が更新されることを確認
 
 ---
@@ -285,7 +285,7 @@ console.log('[Component] Settings:', {
 
 ```bash
 # 自動検証スクリプト実行
-npm run validate:ui-settings
+pnpm run validate:ui-settings
 ```
 
 **検証内容:**
@@ -321,13 +321,13 @@ npm run validate:ui-settings
 
 ```bash
 # Step 1: フィールド名を指定して検証
-npm run validate:ui-settings -- --field showSilenceTimer
+pnpm run validate:ui-settings -- --field showSilenceTimer
 
 # Step 2: 全フィールドを検証
-npm run validate:ui-settings
+pnpm run validate:ui-settings
 
 # Step 3: デプロイ前検証（全チェック）
-npm run pre-deploy
+pnpm run pre-deploy
 ```
 
 ### 出力例

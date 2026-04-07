@@ -15,41 +15,37 @@
 # 3. Enforces use of wrapper scripts
 ##############################################################################
 
-# Color codes
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Function to display deployment reminder
 show_deployment_reminder() {
   echo ""
-  echo -e "${YELLOW}========================================${NC}"
-  echo -e "${YELLOW}⚠️  DEPLOYMENT REMINDER${NC}"
-  echo -e "${YELLOW}========================================${NC}"
+  log_warning "DEPLOYMENT REMINDER"
+  print_separator
   echo ""
-  echo -e "${RED}Do NOT use 'cd infrastructure && npx cdk deploy' directly!${NC}"
+  log_error "Do NOT use 'cd infrastructure && pnpm exec cdk deploy' directly!"
   echo ""
   echo "Correct deployment methods:"
   echo ""
-  echo "  ${GREEN}1. WebSocket Lambda functions:${NC}"
+  log_success "1. WebSocket Lambda functions:"
   echo "     ./scripts/deploy-lambda-websocket-manual.sh"
   echo ""
-  echo "  ${GREEN}2. Other stacks:${NC}"
+  log_success "2. Other stacks:"
   echo "     ./scripts/cdk-deploy-wrapper.sh Prance-dev-<StackName>"
   echo ""
-  echo "  ${GREEN}3. Full deployment:${NC}"
-  echo "     npm run build:deploy"
+  log_success "3. Full deployment:"
+  echo "     pnpm run build:deploy"
   echo ""
-  echo -e "${YELLOW}========================================${NC}"
+  print_separator
   echo ""
 }
 
 # Create alias to prevent direct CDK usage in infrastructure directory
 cdk() {
   if [ "$1" = "deploy" ]; then
-    echo -e "${RED}ERROR: Direct 'cdk deploy' is not allowed!${NC}"
+    log_error "Direct 'cdk deploy' is not allowed!"
     echo ""
     show_deployment_reminder
     return 1
@@ -59,18 +55,16 @@ cdk() {
   fi
 }
 
-# Create npm run shortcuts with validation
+# Create pnpm run shortcuts with validation
 npm-deploy() {
-  echo -e "${YELLOW}⚠️  Intercepted npm deployment command${NC}"
+  log_warning "Intercepted npm deployment command"
   show_deployment_reminder
 
-  read -p "Use recommended deployment method? (y/n): " -n 1 -r
-  echo ""
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
+  if confirm "Use recommended deployment method?" "y"; then
     cd /workspaces/prance-communication-platform
     ./scripts/cdk-deploy-wrapper.sh "$1"
   else
-    echo -e "${RED}Deployment cancelled${NC}"
+    log_error "Deployment cancelled"
     return 1
   fi
 }
@@ -80,5 +74,5 @@ export -f show_deployment_reminder
 export -f cdk
 export -f npm-deploy
 
-echo -e "${GREEN}✓ Deployment rules enforced${NC}"
+log_success "Deployment rules enforced"
 echo "Run 'show_deployment_reminder' to see proper deployment methods"

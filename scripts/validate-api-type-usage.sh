@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# API Type Usage Validator
+# API Type Usage Validator (v2 - Shared Library版)
 #
 # Validates that Frontend API calls use types from @prance/shared
 # Prevents type mismatches between caller and callee
@@ -10,21 +10,13 @@
 #   1 - Type mismatches detected
 #
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 FRONTEND_DIR="apps/web"
-ERROR_COUNT=0
 
-echo ""
-echo -e "${BLUE}🔍 Validating API Type Usage...${NC}"
-echo ""
+log_section "Validating API Type Usage"
 
 # ============================================================
 # Check 1: Frontend API functions use shared types
@@ -40,23 +32,23 @@ for file in $API_FILES; do
   if grep -q "apiClient\." "$file"; then
     # Check if file imports types from @prance/shared
     if ! grep -q "from '@prance/shared'" "$file"; then
-      echo -e "${YELLOW}⚠️  Missing import: $file${NC}"
+      log_warning "Missing import: $file"
       echo "   Should import response types from '@prance/shared'"
       ((NO_TYPE_ANNOTATIONS++))
     fi
 
     # Check for inline interface definitions (anti-pattern)
     if grep -q "^interface.*Response {" "$file"; then
-      echo -e "${RED}❌ Inline interface detected: $file${NC}"
+      log_error "Inline interface detected: $file"
       echo "   Use shared types from '@prance/shared' instead"
-      ((ERROR_COUNT++))
+      increment_counter ERRORS
     fi
   fi
 done
 
 if [ $NO_TYPE_ANNOTATIONS -gt 0 ]; then
   echo ""
-  echo -e "${YELLOW}Fix: Import types from @prance/shared${NC}"
+  log_warning "Fix: Import types from @prance/shared"
   echo "  import type { GuestSessionListResponse } from '@prance/shared';"
   echo ""
 fi
@@ -77,7 +69,7 @@ for handler in $LAMBDA_HANDLERS; do
 
     # Check if it has explicit return type
     if ! grep -q "Promise<StandardLambdaResponse" "$handler"; then
-      echo -e "${YELLOW}⚠️  Missing return type: $handler${NC}"
+      log_warning "Missing return type: $handler"
       echo "   Should use: Promise<StandardLambdaResponse<ResponseType>>"
     fi
   fi
@@ -90,16 +82,16 @@ echo ""
 echo "Checking type consistency..."
 
 # This is done by TypeScript compiler, but we can add additional checks
-echo -e "${GREEN}✓ Type checking delegated to TypeScript compiler${NC}"
+log_success "Type checking delegated to TypeScript compiler"
 
 # ============================================================
 # Summary
 # ============================================================
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_separator
 
-if [ "$ERROR_COUNT" -eq 0 ]; then
-  echo -e "${GREEN}✅ API type usage is consistent${NC}"
+if [ "$ERRORS" -eq 0 ]; then
+  log_success "API type usage is consistent"
   echo ""
   echo "Best practices:"
   echo "  1. Always import types from @prance/shared"
@@ -108,7 +100,7 @@ if [ "$ERROR_COUNT" -eq 0 ]; then
   echo ""
   exit 0
 else
-  echo -e "${RED}❌ Found ${ERROR_COUNT} type consistency violation(s)${NC}"
+  log_error "Found ${ERRORS} type consistency violation(s)"
   echo ""
   echo "Documentation:"
   echo "  - packages/shared/src/types/api.ts"

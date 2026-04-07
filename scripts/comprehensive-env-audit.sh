@@ -9,20 +9,15 @@
 
 set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 PROJECT_ROOT="/workspaces/prance-communication-platform"
 LAMBDA_DIR="${PROJECT_ROOT}/infrastructure/lambda"
 OUTPUT_FILE="${PROJECT_ROOT}/docs/09-progress/archives/2026-03-20-environment-variable-audit/DETAILED_AUDIT_RESULTS.md"
 
-echo "=================================================="
-echo "Comprehensive Environment Variable Audit"
-echo "=================================================="
+log_section "Comprehensive Environment Variable Audit"
 echo ""
 
 # Create output file header
@@ -45,7 +40,7 @@ cat > "$OUTPUT_FILE" << 'EOF'
 
 EOF
 
-echo "Step 1: Analyzing Lambda functions..."
+log_info "Step 1: Analyzing Lambda functions..."
 
 # Find all Lambda function handlers
 LAMBDA_FUNCTIONS=$(find "$LAMBDA_DIR" -type f -name "index.ts" \
@@ -129,7 +124,7 @@ FUNC_EOF2
 done
 
 echo ""
-echo "Step 2: Extracting CDK environment definitions..."
+log_info "Step 2: Extracting CDK environment definitions..."
 
 CDK_FILE="${PROJECT_ROOT}/infrastructure/lib/api-lambda-stack.ts"
 
@@ -137,7 +132,7 @@ CDK_FILE="${PROJECT_ROOT}/infrastructure/lib/api-lambda-stack.ts"
 # This is complex - we'll extract function names and their environment vars
 
 echo ""
-echo "Step 3: Generating summary..."
+log_info "Step 3: Generating summary..."
 
 cat >> "$OUTPUT_FILE" << 'EOF'
 
@@ -150,7 +145,7 @@ EOF
 echo "- Total Lambda functions analyzed: $TOTAL_FUNCTIONS" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-echo -e "${GREEN}✅ Audit complete!${NC}"
+log_success "Audit complete!"
 echo ""
 echo "Results saved to:"
 echo "  $OUTPUT_FILE"

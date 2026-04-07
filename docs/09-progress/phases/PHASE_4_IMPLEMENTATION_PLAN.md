@@ -164,7 +164,7 @@ interface UserSessionHistoryItem {
 
 ```bash
 cd infrastructure
-npm run deploy:dynamodb
+pnpm run deploy:dynamodb
 ```
 
 **検証:**
@@ -713,8 +713,8 @@ const getBenchmarkFunction = new lambda.Function(this, 'GetBenchmarkFunction', {
         'bash',
         '-c',
         [
-          'npm install',
-          'npx esbuild index.ts --bundle --platform=node --target=node22 --outfile=/asset-output/index.js',
+          'pnpm install',
+          'pnpm exec esbuild index.ts --bundle --platform=node --target=node22 --outfile=/asset-output/index.js',
           'cp package.json /asset-output/',
         ].join(' && '),
       ],
@@ -1202,11 +1202,11 @@ export function AIInsights({ benchmark, sessionId }: Props) {
 ```bash
 # 統計ユーティリティテスト
 cd infrastructure/lambda/shared/utils
-npm test -- statistics.test.ts
+pnpm test -- statistics.test.ts
 
 # API統合テスト
 cd apps/web
-npm test -- benchmark.test.ts
+pnpm test -- benchmark.test.ts
 ```
 
 ### 2. E2Eテスト
@@ -1246,16 +1246,16 @@ test.describe('Benchmark System', () => {
 ```bash
 # Lambda関数デプロイ
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # Frontend デプロイ
 cd apps/web
-npm run build
+pnpm run build
 # Amplify auto-deploy (git push)
 
 # DynamoDB テーブルデプロイ
 cd infrastructure
-npm run deploy:dynamodb
+pnpm run deploy:dynamodb
 ```
 
 ### 4. 検証

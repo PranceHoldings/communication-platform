@@ -383,16 +383,18 @@ export async function getScorePresetWeights(preset: string): Promise<{
 }
 
 // Individual preset weight getters
+// IMPORTANT: preset names must match ScoringPreset type in packages/shared/src/types/index.ts
+// DB keys are generated as SCORE_PRESET_{PRESET_UPPERCASE}_{COMPONENT}
 export async function getScorePresetDefaultWeights() {
   return getScorePresetWeights('default');
 }
 
 export async function getScorePresetInterviewWeights() {
-  return getScorePresetWeights('interview');
+  return getScorePresetWeights('interview_practice');
 }
 
 export async function getScorePresetLanguageWeights() {
-  return getScorePresetWeights('language');
+  return getScorePresetWeights('language_learning');
 }
 
 export async function getScorePresetPresentationWeights() {
@@ -401,4 +403,13 @@ export async function getScorePresetPresentationWeights() {
 
 export async function getScorePresetCustomWeights() {
   return getScorePresetWeights('custom');
+}
+
+// WebSocket Session Behavior
+export async function getWsAckTimeoutMs(): Promise<number> {
+  return getRuntimeConfig<number>('WS_ACK_TIMEOUT_MS');
+}
+
+export async function getWsMaxRetries(): Promise<number> {
+  return getRuntimeConfig<number>('WS_MAX_RETRIES');
 }

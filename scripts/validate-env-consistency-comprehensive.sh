@@ -3,22 +3,15 @@
 # 環境変数の包括的整合性検証スクリプト
 # 今回の問題の再発を100%防止する
 
-set -e
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
+# Load shared library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$PROJECT_ROOT"
 
-echo -e "${BLUE}=================================================================="
-echo "環境変数整合性の包括的検証"
-echo -e "==================================================================${NC}"
+log_section "環境変数整合性の包括的検証"
 echo ""
 
 ERRORS_FOUND=0
@@ -43,7 +36,7 @@ EAGER_EVAL_COUNT=$(grep -n "getRequiredEnv\|getOptionalEnv" "$CONFIG_FILE" \
   | wc -l)
 
 if [ "$EAGER_EVAL_COUNT" -gt 0 ]; then
-  echo -e "${RED}✗ Eager evaluation detected in config/index.ts${NC}"
+  log_error "Eager evaluation detected in config/index.ts"
   grep -n "getRequiredEnv\|getOptionalEnv" "$CONFIG_FILE" \
     | grep -v "^[0-9]*:import" \
     | grep -v "get.*() {.*return getRequiredEnv" \
@@ -51,7 +44,7 @@ if [ "$EAGER_EVAL_COUNT" -gt 0 ]; then
     | head -5
   ERRORS_FOUND=$((ERRORS_FOUND + 1))
 else
-  echo -e "${GREEN}✓ All config uses lazy evaluation (getters)${NC}"
+  log_success "All config uses lazy evaluation (getters)"
 fi
 echo ""
 
@@ -78,12 +71,12 @@ DIRECT_ACCESS=$(grep -r "process\.env\.[A-Z_]" infrastructure/lambda/shared --in
   || true)
 
 if [ -n "$DIRECT_ACCESS" ]; then
-  echo -e "${YELLOW}⚠ Direct process.env access found (review needed):${NC}"
+  log_warning "Direct process.env access found (review needed):"
   echo "$DIRECT_ACCESS" | head -10
   echo ""
-  echo -e "${YELLOW}  Recommendation: Use getRequiredEnv() or getOptionalEnv()${NC}"
+  log_info "  Recommendation: Use getRequiredEnv() or getOptionalEnv()"
 else
-  echo -e "${GREEN}✓ No unauthorized direct process.env access${NC}"
+  log_success "No unauthorized direct process.env access"
 fi
 echo ""
 
@@ -102,10 +95,10 @@ CONNECT_ENV=$(aws lambda get-function-configuration \
 CONNECT_COUNT=$(echo "$CONNECT_ENV" | jq 'keys | length' 2>/dev/null || echo "0")
 
 if [ "$CONNECT_COUNT" -le 8 ]; then
-  echo -e "${GREEN}✓ WebSocket connect has minimal env vars: $CONNECT_COUNT${NC}"
+  log_success "WebSocket connect has minimal env vars: $CONNECT_COUNT"
 else
-  echo -e "${RED}✗ WebSocket connect has too many env vars: $CONNECT_COUNT${NC}"
-  echo -e "${RED}  Expected: ≤8, Got: $CONNECT_COUNT${NC}"
+  log_error "WebSocket connect has too many env vars: $CONNECT_COUNT"
+  log_error "  Expected: ≤8, Got: $CONNECT_COUNT"
   ERRORS_FOUND=$((ERRORS_FOUND + 1))
 fi
 
@@ -119,10 +112,10 @@ DISCONNECT_ENV=$(aws lambda get-function-configuration \
 DISCONNECT_COUNT=$(echo "$DISCONNECT_ENV" | jq 'keys | length' 2>/dev/null || echo "0")
 
 if [ "$DISCONNECT_COUNT" -le 6 ]; then
-  echo -e "${GREEN}✓ WebSocket disconnect has minimal env vars: $DISCONNECT_COUNT${NC}"
+  log_success "WebSocket disconnect has minimal env vars: $DISCONNECT_COUNT"
 else
-  echo -e "${RED}✗ WebSocket disconnect has too many env vars: $DISCONNECT_COUNT${NC}"
-  echo -e "${RED}  Expected: ≤6, Got: $DISCONNECT_COUNT${NC}"
+  log_error "WebSocket disconnect has too many env vars: $DISCONNECT_COUNT"
+  log_error "  Expected: ≤6, Got: $DISCONNECT_COUNT"
   ERRORS_FOUND=$((ERRORS_FOUND + 1))
 fi
 
@@ -143,9 +136,9 @@ ELEVENLABS_FUNCS=$(aws lambda list-functions --region us-east-1 \
 ELEVENLABS_COUNT=$(echo "$ELEVENLABS_FUNCS" | grep -c "prance" || echo "0")
 
 if [ "$ELEVENLABS_COUNT" -le 2 ]; then
-  echo -e "${GREEN}✓ ELEVENLABS_API_KEY limited to $ELEVENLABS_COUNT functions${NC}"
+  log_success "ELEVENLABS_API_KEY limited to $ELEVENLABS_COUNT functions"
 else
-  echo -e "${YELLOW}⚠ ELEVENLABS_API_KEY found in $ELEVENLABS_COUNT functions:${NC}"
+  log_warning "ELEVENLABS_API_KEY found in $ELEVENLABS_COUNT functions:"
   echo "$ELEVENLABS_FUNCS"
 fi
 echo ""
@@ -166,11 +159,11 @@ LOGIN_HAS_BEDROCK=$(echo "$LOGIN_ENV" | jq -e '.BEDROCK_REGION' > /dev/null 2>&1
 LOGIN_HAS_ELEVENLABS=$(echo "$LOGIN_ENV" | jq -e '.ELEVENLABS_API_KEY' > /dev/null 2>&1 && echo "yes" || echo "no")
 
 if [ "$LOGIN_HAS_ELEVENLABS" = "yes" ]; then
-  echo -e "${YELLOW}⚠ auth-login has ELEVENLABS_API_KEY (likely unused)${NC}"
+  log_warning "auth-login has ELEVENLABS_API_KEY (likely unused)"
 fi
 
 if [ "$LOGIN_HAS_BEDROCK" = "yes" ]; then
-  echo -e "${GREEN}✓ auth-login has BEDROCK_REGION (likely used)${NC}"
+  log_success "auth-login has BEDROCK_REGION (likely used)"
 fi
 echo ""
 
@@ -183,33 +176,31 @@ echo -e "${YELLOW}[5/5]${NC} Validating type definition consistency..."
 CONFIG_FILE="infrastructure/lambda/shared/config/index.ts"
 
 if grep -q "get API_KEY()" "$CONFIG_FILE"; then
-  echo -e "${GREEN}✓ shared/config/index.ts uses getter functions (lazy evaluation)${NC}"
+  log_success "shared/config/index.ts uses getter functions (lazy evaluation)"
 else
-  echo -e "${RED}✗ shared/config/index.ts does not use getter functions${NC}"
+  log_error "shared/config/index.ts does not use getter functions"
   ERRORS_FOUND=$((ERRORS_FOUND + 1))
 fi
 
 if grep -q "} as const;" "$CONFIG_FILE"; then
-  echo -e "${YELLOW}⚠ Found 'as const' in config (should be removed for getters)${NC}"
+  log_warning "Found 'as const' in config (should be removed for getters)"
 fi
 echo ""
 
 # ============================================================
 # Summary
 # ============================================================
-echo -e "${BLUE}=================================================================="
-echo "Validation Summary"
-echo -e "==================================================================${NC}"
+log_section "Validation Summary"
 
 if [ "$ERRORS_FOUND" -eq 0 ]; then
-  echo -e "${GREEN}✓ All checks passed${NC}"
+  log_success "All checks passed"
   echo ""
   echo "Environment variable management is consistent."
   echo "No immediate evaluation detected."
   echo "WebSocket functions have minimal dependencies."
   exit 0
 else
-  echo -e "${RED}✗ Found $ERRORS_FOUND error(s)${NC}"
+  log_error "Found $ERRORS_FOUND error(s)"
   echo ""
   echo "Please fix the issues above before committing."
   exit 1

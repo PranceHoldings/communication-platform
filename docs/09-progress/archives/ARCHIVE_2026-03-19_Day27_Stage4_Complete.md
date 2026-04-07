@@ -162,11 +162,11 @@ ps aux | grep "next dev" | awk '{print $2}' | xargs kill
 rm -rf .next
 
 # 開発サーバー再起動
-npm run dev
+pnpm run dev
 
 # 20秒待機後、テスト実行
 sleep 20
-npx playwright test tests/e2e/stage1-basic-ui.spec.ts
+pnpm exec playwright test tests/e2e/stage1-basic-ui.spec.ts
 ```
 
 **結果:**
@@ -272,7 +272,7 @@ Error: ENOENT: no such file or directory, rename
 **解決:**
 ```bash
 rm -rf .next
-npm run dev
+pnpm run dev
 ```
 
 **教訓:**

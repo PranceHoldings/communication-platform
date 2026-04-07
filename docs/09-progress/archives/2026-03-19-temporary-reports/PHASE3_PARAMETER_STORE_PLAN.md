@@ -400,7 +400,7 @@ jobs:
           node-version: '22'
 
       - name: Validate environment variables
-        run: bash scripts/validate-env-consistency.sh
+        run: bash scripts/validate-env-consistency-comprehensive.sh
 
       - name: Comment on PR (on failure)
         if: failure()
@@ -411,7 +411,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.name,
-              body: '❌ **Environment Variable Validation Failed**\n\nPlease run `bash scripts/validate-env-consistency.sh` locally and fix the issues.'
+              body: '❌ **Environment Variable Validation Failed**\n\nPlease run `bash scripts/validate-env-consistency-comprehensive.sh` locally and fix the issues.'
             })
 ```
 
@@ -434,10 +434,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate environment variables
-        run: bash scripts/validate-env-consistency.sh
+        run: bash scripts/validate-env-consistency-comprehensive.sh
 
       - name: Validate Lambda dependencies
-        run: cd infrastructure && npm run lambda:predeploy
+        run: cd infrastructure && pnpm run lambda:predeploy
 
       - name: Validate deployment method
         run: bash scripts/validate-deployment-method.sh
@@ -447,7 +447,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to AWS
-        run: cd infrastructure && npm run deploy:production
+        run: cd infrastructure && pnpm run deploy:production
 ```
 
 ---

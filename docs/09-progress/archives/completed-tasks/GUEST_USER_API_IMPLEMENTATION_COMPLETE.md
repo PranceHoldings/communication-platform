@@ -652,7 +652,7 @@ guestSession.addMethod('GET', new LambdaIntegration(guestSessionsGetFn), {
 ```bash
 # CDKスタック更新
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # デプロイ時間: 約3-5分（11関数）
 # 期待結果: 11個の新しいLambda関数がデプロイされる

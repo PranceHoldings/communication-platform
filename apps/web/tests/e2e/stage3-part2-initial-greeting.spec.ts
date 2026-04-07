@@ -19,12 +19,9 @@
 
 import { test, expect } from './fixtures/session.fixture';
 import { SessionPlayerPage } from './page-objects/session-player.page';
-import greetingScenarioData from './test-data/greeting-scenario.json';
 
 // Expected greeting message content
 const EXPECTED_GREETING = 'Hello! Welcome to your interview session';
-// Use the specific session ID created with initial greeting
-const GREETING_TEST_SESSION_ID = greetingScenarioData.sessionId;
 
 test.describe('Stage 3 Part 2: Initial Greeting', () => {
   let sessionPlayer: SessionPlayerPage;
@@ -37,12 +34,12 @@ test.describe('Stage 3 Part 2: Initial Greeting', () => {
     sessionPlayer = new SessionPlayerPage(authenticatedPage);
   });
 
-  test('S3-Part2-001: Initial greeting message reception', async ({ authenticatedPage }) => {
+  test('S3-Part2-001: Initial greeting message reception', async ({ authenticatedPage, greetingTestSessionId }) => {
     console.log('[Test] === S3-Part2-001: Initial Greeting Reception ===');
-    console.log(`[Test] Using greeting test session: ${GREETING_TEST_SESSION_ID}`);
+    console.log(`[Test] Using greeting test session: ${greetingTestSessionId}`);
 
     // Navigate to session with initial greeting
-    await sessionPlayer.goto(GREETING_TEST_SESSION_ID);
+    await sessionPlayer.goto(greetingTestSessionId);
     await authenticatedPage.waitForTimeout(1000);
 
     // Start session
@@ -80,11 +77,11 @@ test.describe('Stage 3 Part 2: Initial Greeting', () => {
     console.log('[Test] ✓ Session stopped');
   });
 
-  test('S3-Part2-002: WebSocket message flow with greeting', async ({ authenticatedPage }) => {
+  test('S3-Part2-002: WebSocket message flow with greeting', async ({ authenticatedPage, greetingTestSessionId }) => {
     console.log('[Test] === S3-Part2-002: Message Flow ===');
-    console.log(`[Test] Using greeting test session: ${GREETING_TEST_SESSION_ID}`);
+    console.log(`[Test] Using greeting test session: ${greetingTestSessionId}`);
 
-    await sessionPlayer.goto(GREETING_TEST_SESSION_ID);
+    await sessionPlayer.goto(greetingTestSessionId);
     await authenticatedPage.waitForTimeout(1000);
 
     // Start session
@@ -118,11 +115,11 @@ test.describe('Stage 3 Part 2: Initial Greeting', () => {
     console.log('[Test] ✅ WebSocket message flow verified');
   });
 
-  test('S3-Part2-003: Complete session lifecycle with greeting', async ({ authenticatedPage }) => {
+  test('S3-Part2-003: Complete session lifecycle with greeting', async ({ authenticatedPage, greetingTestSessionId }) => {
     console.log('[Test] === S3-Part2-003: Complete Lifecycle ===');
-    console.log(`[Test] Using greeting test session: ${GREETING_TEST_SESSION_ID}`);
+    console.log(`[Test] Using greeting test session: ${greetingTestSessionId}`);
 
-    await sessionPlayer.goto(GREETING_TEST_SESSION_ID);
+    await sessionPlayer.goto(greetingTestSessionId);
     await authenticatedPage.waitForTimeout(1000);
 
     // Check initial status

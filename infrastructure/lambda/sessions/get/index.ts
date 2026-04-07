@@ -99,6 +99,26 @@ export const handler: APIGatewayProxyHandler = async event => {
       return errorResponse(403, 'Access denied to this session');
     }
 
+    // Auto-correct stale ACTIVE sessions (WebSocket disconnected without session_end)
+    const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+    if (
+      session.status === 'ACTIVE' &&
+      Date.now() - new Date(session.startedAt).getTime() > TWO_HOURS_MS
+    ) {
+      console.log(`[get] Marking stale session as ERROR: ${sessionId}`);
+      const endedAt = new Date();
+      try {
+        await prisma.session.update({
+          where: { id: sessionId },
+          data: { status: 'ERROR', endedAt },
+        });
+        (session as any).status = 'ERROR';
+        (session as any).endedAt = endedAt;
+      } catch (updateErr) {
+        console.error('[get] Failed to mark stale session:', updateErr);
+      }
+    }
+
     console.log(`Session retrieved: ${session.id}`);
 
     return successResponse({

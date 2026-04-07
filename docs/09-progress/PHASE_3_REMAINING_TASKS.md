@@ -172,7 +172,7 @@ aws logs filter-pattern '[timestamp, request_id, level="ERROR"]' \
 **テスト手順:**
 ```bash
 # 1. 開発サーバー起動
-npm run dev
+pnpm run dev
 
 # 2. ブラウザで http://localhost:3000 にアクセス
 # 3. シナリオ作成

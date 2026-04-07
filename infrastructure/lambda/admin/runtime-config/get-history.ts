@@ -15,26 +15,15 @@ export const handler = async (
   console.log('GET /api/v1/admin/runtime-config/:key/history - event:', JSON.stringify(event));
 
   try {
-    // Authorization check
-    const authHeader = event.headers.Authorization || event.headers.authorization;
-    if (!authHeader) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing authorization header' }),
-      };
-    }
-
-    const token = authHeader.replace('Bearer ', '');
+    // Extract user from API Gateway Lambda Authorizer context
     let payload: JWTPayload;
-
     try {
-      payload = verifyToken(token);
+      payload = verifyToken(event);
     } catch (error) {
       return {
         statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Invalid token' }),
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        body: JSON.stringify({ error: 'Unauthorized' }),
       };
     }
 
@@ -42,7 +31,7 @@ export const handler = async (
     if (payload.role !== 'SUPER_ADMIN' && payload.role !== 'CLIENT_ADMIN') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Insufficient permissions',
         }),
@@ -54,7 +43,7 @@ export const handler = async (
     if (!key) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({ error: 'Missing configuration key' }),
       };
     }
@@ -88,7 +77,7 @@ export const handler = async (
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
       body: JSON.stringify({
         data: {
           history,
@@ -106,7 +95,7 @@ export const handler = async (
 
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
       body: JSON.stringify({
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error',

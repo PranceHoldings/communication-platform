@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { headers } from 'next/headers';
-import './globals.css';
+// Import pre-built Tailwind CSS (built on host Mac to avoid Docker filesystem issues)
+// Run: bash scripts/build-tailwind-host.sh --watch (on Mac, outside Docker)
+import '../styles/tailwind.output.css';
 import { Providers } from '@/components/providers';
 import { getMessages } from '@/lib/i18n/messages';
 import { LOCALE_HEADER_NAME, getLocaleWithFallback } from '@/lib/i18n/config';

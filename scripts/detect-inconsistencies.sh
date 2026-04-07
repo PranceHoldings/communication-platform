@@ -2,7 +2,9 @@
 # 不整合検出スクリプト
 # Claude Code自身が生成したコードの中での不整合を検出
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 REPORT_FILE="docs/03-planning/analysis/INCONSISTENCY_REPORT.md"
 TEMP_DIR="/tmp/inconsistency-detection-$$"
@@ -19,7 +21,7 @@ echo "" >> "$REPORT_FILE"
 # カウンター
 TOTAL_ISSUES=0
 
-echo "🔍 不整合検出を開始します..."
+log_info "🔍 不整合検出を開始します..."
 echo ""
 
 # ============================================================
@@ -369,11 +371,11 @@ echo "" >> "$REPORT_FILE"
 if [ "$TOTAL_ISSUES" -eq 0 ]; then
     echo "✅ **不整合は検出されませんでした！**" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
-    echo "✅ 不整合は検出されませんでした！"
+    log_success "不整合は検出されませんでした！"
 else
     echo "⚠️ **$TOTAL_ISSUES 件の不整合が検出されました。修正が必要です。**" >> "$REPORT_FILE"
     echo "" >> "$REPORT_FILE"
-    echo "⚠️ $TOTAL_ISSUES 件の不整合が検出されました"
+    log_warning "$TOTAL_ISSUES 件の不整合が検出されました"
 fi
 
 echo "### 次のアクション" >> "$REPORT_FILE"
@@ -388,6 +390,6 @@ echo "" >> "$REPORT_FILE"
 rm -rf "$TEMP_DIR"
 
 echo ""
-echo "✅ レポートを生成しました: $REPORT_FILE"
+log_success "レポートを生成しました: $REPORT_FILE"
 echo ""
 cat "$REPORT_FILE"

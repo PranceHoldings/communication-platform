@@ -16,22 +16,17 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
+# Load shared library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-echo "=================================================="
-echo "Lambda Environment Variable Coverage Validator"
-echo "=================================================="
+log_section "Lambda Environment Variable Coverage Validator"
 echo ""
 
 # Step 1: Extract all getRequiredEnv() calls from Lambda code
-echo "Step 1: Extracting getRequiredEnv() calls from Lambda code..."
+log_info "Step 1: Extracting getRequiredEnv() calls from Lambda code..."
 
 LAMBDA_DIR="${PROJECT_ROOT}/infrastructure/lambda"
 REQUIRED_ENV_VARS=$(grep -roh "getRequiredEnv('[A-Z_]*')" "$LAMBDA_DIR" --include="*.ts" | \
@@ -40,7 +35,7 @@ REQUIRED_ENV_VARS=$(grep -roh "getRequiredEnv('[A-Z_]*')" "$LAMBDA_DIR" --includ
                     sort -u)
 
 if [ -z "$REQUIRED_ENV_VARS" ]; then
-    echo -e "${YELLOW}⚠️  Warning: No getRequiredEnv() calls found in Lambda code${NC}"
+    log_warning "No getRequiredEnv() calls found in Lambda code"
     exit 0
 fi
 
@@ -49,7 +44,7 @@ echo "$REQUIRED_ENV_VARS" | sed 's/^/  - /'
 echo ""
 
 # Step 2: Extract all getRequiredEnvAsNumber/Float/Boolean calls
-echo "Step 2: Extracting typed getRequiredEnv calls..."
+log_info "Step 2: Extracting typed getRequiredEnv calls..."
 
 TYPED_ENV_VARS=$(grep -roh "getRequiredEnvAs\(Number\|Float\|Boolean\)('[A-Z_]*')" "$LAMBDA_DIR" --include="*.ts" | \
                  sed "s/getRequiredEnvAs[A-Za-z]*('//g" | \
@@ -66,12 +61,12 @@ fi
 echo ""
 
 # Step 3: Extract all environment variables defined in CDK stacks
-echo "Step 3: Extracting environment variables defined in CDK stacks..."
+log_info "Step 3: Extracting environment variables defined in CDK stacks..."
 
 CDK_STACK_FILE="${PROJECT_ROOT}/infrastructure/lib/api-lambda-stack.ts"
 
 if [ ! -f "$CDK_STACK_FILE" ]; then
-    echo -e "${RED}❌ Error: CDK stack file not found: $CDK_STACK_FILE${NC}"
+    log_error "CDK stack file not found: $CDK_STACK_FILE"
     exit 2
 fi
 
@@ -84,7 +79,7 @@ CDK_ENV_VARS=$(grep -oh "[A-Z_][A-Z_0-9]*:" "$CDK_STACK_FILE" | \
                sort -u)
 
 if [ -z "$CDK_ENV_VARS" ]; then
-    echo -e "${YELLOW}⚠️  Warning: No environment variables found in CDK stack${NC}"
+    log_warning "No environment variables found in CDK stack"
 fi
 
 echo "Found $(echo "$CDK_ENV_VARS" | wc -l) unique environment variables in CDK:"
@@ -96,7 +91,7 @@ fi
 echo ""
 
 # Step 4: Check for missing environment variables
-echo "Step 4: Checking for missing environment variables..."
+log_info "Step 4: Checking for missing environment variables..."
 
 MISSING_VARS=""
 MISSING_COUNT=0
@@ -109,7 +104,7 @@ for VAR in $REQUIRED_ENV_VARS; do
         # AWS_REGION should be checked separately as it should be explicitly set
         if [ "$VAR" = "AWS_REGION" ]; then
             if ! echo "$CDK_ENV_VARS" | grep -q "^AWS_REGION$"; then
-                echo -e "${YELLOW}⚠️  Warning: AWS_REGION not explicitly set in CDK (relying on runtime)${NC}"
+                log_warning "AWS_REGION not explicitly set in CDK (relying on runtime)"
             fi
         fi
         continue
@@ -124,12 +119,10 @@ done
 
 # Step 5: Report results
 echo ""
-echo "=================================================="
-echo "Validation Results"
-echo "=================================================="
+log_section "Validation Results"
 
 if [ $MISSING_COUNT -eq 0 ]; then
-    echo -e "${GREEN}✅ All required environment variables are defined in CDK!${NC}"
+    log_success "All required environment variables are defined in CDK!"
     echo ""
     echo "Summary:"
     echo "  - Required variables in Lambda code: $(echo "$REQUIRED_ENV_VARS" | wc -l)"
@@ -137,11 +130,11 @@ if [ $MISSING_COUNT -eq 0 ]; then
     echo "  - Missing variables: 0"
     exit 0
 else
-    echo -e "${RED}❌ Found $MISSING_COUNT missing environment variable(s):${NC}"
+    log_error "Found $MISSING_COUNT missing environment variable(s):"
     echo ""
     echo -e "$MISSING_VARS" | sed 's/^/  - /'
     echo ""
-    echo -e "${YELLOW}Action Required:${NC}"
+    log_warning "Action Required:"
     echo "Add these variables to the Lambda function environment blocks in:"
     echo "  $CDK_STACK_FILE"
     echo ""

@@ -125,7 +125,7 @@
 1. Update `infrastructure/lib/api-lambda-stack.ts` - Add `AWS_REGION: this.region` to:
    - Line ~1217 (websocket-connect environment block)
    - Line ~1267 (websocket-disconnect environment block)
-2. Deploy: `cd infrastructure && npm run deploy:websocket`
+2. Deploy: `cd infrastructure && pnpm run deploy:websocket`
 3. Verify: Check Lambda environment variables via AWS CLI
 
 **Short-term (P1 - This Week):**

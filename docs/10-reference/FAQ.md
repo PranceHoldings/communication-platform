@@ -810,7 +810,7 @@ git clone https://github.com/your-org/prance-platform.git
 cd prance-platform
 
 # 2. 依存関係インストール
-npm install
+pnpm install
 
 # 3. PostgreSQL起動 (Docker)
 docker run -d \
@@ -832,18 +832,18 @@ cp .env.example .env.local
 
 # 5. Prisma マイグレーション
 cd packages/database
-npx prisma migrate dev --name init
-npx prisma generate
+pnpm exec prisma migrate dev --name init
+pnpm exec prisma generate
 cd ../..
 
 # 6. Next.js 開発サーバー起動
 cd apps/web
-npm run dev
+pnpm run dev
 # http://localhost:3000 でアクセス
 
 # 7. Lambda ローカルテスト (別ターミナル)
 cd apps/api
-npm run dev:lambda
+pnpm run dev:lambda
 ```
 
 #### ディレクトリ構成
@@ -875,22 +875,22 @@ aws configure
 
 # 2. CDK Bootstrap (初回のみ)
 cd infrastructure
-npm run bootstrap
+pnpm run bootstrap
 
 # 出力:
 #  ✅  Environment aws://123456789012/us-east-1 bootstrapped.
 
 # 3. CDK デプロイ (全スタック)
-npm run deploy
+pnpm run deploy
 
 # または個別スタックデプロイ
-npm run deploy:network     # VPC, Subnets
-npm run deploy:cognito     # User Pool
-npm run deploy:database    # Aurora Serverless v2
-npm run deploy:storage     # S3, CloudFront
-npm run deploy:dynamodb    # DynamoDB Tables
-npm run deploy:api-gateway # REST API, WebSocket
-npm run deploy:lambda      # Lambda Functions
+pnpm run deploy:network     # VPC, Subnets
+pnpm run deploy:cognito     # User Pool
+pnpm run deploy:database    # Aurora Serverless v2
+pnpm run deploy:storage     # S3, CloudFront
+pnpm run deploy:dynamodb    # DynamoDB Tables
+pnpm run deploy:api-gateway # REST API, WebSocket
+pnpm run deploy:lambda      # Lambda Functions
 
 # 4. デプロイ後の出力確認
 # CloudFormation Output:
@@ -900,8 +900,8 @@ npm run deploy:lambda      # Lambda Functions
 
 # 5. Next.js ビルド & デプロイ
 cd ../apps/web
-npm run build
-npm run deploy:amplify
+pnpm run build
+pnpm run deploy:amplify
 ```
 
 #### CI/CD (GitHub Actions)
@@ -925,15 +925,15 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: CDK Deploy
         run: |
           cd infrastructure
-          npm run deploy -- --require-approval never
+          pnpm run deploy -- --require-approval never
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

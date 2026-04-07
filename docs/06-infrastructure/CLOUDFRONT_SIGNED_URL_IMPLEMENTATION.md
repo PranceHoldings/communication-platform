@@ -526,10 +526,10 @@ export const handler = async (
 ```bash
 # 1. CDK Stack更新（IAM権限追加）
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # 2. Lambda関数デプロイ（署名付きURL機能追加）
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # 3. CloudFront設定変更の反映待ち
 aws cloudfront get-distribution \

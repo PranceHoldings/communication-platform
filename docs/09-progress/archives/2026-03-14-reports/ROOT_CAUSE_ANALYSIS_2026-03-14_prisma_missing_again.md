@@ -80,7 +80,7 @@ echo "Prisma already copied"  # 成功したと錯覚
 **本来すべきこと:**
 - CDK bundling設定を調査
 - Prisma Client生成を確認
-- `npm run lambda:predeploy`で検証
+- `pnpm run lambda:predeploy`で検証
 
 **実際にやったこと:**
 - 手動デプロイで回避しようとした
@@ -145,8 +145,8 @@ echo "Prisma already copied"  # 成功したと錯覚
 esbuild + manual zip + aws lambda update-function-code
 
 # ✅ 正しい方法
-npm run lambda:predeploy    # 6項目検証（必須）
-npm run deploy:lambda       # CDK経由デプロイ
+pnpm run lambda:predeploy    # 6項目検証（必須）
+pnpm run deploy:lambda       # CDK経由デプロイ
 ```
 
 ### Short-term Actions（短期：1週間以内）
@@ -211,10 +211,10 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Pre-deploy validation
-        run: npm run lambda:predeploy
+        run: pnpm run lambda:predeploy
 
       - name: Deploy Lambda
-        run: npm run deploy:lambda
+        run: pnpm run deploy:lambda
 
       - name: Post-deploy test
         run: ./scripts/post-deploy-test.sh
@@ -275,7 +275,7 @@ command  # エラーは必ず見る
 ### 2. 確立されたプロセスを守る
 
 **前回作ったツールを使う:**
-- `npm run lambda:predeploy` は必須
+- `pnpm run lambda:predeploy` は必須
 - 「今回は違う」という思い込みを捨てる
 - チェックリストに従う
 

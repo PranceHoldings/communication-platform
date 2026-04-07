@@ -159,13 +159,13 @@ dig NS prance.jp +short
 cd infrastructure
 
 # 開発環境
-npm run deploy:dev
+pnpm run deploy:dev
 
 # ステージング環境
-npm run deploy:staging
+pnpm run deploy:staging
 
 # 本番環境
-npm run deploy:production
+pnpm run deploy:production
 ```
 
 ### デプロイされるスタック

@@ -36,7 +36,16 @@
     "notFound": "Session not found",
     "backToList": "Back to Sessions",
     "session": "Session",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "transcript": "對話記錄",
+    "duration": "時長",
+    "sessionError": "此會話因錯誤而結束。下方可能有部分對話記錄。",
+    "noRecording": "此會話無影片錄製。",
+    "noTranscript": "無對話記錄。"
+  },
+  "transcript": {
+    "you": "您",
+    "ai": "AI"
   },
   "create": {
     "button": "Create Session"
@@ -249,7 +258,8 @@
         "errorUnknown": "An unknown error occurred",
         "processing": "Processing recording",
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
-        "notSupported": "Recording is not supported in your browser"
+        "notSupported": "Recording is not supported in your browser",
+        "startFailed": "啟動視訊錄製失敗（音訊將繼續正常運作）"
       }
     },
     "validation": {

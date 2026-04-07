@@ -59,6 +59,10 @@
     "startFailed": "Failed to start session. Please try again.",
     "endFailed": "Failed to end session. Please try again."
   },
+  "unknown": {
+    "title": "錯誤",
+    "message": "發生了意外錯誤。請重試。"
+  },
   "rateLimit": {
     "title": "傳送速度限制",
     "message": "您的音訊傳送速度過快，請等待 {seconds} 秒。",

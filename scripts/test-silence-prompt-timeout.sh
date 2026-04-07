@@ -6,15 +6,14 @@
 #   ./scripts/test-silence-prompt-timeout.sh --phase 1    # 特定フェーズのみ実行
 #   ./scripts/test-silence-prompt-timeout.sh --auto-only  # Phase 1-5のみ実行
 
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 set -e
 
 # カラー定義
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
 
 # プロジェクトルート
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -94,7 +93,7 @@ test_phase1() {
   echo -e "\n${CYAN}=== Phase 1: データモデル整合性検証 ===${NC}\n"
 
   # 1.1 Prismaスキーマ定義
-  echo -e "${BLUE}1.1 Prismaスキーマ定義${NC}"
+  log_info "1.1 Prismaスキーマ定義"
   check_file_contains \
     "$PROJECT_ROOT/packages/database/prisma/schema.prisma" \
     "silencePromptTimeout.*Int?" \
@@ -127,7 +126,7 @@ test_phase2() {
   echo -e "\n${CYAN}=== Phase 2: 型定義の整合性検証 ===${NC}\n"
 
   # 2.1 共有型定義
-  echo -e "${BLUE}2.1 共有型定義 (packages/shared)${NC}"
+  log_info "2.1 共有型定義 (packages/shared)"
   check_file_contains \
     "$PROJECT_ROOT/packages/shared/src/types/index.ts" \
     "silencePromptTimeout.*number" \
@@ -163,7 +162,7 @@ test_phase3() {
   echo -e "\n${CYAN}=== Phase 3: デフォルト値・バリデーション検証 ===${NC}\n"
 
   # 3.1 デフォルト値定義（packages/shared）
-  echo -e "${BLUE}3.1 デフォルト値定義 (packages/shared)${NC}"
+  log_info "3.1 デフォルト値定義 (packages/shared)"
   local shared_defaults="$PROJECT_ROOT/packages/shared/src/defaults.ts"
 
   check_file_contains \
@@ -206,7 +205,7 @@ test_phase4() {
   echo -e "\n${CYAN}=== Phase 4: Lambda API実装検証 ===${NC}\n"
 
   # 4.1 組織設定API
-  echo -e "${BLUE}4.1 組織設定API${NC}"
+  log_info "4.1 組織設定API"
   local org_settings="$PROJECT_ROOT/infrastructure/lambda/organizations/settings/index.ts"
 
   check_file_contains \
@@ -286,7 +285,7 @@ test_phase5() {
   echo -e "\n${CYAN}=== Phase 5: フロントエンドUI実装検証 ===${NC}\n"
 
   # 5.1 組織設定画面
-  echo -e "${BLUE}5.1 組織設定画面${NC}"
+  log_info "5.1 組織設定画面"
   local settings_page="$PROJECT_ROOT/apps/web/app/dashboard/settings/page.tsx"
 
   check_file_contains \
@@ -372,8 +371,8 @@ test_phase5() {
 # サマリー表示
 print_summary() {
   echo -e "\n${CYAN}========================================${NC}"
-  echo -e "${CYAN}テスト結果サマリー${NC}"
-  echo -e "${CYAN}========================================${NC}"
+  log_info "テスト結果サマリー"
+  log_info "========================================"
   echo -e "総テスト数: ${BLUE}$TOTAL_TESTS${NC}"
   echo -e "成功: ${GREEN}$PASSED_TESTS${NC}"
   echo -e "失敗: ${RED}$FAILED_TESTS${NC}"
@@ -393,9 +392,9 @@ print_summary() {
 
 # メイン処理
 main() {
-  echo -e "${CYAN}========================================${NC}"
-  echo -e "${CYAN}silencePromptTimeout 機能検証${NC}"
-  echo -e "${CYAN}========================================${NC}"
+  log_info "========================================"
+  log_info "silencePromptTimeout 機能検証"
+  log_info "========================================"
 
   local phase=""
   local auto_only=false
@@ -428,7 +427,7 @@ main() {
       4) test_phase4 ;;
       5) test_phase5 ;;
       *)
-        echo -e "${RED}Invalid phase: $phase${NC}"
+        log_error "Invalid phase: $phase"
         echo "Valid phases: 1, 2, 3, 4, 5"
         exit 1
         ;;

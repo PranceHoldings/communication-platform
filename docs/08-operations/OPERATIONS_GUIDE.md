@@ -386,7 +386,7 @@ fields @timestamp, @duration, @initDuration
 curl https://api.prance-platform.com/health
 
 # 2. スモークテスト
-npm run test:smoke -- --env=production
+pnpm run test:smoke -- --env=production
 
 # 3. CloudWatch メトリクス確認
 # - エラー率
@@ -412,7 +412,7 @@ git pull origin main
 git checkout -b hotfix/critical-fix
 
 # 2. 修正・テスト
-npm run test
+pnpm run test
 
 # 3. PR作成（承認スキップ可）
 gh pr create --title "Hotfix: Critical bug fix" --base main
@@ -640,7 +640,7 @@ aws secretsmanager get-secret-value \
 NEXT_PUBLIC_AZURE_SPEECH_REGION=eastus  # → westus2 に変更
 
 # デプロイ
-npm run deploy:production
+pnpm run deploy:production
 ```
 
 **対処（長期）:**
@@ -1117,8 +1117,8 @@ npm audit
 npm audit fix --force  # 破壊的変更がある場合は慎重に
 
 # 3. テスト実行
-npm run test
-npm run test:e2e
+pnpm run test
+pnpm run test:e2e
 
 # 4. ステージング環境デプロイ
 ./scripts/deploy.sh staging

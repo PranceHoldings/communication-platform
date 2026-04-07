@@ -120,7 +120,7 @@ npm uninstall next-intl
 
 ```bash
 pkill -f "next dev"
-npm run dev
+pnpm run dev
 ```
 
 **結果:**

@@ -202,6 +202,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               onClick={() => logout()}
               className="ml-2 p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
               title={t('common.logout')}
+              aria-label={t('common.logout')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

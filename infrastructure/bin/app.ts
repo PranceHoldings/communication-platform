@@ -19,8 +19,10 @@ import { ElastiCacheStack } from '../lib/elasticache-stack';
 // import { NextJsLambdaStack } from '../lib/nextjs-lambda-stack'; // Temporarily disabled for Phase 1.6
 import { getConfig } from '../lib/config';
 
-// Load environment variables from .env file
+// Load environment variables: infrastructure/.env first, then root .env.local as fallback
+// dotenv does not override already-set variables, so infrastructure/.env takes precedence
 dotenvConfig({ path: resolve(__dirname, '../.env') });
+dotenvConfig({ path: resolve(__dirname, '../../.env.local') });
 
 const app = new cdk.App();
 

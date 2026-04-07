@@ -18,22 +18,21 @@
 #   ./scripts/clean-directory-safe.sh apps/web/.next --force
 # =============================================================================
 
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 set +e  # エラーでも継続
 
 # カラー出力
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-MAGENTA='\033[0;35m'
-NC='\033[0m'
 
 # タイムスタンプ生成
 TIMESTAMP=$(date +%s)
 
 # 引数チェック
 if [ $# -lt 1 ]; then
-  echo -e "${RED}エラー: ディレクトリパスを指定してください${NC}"
+  log_error "エラー: ディレクトリパスを指定してください"
   echo "使用方法: $0 <directory> [--force]"
   exit 1
 fi
@@ -240,7 +239,7 @@ remove_directory_safe() {
 # 確認プロンプト
 if [ "$FORCE" = false ]; then
   echo ""
-  echo -e "${YELLOW}警告: 以下のディレクトリを削除します:${NC}"
+  log_warning "警告: 以下のディレクトリを削除します:"
   echo -e "  ${BLUE}$TARGET_DIR${NC}"
   echo ""
 

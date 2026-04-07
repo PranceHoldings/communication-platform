@@ -795,7 +795,7 @@ seedAvatars()
 
 **3. 実行:**
 ```bash
-npm run db:seed:avatars
+pnpm run db:seed:avatars
 ```
 
 ---
@@ -1037,7 +1037,7 @@ cat infrastructure/lambda/websocket/message/index.ts
 # blendshape, expression, lipsync等のキーワードを検索
 
 # 3. DB確認
-npm run db:studio
+pnpm run db:studio
 # avatars テーブルを開いて確認
 
 # 4. S3確認

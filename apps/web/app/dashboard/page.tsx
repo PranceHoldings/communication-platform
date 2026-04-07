@@ -1,32 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useI18n } from '@/lib/i18n/provider';
-import { listSessions, type Session } from '@/lib/api/sessions';
+import { listSessions } from '@/lib/api/sessions';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { t } = useI18n();
-  const [recentSessions, setRecentSessions] = useState<Session[]>([]);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
 
-  // Load recent sessions
-  useEffect(() => {
-    const loadRecentSessions = async () => {
-      try {
-        const response = await listSessions({ limit: 5, offset: 0 });
-        setRecentSessions(response.sessions);
-      } catch (error) {
-        console.error('Failed to load recent sessions:', error);
-      } finally {
-        setIsLoadingSessions(false);
-      }
-    };
+  // Load recent sessions using React Query
+  const {
+    data: sessionsData,
+    isLoading: isLoadingSessions,
+    error: sessionsError,
+  } = useQuery({
+    queryKey: ['sessions', 'recent', { limit: 5, offset: 0 }],
+    queryFn: () => listSessions({ limit: 5, offset: 0 }),
+    enabled: !!user, // Only fetch when user is authenticated
+  });
 
-    loadRecentSessions();
-  }, []);
+  const recentSessions = sessionsData?.sessions ?? [];
 
   return (
     <div className="space-y-6">
@@ -156,7 +151,21 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {isLoadingSessions ? (
+        {sessionsError ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <div className="text-red-500 mb-4">
+              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <p className="text-gray-500">{t('common.error')}: {sessionsError.message}</p>
+          </div>
+        ) : isLoadingSessions ? (
           <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             <p className="mt-4 text-gray-500">{t('common.loading')}</p>

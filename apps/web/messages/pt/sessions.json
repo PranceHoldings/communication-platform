@@ -36,7 +36,16 @@
     "notFound": "Session not found",
     "backToList": "Back to Sessions",
     "session": "Session",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "transcript": "Transcrição da conversa",
+    "duration": "Duração",
+    "sessionError": "Esta sessão terminou com um erro. Uma transcrição parcial pode estar disponível abaixo.",
+    "noRecording": "A gravação de vídeo não está disponível para esta sessão.",
+    "noTranscript": "Nenhuma transcrição disponível."
+  },
+  "transcript": {
+    "you": "Você",
+    "ai": "IA"
   },
   "create": {
     "button": "Create Session"
@@ -249,7 +258,8 @@
         "errorUnknown": "An unknown error occurred",
         "processing": "Processing recording",
         "processingDescription": "Please wait while the video is being processed. This may take a few minutes.",
-        "notSupported": "Recording is not supported in your browser"
+        "notSupported": "Recording is not supported in your browser",
+        "startFailed": "Falha ao iniciar gravação de vídeo (o áudio continuará funcionando)"
       }
     },
     "validation": {

@@ -232,14 +232,14 @@ Content-Type: application/json
 ```bash
 # Lambda関数デプロイ
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # PDF生成テスト（ローカル）
 cd lambda/report
-npx ts-node test-generate.ts
+pnpm exec ts-node test-generate.ts
 
 # AI提案生成テスト（AWS認証必要）
-npx ts-node test-ai-suggestions.ts
+pnpm exec ts-node test-ai-suggestions.ts
 
 # Lambda関数テスト（デプロイ後）
 aws lambda invoke \
@@ -254,7 +254,7 @@ cat /tmp/report-result.json
 ```bash
 # 開発サーバー起動
 cd apps/web
-npm run dev
+pnpm run dev
 
 # ブラウザで以下をテスト:
 # 1. 完了済みセッション詳細ページに移動
@@ -267,7 +267,7 @@ npm run dev
 
 ```bash
 # Playwright E2Eテスト実行
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ---
@@ -303,11 +303,11 @@ npm run test:e2e
 
 ```bash
 # プロジェクトルート
-npm install
+pnpm install
 
 # Infrastructure
 cd infrastructure
-npm install
+pnpm install
 ```
 
 ### 2. 環境変数設定
@@ -325,14 +325,14 @@ STORAGE_BUCKET_NAME=prance-storage-dev
 
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 ### 4. フロントエンドデプロイ
 
 ```bash
 cd apps/web
-npm run build
+pnpm run build
 # Amplify等で自動デプロイ
 ```
 

@@ -48,11 +48,11 @@ applications:
       phases:
         preBuild:
           commands:
-            - npm ci
-            - cd apps/web && npm ci
+            - pnpm install --frozen-lockfile
+            - cd apps/web && pnpm install --frozen-lockfile
         build:
           commands:
-            - npm run build
+            - pnpm run build
       artifacts:
         baseDirectory: .next
         files:
@@ -343,13 +343,13 @@ echo "GITHUB_ACCESS_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx" >> infrastructure/.e
 cd infrastructure
 
 # Step 1: API Gateway Domains
-npm run cdk -- deploy Prance-dev-ApiDomains --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiDomains --require-approval never
 
 # Step 2: Amplify Hosting
-npm run cdk -- deploy Prance-dev-Amplify --require-approval never
+pnpm run cdk -- deploy Prance-dev-Amplify --require-approval never
 
 # Step 3: Storage (CloudFront update)
-npm run cdk -- deploy Prance-dev-Storage --require-approval never
+pnpm run cdk -- deploy Prance-dev-Storage --require-approval never
 ```
 
 ---

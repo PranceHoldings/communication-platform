@@ -265,7 +265,7 @@ cd ..
 
 # バージョンが不一致の場合
 cd infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # 再確認
 cd ..
@@ -310,7 +310,7 @@ useEffect(() => {
 ```bash
 # テストリクエストを送信してLambda関数を起動
 cd apps/web
-npm run dev
+pnpm run dev
 
 # ブラウザでセッションを開始
 # または、直接WebSocketメッセージを送信
@@ -328,9 +328,9 @@ npm run dev
 ```bash
 # 強制的に再ビルド・再デプロイ
 cd infrastructure/lambda/websocket/default
-npm install
+pnpm install
 rm -rf node_modules
-npm install
+pnpm install
 
 # Zipファイルを作成して直接アップロード
 cd /workspaces/prance-communication-platform/infrastructure/lambda/websocket/default

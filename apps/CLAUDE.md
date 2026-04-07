@@ -505,13 +505,13 @@ test('scenario list page', async ({ page }) => {
 
 ```bash
 # E2Eテスト実行
-npm run test:e2e
+pnpm run test:e2e
 
 # 特定ファイルのみ
-npm run test:e2e -- scenarios.spec.ts
+pnpm run test:e2e -- scenarios.spec.ts
 
 # ヘッドレスモードで実行
-npm run test:e2e:headless
+pnpm run test:e2e:headless
 ```
 
 ---
@@ -522,13 +522,13 @@ npm run test:e2e:headless
 
 ```bash
 # 開発サーバー起動
-npm run dev
+pnpm run dev
 
 # ビルド
-npm run build
+pnpm run build
 
 # 本番モードで起動
-npm run start
+pnpm run start
 ```
 
 ### 環境変数
@@ -562,11 +562,11 @@ grep -rn 'title=["'"'"'][A-Z]' apps/web
 grep -rn "^export interface User\|Avatar\|Scenario" apps/web --include="*.ts" | grep -v node_modules
 
 # 6. Lint + Type Check
-npm run lint
-npm run type-check
+pnpm run lint
+pnpm run type-check
 
 # 7. E2Eテスト
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ### 検証基準

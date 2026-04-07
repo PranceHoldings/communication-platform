@@ -9,7 +9,7 @@
 **最も推奨される方法**。既存サーバーを停止→ビルド→開発サーバー起動。
 
 ```bash
-npm run dev:clean
+pnpm run dev:clean
 ```
 
 **実行内容:**
@@ -33,7 +33,7 @@ npm run dev:clean
 ビルドなしで既存サーバーを停止して開発サーバーを再起動。
 
 ```bash
-npm run dev:restart
+pnpm run dev:restart
 ```
 
 **実行内容:**
@@ -54,7 +54,7 @@ npm run dev:restart
 本番環境と同じビルドでサーバーを起動。
 
 ```bash
-npm run start:clean
+pnpm run start:clean
 ```
 
 **実行内容:**
@@ -77,7 +77,7 @@ npm run start:clean
 指定したポートで動作しているプロセスを強制終了。
 
 ```bash
-npm run kill-port 3000
+pnpm run kill-port 3000
 # または
 bash scripts/kill-port.sh 3000
 ```
@@ -95,7 +95,7 @@ bash scripts/kill-port.sh 3000
 
 ```bash
 cd apps/web
-npm run dev:clean
+pnpm run dev:clean
 ```
 
 ### コード変更後の再起動
@@ -104,16 +104,16 @@ npm run dev:clean
 
 ```bash
 # 軽量な再起動（ビルドなし）
-npm run dev:restart
+pnpm run dev:restart
 
 # 完全な再起動（ビルドあり）
-npm run dev:clean
+pnpm run dev:clean
 ```
 
 ### デプロイ前の確認
 
 ```bash
-npm run start:clean
+pnpm run start:clean
 ```
 
 ---
@@ -123,21 +123,21 @@ npm run start:clean
 ### ポートが使用中のエラー
 
 ```bash
-npm run kill-port 3000
-npm run dev
+pnpm run kill-port 3000
+pnpm run dev
 ```
 
 ### ビルドエラー
 
 ```bash
-npm run clean
-npm run dev:clean
+pnpm run clean
+pnpm run dev:clean
 ```
 
 ### サーバーが応答しない
 
 ```bash
-npm run dev:restart
+pnpm run dev:restart
 ```
 
 ---
@@ -156,8 +156,8 @@ npm run dev:restart
 他のポートを使用したい場合:
 
 ```bash
-PORT=3001 npm run dev
-PORT=3001 npm run start
+PORT=3001 pnpm run dev
+PORT=3001 pnpm run start
 ```
 
 または、`.env.local` に追加:

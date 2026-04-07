@@ -123,20 +123,20 @@ fi
 
 # Step 1: 依存関係インストール
 echo -e "\n${GREEN}Step 1/6: Installing dependencies...${NC}"
-npm install
+pnpm install
 
 # Step 2: ビルド
 echo -e "\n${GREEN}Step 2/6: Building applications...${NC}"
-npm run build
+pnpm run build
 
 # Step 3: テスト実行
 echo -e "\n${GREEN}Step 3/6: Running tests...${NC}"
-npm run test:ci
+pnpm run test:ci
 
 # Step 4: データベースマイグレーション
 echo -e "\n${GREEN}Step 4/6: Running database migrations...${NC}"
 if [ "$DRY_RUN" = false ]; then
-  npm run db:migrate:deploy
+  pnpm run db:migrate:deploy
 fi
 
 # Step 5: CDK デプロイ
@@ -144,12 +144,12 @@ echo -e "\n${GREEN}Step 5/6: Deploying infrastructure...${NC}"
 cd infrastructure
 
 if [ "$DRY_RUN" = true ]; then
-  npx cdk diff $CDK_CONTEXT $STACK
+  pnpm exec cdk diff $CDK_CONTEXT $STACK
 else
   if [ -n "$STACK" ]; then
-    npx cdk deploy $CDK_CONTEXT $STACK --require-approval never
+    pnpm exec cdk deploy $CDK_CONTEXT $STACK --require-approval never
   else
-    npx cdk deploy $CDK_CONTEXT --all --require-approval never
+    pnpm exec cdk deploy $CDK_CONTEXT --all --require-approval never
   fi
 fi
 
@@ -171,7 +171,7 @@ elif [ "$ENVIRONMENT" = "production" ]; then
   echo -e "\nProduction URL: https://prance.com"
 fi
 
-echo -e "\nView logs: npm run logs:$ENVIRONMENT"
+echo -e "\nView logs: pnpm run logs:$ENVIRONMENT"
 ```
 
 ### 権限設定
@@ -202,7 +202,7 @@ export AWS_REGION=us-east-1
 
 ```bash
 # 全パッケージビルド
-npm run build
+pnpm run build
 
 # ビルド確認
 ls -la apps/web/.next
@@ -214,26 +214,26 @@ ls -la apps/workers/dist
 
 ```bash
 # 単体テスト
-npm run test
+pnpm run test
 
 # E2Eテスト
-npm run test:e2e
+pnpm run test:e2e
 
 # Lintチェック
-npm run lint
+pnpm run lint
 ```
 
 #### 4. データベースマイグレーション
 
 ```bash
 # マイグレーションファイル生成
-npm run db:migrate:dev --name add_new_field
+pnpm run db:migrate:dev --name add_new_field
 
 # ステージング適用
-DATABASE_URL="postgresql://..." npm run db:migrate:deploy
+DATABASE_URL="postgresql://..." pnpm run db:migrate:deploy
 
 # マイグレーション確認
-npm run db:migrate:status
+pnpm run db:migrate:status
 ```
 
 #### 5. CDKデプロイ
@@ -242,15 +242,15 @@ npm run db:migrate:status
 cd infrastructure
 
 # 差分確認
-npx cdk diff --context environment=staging
+pnpm exec cdk diff --context environment=staging
 
 # デプロイ（全スタック）
-npx cdk deploy --context environment=staging --all
+pnpm exec cdk deploy --context environment=staging --all
 
 # 特定スタックのみ
-npx cdk deploy --context environment=staging DatabaseStack
-npx cdk deploy --context environment=staging ApiStack
-npx cdk deploy --context environment=staging FrontendStack
+pnpm exec cdk deploy --context environment=staging DatabaseStack
+pnpm exec cdk deploy --context environment=staging ApiStack
+pnpm exec cdk deploy --context environment=staging FrontendStack
 
 cd ..
 ```
@@ -361,10 +361,10 @@ aws amplify start-deployment \
 
 ```bash
 # マイグレーションを1つ戻す
-npm run db:migrate:rollback
+pnpm run db:migrate:rollback
 
 # 特定マイグレーションまで戻す
-npm run db:migrate:rollback --to 20260304000000
+pnpm run db:migrate:rollback --to 20260304000000
 ```
 
 ---
@@ -512,10 +512,10 @@ errorAlarm.addAlarmAction(snsAction);
 
 ```bash
 # エラーログ確認
-npx cdk deploy --verbose
+pnpm exec cdk deploy --verbose
 
 # スタック削除（注意: データ消失の可能性）
-npx cdk destroy --context environment=staging
+pnpm exec cdk destroy --context environment=staging
 
 # 再デプロイ
 ./scripts/deploy.sh staging
@@ -557,7 +557,7 @@ aws lambda get-function-configuration \
 ```bash
 # Next.jsビルドログ
 cd apps/web
-npm run build -- --debug
+pnpm run build -- --debug
 
 # Amplify Hostingログ確認
 aws amplify get-job \

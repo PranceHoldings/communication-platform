@@ -1761,11 +1761,11 @@ CREATE TABLE ai_provider_usage_y2026m03 PARTITION OF ai_provider_usage
 
 ```bash
 # Prisma Migrate
-npx prisma migrate dev --name add_benchmark_tables
-npx prisma migrate deploy  # Production
+pnpm exec prisma migrate dev --name add_benchmark_tables
+pnpm exec prisma migrate deploy  # Production
 
 # ロールバック
-npx prisma migrate resolve --rolled-back <migration_name>
+pnpm exec prisma migrate resolve --rolled-back <migration_name>
 ```
 
 ### バックアップ

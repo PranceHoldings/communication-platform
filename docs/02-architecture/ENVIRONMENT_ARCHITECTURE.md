@@ -19,7 +19,7 @@
 │    - ポート: 3000                                            │
 │    - 実行場所: /workspaces/prance-communication-platform/   │
 │                apps/web                                       │
-│    - プロセス: npm run dev                                    │
+│    - プロセス: pnpm run dev                                    │
 └─────────────────────────────────────────────────────────────┘
                     ↓ HTTPS
 ┌─────────────────────────────────────────────────────────────┐
@@ -79,7 +79,7 @@ NEXT_PUBLIC_API_URL=https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/a
 
 ```bash
 cd /workspaces/prance-communication-platform/apps/web
-npm run dev
+pnpm run dev
 # → http://localhost:3000
 ```
 
@@ -260,7 +260,7 @@ CDK デプロイ時にLambda環境変数として設定
 ```bash
 # 1. 開発サーバー起動
 cd /workspaces/prance-communication-platform/apps/web
-npm run dev
+pnpm run dev
 
 # 2. ブラウザでアクセス
 open http://localhost:3000
@@ -280,7 +280,7 @@ open http://localhost:3000
 
 # 2. デプロイ
 cd /workspaces/prance-communication-platform/infrastructure
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 
 # 3. CloudWatch Logsで確認
 aws logs tail /aws/lambda/prance-auth-login-dev --follow
@@ -294,7 +294,7 @@ aws logs tail /aws/lambda/prance-auth-login-dev --follow
 
 # 2. マイグレーションSQL生成
 cd packages/database
-npx prisma migrate dev --name your_migration_name
+pnpm exec prisma migrate dev --name your_migration_name
 
 # 3. AWS Auroraに適用（Migration Lambda経由）
 cd infrastructure

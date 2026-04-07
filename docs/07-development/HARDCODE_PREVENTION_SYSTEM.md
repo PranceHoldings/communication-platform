@@ -261,7 +261,7 @@ echo "🔍 Pre-commit checks..."
 
 # Step 1: ESLint実行（必須）
 echo "Running ESLint..."
-npm run lint --silent
+pnpm run lint --silent
 if [ $? -ne 0 ]; then
   echo "❌ ESLint failed. Fix errors before committing."
   exit 1
@@ -278,7 +278,7 @@ fi
 
 # Step 3: 環境変数整合性チェック
 echo "Validating environment variables..."
-bash scripts/validate-env-consistency.sh
+bash scripts/validate-env-consistency-comprehensive.sh
 if [ $? -ne 0 ]; then
   echo "❌ Environment variable inconsistency detected."
   exit 1
@@ -338,16 +338,16 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run ESLint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Detect hardcoded values
         run: bash scripts/detect-hardcoded-values.sh
 
       - name: Validate environment variables
-        run: bash scripts/validate-env-consistency.sh
+        run: bash scripts/validate-env-consistency-comprehensive.sh
 
       - name: Generate report
         if: failure()
@@ -443,7 +443,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # CDKデプロイ実行
-npm run cdk -- deploy "$@"
+pnpm run cdk -- deploy "$@"
 ```
 
 ---
@@ -523,7 +523,7 @@ const region = getAwsRegion();
 
 ```bash
 # Step 1: ESLint実行
-npm run lint
+pnpm run lint
 
 # Step 2: 検出スクリプト実行
 bash scripts/detect-hardcoded-values.sh

@@ -195,7 +195,7 @@ Failed: 0
 bash scripts/deploy-lambda-websocket-manual.sh
 
 # または npm script
-npm run lambda:deploy-manual
+pnpm run lambda:deploy-manual
 ```
 
 **効果:**
@@ -297,7 +297,7 @@ bash scripts/validate-lambda-zip.sh lambda-deployment.zip
 bash scripts/post-deploy-lambda-test.sh prance-websocket-default-dev
 
 # 全自動手動デプロイ
-npm run lambda:deploy-manual
+pnpm run lambda:deploy-manual
 ```
 
 ---
@@ -334,10 +334,10 @@ npm run lambda:deploy-manual
 
 ```bash
 # Step 1: デプロイ前検証（7項目）
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 
 # Step 2: CDKデプロイ
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # Step 3: デプロイ後テスト（5項目）
 bash scripts/post-deploy-lambda-test.sh prance-websocket-default-dev
@@ -353,15 +353,15 @@ bash scripts/post-deploy-lambda-test.sh prance-websocket-default-dev
 
 ```bash
 # 全自動手動デプロイスクリプト（推奨）
-npm run lambda:deploy-manual
+pnpm run lambda:deploy-manual
 
 # または手動で8ステップ実行（非推奨）
 # Step 1: Prisma Client生成
-npm run db:generate
+pnpm run db:generate
 
 # Step 2: esbuildビルド
 cd infrastructure/lambda/websocket/default
-npx esbuild index.ts ...
+pnpm exec esbuild index.ts ...
 
 # Step 3-5: デプロイディレクトリ準備・Prisma Clientコピー・検証
 # (詳細: docs/07-development/LAMBDA_MANUAL_DEPLOY_PROCEDURE.md)
@@ -439,12 +439,12 @@ bash scripts/post-deploy-lambda-test.sh prance-websocket-default-dev  # 🆕 重
 ### デプロイ前チェックリスト ✅
 
 **必須項目:**
-- [ ] `npm run lambda:predeploy` 実行 → 7項目検証
+- [ ] `pnpm run lambda:predeploy` 実行 → 7項目検証
 - [ ] CDK Synthesize成功確認
 - [ ] 失敗した場合、手動デプロイ準備
 
 **手動デプロイ時（CDK失敗の場合）:**
-- [ ] `npm run lambda:deploy-manual` 実行（推奨）
+- [ ] `pnpm run lambda:deploy-manual` 実行（推奨）
 - [ ] または手動8ステップ + 各検証実行
 - [ ] ZIP作成後、必ず `bash scripts/validate-lambda-zip.sh <zip>` 実行
 - [ ] デプロイ後、必ず `bash scripts/post-deploy-lambda-test.sh <function>` 実行
@@ -519,7 +519,7 @@ bash scripts/post-deploy-lambda-test.sh prance-websocket-default-dev  # 🆕 重
 **使用方法:**
 ```bash
 # CDKデプロイ失敗時
-npm run lambda:deploy-manual
+pnpm run lambda:deploy-manual
 
 # または個別に
 bash scripts/validate-lambda-zip.sh <zip-file>
@@ -642,10 +642,10 @@ aws lambda get-function-configuration \
 
 ```bash
 # Step 1: デプロイ前検証
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 
 # Step 2: CDKデプロイ
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # Step 3: Lambda環境変数検証（🆕）
 bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev

@@ -276,13 +276,13 @@ describe('WebSocket Rate Limiting', () => {
 ```bash
 # 1. DynamoDB Stackデプロイ
 cd infrastructure
-npm run cdk -- deploy Prance-dev-DynamoDB --require-approval never
+pnpm run cdk -- deploy Prance-dev-DynamoDB --require-approval never
 
 # 2. 環境変数確認
 aws dynamodb describe-table --table-name prance-session-rate-limit-dev
 
 # 3. Lambda関数デプロイ
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # 4. 環境変数確認（Lambda）
 aws lambda get-function-configuration \

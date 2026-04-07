@@ -53,6 +53,7 @@ export default function ConfirmDialog({
       {/* Dialog */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
+          data-testid="confirm-dialog"
           className="bg-white rounded-lg shadow-xl max-w-md w-full transform transition-all"
           onClick={e => e.stopPropagation()}
         >
@@ -75,6 +76,7 @@ export default function ConfirmDialog({
               {cancelLabel}
             </button>
             <button
+              data-testid="confirm-dialog-confirm"
               onClick={onConfirm}
               className={`px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${variantStyles[variant]}`}
             >

@@ -51,7 +51,7 @@ aws lambda list-functions --query "Functions[?contains(FunctionName, 'prance')].
 
 ```bash
 cd apps/web
-npx create-next-app@latest . --typescript --tailwind --app
+pnpm exec create-next-app@latest . --typescript --tailwind --app
 # → Next.js 15プロジェクト初期化
 ```
 
@@ -59,7 +59,7 @@ npx create-next-app@latest . --typescript --tailwind --app
 
 ```bash
 cd infrastructure
-npx cdk init app --language typescript
+pnpm exec cdk init app --language typescript
 # → AWS CDKプロジェクト初期化（Phase 0）
 ```
 
@@ -72,18 +72,18 @@ npx cdk init app --language typescript
 ```bash
 # フロントエンド開発
 cd apps/web
-npm run dev           # 開発サーバー起動
-npm run build         # ビルド
-npm run lint          # Lint実行
+pnpm run dev           # 開発サーバー起動
+pnpm run build         # ビルド
+pnpm run lint          # Lint実行
 
 # データベース操作（Prisma型定義）
 cd packages/database
-npm run db:generate   # Prisma Client再生成
+pnpm run db:generate   # Prisma Client再生成
 
 # バックエンド（Lambda）デプロイ
 cd infrastructure
-npm run deploy        # 全スタックデプロイ
-npm run deploy:dev    # 開発環境のみデプロイ
+pnpm run deploy        # 全スタックデプロイ
+pnpm run deploy:dev    # 開発環境のみデプロイ
 
 # AWS Lambda操作
 aws lambda list-functions --query "Functions[?contains(FunctionName, 'prance')].FunctionName"
@@ -117,14 +117,14 @@ cd infrastructure
 # cdk.outディレクトリをクリア
 mv cdk.out cdk.out.old-$(date +%s)
 # 再デプロイ
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### Prisma Clientエラー
 
 ```bash
 cd packages/database
-npm run db:generate
+pnpm run db:generate
 ```
 
 ---

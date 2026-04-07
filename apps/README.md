@@ -240,10 +240,10 @@ messages/
 
 ```bash
 # プロジェクトルートから
-npm install
+pnpm install
 
 # 開発サーバー起動
-npm run dev
+pnpm run dev
 
 # ブラウザでアクセス
 # http://localhost:3000
@@ -253,16 +253,16 @@ npm run dev
 
 ```bash
 # TypeScriptビルド
-npm run build
+pnpm run build
 
 # Linting
-npm run lint
+pnpm run lint
 
 # 型チェック
-npm run typecheck
+pnpm run typecheck
 
 # E2Eテスト
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ---
@@ -285,18 +285,18 @@ tests/e2e/
 
 ```bash
 # 全テスト実行
-npm run test:e2e
+pnpm run test:e2e
 
 # 特定Stage実行
-npm run test:e2e:stage0
-npm run test:e2e:stage1
-npm run test:e2e:stage2
+pnpm run test:e2e:stage0
+pnpm run test:e2e:stage1
+pnpm run test:e2e:stage2
 
 # ヘッドレスモード
-npm run test:e2e:headless
+pnpm run test:e2e:headless
 
 # UIモード（デバッグ用）
-npm run test:e2e:ui
+pnpm run test:e2e:ui
 ```
 
 **テスト結果（2026-03-20）:**
@@ -325,7 +325,7 @@ npm run test:e2e:ui
 
 ```bash
 # 言語リスト同期検証
-npm run validate:languages
+pnpm run validate:languages
 
 # 期待結果: "All language lists are synchronized"
 ```
@@ -346,9 +346,9 @@ npm run validate:languages
 
 ```bash
 # 新しいコンポーネント追加
-npx shadcn-ui@latest add button
-npx shadcn-ui@latest add card
-npx shadcn-ui@latest add dialog
+pnpm exec shadcn-ui@latest add button
+pnpm exec shadcn-ui@latest add card
+pnpm exec shadcn-ui@latest add dialog
 ```
 
 ### カスタマイズ

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # CDK Wrapper - Enforces Pre-Deployment Validation
-# This script wraps `npx cdk` to ensure all validations run before deployment
+# This script wraps `pnpm exec cdk` to ensure all validations run before deployment
 #
 # Usage:
 #   ./scripts/cdk-wrapper.sh deploy Prance-dev-ApiLambda --require-approval never
@@ -50,20 +50,52 @@ if [ "$IS_DEPLOY" = true ]; then
   # Run all pre-deployment validations
   cd "$ROOT_DIR"
 
+  # 0. CDK environment variables check (prevent silent missing env vars)
+  echo -e "${BLUE}[0/5]${NC} Checking CDK environment variables..."
+  CDK_REQUIRED_VARS=(
+    DYNAMODB_CONNECTION_TTL_SECONDS
+    BEDROCK_MODEL_ID
+    BEDROCK_REGION
+    CLOUDFRONT_DOMAIN
+    STT_LANGUAGE
+    VIDEO_FORMAT
+    AWS_ENDPOINT_SUFFIX
+  )
+  CDK_ENV_MISSING=0
+  # Load .env.local to check
+  if [ -f "$ROOT_DIR/.env.local" ]; then
+    set -a; source "$ROOT_DIR/.env.local" > /dev/null 2>&1; set +a
+  fi
+  for var in "${CDK_REQUIRED_VARS[@]}"; do
+    if [ -z "${!var}" ]; then
+      echo -e "${RED}  ✗ Missing required env var: $var${NC}"
+      CDK_ENV_MISSING=$((CDK_ENV_MISSING + 1))
+    fi
+  done
+  if [ "$CDK_ENV_MISSING" -gt 0 ]; then
+    echo -e "${RED}  ✗ $CDK_ENV_MISSING required env vars missing${NC}"
+    echo ""
+    echo -e "${YELLOW}Add missing vars to .env.local (root) — CDK reads from there automatically${NC}"
+    exit 1
+  else
+    echo -e "${GREEN}  ✓ All required CDK env vars present${NC}"
+  fi
+  echo ""
+
   # 1. Space-containing directories check
-  echo -e "${BLUE}[1/4]${NC} Checking for space-containing directories..."
-  if npm run clean:spaces > /dev/null 2>&1; then
+  echo -e "${BLUE}[1/5]${NC} Checking for space-containing directories..."
+  if pnpm run clean:spaces > /dev/null 2>&1; then
     echo -e "${GREEN}  ✓ No space-containing directories${NC}"
   else
     echo -e "${RED}  ✗ Space-containing directories found${NC}"
     echo ""
-    echo -e "${YELLOW}Run: npm run clean:spaces${NC}"
+    echo -e "${YELLOW}Run: pnpm run clean:spaces${NC}"
     exit 1
   fi
   echo ""
 
   # 2. Duplication management check (CRITICAL - 2026-03-22)
-  echo -e "${BLUE}[2/4]${NC} Validating duplication management..."
+  echo -e "${BLUE}[2/5]${NC} Validating duplication management..."
   if bash scripts/validate-duplication.sh > /dev/null 2>&1; then
     echo -e "${GREEN}  ✓ Duplication validation passed${NC}"
   else
@@ -74,38 +106,51 @@ if [ "$IS_DEPLOY" = true ]; then
   fi
   echo ""
 
-  # 3. Lambda dependencies check (if deploying Lambda stack)
+  # 3. Runtime config completeness check (CRITICAL - 2026-04-05)
   if [[ "$*" == *"ApiLambda"* ]] || [[ "$*" == *"--all"* ]] || [[ -z "$*" ]]; then
-    echo -e "${BLUE}[3/4]${NC} Validating Lambda dependencies..."
-    if npm run lambda:validate > /dev/null 2>&1; then
-      echo -e "${GREEN}  ✓ Lambda dependencies valid${NC}"
+    echo -e "${BLUE}[3/5]${NC} Validating runtime config completeness..."
+    if bash scripts/validate-runtime-configs.sh > /dev/null 2>&1; then
+      echo -e "${GREEN}  ✓ Runtime config completeness validated${NC}"
     else
-      echo -e "${RED}  ✗ Lambda dependencies validation failed${NC}"
+      echo -e "${RED}  ✗ Runtime config completeness failed${NC}"
       echo ""
-      echo -e "${YELLOW}Run: npm run lambda:validate${NC}"
+      echo -e "${YELLOW}Run: bash scripts/validate-runtime-configs.sh${NC}"
       exit 1
     fi
     echo ""
   else
-    echo -e "${BLUE}[3/4]${NC} Skipping Lambda validation (not deploying Lambda stack)"
+    echo -e "${BLUE}[3/5]${NC} Skipping runtime config validation (not deploying Lambda stack)"
     echo ""
   fi
 
-  # 4. CDK bundling configuration check (if deploying Lambda stack)
+  # 4. Lambda dependencies check (if deploying Lambda stack)
   if [[ "$*" == *"ApiLambda"* ]] || [[ "$*" == *"--all"* ]] || [[ -z "$*" ]]; then
-    echo -e "${BLUE}[4/4]${NC} Validating CDK bundling configuration..."
+    echo -e "${BLUE}[4/5]${NC} Validating Lambda dependencies..."
+    # NOTE: lambda:validate checks for per-function package.json/node_modules,
+    # but this project uses CDK esbuild bundling — Lambda functions have no
+    # local node_modules. Bundling is validated implicitly by `cdk synth` below.
+    echo -e "${GREEN}  ✓ Lambda dependencies managed by CDK esbuild (skipping local check)${NC}"
+    echo ""
+  else
+    echo -e "${BLUE}[4/5]${NC} Skipping Lambda validation (not deploying Lambda stack)"
+    echo ""
+  fi
+
+  # 5. CDK bundling configuration check (if deploying Lambda stack)
+  if [[ "$*" == *"ApiLambda"* ]] || [[ "$*" == *"--all"* ]] || [[ -z "$*" ]]; then
+    echo -e "${BLUE}[5/5]${NC} Validating CDK bundling configuration..."
     cd "$INFRA_DIR"
-    if npm run validate:bundling > /dev/null 2>&1; then
+    if pnpm run validate:bundling > /dev/null 2>&1; then
       echo -e "${GREEN}  ✓ CDK bundling configuration valid${NC}"
     else
       echo -e "${RED}  ✗ CDK bundling configuration invalid${NC}"
       echo ""
-      echo -e "${YELLOW}Run: cd infrastructure && npm run validate:bundling${NC}"
+      echo -e "${YELLOW}Run: cd infrastructure && pnpm run validate:bundling${NC}"
       exit 1
     fi
     echo ""
   else
-    echo -e "${BLUE}[4/4]${NC} Skipping bundling validation (not deploying Lambda stack)"
+    echo -e "${BLUE}[5/5]${NC} Skipping bundling validation (not deploying Lambda stack)"
     echo ""
   fi
 
@@ -120,7 +165,7 @@ cd "$INFRA_DIR"
 echo -e "${MAGENTA}[CDK]${NC} Executing: cdk $CDK_COMMAND $*"
 echo ""
 
-npx cdk "$CDK_COMMAND" "$@"
+pnpm exec cdk "$CDK_COMMAND" "$@"
 
 echo ""
 echo -e "${GREEN}✅ CDK command completed successfully${NC}"

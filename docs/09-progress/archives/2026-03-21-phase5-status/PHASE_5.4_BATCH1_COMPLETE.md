@@ -141,7 +141,7 @@ const scoreResult = await this.scoreCalculator.calculateScore(
 ### Deployment Command:
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 ### Affected Lambda Functions:
@@ -211,7 +211,7 @@ Total latency: +50-100ms
 ### Option 1: Deploy and Test Batch 1
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 Then verify:
 - Auth endpoints (register, login)

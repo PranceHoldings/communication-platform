@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Database Execute Script (S3 Upload Method)
+# Database Execute Script (S3 Upload Method) (v2 - Shared Library版)
 # Purpose: Execute large SQL queries via S3 + Lambda
 #
 # Usage:
@@ -14,15 +14,9 @@
 #   - Progress indication
 #
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Default values
 ENVIRONMENT="dev"
@@ -53,7 +47,7 @@ done
 
 # Validate input
 if [ -z "$SQL_FILE" ]; then
-  echo -e "${RED}Error: SQL file must be provided${NC}"
+  log_error "SQL file must be provided"
   echo ""
   echo "Usage:"
   echo "  bash scripts/db-exec.sh queries/test.sql"
@@ -65,29 +59,23 @@ if [ -z "$SQL_FILE" ]; then
   exit 1
 fi
 
-if [ ! -f "$SQL_FILE" ]; then
-  echo -e "${RED}Error: File not found: $SQL_FILE${NC}"
-  exit 1
-fi
+require_file "$SQL_FILE" "SQL file not found"
 
 # Generate unique query ID
 QUERY_ID="query-$(date +%Y%m%d-%H%M%S)-$RANDOM.sql"
 
 # Display info
-echo -e "${CYAN}============================================${NC}"
-echo -e "${CYAN}Database Execute (S3 Method)${NC}"
-echo -e "${CYAN}============================================${NC}"
-echo ""
-echo -e "Environment: ${BLUE}$ENVIRONMENT${NC}"
-echo -e "Function: ${BLUE}$FUNCTION_NAME${NC}"
-echo -e "S3 Bucket: ${BLUE}$S3_BUCKET${NC}"
-echo -e "SQL File: ${BLUE}$SQL_FILE${NC}"
-echo -e "Query ID: ${BLUE}$QUERY_ID${NC}"
-echo -e "Read-only: ${BLUE}$READ_ONLY${NC}"
+log_section "Database Execute (S3 Method)"
+log_info "Environment: $ENVIRONMENT"
+log_info "Function: $FUNCTION_NAME"
+log_info "S3 Bucket: $S3_BUCKET"
+log_info "SQL File: $SQL_FILE"
+log_info "Query ID: $QUERY_ID"
+log_info "Read-only: $READ_ONLY"
 echo ""
 
 # Preview SQL
-echo -e "${YELLOW}SQL Preview:${NC}"
+log_info "SQL Preview:"
 head -10 "$SQL_FILE"
 if [ $(wc -l < "$SQL_FILE") -gt 10 ]; then
   echo "... (truncated, $(wc -l < "$SQL_FILE") lines total)"
@@ -96,23 +84,21 @@ echo ""
 
 # Confirm for write operations
 if [ "$READ_ONLY" = false ]; then
-  echo -e "${YELLOW}⚠️  WARNING: Write operations enabled${NC}"
-  read -p "Continue? (y/N): " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  log_warning "⚠️  WARNING: Write operations enabled"
+  if ! confirm "Continue"; then
     echo "Cancelled"
     exit 0
   fi
 fi
 
 # Upload to S3
-echo -e "${CYAN}[1/3] Uploading SQL to S3...${NC}"
+log_step "1/3" "Uploading SQL to S3"
 aws s3 cp "$SQL_FILE" "s3://${S3_BUCKET}/${QUERY_ID}" --quiet
 
 if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✓ Uploaded to s3://${S3_BUCKET}/${QUERY_ID}${NC}"
+  log_success "Uploaded to s3://${S3_BUCKET}/${QUERY_ID}"
 else
-  echo -e "${RED}✗ Upload failed${NC}"
+  log_error "Upload failed"
   exit 1
 fi
 echo ""
@@ -127,7 +113,7 @@ EOF
 )
 
 # Invoke Lambda
-echo -e "${CYAN}[2/3] Invoking Lambda...${NC}"
+log_step "2/3" "Invoking Lambda"
 
 RESULT=$(aws lambda invoke \
   --function-name "$FUNCTION_NAME" \
@@ -136,12 +122,12 @@ RESULT=$(aws lambda invoke \
   /tmp/db-exec-result.json 2>&1)
 
 if [ $? -ne 0 ]; then
-  echo -e "${RED}✗ Lambda invocation failed${NC}"
+  log_error "Lambda invocation failed"
   echo "$RESULT"
 
   # Cleanup S3
   echo ""
-  echo -e "${CYAN}Cleaning up S3...${NC}"
+  log_info "Cleaning up S3..."
   aws s3 rm "s3://${S3_BUCKET}/${QUERY_ID}" --quiet || true
 
   exit 1
@@ -152,31 +138,31 @@ RESULT_JSON=$(cat /tmp/db-exec-result.json)
 SUCCESS=$(echo "$RESULT_JSON" | jq -r '.success')
 
 if [ "$SUCCESS" = "true" ]; then
-  echo -e "${GREEN}✓ Query executed successfully${NC}"
+  log_success "Query executed successfully"
   echo ""
 
   ROW_COUNT=$(echo "$RESULT_JSON" | jq -r '.rowCount')
   EXEC_TIME=$(echo "$RESULT_JSON" | jq -r '.executionTime')
 
-  echo -e "Rows affected: ${BLUE}$ROW_COUNT${NC}"
-  echo -e "Execution time: ${BLUE}${EXEC_TIME}ms${NC}"
+  log_info "Rows affected: $ROW_COUNT"
+  log_info "Execution time: ${EXEC_TIME}ms"
 else
-  echo -e "${RED}✗ Query failed${NC}"
+  log_error "Query failed"
   echo ""
 
   ERROR=$(echo "$RESULT_JSON" | jq -r '.error')
-  echo -e "${RED}Error: $ERROR${NC}"
+  log_error "Error: $ERROR"
 fi
 echo ""
 
 # Cleanup S3
-echo -e "${CYAN}[3/3] Cleaning up S3...${NC}"
+log_step "3/3" "Cleaning up S3"
 aws s3 rm "s3://${S3_BUCKET}/${QUERY_ID}" --quiet
 
 if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✓ Cleanup complete${NC}"
+  log_success "Cleanup complete"
 else
-  echo -e "${YELLOW}⚠ Cleanup failed (file will auto-delete after 7 days)${NC}"
+  log_warning "Cleanup failed (file will auto-delete after 7 days)"
 fi
 
 # Exit with appropriate code

@@ -78,7 +78,7 @@ claude
 # - [CODING_RULES.md](../../CODING_RULES.md) のチェックリスト確認
 
 # 5. テスト実行
-npm test
+pnpm test
 
 # 6. ドキュメント更新
 # - 必要に応じて CLAUDE.md 更新
@@ -318,28 +318,28 @@ claude
 
 ```bash
 # ルートで全ワークスペースインストール
-npm install
+pnpm install
 
 # 開発サーバー起動（全アプリ）
-npm run dev
+pnpm run dev
 
 # 特定アプリのみ起動
-cd apps/web && npm run dev
+cd apps/web && pnpm run dev
 
 # テスト実行（全体）
-npm test
+pnpm test
 
 # Lint
-npm run lint
+pnpm run lint
 
 # ビルド
-npm run build
+pnpm run build
 
 # Prisma
 cd packages/database
-npx prisma generate
-npx prisma migrate dev
-npx prisma studio
+pnpm exec prisma generate
+pnpm exec prisma migrate dev
+pnpm exec prisma studio
 ```
 
 ### CDKコマンド
@@ -348,16 +348,16 @@ npx prisma studio
 cd infrastructure
 
 # スタック一覧
-npx cdk list
+pnpm exec cdk list
 
 # 差分確認
-npx cdk diff
+pnpm exec cdk diff
 
 # デプロイ
-npx cdk deploy --all
+pnpm exec cdk deploy --all
 
 # 特定スタックのみ
-npx cdk deploy Prance-dev-Network
+pnpm exec cdk deploy Prance-dev-Network
 ```
 
 ### AWS Lambda操作

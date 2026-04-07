@@ -114,7 +114,8 @@ test.describe('Stage 2: Mocked Integration Tests (Core)', () => {
     console.log('[Test] AI response sent');
 
     // Step 5: Wait for AI message to appear in transcript
-    await sessionPlayer.waitForNewTranscriptMessage(5000);
+    // Use text-based wait to avoid race condition where message arrives before count is captured
+    await sessionPlayer.waitForTranscriptContaining(aiText, 5000);
 
     // Step 6: Verify AI message in transcript
     const aiMessage = await sessionPlayer.getLatestTranscriptMessage();

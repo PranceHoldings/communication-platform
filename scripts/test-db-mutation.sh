@@ -10,7 +10,9 @@
 #   bash scripts/test-db-mutation.sh dev execute f839e789-e5ae-4e39-b184-d975d6e7029f
 #
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Parse arguments
 ENVIRONMENT="${1:-dev}"
@@ -20,20 +22,16 @@ CDN_DOMAIN="${CLOUDFRONT_DOMAIN:-d3mx0sug5s3a6x.cloudfront.net}"
 
 FUNCTION_NAME="prance-db-mutation-${ENVIRONMENT}"
 
-echo "========================================="
-echo " DB Mutation Test"
-echo "========================================="
-echo "Environment: ${ENVIRONMENT}"
-echo "Function: ${FUNCTION_NAME}"
-echo "Execution Mode: ${EXECUTION_MODE}"
-echo "Session ID: ${SESSION_ID}"
-echo "CDN Domain: ${CDN_DOMAIN}"
+log_section "DB Mutation Test"
+log_info "Environment: ${ENVIRONMENT}"
+log_info "Function: ${FUNCTION_NAME}"
+log_info "Execution Mode: ${EXECUTION_MODE}"
+log_info "Session ID: ${SESSION_ID}"
+log_info "CDN Domain: ${CDN_DOMAIN}"
 echo ""
 
 # Test 1: Dry-run direct SQL
-echo "========================================="
-echo " Test 1: Dry-run Direct SQL"
-echo "========================================="
+log_section "Test 1: Dry-run Direct SQL"
 
 PAYLOAD=$(cat <<EOF
 {
@@ -58,9 +56,7 @@ cat /tmp/test1-result.json | jq '.'
 echo ""
 
 # Test 2: Preset query (seed-test-recording)
-echo "========================================="
-echo " Test 2: Preset Query - seed-test-recording"
-echo "========================================="
+log_section "Test 2: Preset Query - seed-test-recording"
 
 PAYLOAD=$(cat <<EOF
 {
@@ -90,9 +86,7 @@ echo ""
 
 # Test 3: Preset query (seed-test-transcripts)
 if [ "${EXECUTION_MODE}" = "execute" ]; then
-  echo "========================================="
-  echo " Test 3: Preset Query - seed-test-transcripts"
-  echo "========================================="
+  log_section "Test 3: Preset Query - seed-test-transcripts"
 
   PAYLOAD=$(cat <<EOF
 {
@@ -120,9 +114,7 @@ EOF
   echo ""
 
   # Test 4: Preset query (seed-test-score)
-  echo "========================================="
-  echo " Test 4: Preset Query - seed-test-score"
-  echo "========================================="
+  log_section "Test 4: Preset Query - seed-test-score"
 
   PAYLOAD=$(cat <<EOF
 {
@@ -150,9 +142,7 @@ EOF
   echo ""
 fi
 
-echo "========================================="
-echo " ✅ All tests completed"
-echo "========================================="
+log_section "✅ All tests completed"
 echo ""
 echo "To insert full test data:"
 echo "  bash scripts/test-db-mutation.sh dev execute ${SESSION_ID}"

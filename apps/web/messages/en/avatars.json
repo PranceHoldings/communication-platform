@@ -137,5 +137,10 @@
     "loadFailed": "Failed to load avatar",
     "loadListFailed": "Failed to load avatars",
     "genericError": "An error occurred"
+  },
+  "fallback": {
+    "title": "Avatar Loading Error",
+    "message": "Unable to load the avatar. Please try again.",
+    "errorDetails": "Error details"
   }
 }

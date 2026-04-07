@@ -472,7 +472,7 @@ AWS_REGION: this.region,
 
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 ### Step 6: 検証

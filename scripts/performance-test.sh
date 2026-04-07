@@ -11,14 +11,14 @@
 # 4. API response times
 ###############################################################################
 
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 set -e
 
 # Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
 
 # Configuration
 API_BASE_URL="${API_BASE_URL:-https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1}"
@@ -27,9 +27,9 @@ TEST_USER_PASSWORD="${TEST_USER_PASSWORD:-TestPassword123!}"
 PARALLEL_USERS=10
 ITERATIONS_PER_USER=1
 
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}Phase 1.6.1 Performance Test${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log_info "Phase 1.6.1 Performance Test"
+log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
 ###############################################################################
@@ -284,6 +284,6 @@ fi
 echo "└─────────────────────────────────────────────────────┘"
 echo ""
 
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✅ Performance test complete${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+log_success "Performance test complete"
+log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

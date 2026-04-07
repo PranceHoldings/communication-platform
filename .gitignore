@@ -35,6 +35,13 @@ infrastructure/deploy*.log
 # Build backups
 .next.backup-*
 .next.old-*
+.next-archive/
+
+# Broken/archived directories (containing files with spaces)
+*.broken-*
+node_modules.broken*
+cdk.out.broken-*
+dist.broken-*
 
 # TypeScript build info
 *.tsbuildinfo
@@ -67,29 +74,20 @@ cdk.out/
 cdk.out.*/
 cdk.out.broken-*
 cdk.out.old-*
-*.js
-*.d.ts
-!jest.config.js
-!infrastructure/scripts/*.js
 infrastructure/cdk-outputs.json
 
 # Lambda build artifacts
 infrastructure/lambda/**/deploy/
 infrastructure/lambda/**/build.sh
 
-# Prisma
-prisma/migrations/
-
 # Temporary files
 *.tmp
 .cache/
 *.backup-*
-*.broken-*
 *.old-*
 *.backup
 *.backup2
 apps/web/.next.broken-*
-node_modules.broken-*
 console.log
 consolelog.log
 backups/
@@ -109,6 +107,12 @@ package.json.old
 infrastructure/apps/
 infrastructure/*.broken-*
 
+# Local backup directories (not part of project)
+backup.devcontainer/
+
+# Testing output
+test-results/
+
 # Files with spaces (macOS Finder auto-generated copies)
 # CRITICAL: Never create files/directories with spaces in names
 *\ 2.*
@@ -117,11 +121,6 @@ infrastructure/*.broken-*
 *\ [0-9]/
 package-lock\ *.json
 cdk\ *.out/
-test-results/
-
-# Any file or directory with space in name (comprehensive pattern)
-# This catches all files/directories with spaces that aren't already ignored
 *\ *.*
 *\ */
 *\ *\ *
-consolelog.log

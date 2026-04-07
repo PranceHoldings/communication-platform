@@ -35,4 +35,4 @@ echo ""
 # Step 2: Start development server
 echo -e "${YELLOW}[2/2] Starting development server on port 3000...${NC}"
 echo ""
-PORT=3000 npm run dev
+PORT=3000 pnpm run dev

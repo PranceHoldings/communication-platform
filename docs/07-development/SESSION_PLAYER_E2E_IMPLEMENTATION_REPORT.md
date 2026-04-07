@@ -146,33 +146,33 @@
 
 ```bash
 # All tests (30 tests, ~20 min)
-npm run test:e2e
+pnpm run test:e2e
 
 # UI mode (recommended for development)
-npm run test:e2e:ui
+pnpm run test:e2e:ui
 
 # Individual stages
-npm run test:e2e:stage1   # 10 tests, ~2 min
-npm run test:e2e:stage2   # 10 tests, ~3 min
-npm run test:e2e:stage3   # 10 tests, ~10 min
+pnpm run test:e2e:stage1   # 10 tests, ~2 min
+pnpm run test:e2e:stage2   # 10 tests, ~3 min
+pnpm run test:e2e:stage3   # 10 tests, ~10 min
 
 # Specific test
-npx playwright test -g "S1-001"
+pnpm exec playwright test -g "S1-001"
 
 # Headed mode (show browser)
-npm run test:e2e:headed
+pnpm run test:e2e:headed
 
 # Debug mode
-PWDEBUG=1 npm run test:e2e:headed
+PWDEBUG=1 pnpm run test:e2e:headed
 
 # View report
-npm run test:e2e:report
+pnpm run test:e2e:report
 ```
 
 ### 3.2 Prerequisites
 
 **Stage 1 (Basic UI):**
-- ✅ Next.js dev server running (`npm run dev`)
+- ✅ Next.js dev server running (`pnpm run dev`)
 - ✅ Test user credentials configured
 
 **Stage 2 (Mocked Integration):**
@@ -199,9 +199,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
-      - run: npm ci
-      - run: npx playwright install --with-deps
-      - run: npm run test:e2e:stage1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps
+      - run: pnpm run test:e2e:stage1
       - uses: actions/upload-artifact@v3
         if: failure()
         with:
@@ -212,7 +212,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Same as stage1
-      - run: npm run test:e2e:stage2
+      - run: pnpm run test:e2e:stage2
 
   # Stage 3: Requires backend setup (optional in CI)
 ```
@@ -481,7 +481,7 @@ S3-010: Long session with multiple exchanges (stress test)
 
 | Aspect | Rating | Notes |
 |--------|--------|-------|
-| Ease of running tests | ⭐⭐⭐⭐⭐ | Single command (`npm run test:e2e`) |
+| Ease of running tests | ⭐⭐⭐⭐⭐ | Single command (`pnpm run test:e2e`) |
 | Debugging capability | ⭐⭐⭐⭐⭐ | UI mode, trace viewer, screenshots |
 | Maintainability | ⭐⭐⭐⭐⭐ | Page Object Model, clear structure |
 | Documentation | ⭐⭐⭐⭐⭐ | Comprehensive guides |

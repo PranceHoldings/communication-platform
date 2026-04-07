@@ -52,7 +52,7 @@ fi
 echo ""
 echo -e "${BLUE}Step 2:${NC} Prisma Client再生成中..."
 cd "${DATABASE_DIR}"
-npx prisma generate
+pnpm exec prisma generate
 echo -e "${GREEN}✓ Prisma Client再生成完了${NC}"
 
 # Step 3: Lambda Function Deployment
@@ -63,7 +63,7 @@ cd "${INFRASTRUCTURE_DIR}"
 STACK_NAME="Prance-${ENVIRONMENT}-ApiLambda"
 echo -e "${YELLOW}Deploying: ${STACK_NAME}${NC}"
 
-npm run cdk -- deploy "${STACK_NAME}" \
+pnpm run cdk -- deploy "${STACK_NAME}" \
   -c environment="${ENVIRONMENT}" \
   --require-approval never \
   --hotswap

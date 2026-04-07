@@ -150,7 +150,7 @@ apps/web/
 #### 解決策
 
 1. ✅ next-intl 完全削除
-   - `npm uninstall next-intl`
+   - `pnpm remove next-intl`
    - `i18n/request.ts` 削除
    - `next.config.js` から `withNextIntl()` 削除
 

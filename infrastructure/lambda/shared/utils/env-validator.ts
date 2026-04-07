@@ -378,3 +378,15 @@ export function getDynamoDbConnectionTtlSeconds(): number {
 export function getDefaultChunkDurationMs(): number {
   return getRequiredEnvAsNumber('DEFAULT_CHUNK_DURATION_MS');
 }
+
+// ============================================================
+// WebSocket ACK Tuning Configuration
+// ============================================================
+
+export function getWsAckTimeoutMsDefault(): number {
+  return getOptionalEnvAsNumber('WS_ACK_TIMEOUT_MS', 5000);
+}
+
+export function getWsMaxRetriesDefault(): number {
+  return getOptionalEnvAsNumber('WS_MAX_RETRIES', 6);
+}

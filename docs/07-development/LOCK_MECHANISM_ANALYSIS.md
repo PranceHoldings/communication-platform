@@ -425,8 +425,8 @@ Reality check:
 
 ```bash
 cd apps/web
-npm install uuid
-npm install --save-dev @types/uuid
+pnpm install uuid
+pnpm install --save-dev @types/uuid
 ```
 
 **期待される効果:**

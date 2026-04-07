@@ -205,13 +205,13 @@ const disconnect = useCallback(() => {
 
 **共有パッケージビルド:**
 ```bash
-cd packages/shared && npm run build
+cd packages/shared && pnpm run build
 # ✅ 成功
 ```
 
 **Next.jsビルド:**
 ```bash
-cd apps/web && npm run build
+cd apps/web && pnpm run build
 # ✅ 成功
 # Route (app): 26ページ正常ビルド
 # First Load JS: 103 kB

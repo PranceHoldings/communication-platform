@@ -281,7 +281,9 @@ function detectCategory(errorCode: string | null): ErrorCategory {
     errorCode.includes('STT') ||
     errorCode.includes('AI') ||
     errorCode.includes('TTS') ||
-    errorCode.includes('API')
+    errorCode.includes('API') ||
+    errorCode.includes('SPEECH') ||
+    errorCode.includes('PROCESSING')
   )
     return 'api';
   if (errorCode.includes('SESSION')) return 'session';

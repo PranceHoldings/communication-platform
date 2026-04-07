@@ -83,7 +83,7 @@ DATABASE_URL="postgresql://postgres:password@localhost:5432/prance_dev"
 psql postgresql://pranceadmin:xxx@xxx.rds.amazonaws.com:5432/prance
 
 # ❌ Prisma Migrateの直接実行
-cd packages/database && npx prisma migrate dev
+cd packages/database && pnpm exec prisma migrate dev
 ```
 
 **理由:**
@@ -104,7 +104,7 @@ bash scripts/db-query.sh --file scripts/queries/verification.sql
 bash scripts/db-query.sh --write "UPDATE scenarios SET ..." # 確認プロンプト表示
 
 # 統合デプロイスクリプト使用（マイグレーション）
-cd infrastructure && npm run deploy:dev-migration
+cd infrastructure && pnpm run deploy:dev-migration
 ```
 
 **セキュリティ機能:**
@@ -507,7 +507,7 @@ response.cookies.set(name, value, COOKIE_CONFIGS.locale.options);
 
 ```bash
 # 言語リスト同期検証
-npm run validate:languages
+pnpm run validate:languages
 
 # 期待結果: "All language lists are synchronized"
 ```
@@ -523,7 +523,7 @@ npm run validate:languages
 1. Frontend config の `locales` 配列に追加
 2. Lambda config の `LANGUAGES` 配列に追加
 3. Message directory 作成 (`apps/web/messages/{languageCode}/`)
-4. `npm run validate:languages` で検証
+4. `pnpm run validate:languages` で検証
 
 **効果:**
 - 言語追加時の同期漏れ防止
@@ -673,7 +673,7 @@ import { getTranslations } from 'next-intl/server';    // 使用禁止
 ```bash
 # Lambda依存関係検証（デプロイ前必須）
 cd infrastructure
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 
 # または個別検証
 bash scripts/validate-lambda-dependencies.sh prance-websocket-default-dev
@@ -692,7 +692,7 @@ bash scripts/validate-lambda-dependencies.sh prance-websocket-default-dev
 **依存関係破損時の修復:**
 
 ```bash
-npm run lambda:fix
+pnpm run lambda:fix
 ```
 
 **過去の失敗例（2026-03-11）:**
@@ -711,10 +711,10 @@ npm run lambda:fix
 ```bash
 # ✅ 正しいデプロイ方法（唯一の方法）
 cd infrastructure
-npm run deploy:websocket
+pnpm run deploy:websocket
 
 # または個別デプロイ
-npm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
+pnpm run cdk -- deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 **❌ 絶対禁止:**
@@ -981,7 +981,7 @@ aws lambda update-function-code \
 
 # ✅ 必ずこうする - CDK経由デプロイ
 cd infrastructure
-npm run deploy:websocket
+pnpm run deploy:websocket
 ```
 
 **なぜ手動zipが問題か:**
@@ -1061,8 +1061,8 @@ import { User, Avatar, ValidationError, NotFoundError } from '../shared/types';
 | **DRY原則**      | 同じロジックを2箇所にコピペ            | 共通関数を作成して両方で使用                  |
 | **DRY原則**      | 30行のソートロジックを重複             | `utils.ts` に共通関数化                       |
 | **Next.js**      | URLパス推測（`/scenarios`）            | 実装確認（`/dashboard/scenarios`）            |
-| **Lambda**       | 手動zipアップロード                    | `npm run deploy:websocket`（CDK経由）         |
-| **Lambda**       | デプロイ前に依存関係検証なし           | `npm run lambda:predeploy`（必須）            |
+| **Lambda**       | 手動zipアップロード                    | `pnpm run deploy:websocket`（CDK経由）         |
+| **Lambda**       | デプロイ前に依存関係検証なし           | `pnpm run lambda:predeploy`（必須）            |
 | **Database**     | `psql postgresql://localhost:5432`     | `bash scripts/db-query.sh "SELECT ..."`       |
 | **Database**     | RDS直接接続                            | Lambda経由アクセス                            |
 
@@ -1175,7 +1175,7 @@ bash scripts/validate-duplication.sh
 git commit -m "..."  # 自動的に検証
 
 # 自動実行（デプロイ前）
-npm run deploy:lambda  # 自動的に検証
+pnpm run deploy:lambda  # 自動的に検証
 ```
 
 **検証項目:**
@@ -1350,3 +1350,310 @@ bash scripts/validate-duplication.sh
 - **疑わしきは共通化** - 2箇所で使われたら即共通化
 - **10行以上の類似コード** - 必ず共通関数化を検討
 - **30行以上の重複** - **絶対に**共通化（例外なし）
+
+---
+
+## 🔴 Rule 10: 依存関係追加時の必須チェック（CRITICAL - 2026-04-02追加）
+
+**条件:** `package.json` に新しい依存関係を追加する場合
+
+**最重要原則:** 依存関係は「資産」ではなく「負債」である
+
+### ❌ 禁止事項
+
+```bash
+# 1. 調査せずにインストール
+pnpm install <package>  # ❌ 依存関係ツリーを確認していない
+
+# 2. 大きなライブラリを全体インストール
+pnpm install lodash  # ❌ 必要な関数だけコピーすべき
+
+# 3. 古いライブラリ
+pnpm install moment  # ❌ 非推奨、date-fnsまたは native Intl を使用
+```
+
+### ✅ 正しい手順
+
+```bash
+# Step 1: 依存関係ツリーを確認
+pnpm info <package> dependencies
+pnpm info <package> peerDependencies
+
+# Step 2: サイズを確認
+pnpm info <package> dist.unpackedSize
+
+# Step 3: 自己実装を検討（100行以内なら自己実装）
+cat > packages/shared/src/utils/array.ts <<EOF
+export function chunk<T>(array: T[], size: number): T[][] {
+  // ... 実装 ...
+}
+EOF
+
+# Step 4: 必要なら軽量な代替を探す
+# lodash → lodash-es（tree-shakeable）
+# moment → date-fns（0 dependencies）
+# axios → native fetch（0 dependencies）
+
+# Step 5: 検証スクリプト実行
+pnpm run validate:deps-size
+```
+
+### 判断基準
+
+| 直接依存数 | 判断                                   |
+| ---------- | -------------------------------------- |
+| 0-10個     | ✅ OK（軽量）                          |
+| 11-20個    | ⚠️ 本当に必要か再検討、代替を調査     |
+| 21個以上   | ❌ 重すぎる、別の軽量な代替を探す      |
+
+| 実装時間   | 推奨アクション                         |
+| ---------- | -------------------------------------- |
+| < 1時間    | ✅ 自己実装を推奨                      |
+| 1-4時間    | ✅ 自己実装を検討（メンテコスト考慮）  |
+| 4-8時間    | ⚠️ 軽量ライブラリを検討               |
+| > 8時間    | ✅ ライブラリ使用（慎重に選定）        |
+
+### 検証方法
+
+```bash
+# 依存関係サイズ検証（コミット前必須）
+pnpm run validate:deps-size
+
+# 期待される結果:
+# ✅ All dependencies are within acceptable limits
+# ❌ Heavy dependency detected → 代替を検討
+```
+
+**詳細:** [memory/feedback_dependency_management.md](memory/feedback_dependency_management.md)
+
+---
+
+## 🔴 Rule 11: Monorepo境界の厳守（CRITICAL - 2026-04-02追加）
+
+**最重要原則:** ワークスペース間の境界は明確に、違反は設計上の失敗
+
+### ❌ 絶対禁止
+
+```typescript
+// 1. Frontend が Backend をimport
+// apps/web/lib/utils.ts
+import { formatDate } from '../../../infrastructure/lambda/shared/utils';
+// ❌ フロントエンドがバックエンドをimport
+
+// 2. Backend が Frontend をimport
+// infrastructure/lambda/auth/login/index.ts
+import { LoginForm } from '../../../../../apps/web/components/LoginForm';
+// ❌ バックエンドがフロントエンドをimport
+
+// 3. Shared package に runtime logic
+// packages/shared/src/database.ts
+import { PrismaClient } from '@prisma/client';
+export const prisma = new PrismaClient();
+// ❌ 共有パッケージにランタイムロジック
+
+// 4. Frontend に AWS SDK
+// apps/web/lib/api.ts
+import { S3Client } from '@aws-sdk/client-s3';
+// ❌ フロントエンドにバックエンドライブラリ
+```
+
+### ✅ 正しい方法
+
+```typescript
+// 1. 共有型定義（packages/shared）
+// packages/shared/src/types/user.ts
+export interface User {
+  id: string;
+  email: string;
+}
+
+// 2. Frontend で使用
+// apps/web/app/dashboard/page.tsx
+import type { User } from '@prance/shared';
+// ✅ 共有型をimport
+
+// 3. Backend で使用
+// infrastructure/lambda/auth/me/index.ts
+import type { User } from '@prance/shared';
+// ✅ 共有型をimport
+
+// 4. Runtime logic は各ワークスペースで独立
+// infrastructure/lambda/shared/database.ts
+export const prisma = new PrismaClient();
+// ✅ バックエンドのみ
+```
+
+### ワークスペース依存関係ルール
+
+```
+apps/web           → CAN import → packages/shared (types only)
+                   → CANNOT import → infrastructure
+
+infrastructure     → CAN import → packages/shared (types only)
+                   → CANNOT import → apps/web
+
+packages/shared    → CANNOT import → apps/web OR infrastructure
+                   → Only type definitions, no runtime logic
+
+packages/database  → CANNOT import → anything except Prisma
+```
+
+### 検証方法
+
+```bash
+# Monorepo境界検証（コミット前必須）
+pnpm run validate:monorepo
+
+# 期待される結果:
+# ✅ All monorepo boundary validations passed
+# ❌ Boundary violation detected → 必ず修正
+```
+
+**詳細:** [memory/feedback_monorepo_rules.md](memory/feedback_monorepo_rules.md)
+
+---
+
+## 🔴 Rule 12: テスト実装前の確認（CRITICAL - 2026-04-02追加）
+
+**最重要原則:** 推測でテストを書かず、必ず実装を確認してから作成すること
+
+### ❌ 絶対禁止
+
+```typescript
+// 1. URLパスを推測
+test('dashboard loads', async () => {
+  await page.goto('/dashboard/sessions');
+  // ❌ 実際のルートを確認していない
+  // 実際: /sessions（route group使用）
+});
+
+// 2. APIレスポンスを推測
+const response = await fetch('/api/v1/users/profile');
+expect(response.data.user.name).toBe('Test User');
+// ❌ 実際のエンドポイント・レスポンス構造を確認していない
+// 実際: /api/v1/auth/me, response.data.profile.fullName
+
+// 3. データベーススキーマを推測
+await prisma.user.create({
+  data: { username: 'test' }  // ❌ username フィールドは存在しない
+});
+// 実際: fullName フィールド
+```
+
+### ✅ 正しい手順
+
+```bash
+# テスト作成前の必須手順（5 Steps）
+
+# Step 1: 実装ファイルを見つける
+find apps/web/app -name "page.tsx" | grep sessions
+# 結果: apps/web/app/(dashboard)/sessions/page.tsx
+
+# Step 2: ルート構造を理解
+ls -la apps/web/app/
+# (dashboard) = route group → URLに含まれない
+
+# Step 3: 実装を読む
+cat apps/web/app/(dashboard)/sessions/page.tsx
+
+# Step 4: Lambdaレスポンスを確認（API テストの場合）
+cat infrastructure/lambda/sessions/list/index.ts | grep -A 20 "statusCode: 200"
+
+# Step 5: Prismaスキーマを確認（DB テストの場合）
+cat packages/database/prisma/schema.prisma | grep -A 20 "model User"
+```
+
+### テスト作成前チェックリスト
+
+**すべてに✅を付けてからテストを書く:**
+
+- [ ] 実装ファイルを見つけた（find/ls コマンド実行済み）
+- [ ] 実装コードを読んだ（推測していない）
+- [ ] URL/エンドポイントパスを確認した
+- [ ] リクエスト/レスポンス構造を確認した
+- [ ] Route groups や dynamic segments を理解した
+- [ ] データベーススキーマを確認した（該当する場合）
+- [ ] 実際のフィールド名を使用している
+
+**1つでもNOがあれば、テストを書かずに実装を確認する**
+
+### 検証方法
+
+```bash
+# テスト実装検証（コミット前推奨）
+pnpm run validate:tests
+
+# 期待される結果:
+# ✅ All test assumptions verified
+# ⚠️  Test references non-existent route → 実装確認
+```
+
+**詳細:** [memory/feedback_test_implementation.md](memory/feedback_test_implementation.md)
+
+---
+
+## 🎯 Design Principles（設計原則 - 2026-04-02追加）
+
+### 原則1: 依存関係の最小化（Minimize Dependencies）
+
+**Why:** 依存関係は「負債」である
+- セキュリティリスク（脆弱性）
+- 保守コスト（バージョン更新）
+- ビルド時間の増加
+- バンドルサイズの増加
+
+**How:**
+- 新規依存追加前に「自前実装できないか」検討
+- 大きなライブラリ（20+ 依存）は避ける
+- ユーティリティライブラリは必要な関数のみコピー
+
+**Automation:** `pnpm run validate:deps-size`
+
+### 原則2: ワークスペース境界の明確化（Clear Workspace Boundaries）
+
+**Why:** Monorepoでは境界が曖昧になりやすい
+
+**How:**
+- apps/web: フロントエンド専用
+- infrastructure: バックエンド専用
+- packages/shared: 型定義のみ（ロジックなし）
+
+**Automation:** `pnpm run validate:monorepo`
+
+### 原則3: 実装を見てからテスト（Implementation First, Then Test）
+
+**Why:** 推測は必ず失敗する。コードが唯一の真実の源。
+
+**How:**
+1. find/grep でルート・エンドポイントを確認
+2. 実装を読む
+3. テストを書く
+
+**Automation:** `pnpm run validate:tests`
+
+### 原則4: 自動化への投資（Invest in Automation）
+
+**Why:**
+- 1時間の自動化スクリプトが100時間のデバッグを防ぐ
+- 人間は繰り返し作業でミスをする
+- 自動化は「再利用可能な知識」
+
+**How:**
+- 同じエラーが2回起きたら自動化を検討
+- 検証スクリプトは200-300行が目安
+- Pre-commit hookに統合
+
+**Examples:**
+- validate-workspace-dependencies.sh (236行) → 依存関係エラー防止
+- validate-i18n-keys.js → 翻訳キー同期
+
+**詳細:**
+- [memory/feedback_dependency_management.md](memory/feedback_dependency_management.md)
+- [memory/feedback_monorepo_rules.md](memory/feedback_monorepo_rules.md)
+- [memory/feedback_test_implementation.md](memory/feedback_test_implementation.md)
+- [memory/feedback_automation_investment.md](memory/feedback_automation_investment.md)
+
+---
+
+**最終更新:** 2026-04-02
+**次回レビュー:** 2026-05-01

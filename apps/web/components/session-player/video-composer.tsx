@@ -36,65 +36,59 @@ export function VideoComposer({
    */
   const drawComposite = useCallback(() => {
     const canvas = compositeCanvasRef.current;
-    const avatarCanvas = avatarCanvasRef.current;
-    const userVideo = userVideoRef.current;
-
-    if (!canvas || !avatarCanvas || !userVideo) {
+    if (!canvas) {
+      // Canvas not mounted yet — retry on next frame
+      animationFrameRef.current = requestAnimationFrame(drawComposite);
       return;
     }
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {
+      animationFrameRef.current = requestAnimationFrame(drawComposite);
       return;
     }
+
+    const avatarCanvas = avatarCanvasRef.current;
+    const userVideo = userVideoRef.current;
 
     // Canvas クリア
     ctx.clearRect(0, 0, width, height);
 
-    if (layout === 'side-by-side') {
-      // 左右分割レイアウト
-      const halfWidth = width / 2;
-
-      // 左: アバター
-      ctx.drawImage(avatarCanvas, 0, 0, halfWidth, height);
-
-      // 右: ユーザーカメラ
-      if (userVideo.readyState === userVideo.HAVE_ENOUGH_DATA) {
-        ctx.drawImage(userVideo, halfWidth, 0, halfWidth, height);
-      }
-    } else {
-      // Picture-in-Picture レイアウト
-      // メイン: アバター（全画面）
-      ctx.drawImage(avatarCanvas, 0, 0, width, height);
-
-      // 子画面: ユーザーカメラ（右下）
-      if (userVideo.readyState === userVideo.HAVE_ENOUGH_DATA) {
-        const pipWidth = 320; // 子画面幅
-        const pipHeight = 240; // 子画面高さ
-        const margin = 20; // マージン
-
-        // 黒い枠線を描画
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(
-          width - pipWidth - margin - 3,
-          height - pipHeight - margin - 3,
-          pipWidth + 6,
-          pipHeight + 6
-        );
-
-        // ユーザーカメラを描画
-        ctx.drawImage(
-          userVideo,
-          width - pipWidth - margin,
-          height - pipHeight - margin,
-          pipWidth,
-          pipHeight
-        );
+    // アバターまたはカメラが未準備の場合でもループを継続（黒フレームを生成してcaptureStreamを維持）
+    if (avatarCanvas) {
+      if (layout === 'side-by-side') {
+        const halfWidth = width / 2;
+        ctx.drawImage(avatarCanvas, 0, 0, halfWidth, height);
+        if (userVideo && userVideo.readyState === userVideo.HAVE_ENOUGH_DATA) {
+          ctx.drawImage(userVideo, halfWidth, 0, halfWidth, height);
+        }
+      } else {
+        // Picture-in-Picture レイアウト
+        ctx.drawImage(avatarCanvas, 0, 0, width, height);
+        if (userVideo && userVideo.readyState === userVideo.HAVE_ENOUGH_DATA) {
+          const pipWidth = 320;
+          const pipHeight = 240;
+          const margin = 20;
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(
+            width - pipWidth - margin - 3,
+            height - pipHeight - margin - 3,
+            pipWidth + 6,
+            pipHeight + 6
+          );
+          ctx.drawImage(
+            userVideo,
+            width - pipWidth - margin,
+            height - pipHeight - margin,
+            pipWidth,
+            pipHeight
+          );
+        }
       }
     }
 
-    // 次のフレームをリクエスト
+    // 常に次のフレームをリクエスト（アバター/カメラ未準備でもループを維持）
     animationFrameRef.current = requestAnimationFrame(drawComposite);
   }, [avatarCanvasRef, userVideoRef, layout, width, height]);
 

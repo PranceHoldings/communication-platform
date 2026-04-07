@@ -3,21 +3,13 @@
 # E2E Test Runner for WebSocket Voice Conversation
 # Usage: ./scripts/run-e2e-tests.sh [test-name]
 
-set -e
-
+# Load shared library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-echo "=========================================="
-echo "E2E Test Runner - WebSocket Voice Conversation"
-echo "=========================================="
-echo ""
-
-# Colors
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+log_section "E2E Test Runner - WebSocket Voice Conversation"
 
 # Configuration
 BASE_URL="${BASE_URL:-http://localhost:3000}"
@@ -29,14 +21,14 @@ echo "  WS_URL: ${WS_URL}"
 echo ""
 
 # Check if Next.js server is running
-echo "Checking Next.js server..."
+log_info "Checking Next.js server..."
 if curl -sf "${BASE_URL}" > /dev/null 2>&1; then
-  echo -e "${GREEN}✅ Next.js server is running${NC}"
+  log_success "Next.js server is running"
 else
-  echo -e "${YELLOW}⚠️  Next.js server is not running${NC}"
+  log_warning "Next.js server is not running"
   echo "  Starting server in background..."
   cd "${PROJECT_ROOT}/apps/web"
-  npm run dev > /tmp/nextjs-dev.log 2>&1 &
+  pnpm run dev > /tmp/nextjs-dev.log 2>&1 &
   NEXTJS_PID=$!
   echo "  PID: ${NEXTJS_PID}"
 
@@ -44,7 +36,7 @@ else
   echo "  Waiting for server to start..."
   for i in {1..60}; do
     if curl -sf "${BASE_URL}" > /dev/null 2>&1; then
-      echo -e "${GREEN}✅ Server started successfully${NC}"
+      log_success "Server started successfully"
       break
     fi
     sleep 1
@@ -57,19 +49,16 @@ cd "${PROJECT_ROOT}"
 
 # Run tests
 echo ""
-echo "=========================================="
-echo "Running E2E Tests"
-echo "=========================================="
-echo ""
+log_section "Running E2E Tests"
 
 if [ -n "$1" ]; then
   # Run specific test
-  echo "Running test: $1"
-  npx playwright test --grep "$1" --reporter=list
+  log_info "Running test: $1"
+  pnpm exec playwright test --grep "$1" --reporter=list
 else
   # Run all tests
-  echo "Running all E2E tests"
-  npx playwright test --reporter=list,html
+  log_info "Running all E2E tests"
+  pnpm exec playwright test --reporter=list,html
 fi
 
 TEST_EXIT_CODE=$?
@@ -77,18 +66,18 @@ TEST_EXIT_CODE=$?
 # Cleanup
 if [ -n "${NEXTJS_PID}" ]; then
   echo ""
-  echo "Stopping Next.js server (PID: ${NEXTJS_PID})..."
+  log_info "Stopping Next.js server (PID: ${NEXTJS_PID})..."
   kill ${NEXTJS_PID} 2>/dev/null || true
 fi
 
 echo ""
-echo "=========================================="
+print_separator
 if [ ${TEST_EXIT_CODE} -eq 0 ]; then
-  echo -e "${GREEN}✅ All tests passed!${NC}"
+  log_success "All tests passed!"
 else
-  echo -e "${RED}❌ Some tests failed${NC}"
+  log_error "Some tests failed"
 fi
-echo "=========================================="
+print_separator
 echo ""
 
 # Show report location
@@ -97,7 +86,7 @@ if [ ! -n "$1" ]; then
   echo "  file://${PROJECT_ROOT}/playwright-report/index.html"
   echo ""
   echo "To view the report:"
-  echo "  npx playwright show-report"
+  echo "  pnpm exec playwright show-report"
   echo ""
 fi
 

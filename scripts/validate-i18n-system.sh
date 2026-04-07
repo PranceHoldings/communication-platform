@@ -1,27 +1,23 @@
 #!/bin/bash
 #
-# i18n System Validation Script
+# i18n System Validation Script (v2 - Shared Library版)
 # Purpose: Prevent next-intl remnants from re-appearing
 # MEMORY.md Rule 1: Only use custom i18n system, never next-intl
 #
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Get project root (where .git directory is)
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$PROJECT_ROOT" ]; then
-  echo -e "${RED}Error: Not in a git repository${NC}"
-  exit 1
+  die "Not in a git repository"
 fi
 
-cd "$PROJECT_ROOT" || exit 1
+cd "$PROJECT_ROOT" || die "Failed to cd to project root"
 
 echo "🔍 Validating i18n system (MEMORY.md Rule 1)..."
-
-FAILED=0
 
 # Check 1: next-intl imports (ensure NOT used)
 echo -n "  Verifying next-intl is NOT used... "
@@ -30,7 +26,7 @@ if [ "$NEXT_INTL_IMPORTS" -gt 0 ]; then
   echo -e "${RED}FAILED${NC}"
   echo -e "${RED}    Found $NEXT_INTL_IMPORTS next-intl imports (forbidden):${NC}"
   grep -rn "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v node_modules | head -5
-  FAILED=1
+  increment_counter FAILED
 else
   echo -e "${GREEN}OK (none found)${NC}"
 fi
@@ -40,7 +36,7 @@ echo -n "  Verifying apps/web/i18n/ does NOT exist... "
 if [ -d "apps/web/i18n" ]; then
   echo -e "${RED}FAILED${NC}"
   echo -e "${RED}    apps/web/i18n/ directory exists (should be deleted)${NC}"
-  FAILED=1
+  increment_counter FAILED
 else
   echo -e "${GREEN}OK (deleted)${NC}"
 fi
@@ -71,25 +67,24 @@ fi
 # Check 5: Validate all translation keys (CRITICAL - prevents runtime errors)
 echo ""
 echo "🔍 Validating translation keys (all used keys must exist in files)..."
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/validate-i18n-keys.js" ]; then
   # Skip unused key check in pre-commit (it can be slow with many keys)
   if SKIP_UNUSED_CHECK=1 node "$SCRIPT_DIR/validate-i18n-keys.js"; then
     echo ""  # Key validation prints its own success message
   else
-    FAILED=1
+    increment_counter FAILED
   fi
 else
-  echo -e "${YELLOW}WARNING: validate-i18n-keys.js not found (skipping key validation)${NC}"
+  log_warning "validate-i18n-keys.js not found (skipping key validation)"
 fi
 
 # Summary
 echo ""
 if [ "$FAILED" -eq 0 ]; then
-  echo -e "${GREEN}✅ i18n system validation passed (system + keys)${NC}"
+  log_success "i18n system validation passed (system + keys)"
   exit 0
 else
-  echo -e "${RED}❌ i18n system validation FAILED${NC}"
+  log_error "i18n system validation FAILED"
   echo ""
   echo "Fix steps:"
   echo "  1. Remove next-intl imports: Replace with useI18n from '@/lib/i18n/provider'"

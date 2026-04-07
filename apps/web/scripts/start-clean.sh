@@ -43,11 +43,11 @@ echo ""
 
 # Step 3: Build production bundle
 echo -e "${YELLOW}[3/4] Building production bundle...${NC}"
-npm run build
+pnpm run build
 echo -e "${GREEN}  ✓ Production build completed${NC}"
 echo ""
 
 # Step 4: Start production server
 echo -e "${YELLOW}[4/4] Starting production server on port 3000...${NC}"
 echo ""
-PORT=3000 npm run start
+PORT=3000 pnpm run start

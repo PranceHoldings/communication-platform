@@ -55,10 +55,11 @@ export class AzureSpeechToText {
     // Enable profanity filtering
     this.config.setProfanity(sdk.ProfanityOption.Masked);
 
-    // 🔧 初期サイレンスタイムアウト設定（フォールバック用、デフォルト: 3000ms）
-    // 注: 音声の無音部分は ffmpeg silenceremove でトリミング済み
-    // このタイムアウトはフォールバック（万が一無音が残っていた場合）として機能
-    const initialSilenceTimeout = options.initialSilenceTimeout || 3000;
+    // 🔧 初期サイレンスタイムアウト設定（フォールバック用、デフォルト: 5000ms）
+    // 注: 音声の無音部分は ffmpeg silenceremove でトリミング済みだが、
+    // ブラウザのマイクノイズフロアや短い無音区間が残る場合があるため余裕を持たせる
+    // Day 46で1000msに短縮したが音声認識失敗の原因となったため5000msに戻す
+    const initialSilenceTimeout = options.initialSilenceTimeout || 5000;
     this.config.setProperty(
       sdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs,
       String(initialSilenceTimeout)
@@ -67,9 +68,10 @@ export class AzureSpeechToText {
       '[AzureSTT] InitialSilenceTimeout (fallback) set to ' + initialSilenceTimeout + 'ms'
     );
 
-    // 🔧 エンドサイレンスタイムアウトを延長（デフォルト → 2秒）
-    // 理由: ユーザーの発話終了を正確に検出
-    this.config.setProperty(sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, '2000');
+    // 🔧 エンドサイレンスタイムアウト（ファイルベース認識用に短縮: 1秒）
+    // 理由: speech_end 受信後にファイル全体を処理するため、Azure が最後の単語後に
+    // 待機する時間を短くして応答速度を向上させる（旧値: 2000ms → 1000ms, -1秒）
+    this.config.setProperty(sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, '1000');
   }
 
   /**

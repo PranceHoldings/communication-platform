@@ -58,19 +58,19 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: TypeScript check
-        run: npm run type-check
+        run: pnpm run type-check
 
       - name: Unit tests
-        run: npm run test:ci
+        run: pnpm run test:ci
 
       - name: E2E tests
-        run: npm run test:e2e
+        run: pnpm run test:e2e
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
 
@@ -80,7 +80,7 @@ jobs:
           files: ./coverage/lcov.info
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
   security-scan:
     runs-on: ubuntu-latest
@@ -137,23 +137,23 @@ jobs:
           aws-region: us-east-1
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Run tests
-        run: npm run test:ci
+        run: pnpm run test:ci
 
       - name: Database migration
-        run: npm run db:migrate:deploy
+        run: pnpm run db:migrate:deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING }}
 
       - name: Deploy infrastructure
         working-directory: infrastructure
         run: |
-          npx cdk deploy \
+          pnpm exec cdk deploy \
             --context environment=staging \
             --all \
             --require-approval never
@@ -222,15 +222,15 @@ jobs:
           role-duration-seconds: 3600
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Run full test suite
         run: |
-          npm run test:ci
-          npm run test:e2e
+          pnpm run test:ci
+          pnpm run test:e2e
 
       - name: Create backup
         run: |
@@ -239,19 +239,19 @@ jobs:
             --db-cluster-snapshot-identifier backup-$(date +%Y%m%d%H%M%S)
 
       - name: Database migration (dry-run)
-        run: npm run db:migrate:deploy -- --dry-run
+        run: pnpm run db:migrate:deploy -- --dry-run
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
 
       - name: Database migration
-        run: npm run db:migrate:deploy
+        run: pnpm run db:migrate:deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
 
       - name: Deploy infrastructure (Canary)
         working-directory: infrastructure
         run: |
-          npx cdk deploy \
+          pnpm exec cdk deploy \
             --context environment=production \
             --context deploymentStrategy=canary \
             --all \
@@ -268,7 +268,7 @@ jobs:
             --function-version ${{ steps.deploy.outputs.version }}
 
       - name: Run smoke tests
-        run: npm run test:smoke -- --env=production
+        run: pnpm run test:smoke -- --env=production
 
       - name: Health check
         run: ./scripts/health-check.sh production
@@ -615,7 +615,7 @@ gh secret list
 
 ```bash
 # ローカルで再現
-AWS_PROFILE=prance-staging npx cdk deploy --context environment=staging
+AWS_PROFILE=prance-staging pnpm exec cdk deploy --context environment=staging
 
 # スタックイベント確認
 aws cloudformation describe-stack-events \

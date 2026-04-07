@@ -384,7 +384,7 @@ apps/web/
 1. Build Next.js application
    ```bash
    cd apps/web
-   npm run build
+   pnpm run build
    ```
 
 2. Deploy to Amplify Hosting

@@ -7,18 +7,18 @@
 # Usage: bash scripts/post-deploy-lambda-test.sh <function-name> [region]
 #
 
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 set -e
 
 # Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
 
 # Check arguments
 if [ $# -lt 1 ]; then
-  echo -e "${RED}Error: Function name required${NC}"
+  log_error "Error: Function name required"
   echo "Usage: $0 <function-name> [region]"
   exit 1
 fi
@@ -26,9 +26,9 @@ fi
 FUNCTION_NAME="$1"
 REGION="${2:-us-east-1}"
 
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Post-Deployment Lambda Test${NC}"
-echo -e "${BLUE}============================================${NC}"
+log_info "============================================"
+log_info "Post-Deployment Lambda Test"
+log_info "============================================"
 echo ""
 echo -e "Function: ${YELLOW}$FUNCTION_NAME${NC}"
 echo -e "Region: ${YELLOW}$REGION${NC}"
@@ -265,18 +265,18 @@ fi
 # =============================================================================
 
 echo ""
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Test Summary${NC}"
-echo -e "${BLUE}============================================${NC}"
+log_info "============================================"
+log_info "Test Summary"
+log_info "============================================"
 echo ""
 echo -e "Total checks: ${TOTAL_CHECKS}"
 echo -e "Failed: ${FAILED_CHECKS}"
 echo ""
 
 if [ "$FAILED_CHECKS" -eq 0 ]; then
-  echo -e "${GREEN}✅ All post-deployment tests passed${NC}"
+  log_success "All post-deployment tests passed"
   echo ""
-  echo -e "${BLUE}Lambda Details:${NC}"
+  log_info "Lambda Details:"
   aws lambda get-function \
     --function-name "$FUNCTION_NAME" \
     --region "$REGION" \
@@ -285,9 +285,9 @@ if [ "$FAILED_CHECKS" -eq 0 ]; then
   echo ""
   exit 0
 else
-  echo -e "${RED}❌ Post-deployment tests FAILED${NC}"
+  log_error "Post-deployment tests FAILED"
   echo ""
-  echo -e "${YELLOW}Fix the issues and redeploy${NC}"
+  log_warning "Fix the issues and redeploy"
   echo ""
   exit 1
 fi

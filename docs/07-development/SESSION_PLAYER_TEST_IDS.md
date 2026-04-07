@@ -268,7 +268,7 @@ After adding test IDs, verify them:
 
 ```bash
 # Run Stage 1 tests (basic UI)
-npm run test:e2e:stage1
+pnpm run test:e2e:stage1
 
 # Expected: All 10 tests should pass
 ```

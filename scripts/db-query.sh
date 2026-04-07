@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Database Query Script
+# Database Query Script (v2 - Shared Library版)
 # Purpose: Execute SQL queries on Aurora RDS via Lambda
 #
 # Usage:
@@ -15,15 +15,9 @@
 #   - JSON output for parsing
 #
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Default values
 ENVIRONMENT="dev"
@@ -62,7 +56,7 @@ done
 
 # Validate input
 if [ -z "$SQL" ] && [ -z "$SQL_FILE" ]; then
-  echo -e "${RED}Error: SQL query or --file must be provided${NC}"
+  log_error "SQL query or --file must be provided"
   echo ""
   echo "Usage:"
   echo "  bash scripts/db-query.sh \"SELECT * FROM scenarios LIMIT 5\""
@@ -79,36 +73,28 @@ fi
 
 # Load SQL from file if specified
 if [ -n "$SQL_FILE" ]; then
-  if [ ! -f "$SQL_FILE" ]; then
-    echo -e "${RED}Error: File not found: $SQL_FILE${NC}"
-    exit 1
-  fi
+  require_file "$SQL_FILE" "SQL file not found"
   SQL=$(cat "$SQL_FILE")
 fi
 
 # Display query info
-echo -e "${CYAN}============================================${NC}"
-echo -e "${CYAN}Database Query Execution${NC}"
-echo -e "${CYAN}============================================${NC}"
+log_section "Database Query Execution"
+log_info "Environment: $ENVIRONMENT"
+log_info "Function: $FUNCTION_NAME"
+log_info "Read-only: $READ_ONLY"
+log_info "Max results: $MAX_RESULTS"
 echo ""
-echo -e "Environment: ${BLUE}$ENVIRONMENT${NC}"
-echo -e "Function: ${BLUE}$FUNCTION_NAME${NC}"
-echo -e "Read-only: ${BLUE}$READ_ONLY${NC}"
-echo -e "Max results: ${BLUE}$MAX_RESULTS${NC}"
-echo ""
-echo -e "${YELLOW}Query:${NC}"
+log_info "Query:"
 echo "$SQL" | head -10
 if [ $(echo "$SQL" | wc -l) -gt 10 ]; then
   echo "... (truncated)"
 fi
 echo ""
 
-# Confirm for write operations
-if [ "$READ_ONLY" = false ]; then
-  echo -e "${YELLOW}⚠️  WARNING: Write operations enabled${NC}"
-  read -p "Continue? (y/N): " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+# Confirm for write operations (skip if --force or FORCE=true)
+if [ "$READ_ONLY" = false ] && [ "${FORCE:-false}" != "true" ] && [[ "$*" != *"--force"* ]]; then
+  log_warning "⚠️  WARNING: Write operations enabled"
+  if ! confirm "Continue"; then
     echo "Cancelled"
     exit 0
   fi
@@ -128,7 +114,7 @@ EOF
 )
 
 # Invoke Lambda
-echo -e "${CYAN}Invoking Lambda...${NC}"
+log_info "Invoking Lambda..."
 echo ""
 
 RESULT=$(aws lambda invoke \
@@ -139,14 +125,14 @@ RESULT=$(aws lambda invoke \
 
 # Check for errors
 if [ $? -ne 0 ]; then
-  echo -e "${RED}✗ Lambda invocation failed${NC}"
+  log_error "Lambda invocation failed"
   echo "$RESULT"
   exit 1
 fi
 
 # Parse result
 if [ ! -f /tmp/db-query-result.json ]; then
-  echo -e "${RED}✗ Result file not found${NC}"
+  log_error "Result file not found"
   exit 1
 fi
 
@@ -155,40 +141,40 @@ RESULT_JSON=$(cat /tmp/db-query-result.json)
 SUCCESS=$(echo "$RESULT_JSON" | jq -r '.success')
 
 if [ "$SUCCESS" = "true" ]; then
-  echo -e "${GREEN}✓ Query executed successfully${NC}"
+  log_success "Query executed successfully"
   echo ""
 
   ROW_COUNT=$(echo "$RESULT_JSON" | jq -r '.rowCount')
   EXEC_TIME=$(echo "$RESULT_JSON" | jq -r '.executionTime')
 
-  echo -e "Rows: ${BLUE}$ROW_COUNT${NC}"
-  echo -e "Execution time: ${BLUE}${EXEC_TIME}ms${NC}"
+  log_info "Rows: $ROW_COUNT"
+  log_info "Execution time: ${EXEC_TIME}ms"
   echo ""
 
   # Display data
   DATA=$(echo "$RESULT_JSON" | jq -r '.data')
 
   if [ "$DATA" != "null" ] && [ "$DATA" != "[]" ]; then
-    echo -e "${YELLOW}Results:${NC}"
+    log_info "Results:"
     echo "$DATA" | jq -C '.' | head -50
 
     if [ $(echo "$DATA" | jq '. | length') -gt 10 ]; then
       echo ""
-      echo -e "${YELLOW}... (showing first 10 rows, use --max-results to see more)${NC}"
+      log_warning "... (showing first 10 rows, use --max-results to see more)"
     fi
   else
-    echo -e "${YELLOW}No data returned${NC}"
+    log_warning "No data returned"
   fi
 else
-  echo -e "${RED}✗ Query failed${NC}"
+  log_error "Query failed"
   echo ""
 
   ERROR=$(echo "$RESULT_JSON" | jq -r '.error')
-  echo -e "${RED}Error: $ERROR${NC}"
+  log_error "Error: $ERROR"
 
   exit 1
 fi
 
 # Save full result
 echo ""
-echo -e "${CYAN}Full result saved to: /tmp/db-query-result.json${NC}"
+log_info "Full result saved to: /tmp/db-query-result.json"

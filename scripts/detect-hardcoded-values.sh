@@ -12,22 +12,17 @@
 #   1 - Hardcoded values detected
 #
 
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Target directory (default: all)
 TARGET_DIR="${1:-.}"
 
-# Error counter
-ERROR_COUNT=0
+# Reset counters
+reset_counters
 
-echo ""
-echo "🔍 Detecting hardcoded values in ${TARGET_DIR}..."
+log_info "🔍 Detecting hardcoded values in ${TARGET_DIR}..."
 echo ""
 
 # ============================================================
@@ -44,16 +39,16 @@ S3_MATCHES=$(grep -rn "\.s3\.amazonaws\.com\|\.s3\.[a-z0-9-]*\.amazonaws\.com" \
 if [ -n "$S3_MATCHES" ]; then
   FILTERED_S3_MATCHES=$(echo "$S3_MATCHES" | grep -v "\.next" | grep -v "^\s*/\*\|^\s*\*\|^\s*//" || true)
   if [ -n "$FILTERED_S3_MATCHES" ]; then
-    echo -e "${RED}❌ S3 direct URLs detected:${NC}"
+    log_error "S3 direct URLs detected:"
     echo "$FILTERED_S3_MATCHES" | while IFS= read -r line; do
       # Skip comment lines (check the content after line number)
       if ! echo "$line" | sed 's/^[^:]*:[^:]*://' | grep -qE '^\s*(//|\*|/\*)'; then
         echo "  $line"
-        ((ERROR_COUNT++))
+        increment_counter ERRORS
       fi
     done
     echo ""
-    echo -e "${YELLOW}Fix: Use generateCdnUrl() or generateProtectedUrl() from url-generator.ts${NC}"
+    log_warning "Fix: Use generateCdnUrl() or generateProtectedUrl() from url-generator.ts"
     echo ""
   fi
 fi
@@ -71,7 +66,7 @@ CLOUDFRONT_MATCHES=$(grep -rn "https://[a-z0-9]\{13\}\.cloudfront\.net" \
   "${TARGET_DIR}" 2>/dev/null || true)
 
 if [ -n "$CLOUDFRONT_MATCHES" ]; then
-  echo -e "${RED}❌ CloudFront direct URLs detected:${NC}"
+  log_error "CloudFront direct URLs detected:"
   echo "$CLOUDFRONT_MATCHES" | while IFS= read -r line; do
     # Skip comment lines
     if echo "$line" | sed 's/^[^:]*:[^:]*://' | grep -qE '^\s*(//|\*|/\*)'; then
@@ -80,11 +75,11 @@ if [ -n "$CLOUDFRONT_MATCHES" ]; then
     # Exclude lines with variables (${...} or CLOUDFRONT_DOMAIN)
     if ! echo "$line" | grep -q '\${\|CLOUDFRONT_DOMAIN'; then
       echo "  $line"
-      ((ERROR_COUNT++))
+      increment_counter ERRORS
     fi
   done
   echo ""
-  echo -e "${YELLOW}Fix: Use generateCdnUrl() from url-generator.ts${NC}"
+  log_warning "Fix: Use generateCdnUrl() from url-generator.ts"
   echo ""
 fi
 
@@ -138,12 +133,14 @@ if [ -n "$DEFAULT_ENV_MATCHES" ]; then
 
   # Only print and count if there are actual errors
   if [ -n "$FILTERED_DEFAULT_ENV" ]; then
-    echo -e "${RED}❌ Default environment values detected:${NC}"
+    log_error "Default environment values detected:"
     echo -e "$FILTERED_DEFAULT_ENV" | sed 's/^/  /'
     echo ""
-    echo -e "${YELLOW}Fix: Use getRequiredEnv() or getOptionalEnv() from env-validator.ts${NC}"
+    log_warning "Fix: Use getRequiredEnv() or getOptionalEnv() from env-validator.ts"
     echo ""
-    ERROR_COUNT=$((ERROR_COUNT + FILTERED_COUNT))
+    for ((i=0; i<FILTERED_COUNT; i++)); do
+      increment_counter ERRORS
+    done
   fi
 fi
 
@@ -173,12 +170,14 @@ if [ -n "$REGION_MATCHES" ]; then
 
   # Only print and count if there are actual errors
   if [ -n "$FILTERED_REGION" ]; then
-    echo -e "${RED}❌ Hardcoded AWS regions detected:${NC}"
+    log_error "Hardcoded AWS regions detected:"
     echo -e "$FILTERED_REGION" | sed 's/^/  /'
     echo ""
-    echo -e "${YELLOW}Fix: Use process.env.AWS_REGION or AWS_DEFAULTS.REGION from defaults.ts${NC}"
+    log_warning "Fix: Use process.env.AWS_REGION or AWS_DEFAULTS.REGION from defaults.ts"
     echo ""
-    ERROR_COUNT=$((ERROR_COUNT + FILTERED_COUNT))
+    for ((i=0; i<FILTERED_COUNT; i++)); do
+      increment_counter ERRORS
+    done
   fi
 fi
 
@@ -195,13 +194,13 @@ LAMBDA_MATCHES=$(grep -rn "FunctionName.*['\"]prance-.*-dev['\"]" \
   "${TARGET_DIR}" 2>/dev/null || true)
 
 if [ -n "$LAMBDA_MATCHES" ]; then
-  echo -e "${RED}❌ Hardcoded Lambda function names detected:${NC}"
+  log_error "Hardcoded Lambda function names detected:"
   echo "$LAMBDA_MATCHES" | while IFS= read -r line; do
     echo "  $line"
-    ((ERROR_COUNT++))
+    increment_counter ERRORS
   done
   echo ""
-  echo -e "${YELLOW}Fix: Use getAnalysisLambdaFunctionName() from env-validator.ts${NC}"
+  log_warning "Fix: Use getAnalysisLambdaFunctionName() from env-validator.ts"
   echo ""
 fi
 
@@ -218,13 +217,13 @@ LOCALHOST_MATCHES=$(grep -rn "['\"]http://localhost:[0-9]\+['\"]" \
   "${TARGET_DIR}" 2>/dev/null || true)
 
 if [ -n "$LOCALHOST_MATCHES" ]; then
-  echo -e "${RED}❌ Hardcoded localhost URLs detected:${NC}"
+  log_error "Hardcoded localhost URLs detected:"
   echo "$LOCALHOST_MATCHES" | while IFS= read -r line; do
     echo "  $line"
-    ((ERROR_COUNT++))
+    increment_counter ERRORS
   done
   echo ""
-  echo -e "${YELLOW}Fix: Use getFrontendUrl() from env-validator.ts or configure BASE_URL${NC}"
+  log_warning "Fix: Use getFrontendUrl() from env-validator.ts or configure BASE_URL"
   echo ""
 fi
 
@@ -241,16 +240,16 @@ BUCKET_MATCHES=$(grep -rn "['\"]prance-[a-z-]*-dev['\"]" \
   "${TARGET_DIR}" 2>/dev/null || true)
 
 if [ -n "$BUCKET_MATCHES" ]; then
-  echo -e "${RED}❌ Hardcoded bucket names detected:${NC}"
+  log_error "Hardcoded bucket names detected:"
   echo "$BUCKET_MATCHES" | while IFS= read -r line; do
     # Exclude CDK stack definitions (legitimate use)
     if ! echo "$line" | grep -q 'bucketName:\|Bucket('; then
       echo "  $line"
-      ((ERROR_COUNT++))
+      increment_counter ERRORS
     fi
   done
   echo ""
-  echo -e "${YELLOW}Fix: Use getS3Bucket() from env-validator.ts${NC}"
+  log_warning "Fix: Use getS3Bucket() from env-validator.ts"
   echo ""
 fi
 
@@ -288,13 +287,15 @@ if [ -n "$AWS_DOMAIN_MATCHES" ]; then
 
   # Only print and count if there are actual errors
   if [ -n "$FILTERED_AWS_DOMAIN" ]; then
-    echo -e "${RED}❌ Hardcoded AWS domains detected:${NC}"
+    log_error "Hardcoded AWS domains detected:"
     echo -e "$FILTERED_AWS_DOMAIN" | sed 's/^/  /'
     echo ""
-    echo -e "${YELLOW}Fix: Use getAwsEndpointSuffix() from env-validator.ts${NC}"
-    echo -e "${YELLOW}     Add AWS_ENDPOINT_SUFFIX=amazonaws.com to .env.local${NC}"
+    log_warning "Fix: Use getAwsEndpointSuffix() from env-validator.ts"
+    log_warning "     Add AWS_ENDPOINT_SUFFIX=amazonaws.com to .env.local"
     echo ""
-    ERROR_COUNT=$((ERROR_COUNT + FILTERED_COUNT))
+    for ((i=0; i<FILTERED_COUNT; i++)); do
+      increment_counter ERRORS
+    done
   fi
 fi
 
@@ -311,7 +312,7 @@ NUMERIC_MATCHES=$(grep -rn "^[[:space:]]*const [A-Z_][A-Z_0-9]* = [0-9]" \
   "${TARGET_DIR}/infrastructure/lambda" 2>/dev/null || true)
 
 if [ -n "$NUMERIC_MATCHES" ]; then
-  echo -e "${RED}❌ Numeric hardcoded constants detected:${NC}"
+  log_error "Numeric hardcoded constants detected:"
   echo "$NUMERIC_MATCHES" | while IFS= read -r line; do
     # Skip comment lines
     if echo "$line" | sed 's/^[^:]*:[^:]*://' | grep -qE '^\s*(//|\*|/\*)'; then
@@ -320,26 +321,26 @@ if [ -n "$NUMERIC_MATCHES" ]; then
     # Exclude lines that are importing from defaults
     if ! echo "$line" | grep -q 'from.*defaults\|DEFAULTS\.'; then
       echo "  $line"
-      ((ERROR_COUNT++))
+      increment_counter ERRORS
     fi
   done
   echo ""
-  echo -e "${YELLOW}Fix: Move constants to infrastructure/lambda/shared/config/defaults.ts${NC}"
-  echo -e "${YELLOW}     Categories: QUERY_DEFAULTS, SECURITY_DEFAULTS, AUDIO_PROCESSING_DEFAULTS, AI_DEFAULTS, SCORE_DEFAULTS${NC}"
+  log_warning "Fix: Move constants to infrastructure/lambda/shared/config/defaults.ts"
+  log_warning "     Categories: QUERY_DEFAULTS, SECURITY_DEFAULTS, AUDIO_PROCESSING_DEFAULTS, AI_DEFAULTS, SCORE_DEFAULTS"
   echo ""
 fi
 
 # ============================================================
 # Summary
 # ============================================================
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_separator "━" 62
 
-if [ "$ERROR_COUNT" -eq 0 ]; then
-  echo -e "${GREEN}✅ No hardcoded values detected${NC}"
+if [ "$ERRORS" -eq 0 ]; then
+  log_success "No hardcoded values detected"
   echo ""
   exit 0
 else
-  echo -e "${RED}❌ Found ${ERROR_COUNT} hardcoded value(s)${NC}"
+  log_error "Found ${ERRORS} hardcoded value(s)"
   echo ""
   echo "Please fix the issues above before committing."
   echo ""

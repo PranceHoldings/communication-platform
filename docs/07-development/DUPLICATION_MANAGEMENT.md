@@ -73,7 +73,7 @@ bash scripts/validate-duplication.sh
 git commit -m "..."  # 自動的に検証される
 
 # デプロイ前（自動実行）
-cd infrastructure && npm run deploy:lambda  # 自動的に検証される
+cd infrastructure && pnpm run deploy:lambda  # 自動的に検証される
 ```
 
 ---
@@ -357,7 +357,7 @@ fi
 
 **動作:**
 
-1. `npm run deploy:lambda` 実行
+1. `pnpm run deploy:lambda` 実行
 2. デプロイスクリプトが検証実行
 3. エラーがあれば deploy をブロック
 

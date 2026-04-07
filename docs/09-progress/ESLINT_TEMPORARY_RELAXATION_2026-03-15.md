@@ -189,13 +189,13 @@
 **最終検証（Day 14）:**
 ```bash
 # 全警告を0にする
-npm run lint
+pnpm run lint
 
 # ルールをerrorに戻す
 # .eslintrc.json を元に戻す
 
 # 最終確認
-npm run lint
+pnpm run lint
 # Expected: 0 errors, 0 warnings
 ```
 
@@ -217,10 +217,10 @@ npm run lint
 
 ```bash
 # 現在の警告数確認
-npm run lint 2>&1 | grep "problems" | tail -1
+pnpm run lint 2>&1 | grep "problems" | tail -1
 
 # ファイル別警告数
-npx eslint apps/web --ext .ts,.tsx --format json 2>/dev/null | \
+pnpm exec eslint apps/web --ext .ts,.tsx --format json 2>/dev/null | \
   jq -r '.[] | "\(.messages | length) \(.filePath)"' | \
   sort -rn | head -10
 ```
@@ -243,14 +243,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run typecheck
 
       # 警告数をレポート
       - name: Report warnings
         run: |
-          WARNINGS=$(npm run lint 2>&1 | grep -oP '\d+(?= warnings)' || echo "0")
+          WARNINGS=$(pnpm run lint 2>&1 | grep -oP '\d+(?= warnings)' || echo "0")
           echo "::warning::Current warnings: $WARNINGS"
           if [ "$WARNINGS" -gt 3000 ]; then
             echo "::error::Warning count increased!"
@@ -264,7 +264,7 @@ jobs:
 # .git/hooks/pre-commit に追加
 
 # Check if warning count increased
-CURRENT_WARNINGS=$(npm run lint 2>&1 | grep -oP '\d+(?= warnings)' || echo "0")
+CURRENT_WARNINGS=$(pnpm run lint 2>&1 | grep -oP '\d+(?= warnings)' || echo "0")
 BASELINE_WARNINGS=3003
 
 if [ "$CURRENT_WARNINGS" -gt "$BASELINE_WARNINGS" ]; then

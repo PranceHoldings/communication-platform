@@ -11,7 +11,7 @@
 ### すべてを一括実行
 
 ```bash
-npm run build:deploy
+pnpm run build:deploy
 ```
 
 **このコマンドは以下を実行します:**
@@ -45,7 +45,7 @@ UPDATE_COMPLETE Prance-dev-ApiLambda
 ### 1. Infrastructureのみビルド
 
 ```bash
-npm run build:infra
+pnpm run build:infra
 ```
 
 **用途:** TypeScriptコンパイルのみ実行（デプロイしない）
@@ -58,7 +58,7 @@ npm run build:infra
 ### 2. Lambda関数のみビルド
 
 ```bash
-npm run build:lambda
+pnpm run build:lambda
 ```
 
 **用途:** Lambda関数の依存関係チェックとビルド
@@ -71,7 +71,7 @@ npm run build:lambda
 ### 3. デプロイ前検証
 
 ```bash
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 ```
 
 **用途:** デプロイ前に6項目を検証
@@ -87,7 +87,7 @@ npm run lambda:predeploy
 ### 4. Lambda関数デプロイ
 
 ```bash
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 **用途:** Lambda関数のみデプロイ（フロントエンドは含まない）
@@ -113,11 +113,11 @@ npm error Missing script: "build"
 ```bash
 # ❌ 間違い: Lambda関数ディレクトリ内で実行
 cd infrastructure/lambda/websocket/default
-npm run build  # エラー！
+pnpm run build  # エラー！
 
 # ✅ 正しい: プロジェクトルートで実行
 cd /workspaces/prance-communication-platform
-npm run build:infra
+pnpm run build:infra
 ```
 
 ### エラー 2: "Lambda dependencies missing"
@@ -130,8 +130,8 @@ ERROR: @azure/speech-sdk not found
 
 **解決方法:**
 ```bash
-npm run lambda:fix
-npm run build:deploy
+pnpm run lambda:fix
+pnpm run build:deploy
 ```
 
 ### エラー 3: "TypeScript compilation error"
@@ -146,13 +146,13 @@ error TS2304: Cannot find name 'downloadAndCombineChunks'
 ```bash
 # 1. TypeScriptコンパイルチェック
 cd infrastructure/lambda/websocket/default
-npx tsc --noEmit
+pnpm exec tsc --noEmit
 
 # 2. エラーを修正
 
 # 3. 再ビルド
 cd /workspaces/prance-communication-platform
-npm run build:infra
+pnpm run build:infra
 ```
 
 ### エラー 4: "CDK deployment failed"
@@ -169,7 +169,7 @@ UPDATE_ROLLBACK_COMPLETE
 aws logs tail /aws/lambda/prance-websocket-default-dev --since 5m
 
 # 2. ロールバックされたスタックを再デプロイ
-npm run build:deploy
+pnpm run build:deploy
 ```
 
 ---
@@ -179,7 +179,7 @@ npm run build:deploy
 ### 全体ビルド（全ワークスペース）
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 **実行内容:**
@@ -191,7 +191,7 @@ npm run build
 ### クリーンビルド
 
 ```bash
-npm run build:clean
+pnpm run build:clean
 ```
 
 **実行内容:**
@@ -203,7 +203,7 @@ npm run build:clean
 ### デプロイ前チェック（全項目）
 
 ```bash
-npm run pre-commit
+pnpm run pre-commit
 ```
 
 **実行内容:**
@@ -246,7 +246,7 @@ aws logs tail /aws/lambda/prance-websocket-default-dev --since 5m --follow
 
 ```bash
 # 1. Next.js開発サーバー起動
-npm run dev
+pnpm run dev
 
 # 2. ブラウザでアクセス
 open http://localhost:3000
@@ -258,9 +258,9 @@ open http://localhost:3000
 
 ## 📋 チェックリスト（コミット前）
 
-- [ ] `npm run build:infra` 成功
-- [ ] `npm run lambda:predeploy` 成功
-- [ ] `npm run build:deploy` 成功
+- [ ] `pnpm run build:infra` 成功
+- [ ] `pnpm run lambda:predeploy` 成功
+- [ ] `pnpm run build:deploy` 成功
 - [ ] CloudWatch Logs確認（エラーなし）
 - [ ] E2Eテスト実行（音声再生確認）
 - [ ] git add/commit/push
@@ -282,10 +282,10 @@ open http://localhost:3000
 
 2. **完全クリーンアップ:**
    ```bash
-   npm run clean
-   npm run lambda:fix
-   npm install
-   npm run build:deploy
+   pnpm run clean
+   pnpm run lambda:fix
+   pnpm install
+   pnpm run build:deploy
    ```
 
 3. **Issue報告:**

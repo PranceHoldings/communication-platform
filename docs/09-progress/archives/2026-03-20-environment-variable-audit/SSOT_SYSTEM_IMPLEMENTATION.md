@@ -313,7 +313,7 @@ sed -i 's/MAX_RESULTS=1000/MAX_RESULTS=2000/' .env.local
 bash scripts/sync-env-vars.sh
 
 # Step 3: デプロイ
-cd infrastructure && npm run deploy:lambda
+cd infrastructure && pnpm run deploy:lambda
 ```
 
 ### 環境変数を削除

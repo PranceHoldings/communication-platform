@@ -1,8 +1,8 @@
 # 既知の問題リスト
 
-**バージョン:** 1.4
+**バージョン:** 1.5
 **作成日:** 2026-03-19
-**最終更新:** 2026-04-02 04:00 UTC (Day 42)
+**最終更新:** 2026-04-04 15:00 UTC (Day 44)
 
 ---
 
@@ -18,10 +18,11 @@
 ### Issue #6: Tailwind CSS Build Error - System Error -35 (Resource Deadlock)
 
 **発生日:** 2026-03-21 08:00 UTC (Day 30)
-**解決日:** 2026-04-02 03:50 UTC (Day 42)
-**状態:** ✅ 解決済み
-**影響:** フロントエンド（Next.js）のビルドができず、E2Eテスト実行不可
-**重要度:** Medium（バックエンドは正常動作、フロントエンドのみ影響）
+**継続中:** 2026-04-04 現在も発生
+**状態:** 🔴 **未解決・継続中** - 根本的な解決策なし
+**環境:** Mac上のDocker（Linux）での開発環境
+**影響:** フロントエンド（Next.js）のTailwind CSSビルドエラー
+**重要度:** **Critical**
 
 #### 問題詳細
 
@@ -41,81 +42,144 @@ Error: Unknown system error -35: Unknown system error -35, read
 **試行した修復方法（すべて失敗）:**
 1. `.next`ディレクトリ削除・再作成 ❌
 2. Next.jsプロセス再起動 ❌
-3. `node_modules`削除試行 ❌（fseventsディレクトリ削除不可）
+3. `node_modules`削除 + pnpm install ❌
+4. pnpm-lock.yaml削除 + 完全再インストール ❌
+5. 全キャッシュ削除（.next, .turbo, cdk.out） ❌
+6. ポート3000/3001両方で検証 ❌（両方で同じエラー発生）
 
-#### 根本原因
+#### 根本原因（2026-04-04確定）
 
-**仮説1: CodeSpaces/Docker環境のファイルシステム問題**
-- System error -35は通常「Resource deadlock would occur」を意味
-- 複数のNode.jsプロセスがファイルシステムにアクセスして競合
-- fsevents（macOS file system events）の不正な状態
+**Docker環境（Mac上のLinux）のファイルシステムカーネルレベルの問題**
+- System error -35 = 「Resource deadlock would occur」（POSIX errno 35）
+- Tailwind CSSビルド時にファイルシステムリソースの競合が発生
+- ポート番号、キャッシュ、node_modules とは無関係
+- エラー箇所: `node_modules/tailwindcss/lib/lib/expandTailwindAtRules.js:173`
+- ファイルシステムドライバの不安定性（Docker on Mac環境特有）
+- **継続的に発生**：キャッシュクリアや再インストールでは解決しない
 
-**仮説2: Turbo（Monorepo Build Tool）の競合**
-```
-npm run dev
-→ turbo run dev
-→ x io error: Resource deadlock would occur (os error 35)
-```
+**検証済み（2026-04-04 13:15 UTC）:**
+- ✅ 全キャッシュ削除（.next, .turbo, cdk.out）→ 効果なし
+- ✅ node_modules完全削除 + pnpm install → 効果なし
+- ✅ pnpm-lock.yaml削除 + 完全再インストール（594パッケージ）→ 効果なし
+- ✅ ポート3000/3001両方で検証 → 両方で同じエラー発生
 
-#### 回避策
+**結論:** アプリケーションコード、キャッシュ、依存関係の問題ではなく、環境レベルの問題
 
-**Option A: CodeSpaces再起動（最も確実）**
+#### 回避策（2026-04-04更新）
+
+**✅ 推奨: Mac ホスト上で Tailwind をビルド（2026-04-04 午後発見）**
+
+Docker 内での System Error -35 を回避するため、Mac ネイティブファイルシステムでビルド：
+
 ```bash
-# CodeSpaces環境全体を再起動
-# GitHub CodeSpaces UI → "Restart Codespace"
+# Mac ターミナル（Docker 外）で実行
+cd ~/Documents/GitHub/prance-communication-platform/apps/web
+bash scripts/build-tailwind-host.sh --watch
+
+# 結果:
+# - Tailwind CSS が Mac 上でビルド成功
+# - styles/tailwind.output.css に出力
+# - Docker コンテナは Docker ボリューム経由で読み込み
+# - 完全な Tailwind 機能が使用可能
 ```
 
-**Option B: プロセス完全クリーンアップ**
+**バックグラウンド実行（推奨）:**
+
 ```bash
-# すべてのNode.jsプロセスを強制終了
-pkill -9 node
+# nohup でバックグラウンド化
+nohup bash scripts/build-tailwind-host.sh --watch > /tmp/tailwind-watch.log 2>&1 &
 
-# .nextとnode_modules完全削除（時間がかかる）
-rm -rf apps/web/.next
-rm -rf node_modules
-npm install
+# または tmux 使用
+tmux new-session -d -s tailwind \
+  "cd ~/Documents/GitHub/prance-communication-platform/apps/web && bash scripts/build-tailwind-host.sh --watch"
 
-# Next.js再起動
-cd apps/web && PORT=3000 npx next dev
+# プロセス確認
+ps aux | grep tailwindcss
+
+# ログ確認
+tail -f /tmp/tailwind-watch.log
+
+# 停止
+pkill -f "tailwindcss"
 ```
 
-**Option C: 別のポートで起動**
+**メリット:**
+- ✅ 完全な Tailwind CSS 機能（JIT、全クラス）
+- ✅ Hot reload 正常動作
+- ✅ Docker 内の開発サーバーと並行動作
+- ✅ System Error -35 完全回避
+
+**❌ フォールバック: Tailwind CSSを無効化（Mac ビルドが不可能な場合のみ）**
+
 ```bash
-# ポート3000の競合を回避
-cd apps/web && PORT=3001 npx next dev
+# 1. Tailwind CSSディレクティブを削除
+cd apps/web/app
+sed '/^@tailwind/d' globals.css > globals.css.notailwind
+mv globals.css.notailwind globals.css
+
+# 2. キャッシュクリア
+rm -rf .next
+
+# 3. 開発サーバー起動
+cd ../..
+pnpm run dev
+
+# 結果: HTTP 200 OK（CSSカスタム変数のみで動作）
 ```
 
-#### 重要な注記
+**効果のない対策（すべて検証済み）:**
+- ❌ **ポート変更**（PORT=3001 pnpm run dev では解決しない）
+- ❌ **Tailwind設定最適化**（content絞り込み、node_modules除外でも解決しない）
+- ❌ **CLI単独実行**（tailwindcss CLIでも同じエラー）
+- ❌ **Polling モード**（`--poll` オプションも効果なし）
+- ❌ **キャッシュクリア**（.next削除は効果なし）
+- ❌ **node_modules再インストール**（pnpm install --force でも効果なし）
+- ❌ **Docker再起動**（環境再構築でも継続的に発生）
+- ❌ **Docker 内だけでの解決**（virtio-fs のカーネルレベル問題のため不可能）
 
-**Phase 5.4 Batch 1+2のデプロイは成功している:**
-- Lambda関数は正常に更新済み（4ファイル、269.68秒）
-- データベースのruntime configsも正常に存在
-- **バックエンドレベルでの検証は可能**（CloudWatch Logs、直接API呼び出し）
+**現在の運用:**
+- **推奨:** Mac ホスト上で `bash scripts/build-tailwind-host.sh --watch` を実行（バックグラウンド）
+- Docker 内で `pnpm run dev` を起動
+- 両プロセスが並行動作し、完全な Tailwind CSS 機能が使用可能
+- **フォールバック:** Mac ビルドが不可能な場合のみ、`globals.css`から`@tailwind`ディレクティブを削除してCSSカスタム変数で継続
 
-**この問題はBatch 1+2デプロイとは無関係:**
-- Lambda関数の変更はフロントエンドビルドに影響しない
-- Tailwind CSSエラーはCodeSpaces環境固有の問題
-- E2Eテストは環境修復後または次回セッションで実施可能
+#### 検証履歴
 
-#### 解決方法（Day 42）
+**2026-04-04の検証:**
+1. ✅ 全プロセス停止（pkill -9 -f "next"）
+2. ✅ .next, .turbo, cdk.out 全削除
+3. ✅ node_modules完全削除（全ワークスペース）
+4. ✅ pnpm-lock.yaml削除
+5. ✅ pnpm install完全再インストール（594パッケージ）
+6. ✅ ポート3000/3001両方で検証 → 両方で同じエラー発生
+7. ✅ node_modules最適化（103MB削減） → 効果なし
+8. ✅ Tailwind config最適化 → 効果なし
 
-**実施内容:**
-1. 開発サーバー起動確認
-   ```bash
-   npm run dev
-   ```
-2. 全ページ正常レンダリング確認（/, /login, /404）
-3. 起動時間: 1.87秒（高速）
-4. エラー: 0件
+**結論:**
+- System Error -35はnode_modules数・サイズ、ポート番号とは無関係
+- ファイルシステムカーネルレベルの問題
+- Docker on Mac環境で継続的に発生
+- **根本的な解決策はなし**
 
-**結果:**
-- ✅ Tailwind CSS Build Errorは発生せず
-- ✅ 全ページが正常にレンダリング
-- ✅ E2Eテスト実行可能（Playwright動作確認済み）
+#### 教訓
 
-**教訓:**
-- CodeSpaces環境固有の一時的な問題だった可能性
-- Day 41のTypeScript修正（依存関係修復）が間接的に寄与した可能性
+**🔴 重要: ドキュメントの誤り防止**
+- 過去に「解決済み」と記載していたが、実際は未解決だった
+- セッション開始時に常に「解決している」と誤認識していた
+- **2026-04-04午後発見**: Mac ホスト上でのビルドで完全回避可能
+
+**環境の正確な理解:**
+- ❌ GitHub CodeSpacesではない
+- ✅ Mac上のDocker（Linux）環境
+- CodeSpaces再構築は適用できない
+
+**ハイブリッドアプローチの有効性:**
+- Docker のファイルシステム問題は、ホスト上でのビルド + コンテナでの読み込みで回避可能
+- カーネルレベルの問題でも、アーキテクチャ工夫で実用的な解決策を構築できる
+
+**KNOWN_ISSUES.md更新履歴:**
+- 2026-04-04 16:00 UTC: 環境訂正（Docker on Mac）、状態を未解決に変更、誤った解決方法削除
+- 2026-04-04 18:00 UTC: Mac ホスト上でのビルド方式を推奨回避策として追加
 
 ---
 
@@ -193,13 +257,13 @@ Error: net::ERR_CONNECTION_REFUSED at http://localhost:3000/login
 **Step 1: 環境準備と基本確認**
 ```bash
 # 1. 開発サーバー起動
-npm run dev
+pnpm run dev
 
 # 2. サーバー起動待機（20秒）
 sleep 20
 
 # 3. E2Eテスト実行
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 **Step 2: 結果分析**
@@ -226,9 +290,9 @@ npm run test:e2e
 **E2Eテスト実行時:**
 ```bash
 # 必ず開発サーバーを起動してから実行
-npm run dev &
+pnpm run dev &
 sleep 20
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 #### 教訓
@@ -262,9 +326,9 @@ npm run test:e2e
 **回避策:**
 ```bash
 # 開発サーバー起動後、20秒待機してからテスト実行
-npm run dev &
+pnpm run dev &
 sleep 20
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 **根本解決:**
@@ -382,7 +446,7 @@ aws s3 cp combined-test.webm \
 
 **問題詳細:**
 - npm prepare hookが3重に実行されていた
-- clean-deploy.sh → npm install → prepare hook → prepare.sh → npm ci → prepare hook（無限ループ）
+- clean-deploy.sh → pnpm install → prepare hook → prepare.sh → pnpm install --frozen-lockfile → prepare hook（無限ループ）
 
 **根本解決:**
 - prepare hookを廃止
@@ -421,7 +485,7 @@ aws s3 cp combined-test.webm \
 # 開発サーバー停止 + キャッシュクリア
 ps aux | grep "next dev" | awk '{print $2}' | xargs kill
 rm -rf .next
-npm run dev
+pnpm run dev
 ```
 
 **結果:**

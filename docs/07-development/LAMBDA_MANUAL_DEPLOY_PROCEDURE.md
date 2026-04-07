@@ -46,7 +46,7 @@ lambda.zip
 
 ```bash
 cd /workspaces/prance-communication-platform
-npm run db:generate
+pnpm run db:generate
 ```
 
 **検証:**
@@ -62,8 +62,8 @@ ls -la packages/database/node_modules/.prisma/client/ | head -5
 
 **❌ 失敗時:**
 ```bash
-npm run lambda:fix  # 自動修復
-npm run db:generate  # 再生成
+pnpm run lambda:fix  # 自動修復
+pnpm run db:generate  # 再生成
 ```
 
 ---
@@ -72,7 +72,7 @@ npm run db:generate  # 再生成
 
 ```bash
 cd infrastructure/lambda/websocket/default
-npx esbuild index.ts \
+pnpm exec esbuild index.ts \
   --bundle \
   --platform=node \
   --target=es2020 \
@@ -195,7 +195,7 @@ ls -la deploy/prisma/
 **❌ 失敗時:**
 - パスが間違っている
 - ソースファイルが存在しない
-- `npm run db:generate` を実行していない
+- `pnpm run db:generate` を実行していない
 
 ---
 
@@ -497,11 +497,11 @@ aws lambda update-function-code ...  # 即座にデプロイ
 
 ```
 □ Step 1: Prisma Client生成
-  □ npm run db:generate 実行
+  □ pnpm run db:generate 実行
   □ .prisma/client/ 存在確認
 
 □ Step 2: esbuildビルド
-  □ npx esbuild 実行
+  □ pnpm exec esbuild 実行
   □ dist/index.js 存在確認
 
 □ Step 3: デプロイディレクトリ準備

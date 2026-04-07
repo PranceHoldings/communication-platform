@@ -60,7 +60,7 @@ export function ConnectionStatus({
           />
         </svg>
       ),
-      label: t('connectionStatus.disconnected'),
+      label: t('common.connectionStatus.disconnected'),
     },
     connecting: {
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
@@ -77,7 +77,7 @@ export function ConnectionStatus({
           />
         </svg>
       ),
-      label: t('connectionStatus.connecting'),
+      label: t('common.connectionStatus.connecting'),
     },
     connected: {
       bgColor: 'bg-green-50 dark:bg-green-900/20',
@@ -94,7 +94,7 @@ export function ConnectionStatus({
           />
         </svg>
       ),
-      label: t('connectionStatus.connected'),
+      label: t('common.connectionStatus.connected'),
     },
     reconnecting: {
       bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
@@ -111,7 +111,7 @@ export function ConnectionStatus({
           />
         </svg>
       ),
-      label: t('connectionStatus.reconnecting', {
+      label: t('common.connectionStatus.reconnecting', {
         attempt: reconnectAttempt.toString(),
         maxAttempts: maxReconnectAttempts.toString(),
       }),
@@ -131,7 +131,7 @@ export function ConnectionStatus({
           />
         </svg>
       ),
-      label: t('connectionStatus.error'),
+      label: t('common.connectionStatus.error'),
     },
   };
 
@@ -143,7 +143,7 @@ export function ConnectionStatus({
         // Handle WEBSOCKET_RECONNECT_FAILED:5 format
         const failedMatch = error.match(/WEBSOCKET_RECONNECT_FAILED:(\d+)/);
         if (failedMatch) {
-          return t('connectionStatus.reconnectFailed', {
+          return t('common.connectionStatus.reconnectFailed', {
             attempts: failedMatch[1] || '5',
             defaultValue: `Failed to reconnect after ${failedMatch[1]} attempts. Please refresh the page.`,
           });
@@ -152,7 +152,7 @@ export function ConnectionStatus({
         // Handle WEBSOCKET_RECONNECTING:2:5 format
         const reconnectingMatch = error.match(/WEBSOCKET_RECONNECTING:(\d+):(\d+)/);
         if (reconnectingMatch) {
-          return t('connectionStatus.reconnecting', {
+          return t('common.connectionStatus.reconnecting', {
             attempt: reconnectingMatch[1] || '1',
             maxAttempts: reconnectingMatch[2] || '5',
           });

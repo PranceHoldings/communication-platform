@@ -63,7 +63,7 @@ vim infrastructure/lib/api-lambda-stack.ts
 
 # 2. デプロイ
 cd infrastructure
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
 
 # 3. 環境変数確認
 bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev
@@ -182,7 +182,7 @@ CLOUDFRONT_DOMAIN: props.cloudFrontDistribution.distributionDomainName,
 
 # 4. デプロイ
 cd infrastructure
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
 
 # 5. 環境変数確認
 bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev
@@ -206,7 +206,7 @@ CLOUDFRONT_DOMAIN: 'd3mx0sug5s3a6x.cloudfront.net',
 
 # 2. デプロイ
 cd infrastructure
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
 
 # 3. 検証
 bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev
@@ -227,7 +227,7 @@ bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev
 
 # 4. デプロイ
 cd infrastructure
-npx cdk deploy --all --require-approval never
+pnpm exec cdk deploy --all --require-approval never
 
 # 5. 検証
 bash scripts/validate-lambda-env-vars.sh prance-websocket-default-dev
@@ -303,15 +303,15 @@ aws lambda get-function-configuration \
 ```bash
 # 1. TypeScriptビルド
 cd infrastructure
-npm run build
+pnpm run build
 
 # 2. CDK Synthesize確認
-npx cdk synth Prance-dev-ApiLambda | grep CLOUDFRONT_DOMAIN
+pnpm exec cdk synth Prance-dev-ApiLambda | grep CLOUDFRONT_DOMAIN
 
 # 期待結果: d3mx0sug5s3a6x.cloudfront.net が表示される
 
 # 3. 再デプロイ
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
 ```
 
 ### Issue 2: Option 2実装時にTypeScriptエラー
@@ -335,7 +335,7 @@ grep -A 10 "export interface ApiLambdaStackProps" infrastructure/lib/api-lambda-
 
 # 4. TypeScriptビルド
 cd infrastructure
-npm run build
+pnpm run build
 ```
 
 ### Issue 3: StorageStackのdistributionが見つからない
@@ -358,7 +358,7 @@ grep "public readonly distribution" infrastructure/lib/storage-stack.ts
 
 # 3. TypeScriptビルド
 cd infrastructure
-npm run build
+pnpm run build
 ```
 
 ---

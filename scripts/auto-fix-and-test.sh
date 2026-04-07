@@ -2,15 +2,14 @@
 # 自動修正 + テストスクリプト
 # 作成日: 2026-03-11
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
-echo "=========================================="
-echo "🚀 自動修正 + テスト実行"
-echo "=========================================="
-echo ""
+log_section "自動修正 + テスト実行"
 
 # Step 1: Lambda関数でSQLを実行
-echo "Step 1: Lambda関数でデフォルト値を設定中..."
+log_step 1 "Lambda関数でデフォルト値を設定中..."
 echo ""
 
 RESULT=$(aws lambda invoke \
@@ -21,12 +20,12 @@ RESULT=$(aws lambda invoke \
 INVOKE_STATUS=$?
 
 if [ $INVOKE_STATUS -ne 0 ]; then
-  echo "❌ Lambda関数の実行に失敗しました"
+  log_error "Lambda関数の実行に失敗しました"
   echo "$RESULT"
   exit 1
 fi
 
-echo "Lambda実行結果:"
+log_info "Lambda実行結果:"
 cat /tmp/populate-result.json | jq '.'
 echo ""
 
@@ -34,22 +33,22 @@ echo ""
 STATUS_CODE=$(cat /tmp/populate-result.json | jq -r '.statusCode')
 
 if [ "$STATUS_CODE" != "200" ]; then
-  echo "❌ SQL実行に失敗しました (Status: $STATUS_CODE)"
+  log_error "SQL実行に失敗しました (Status: $STATUS_CODE)"
   cat /tmp/populate-result.json | jq -r '.body' | jq '.'
   exit 1
 fi
 
-echo "✅ デフォルト値の設定が完了しました"
+log_success "デフォルト値の設定が完了しました"
 echo ""
 
 # 実行されたステートメント数を表示
 BODY=$(cat /tmp/populate-result.json | jq -r '.body')
 STATEMENTS=$(echo "$BODY" | jq -r '.statementsExecuted')
-echo "   実行されたSQLステートメント数: $STATEMENTS"
+log_info "実行されたSQLステートメント数: $STATEMENTS"
 echo ""
 
 # Step 2: データベース確認
-echo "Step 2: データベースの状態を確認中..."
+log_step 2 "データベースの状態を確認中..."
 echo ""
 
 # シナリオ一覧を取得（Lambda経由）
@@ -58,11 +57,11 @@ aws lambda invoke \
   --payload '{"queryStringParameters":{"limit":"5"}}' \
   /tmp/scenarios-result.json > /dev/null 2>&1
 
-echo "✅ シナリオデータ取得完了"
+log_success "シナリオデータ取得完了"
 echo ""
 
 # Step 3: 開発サーバー再起動
-echo "Step 3: 開発サーバーを再起動中..."
+log_step 3 "開発サーバーを再起動中..."
 echo ""
 
 # 既存のサーバーを停止
@@ -71,23 +70,23 @@ sleep 2
 
 # 新しいサーバーを起動
 cd /workspaces/prance-communication-platform
-npm run dev > /tmp/next-dev.log 2>&1 &
+pnpm run dev > /tmp/next-dev.log 2>&1 &
 DEV_PID=$!
 
-echo "✅ 開発サーバー起動中 (PID: $DEV_PID)"
-echo "   ログ: /tmp/next-dev.log"
+log_success "開発サーバー起動中 (PID: $DEV_PID)"
+log_info "ログ: /tmp/next-dev.log"
 echo ""
 
 # Step 4: サーバー起動待機
-echo "Step 4: サーバー起動を待機中..."
+log_step 4 "サーバー起動を待機中..."
 for i in {1..15}; do
   if curl -s http://localhost:3000 > /dev/null 2>&1; then
-    echo "✅ 開発サーバーが正常に起動しました ($i秒)"
+    log_success "開発サーバーが正常に起動しました ($i秒)"
     break
   fi
   if [ $i -eq 15 ]; then
-    echo "❌ 開発サーバーの起動がタイムアウトしました"
-    echo "ログを確認してください: tail /tmp/next-dev.log"
+    log_error "開発サーバーの起動がタイムアウトしました"
+    log_info "ログを確認してください: tail /tmp/next-dev.log"
     exit 1
   fi
   sleep 1
@@ -95,10 +94,8 @@ done
 echo ""
 
 # Step 5: テスト手順表示
-echo "=========================================="
-echo "✅ 準備完了！Phase 1.5 テストを開始してください"
-echo "=========================================="
-echo ""
+log_section "準備完了！Phase 1.5 テストを開始してください"
+
 echo "🌐 ブラウザでアクセス:"
 echo "   http://localhost:3000/dashboard/scenarios"
 echo ""
@@ -123,7 +120,7 @@ echo "     silenceTimeout: 10,          // ✅"
 echo "     enableSilencePrompt: true    // ✅"
 echo "   }"
 echo ""
-echo "=========================================="
+print_separator
 echo ""
 echo "📊 ログファイル:"
 echo "   開発サーバー: tail -f /tmp/next-dev.log"
@@ -132,4 +129,4 @@ echo ""
 echo "🛑 サーバー停止:"
 echo "   kill $DEV_PID"
 echo ""
-echo "=========================================="
+print_separator

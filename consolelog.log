@@ -1,12 +1,120 @@
-87c73c54-09e1ba5c70e60a51.js:1  Failed to load resource: the server responded with a status of 503 ()
-664-0d0d4be48b91dce8.js:1  Failed to load resource: the server responded with a status of 503 ()
-885-208688287d51e340.js:1  Failed to load resource: the server responded with a status of 503 ()
-3e02ea19c67f2267.css:1  Failed to load resource: the server responded with a status of 503 ()
-main-app-4dd8650ad1f543a7.js:1  Failed to load resource: the server responded with a status of 503 ()
-layout-206fec261713550d.js:1  Failed to load resource: the server responded with a status of 404 ()
-page-5e174e4a3d038a3f.js:1  Failed to load resource: the server responded with a status of 404 ()
-3e02ea19c67f2267.css:1  Failed to load resource: the server responded with a status of 404 ()
-e4af272ccee01ff0-s.p.woff2:1  Failed to load resource: the server responded with a status of 404 ()
-18-3ce15d1c40878474.js:1  Failed to load resource: the server responded with a status of 404 ()
-webpack-c1350e5b46c8d8ab.js:1  Failed to load resource: the server responded with a status of 404 ()
-(index):1 The resource https://dev.app.prance.jp/_next/static/media/e4af272ccee01ff0-s.p.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+Prance
+Dashboard
+Sessions
+Avatars
+Scenarios
+Guest Sessions
+Reports
+Settings
+Admin
+Runtime Configuration
+P
+Platform Administrator
+
+admin@prance.com
+
+
+Sessions
+
+🇺🇸 English
+Dashboard
+Sessions
+Session 33b68dfb...
+Transcribing speech...
+面接練習 - 基本編 - 追加
+Avatar: サチコ（アニメ風） • Category: interview
+
+
+Keyboard Shortcuts
+Recording
+Audio:
+136/69
+Video:
+0/0
+In Progress
+1:13
+Avatar View
+サチコ（アニメ風）
+Microphone:
+Recording
+Audio Level:
+5%
+Camera:
+On
+Speaker:
+Inactive
+Recording:
+Recording
+Duration
+Conversation Transcript
+🤖 サチコ（アニメ風）
+29590011224:54
+こんにちは。面接へようこそ。準備は良いですか
+
+🤖 サチコ（アニメ風）
+29590011494:41
+では、まず簡単に自己紹介をしていただけますか？これまでのご経験やスキルについてお聞かせください。
+
+🤖 サチコ（アニメ風）
+29590012160:53
+どうぞ、お気軽にお話しください。ご自身のペースで構いませんよ。
+
+Connected
+Send Test Message
+Pause
+Stop
+🎤 Listening... Speak clearly into your microphone
+
+Session Information
+Session ID
+
+33b68dfb-b0e6-445b-a2b9-41225b648e7d
+
+Scenario
+
+面接練習 - 基本編 - 追加
+
+Language
+
+JA
+
+Created
+
+4/5/2026
+
+
+3/3
+
+Next.js 15.5.14 (outdated)
+Webpack
+Console Error
+
+
+Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+
+components/providers.tsx (21:11) @ Providers
+
+
+  19 |         <AuthProvider>
+  20 |           {children}
+> 21 |           <Toaster position="top-right" richColors />
+     |           ^
+  22 |         </AuthProvider>
+  23 |       </I18nProvider>
+  24 |     </QueryProvider>
+Call Stack
+25
+
+Show 22 ignore-listed frame(s)
+li
+<anonymous>
+Providers
+components/providers.tsx (21:11)
+RootLayout
+app/layout.tsx (39:9)
+1
+2
+Was this helpful?
+
+
+

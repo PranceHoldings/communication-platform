@@ -1,43 +1,29 @@
 #!/bin/bash
 
-# 環境変数検証スクリプト
+# 環境変数検証スクリプト (v3 - Shared Library版)
 # このスクリプトは.env.localとinfrastructure/.envが正しく設定されているか検証します
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-ERRORS=0
-WARNINGS=0
-
-echo "=========================================="
-echo "環境変数検証スクリプト"
-echo "=========================================="
-echo ""
+log_section "環境変数検証スクリプト"
 
 # 1. .env.localの存在確認
 if [ ! -f ".env.local" ]; then
-  echo -e "${RED}❌ ERROR: .env.local が見つかりません${NC}"
-  ERRORS=$((ERRORS + 1))
+  log_error ".env.local が見つかりません"
 else
-  echo -e "${GREEN}✅ .env.local 存在確認 OK${NC}"
+  log_success ".env.local 存在確認 OK"
 fi
 
 # 2. infrastructure/.envの存在確認
 if [ ! -f "infrastructure/.env" ]; then
-  echo -e "${RED}❌ ERROR: infrastructure/.env が見つかりません${NC}"
-  ERRORS=$((ERRORS + 1))
+  log_error "infrastructure/.env が見つかりません"
 else
-  echo -e "${GREEN}✅ infrastructure/.env 存在確認 OK${NC}"
+  log_success "infrastructure/.env 存在確認 OK"
 fi
 
-echo ""
-echo "=========================================="
-echo "DATABASE_URL検証"
-echo "=========================================="
+log_section "DATABASE_URL検証"
 
 # 3. ローカルPostgreSQL接続文字列の検出
 check_localhost_db() {
@@ -49,23 +35,19 @@ check_localhost_db() {
   fi
 
   if grep -q "DATABASE_URL.*localhost:5432\|DATABASE_URL.*@localhost" "$file"; then
-    echo -e "${RED}❌ ERROR: $name にローカルPostgreSQL接続文字列が含まれています${NC}"
+    log_error "$name にローカルPostgreSQL接続文字列が含まれています"
     echo -e "${RED}   → このプロジェクトはAWS RDS Aurora Serverless v2専用です${NC}"
     echo -e "${RED}   → DATABASE_URLをAWS RDS接続文字列に変更してください${NC}"
     grep -n "DATABASE_URL" "$file" | head -3
-    ERRORS=$((ERRORS + 1))
   else
-    echo -e "${GREEN}✅ $name: ローカルPostgreSQL検出なし${NC}"
+    log_success "$name: ローカルPostgreSQL検出なし"
   fi
 }
 
 check_localhost_db ".env.local" ".env.local"
 check_localhost_db "infrastructure/.env" "infrastructure/.env"
 
-echo ""
-echo "=========================================="
-echo "AWS RDS接続文字列の検証"
-echo "=========================================="
+log_section "AWS RDS接続文字列の検証"
 
 # 4. AWS RDS接続文字列の確認
 check_rds_connection() {
@@ -77,20 +59,16 @@ check_rds_connection() {
   fi
 
   if grep -q "DATABASE_URL.*rds\.amazonaws\.com\|DATABASE_URL.*cluster-.*\.us-east-1\.rds\.amazonaws\.com" "$file"; then
-    echo -e "${GREEN}✅ $name: AWS RDS接続文字列を検出${NC}"
+    log_success "$name: AWS RDS接続文字列を検出"
   else
-    echo -e "${YELLOW}⚠️  WARNING: $name にAWS RDS接続文字列が見つかりません${NC}"
-    WARNINGS=$((WARNINGS + 1))
+    log_warning "$name にAWS RDS接続文字列が見つかりません"
   fi
 }
 
 check_rds_connection ".env.local" ".env.local"
 check_rds_connection "infrastructure/.env" "infrastructure/.env"
 
-echo ""
-echo "=========================================="
-echo "フロントエンドAPI設定の検証"
-echo "=========================================="
+log_section "フロントエンドAPI設定の検証"
 
 # 4.5. NEXT_PUBLIC_*のlocalhost検出
 check_frontend_config() {
@@ -103,33 +81,29 @@ check_frontend_config() {
 
   # NEXT_PUBLIC_API_URLのチェック
   if grep -q "NEXT_PUBLIC_API_URL.*localhost" "$file"; then
-    echo -e "${RED}❌ ERROR: $name のNEXT_PUBLIC_API_URLがlocalhostを指しています${NC}"
+    log_error "$name のNEXT_PUBLIC_API_URLがlocalhostを指しています"
     echo -e "${RED}   → このプロジェクトはバックエンドが完全AWS構成です${NC}"
     echo -e "${RED}   → AWS API Gateway URLに変更してください${NC}"
     grep -n "NEXT_PUBLIC_API_URL.*localhost" "$file"
-    ERRORS=$((ERRORS + 1))
   else
     if grep -q "NEXT_PUBLIC_API_URL.*execute-api.*amazonaws\.com" "$file"; then
-      echo -e "${GREEN}✅ $name: NEXT_PUBLIC_API_URL はAWS API Gatewayを指しています${NC}"
+      log_success "$name: NEXT_PUBLIC_API_URL はAWS API Gatewayを指しています"
     else
-      echo -e "${YELLOW}⚠️  WARNING: $name にNEXT_PUBLIC_API_URLが見つからないか、形式が不正です${NC}"
-      WARNINGS=$((WARNINGS + 1))
+      log_warning "$name にNEXT_PUBLIC_API_URLが見つからないか、形式が不正です"
     fi
   fi
 
   # NEXT_PUBLIC_WS_URLのチェック
   if grep -q "NEXT_PUBLIC_WS_URL.*localhost" "$file"; then
-    echo -e "${RED}❌ ERROR: $name のNEXT_PUBLIC_WS_URLがlocalhostを指しています${NC}"
+    log_error "$name のNEXT_PUBLIC_WS_URLがlocalhostを指しています"
     echo -e "${RED}   → このプロジェクトはWebSocketがAWS IoT Core構成です${NC}"
     echo -e "${RED}   → AWS WebSocket URLに変更してください${NC}"
     grep -n "NEXT_PUBLIC_WS_URL.*localhost" "$file"
-    ERRORS=$((ERRORS + 1))
   else
     if grep -q "NEXT_PUBLIC_WS_URL.*wss://.*execute-api.*amazonaws\.com" "$file"; then
-      echo -e "${GREEN}✅ $name: NEXT_PUBLIC_WS_URL はAWS WebSocketを指しています${NC}"
+      log_success "$name: NEXT_PUBLIC_WS_URL はAWS WebSocketを指しています"
     else
-      echo -e "${YELLOW}⚠️  WARNING: $name にNEXT_PUBLIC_WS_URLが見つからないか、形式が不正です${NC}"
-      WARNINGS=$((WARNINGS + 1))
+      log_warning "$name にNEXT_PUBLIC_WS_URLが見つからないか、形式が不正です"
     fi
   fi
 }
@@ -137,10 +111,7 @@ check_frontend_config() {
 check_frontend_config ".env.local" ".env.local"
 check_frontend_config "infrastructure/.env" "infrastructure/.env"
 
-echo ""
-echo "=========================================="
-echo "必須環境変数の確認"
-echo "=========================================="
+log_section "必須環境変数の確認"
 
 # 5. 必須環境変数の存在確認
 REQUIRED_VARS=(
@@ -164,34 +135,33 @@ check_required_vars() {
   local missing=0
   for var in "${REQUIRED_VARS[@]}"; do
     if ! grep -q "^${var}=" "$file" && ! grep -q "^${var} =" "$file"; then
-      echo -e "${YELLOW}⚠️  WARNING: $name に ${var} がありません${NC}"
+      log_warning "$name に ${var} がありません"
       missing=$((missing + 1))
     fi
   done
 
   if [ $missing -eq 0 ]; then
-    echo -e "${GREEN}✅ $name: 全ての必須環境変数が存在${NC}"
-  else
-    WARNINGS=$((WARNINGS + missing))
+    log_success "$name: 全ての必須環境変数が存在"
   fi
 }
 
 check_required_vars ".env.local" ".env.local"
 check_required_vars "infrastructure/.env" "infrastructure/.env"
 
-echo ""
-echo "=========================================="
-echo "検証結果"
-echo "=========================================="
+# サマリー表示と終了コード判定
+log_section "検証結果"
 
-if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
-  echo -e "${GREEN}✅ 全ての検証に合格しました！${NC}"
+if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
+  log_success "全ての検証に合格しました！"
+  print_counter_summary
   exit 0
-elif [ $ERRORS -eq 0 ]; then
-  echo -e "${YELLOW}⚠️  警告が ${WARNINGS} 件あります${NC}"
+elif [ "$ERRORS" -eq 0 ]; then
+  log_warning "警告が ${WARNINGS} 件あります"
+  print_counter_summary
   exit 0
 else
-  echo -e "${RED}❌ エラーが ${ERRORS} 件、警告が ${WARNINGS} 件あります${NC}"
+  log_error "エラーが ${ERRORS} 件、警告が ${WARNINGS} 件あります"
+  print_counter_summary
   echo ""
   echo "修正方法:"
   echo ""

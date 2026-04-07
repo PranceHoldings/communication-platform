@@ -7,6 +7,14 @@
 # This script prevents build failures caused by macOS Finder auto-generated
 # files like "script 2.sh", "document 2.md", directories like "dashboard 2", etc.
 #
+# Version: 2.0 (2026-04-03)
+# Improvements:
+#   - Scans .broken-* directories (previously excluded)
+#   - Uses find -depth for deep-nested directories
+#   - Enhanced 4-stage deletion strategy
+#   - Logs failed deletions to /tmp/failed-deletions.log
+#   - Better error reporting and user guidance
+#
 # Usage:
 #   ./scripts/clean-space-files-and-dirs.sh [options]
 #
@@ -15,21 +23,23 @@
 #   --dry-run       Show what would be removed without actually removing
 #   --force         Skip confirmation prompt
 #   --rename-only   Only rename (to .broken-<timestamp>), don't delete
+#   --include-broken Scan .broken-* directories (now default, kept for backwards compatibility)
 #
+
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
 
 # Options
 SCAN_ALL=false
 DRY_RUN=false
 FORCE=false
 RENAME_ONLY=false
+INCLUDE_BROKEN=true  # Changed in v2.0: now default to true
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -50,29 +60,40 @@ while [[ $# -gt 0 ]]; do
       RENAME_ONLY=true
       shift
       ;;
+    --include-broken)
+      INCLUDE_BROKEN=true  # Backwards compatibility
+      shift
+      ;;
+    --exclude-broken)
+      INCLUDE_BROKEN=false
+      shift
+      ;;
     *)
-      echo -e "${RED}Unknown option: $1${NC}"
+      log_error "Unknown option: $1"
       exit 1
       ;;
   esac
 done
 
+# Failure log file
+FAILURE_LOG="/tmp/failed-deletions-$(date +%Y%m%d-%H%M%S).log"
+
 # Get project root
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$PROJECT_ROOT" ]; then
-  echo -e "${RED}Error: Not in a git repository${NC}"
+  log_error "Error: Not in a git repository"
   exit 1
 fi
 
 cd "$PROJECT_ROOT" || exit 1
 
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Cleaning Space-Containing Files & Directories${NC}"
-echo -e "${BLUE}============================================${NC}"
+log_info "============================================"
+log_info "Cleaning Space-Containing Files & Directories"
+log_info "============================================"
 echo ""
 
 if [ "$DRY_RUN" = true ]; then
-  echo -e "${YELLOW}DRY RUN MODE - No files will be modified${NC}"
+  log_warning "DRY RUN MODE - No files will be modified"
   echo ""
 fi
 
@@ -86,7 +107,7 @@ FAILED_DIRS=0
 # Define search paths
 if [ "$SCAN_ALL" = true ]; then
   SEARCH_PATHS=(".")
-  echo -e "${YELLOW}Scanning entire project...${NC}"
+  log_warning "Scanning entire project..."
 else
   SEARCH_PATHS=(
     "apps"
@@ -95,7 +116,7 @@ else
     "scripts"
     "docs"
   )
-  echo -e "${YELLOW}Scanning common paths: ${SEARCH_PATHS[*]}${NC}"
+  log_warning "Scanning common paths: ${SEARCH_PATHS[*]}"
 fi
 
 echo ""
@@ -109,26 +130,36 @@ echo ""
 FILES_WITH_SPACES=()
 DIRS_WITH_SPACES=()
 
+# Build find exclusions
+FIND_EXCLUSIONS=(
+  -not -path "*/node_modules/*"
+  -not -path "*/.git/*"
+)
+
+# Optionally exclude .broken-* (backwards compatibility)
+if [ "$INCLUDE_BROKEN" = false ]; then
+  FIND_EXCLUSIONS+=(-not -path "*.broken-*")
+  log_warning "Note: Excluding .broken-* directories"
+else
+  log_warning "Note: Including .broken-* directories for cleanup"
+fi
+
 for search_path in "${SEARCH_PATHS[@]}"; do
   if [ -d "$search_path" ]; then
-    # Find files with spaces (excluding node_modules, .git, .broken-*)
+    # Find files with spaces (using -depth for deep-nested files)
     while IFS= read -r -d '' file; do
       FILES_WITH_SPACES+=("$file")
       FOUND_FILES=$((FOUND_FILES + 1))
-    done < <(find "$search_path" -type f -name "* *" \
-      -not -path "*/node_modules/*" \
-      -not -path "*/.git/*" \
-      -not -path "*.broken-*" \
+    done < <(find "$search_path" -depth -type f -name "* *" \
+      "${FIND_EXCLUSIONS[@]}" \
       -print0 2>/dev/null)
 
-    # Find directories with spaces
+    # Find directories with spaces (using -depth for deep-nested directories)
     while IFS= read -r -d '' dir; do
       DIRS_WITH_SPACES+=("$dir")
       FOUND_DIRS=$((FOUND_DIRS + 1))
-    done < <(find "$search_path" -type d -name "* *" \
-      -not -path "*/node_modules/*" \
-      -not -path "*/.git/*" \
-      -not -path "*.broken-*" \
+    done < <(find "$search_path" -depth -type d -name "* *" \
+      "${FIND_EXCLUSIONS[@]}" \
       -print0 2>/dev/null)
   fi
 done
@@ -137,7 +168,7 @@ echo -e "Found: ${RED}${FOUND_FILES}${NC} files, ${RED}${FOUND_DIRS}${NC} direct
 echo ""
 
 if [ "$FOUND_FILES" -eq 0 ] && [ "$FOUND_DIRS" -eq 0 ]; then
-  echo -e "${GREEN}✅ No space-containing files or directories found${NC}"
+  log_success "No space-containing files or directories found"
   exit 0
 fi
 
@@ -148,7 +179,7 @@ echo -e "${BLUE}[2/4]${NC} Details of space-containing items..."
 echo ""
 
 if [ "$FOUND_FILES" -gt 0 ]; then
-  echo -e "${YELLOW}Files (${FOUND_FILES}):${NC}"
+  log_warning "Files (${FOUND_FILES}):"
   for file in "${FILES_WITH_SPACES[@]}"; do
     echo -e "  ${RED}✗${NC} ${file}"
   done
@@ -156,7 +187,7 @@ if [ "$FOUND_FILES" -gt 0 ]; then
 fi
 
 if [ "$FOUND_DIRS" -gt 0 ]; then
-  echo -e "${YELLOW}Directories (${FOUND_DIRS}):${NC}"
+  log_warning "Directories (${FOUND_DIRS}):"
   for dir in "${DIRS_WITH_SPACES[@]}"; do
     echo -e "  ${RED}✗${NC} ${dir}"
   done
@@ -169,12 +200,12 @@ fi
 if [ "$DRY_RUN" = false ] && [ "$FORCE" = false ]; then
   echo -e "${YELLOW}[3/4]${NC} Confirmation"
   echo ""
-  echo -e "${YELLOW}⚠️  Warning: This will remove or rename ${FOUND_FILES} files and ${FOUND_DIRS} directories${NC}"
+  log_warning "Warning: This will remove or rename ${FOUND_FILES} files and ${FOUND_DIRS} directories"
   echo ""
   read -p "Continue? (yes/no): " CONFIRM
 
   if [ "$CONFIRM" != "yes" ]; then
-    echo -e "${BLUE}Cancelled${NC}"
+    log_info "Cancelled"
     exit 0
   fi
   echo ""
@@ -186,7 +217,7 @@ fi
 echo -e "${BLUE}[4/4]${NC} Cleaning..."
 echo ""
 
-# Function to remove or rename a file
+# Function to remove or rename a file (Enhanced 4-stage strategy)
 remove_or_rename_file() {
   local file="$1"
   local basename=$(basename "$file")
@@ -213,38 +244,52 @@ remove_or_rename_file() {
       return 0
     else
       echo -e "  ${RED}✗${NC} Failed to rename: ${file}"
+      echo "$file" >> "$FAILURE_LOG"
       FAILED_FILES=$((FAILED_FILES + 1))
       return 1
     fi
   else
-    # Try to remove
+    # Enhanced 4-stage deletion strategy
+
+    # Strategy 1: Normal deletion
     if rm -f "$file" 2>/dev/null; then
       echo -e "  ${GREEN}✓${NC} Removed: ${file}"
       CLEANED_FILES=$((CLEANED_FILES + 1))
       return 0
-    elif sudo rm -f "$file" 2>/dev/null; then
+    fi
+
+    # Strategy 2: Sudo deletion
+    if sudo rm -f "$file" 2>/dev/null; then
       echo -e "  ${GREEN}✓${NC} Removed (sudo): ${file}"
       CLEANED_FILES=$((CLEANED_FILES + 1))
       return 0
-    else
-      # If deletion fails, try renaming
-      local timestamp=$(date +%s)
-      local new_name="${basename}-broken-${timestamp}"
+    fi
 
-      if mv "$file" "${dirname}/${new_name}" 2>/dev/null || sudo mv "$file" "${dirname}/${new_name}" 2>/dev/null; then
-        echo -e "  ${YELLOW}⚠${NC}  Could not delete, renamed: ${file} → ${new_name}"
-        CLEANED_FILES=$((CLEANED_FILES + 1))
-        return 0
-      else
-        echo -e "  ${RED}✗${NC} Failed: ${file}"
-        FAILED_FILES=$((FAILED_FILES + 1))
-        return 1
-      fi
+    # Strategy 3: Change permissions then delete
+    if sudo chmod -R 777 "$file" 2>/dev/null && sudo rm -f "$file" 2>/dev/null; then
+      echo -e "  ${GREEN}✓${NC} Removed (chmod+rm): ${file}"
+      CLEANED_FILES=$((CLEANED_FILES + 1))
+      return 0
+    fi
+
+    # Strategy 4: Rename as fallback
+    local timestamp=$(date +%s)
+    local new_name="${basename}-broken-${timestamp}"
+
+    if mv "$file" "${dirname}/${new_name}" 2>/dev/null || sudo mv "$file" "${dirname}/${new_name}" 2>/dev/null; then
+      echo -e "  ${YELLOW}⚠${NC}  Could not delete, renamed: ${file} → ${new_name}"
+      CLEANED_FILES=$((CLEANED_FILES + 1))
+      return 0
+    else
+      echo -e "  ${RED}✗${NC} Failed: ${file}"
+      echo "$file" >> "$FAILURE_LOG"
+      FAILED_FILES=$((FAILED_FILES + 1))
+      return 1
     fi
   fi
 }
 
-# Function to remove or rename a directory
+# Function to remove or rename a directory (Enhanced 5-stage strategy)
 remove_or_rename_dir() {
   local dir="$1"
   local basename=$(basename "$dir")
@@ -271,40 +316,69 @@ remove_or_rename_dir() {
       return 0
     else
       echo -e "  ${RED}✗${NC} Failed to rename: ${dir}"
+      echo "$dir" >> "$FAILURE_LOG"
       FAILED_DIRS=$((FAILED_DIRS + 1))
       return 1
     fi
   else
-    # Try to remove
+    # Enhanced 5-stage deletion strategy
+
+    # Strategy 1: Normal deletion
     if rm -rf "$dir" 2>/dev/null; then
       echo -e "  ${GREEN}✓${NC} Removed: ${dir}"
       CLEANED_DIRS=$((CLEANED_DIRS + 1))
       return 0
-    elif sudo rm -rf "$dir" 2>/dev/null; then
+    fi
+
+    # Strategy 2: Sudo deletion
+    if sudo rm -rf "$dir" 2>/dev/null; then
       echo -e "  ${GREEN}✓${NC} Removed (sudo): ${dir}"
       CLEANED_DIRS=$((CLEANED_DIRS + 1))
       return 0
-    else
-      # If deletion fails, try renaming
-      local timestamp=$(date +%s)
-      local new_name="${basename}-broken-${timestamp}"
+    fi
 
-      if mv "$dir" "${dirname}/${new_name}" 2>/dev/null || sudo mv "$dir" "${dirname}/${new_name}" 2>/dev/null; then
-        echo -e "  ${YELLOW}⚠${NC}  Could not delete, renamed: ${dir} → ${new_name}"
+    # Strategy 3: Change permissions then delete
+    if sudo chmod -R 777 "$dir" 2>/dev/null && sudo rm -rf "$dir" 2>/dev/null; then
+      echo -e "  ${GREEN}✓${NC} Removed (chmod+rm): ${dir}"
+      CLEANED_DIRS=$((CLEANED_DIRS + 1))
+      return 0
+    fi
+
+    # Strategy 4: Delete individual files from deepest level
+    if [ -d "$dir" ]; then
+      # Delete files first
+      find "$dir" -depth -type f -exec sudo rm -f {} \; 2>/dev/null
+      # Then delete empty directories
+      find "$dir" -depth -type d -exec sudo rmdir {} \; 2>/dev/null
+
+      # Check if directory was successfully removed
+      if [ ! -d "$dir" ]; then
+        echo -e "  ${GREEN}✓${NC} Removed (find -delete): ${dir}"
         CLEANED_DIRS=$((CLEANED_DIRS + 1))
         return 0
-      else
-        echo -e "  ${RED}✗${NC} Failed: ${dir}"
-        FAILED_DIRS=$((FAILED_DIRS + 1))
-        return 1
       fi
+    fi
+
+    # Strategy 5: Rename as fallback
+    local timestamp=$(date +%s)
+    local new_name="${basename}-broken-${timestamp}"
+
+    if mv "$dir" "${dirname}/${new_name}" 2>/dev/null || sudo mv "$dir" "${dirname}/${new_name}" 2>/dev/null; then
+      echo -e "  ${YELLOW}⚠${NC}  Could not delete, renamed: ${dir} → ${new_name}"
+      CLEANED_DIRS=$((CLEANED_DIRS + 1))
+      return 0
+    else
+      echo -e "  ${RED}✗${NC} Failed: ${dir}"
+      echo "$dir" >> "$FAILURE_LOG"
+      FAILED_DIRS=$((FAILED_DIRS + 1))
+      return 1
     fi
   fi
 }
 
 # Process files
 if [ "$FOUND_FILES" -gt 0 ]; then
-  echo -e "${YELLOW}Processing files...${NC}"
+  log_warning "Processing files..."
   for file in "${FILES_WITH_SPACES[@]}"; do
     remove_or_rename_file "$file"
   done
@@ -313,7 +387,7 @@ fi
 
 # Process directories
 if [ "$FOUND_DIRS" -gt 0 ]; then
-  echo -e "${YELLOW}Processing directories...${NC}"
+  log_warning "Processing directories..."
   for dir in "${DIRS_WITH_SPACES[@]}"; do
     remove_or_rename_dir "$dir"
   done
@@ -323,9 +397,9 @@ fi
 # =============================================================================
 # Summary
 # =============================================================================
-echo -e "${BLUE}============================================${NC}"
-echo -e "${BLUE}Summary${NC}"
-echo -e "${BLUE}============================================${NC}"
+log_info "============================================"
+log_info "Summary"
+log_info "============================================"
 echo ""
 echo -e "Files found:           ${FOUND_FILES}"
 echo -e "Files cleaned:         ${GREEN}${CLEANED_FILES}${NC}"
@@ -339,15 +413,31 @@ echo ""
 TOTAL_FAILED=$((FAILED_FILES + FAILED_DIRS))
 
 if [ "$DRY_RUN" = true ]; then
-  echo -e "${BLUE}ℹ️  Dry run completed - no files were modified${NC}"
+  log_info "Dry run completed - no files were modified"
   exit 0
 fi
 
 if [ "$TOTAL_FAILED" -gt 0 ]; then
-  echo -e "${RED}❌ Cleanup incomplete (${TOTAL_FAILED} items failed)${NC}"
-  echo -e "${YELLOW}Manual intervention may be required${NC}"
+  log_error "Cleanup incomplete (${TOTAL_FAILED} items failed)"
+  echo ""
+  log_warning "Failed items have been logged to:"
+  echo -e "  ${FAILURE_LOG}"
+  echo ""
+  log_warning "Possible reasons for failure:"
+  echo -e "  • Deep-nested directories with spaces (e.g., 'dir 2/subdir 2/')"
+  echo -e "  • Files locked by running processes"
+  echo -e "  • Filesystem-level issues (macOS Finder generated files)"
+  echo ""
+  log_warning "Recommended actions:"
+  echo -e "  1. Review failed items: cat ${FAILURE_LOG}"
+  echo -e "  2. Stop related processes: pkill -f 'node\\|npm'"
+  echo -e "  3. Restart system if files are still locked"
+  echo -e "  4. Failed items have been renamed to .broken-* and won't affect builds"
+  echo ""
   exit 1
 else
-  echo -e "${GREEN}✅ All space-containing items cleaned successfully${NC}"
+  log_success "All space-containing items cleaned successfully"
+  # Clean up empty failure log
+  [ -f "$FAILURE_LOG" ] && rm -f "$FAILURE_LOG"
   exit 0
 fi

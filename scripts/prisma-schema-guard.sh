@@ -13,85 +13,76 @@
 #   4. データベースマイグレーション実行 (Lambda invoke)
 ##############################################################################
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DATABASE_DIR="${PROJECT_ROOT}/packages/database"
 INFRASTRUCTURE_DIR="${PROJECT_ROOT}/infrastructure"
 
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}  Prisma Schema Change Guard${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+log_section "Prisma Schema Change Guard"
 
 # Check if schema.prisma has changed
 SCHEMA_CHANGED=false
 if git diff --cached --name-only | grep -q "packages/database/prisma/schema.prisma"; then
     SCHEMA_CHANGED=true
-    echo -e "${YELLOW}⚠️  Prismaスキーマファイルが変更されています${NC}"
+    log_warning "Prismaスキーマファイルが変更されています"
 fi
 
 if [ "$SCHEMA_CHANGED" = false ]; then
-    echo -e "${GREEN}✓ Prismaスキーマに変更はありません${NC}"
+    log_success "Prismaスキーマに変更はありません"
     exit 0
 fi
 
 echo ""
-echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${RED}  🔴 CRITICAL: Prismaスキーマ変更検出${NC}"
-echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+print_separator "━" 70
+log_error "🔴 CRITICAL: Prismaスキーマ変更検出"
+print_separator "━" 70
 echo ""
-echo -e "${YELLOW}Prismaスキーマを変更した場合、以下の手順を必ず実行してください:${NC}"
+log_warning "Prismaスキーマを変更した場合、以下の手順を必ず実行してください:"
 echo ""
-echo -e "  ${BLUE}Step 1:${NC} マイグレーションファイル生成"
-echo -e "    ${GREEN}cd packages/database && npx prisma migrate dev --name <変更内容>${NC}"
+log_info "Step 1: マイグレーションファイル生成"
+echo -e "    ${GREEN}cd packages/database && pnpm exec prisma migrate dev --name <変更内容>${NC}"
 echo ""
-echo -e "  ${BLUE}Step 2:${NC} Prisma Client再生成"
-echo -e "    ${GREEN}npx prisma generate${NC}"
+log_info "Step 2: Prisma Client再生成"
+echo -e "    ${GREEN}pnpm exec prisma generate${NC}"
 echo ""
-echo -e "  ${BLUE}Step 3:${NC} Lambda関数デプロイ"
-echo -e "    ${GREEN}cd infrastructure && npm run cdk -- deploy Prance-dev-ApiLambda${NC}"
+log_info "Step 3: Lambda関数デプロイ"
+echo -e "    ${GREEN}cd infrastructure && pnpm run cdk -- deploy Prance-dev-ApiLambda${NC}"
 echo ""
-echo -e "  ${BLUE}Step 4:${NC} データベースマイグレーション実行"
+log_info "Step 4: データベースマイグレーション実行"
 echo -e "    ${GREEN}aws lambda invoke --function-name prance-db-migration-dev --payload '{}' /tmp/result.json${NC}"
 echo ""
 
 # Auto-execution mode (if --auto flag is provided)
 if [ "$1" = "--auto" ]; then
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}  自動実行モード${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    log_section "自動実行モード"
     echo ""
 
     read -p "マイグレーション名を入力してください: " MIGRATION_NAME
 
     if [ -z "$MIGRATION_NAME" ]; then
-        echo -e "${RED}✗ マイグレーション名が必要です${NC}"
+        log_error "マイグレーション名が必要です"
         exit 1
     fi
 
     echo ""
-    echo -e "${BLUE}Step 1:${NC} マイグレーションファイル生成中..."
+    log_info "Step 1: マイグレーションファイル生成中..."
     cd "${DATABASE_DIR}"
-    npx prisma migrate dev --name "${MIGRATION_NAME}"
+    pnpm exec prisma migrate dev --name "${MIGRATION_NAME}"
 
     echo ""
-    echo -e "${BLUE}Step 2:${NC} Prisma Client再生成中..."
-    npx prisma generate
+    log_info "Step 2: Prisma Client再生成中..."
+    pnpm exec prisma generate
 
     echo ""
-    echo -e "${GREEN}✓ マイグレーション処理完了${NC}"
+    log_success "マイグレーション処理完了"
     echo ""
-    echo -e "${YELLOW}次のステップ:${NC}"
+    log_warning "次のステップ:"
     echo -e "  1. ${GREEN}git add .${NC} - 生成されたマイグレーションファイルをステージング"
     echo -e "  2. ${GREEN}git commit${NC} - コミット"
-    echo -e "  3. ${GREEN}cd infrastructure && npm run deploy:dev${NC} - Lambda関数デプロイ"
+    echo -e "  3. ${GREEN}cd infrastructure && pnpm run deploy:dev${NC} - Lambda関数デプロイ"
     echo -e "  4. ${GREEN}aws lambda invoke --function-name prance-db-migration-dev --payload '{}' /tmp/result.json${NC}"
     echo ""
 
@@ -100,14 +91,14 @@ if [ "$1" = "--auto" ]; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         git add packages/database/prisma/migrations/
         git add packages/database/node_modules/.prisma/
-        echo -e "${GREEN}✓ マイグレーションファイルをステージングに追加しました${NC}"
+        log_success "マイグレーションファイルをステージングに追加しました"
     fi
 
     exit 0
 fi
 
 # Interactive mode
-echo -e "${YELLOW}以下のオプションを選択してください:${NC}"
+log_warning "以下のオプションを選択してください:"
 echo ""
 echo -e "  ${GREEN}1)${NC} 自動実行 (マイグレーション生成 + Prisma Client再生成)"
 echo -e "  ${GREEN}2)${NC} 手動で実行する (このコミットをブロック)"
@@ -123,22 +114,22 @@ case $REPLY in
         ;;
     2)
         echo ""
-        echo -e "${RED}✗ コミットをブロックしました${NC}"
-        echo -e "${YELLOW}上記の手順を手動で実行してから、再度コミットしてください${NC}"
+        log_error "コミットをブロックしました"
+        log_warning "上記の手順を手動で実行してから、再度コミットしてください"
         exit 1
         ;;
     3)
         echo ""
-        echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo -e "${RED}  ⚠️  警告: マイグレーション手順をスキップしました${NC}"
-        echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        print_separator "━" 70
+        log_error "⚠️  警告: マイグレーション手順をスキップしました"
+        print_separator "━" 70
         echo ""
-        echo -e "${YELLOW}スキップした場合の影響:${NC}"
+        log_warning "スキップした場合の影響:"
         echo -e "  - デプロイ後に500エラーが発生します"
         echo -e "  - データベースとコードの不整合が発生します"
         echo -e "  - 本番環境でサービス停止につながります"
         echo ""
-        echo -e "${YELLOW}必ず以下の手順を後で実行してください:${NC}"
+        log_warning "必ず以下の手順を後で実行してください:"
         echo -e "  1. マイグレーション生成"
         echo -e "  2. Prisma Client再生成"
         echo -e "  3. Lambda関数デプロイ"
@@ -147,15 +138,15 @@ case $REPLY in
 
         read -p "本当にスキップしますか? (yes/NO): " CONFIRM
         if [ "$CONFIRM" != "yes" ]; then
-            echo -e "${RED}✗ コミットをブロックしました${NC}"
+            log_error "コミットをブロックしました"
             exit 1
         fi
 
-        echo -e "${RED}⚠️  スキップが確認されました${NC}"
+        log_warning "スキップが確認されました"
         exit 0
         ;;
     *)
-        echo -e "${RED}✗ 無効な選択です。コミットをブロックしました${NC}"
+        log_error "無効な選択です。コミットをブロックしました"
         exit 1
         ;;
 esac

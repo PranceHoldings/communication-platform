@@ -60,43 +60,43 @@
 ### 全テスト実行（推奨）
 ```bash
 # 全35テスト実行
-npm run test:e2e
+pnpm run test:e2e
 
 # UIモード（デバッグ向け）
-npm run test:e2e:ui
+pnpm run test:e2e:ui
 ```
 
 ### レベル別実行
 ```bash
 # UI Tests only (Stage 0-1)
-npm run test:e2e -- stage0 stage1
+pnpm run test:e2e -- stage0 stage1
 
 # Integration Tests only (Stage 2)
-npm run test:e2e -- stage2
+pnpm run test:e2e -- stage2
 
 # System E2E Tests only (Stage 3-5)
-npm run test:e2e -- stage3 stage4 stage5
+pnpm run test:e2e -- stage3 stage4 stage5
 ```
 
 ### 特定のStage実行
 ```bash
 # Stage 3のみ（WebSocket統合）
-npm run test:e2e -- stage3-real-websocket.spec.ts
+pnpm run test:e2e -- stage3-real-websocket.spec.ts
 
 # Stage 3 Part 2のみ（初期グリーティング）
-npm run test:e2e -- stage3-part2-initial-greeting.spec.ts
+pnpm run test:e2e -- stage3-part2-initial-greeting.spec.ts
 
 # 順次実行（リソース節約）
-npm run test:e2e -- stage3-part2-initial-greeting.spec.ts --workers=1
+pnpm run test:e2e -- stage3-part2-initial-greeting.spec.ts --workers=1
 ```
 
 ### ヘッドレスモード切り替え
 ```bash
 # ヘッドレス（CI/CD用）
-npm run test:e2e
+pnpm run test:e2e
 
 # ブラウザ表示
-npm run test:e2e:headed
+pnpm run test:e2e:headed
 ```
 
 ---
@@ -174,19 +174,19 @@ NEXT_PUBLIC_WEBSOCKET_URL=wss://bu179h4agh.execute-api.us-east-1.amazonaws.com/d
 ### デバッグモード
 ```bash
 # Playwrightデバッガー起動
-PWDEBUG=1 npm run test:e2e:headed
+PWDEBUG=1 pnpm run test:e2e:headed
 
 # トレース記録
-npx playwright test --trace on
+pnpm exec playwright test --trace on
 
 # トレース表示
-npx playwright show-trace test-results/.../trace.zip
+pnpm exec playwright show-trace test-results/.../trace.zip
 ```
 
 ### ログ確認
 ```bash
 # Playwrightログ
-DEBUG=pw:api npm run test:e2e
+DEBUG=pw:api pnpm run test:e2e
 
 # ブラウザコンソールログ
 # → テスト実行中に自動表示
@@ -199,7 +199,7 @@ DEBUG=pw:api npm run test:e2e
 ### HTMLレポート
 ```bash
 # レポート生成・表示
-npm run test:e2e:report
+pnpm run test:e2e:report
 
 # 出力先
 # test-results/html/index.html
@@ -294,9 +294,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm run test:e2e
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.API_URL }}
           NEXT_PUBLIC_WEBSOCKET_URL: ${{ secrets.WS_URL }}
@@ -315,7 +315,7 @@ jobs:
 
 **Stage 0-2の場合:**
 - Next.js開発サーバーが起動しているか確認
-- `npm run dev` を実行
+- `pnpm run dev` を実行
 
 **Stage 3-5の場合:**
 - バックエンドAPIが稼働しているか確認

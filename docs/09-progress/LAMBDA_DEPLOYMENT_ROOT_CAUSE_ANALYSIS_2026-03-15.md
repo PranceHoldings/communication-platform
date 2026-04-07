@@ -29,7 +29,7 @@
 
 ```bash
 cd infrastructure
-npx cdk deploy Prance-dev-ApiLambda
+pnpm exec cdk deploy Prance-dev-ApiLambda
 ```
 
 **動作:**
@@ -46,7 +46,7 @@ npx cdk deploy Prance-dev-ApiLambda
 ### 2. WebSocket専用デプロイ
 
 ```bash
-npm run deploy:websocket
+pnpm run deploy:websocket
 # → infrastructure/lambda/websocket/default/build.sh
 ```
 
@@ -77,14 +77,14 @@ rm -rf infrastructure/cdk.out
 rm -rf infrastructure/.cdk.staging
 
 # 再ビルド
-cd infrastructure && npx cdk deploy Prance-dev-ApiLambda
+cd infrastructure && pnpm exec cdk deploy Prance-dev-ApiLambda
 ```
 
 ### 仮説2: TypeScriptコンパイルが不完全
 
 **症状:**
 - `infrastructure/lib/**/*.js` ファイルが古い
-- `npm run build` が実行されていない
+- `pnpm run build` が実行されていない
 
 **検証方法:**
 ```bash
@@ -93,7 +93,7 @@ ls -lh infrastructure/lib/api-lambda-stack.js
 cat infrastructure/lib/api-lambda-stack.js | grep "OrganizationSettingsFunction" | head -5
 
 # 再コンパイル
-cd infrastructure && rm -rf lib/*.js && npm run build
+cd infrastructure && rm -rf lib/*.js && pnpm run build
 ```
 
 ### 仮説3: Lambda関数コードのハッシュ不一致
@@ -123,7 +123,7 @@ find . -type f -name "*.ts" -o -name "*.js" | sort | xargs cat | sha256sum
 ```bash
 # esbuildの出力確認
 cd infrastructure
-npx cdk synth Prance-dev-ApiLambda > /tmp/cdk-synth.yaml
+pnpm exec cdk synth Prance-dev-ApiLambda > /tmp/cdk-synth.yaml
 grep -A 20 "OrganizationSettingsFunction" /tmp/cdk-synth.yaml
 ```
 
@@ -144,7 +144,7 @@ git diff infrastructure/lambda/organizations/settings/index.ts
 
 ```bash
 # インフラのビルド
-cd infrastructure && npm run build
+cd infrastructure && pnpm run build
 
 # エラーがないことを確認
 echo $?  # 期待: 0
@@ -158,14 +158,14 @@ cd infrastructure
 rm -rf cdk.out .cdk.staging
 
 # 再ビルド
-npx cdk synth Prance-dev-ApiLambda
+pnpm exec cdk synth Prance-dev-ApiLambda
 ```
 
 ### Step 4: デプロイ実行
 
 ```bash
 # デプロイ
-npx cdk deploy Prance-dev-ApiLambda --require-approval never
+pnpm exec cdk deploy Prance-dev-ApiLambda --require-approval never
 
 # 成功確認
 # Output: "UPDATE_COMPLETE" が表示される
@@ -214,7 +214,7 @@ fi
 # Step 2: TypeScript compile check
 echo "2. Checking TypeScript compilation..."
 cd infrastructure
-if npm run build > /tmp/ts-build.log 2>&1; then
+if pnpm run build > /tmp/ts-build.log 2>&1; then
   echo "  ✅ TypeScript compilation successful"
 else
   echo "  ❌ TypeScript compilation failed"
@@ -229,7 +229,7 @@ echo "  ✅ CDK cache cleaned"
 
 # Step 4: CDK synth test
 echo "4. Testing CDK synth..."
-if npx cdk synth Prance-dev-ApiLambda > /tmp/cdk-synth.log 2>&1; then
+if pnpm exec cdk synth Prance-dev-ApiLambda > /tmp/cdk-synth.log 2>&1; then
   echo "  ✅ CDK synth successful"
 else
   echo "  ❌ CDK synth failed"
@@ -313,11 +313,11 @@ fi
 case $FUNCTION_TYPE in
   api)
     echo "Deploying API Lambda functions..."
-    cd infrastructure && npx cdk deploy $STACK_NAME --require-approval never
+    cd infrastructure && pnpm exec cdk deploy $STACK_NAME --require-approval never
     ;;
   websocket)
     echo "Deploying WebSocket Lambda functions..."
-    npm run deploy:websocket
+    pnpm run deploy:websocket
     ;;
   *)
     echo "❌ Invalid function type: $FUNCTION_TYPE"
@@ -355,10 +355,10 @@ echo "========================================="
 
 ```bash
 # API Lambda関数の安全デプロイ
-npm run lambda:deploy-safe api
+pnpm run lambda:deploy-safe api
 
 # WebSocket Lambda関数の安全デプロイ
-npm run lambda:deploy-safe websocket
+pnpm run lambda:deploy-safe websocket
 ```
 
 ---

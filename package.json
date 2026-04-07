@@ -9,12 +9,15 @@
     "infrastructure"
   ],
   "scripts": {
+    "preinstall": "node -e \"const e=process.env.npm_execpath||''; if(e && !e.includes('pnpm')){console.error('\\x1b[31m\\n[Error] npm は使用禁止です。pnpm を使用してください:\\n  pnpm install\\n\\x1b[0m');process.exit(1)}\"",
     "dev": "turbo run dev",
+    "dev:frontend": "turbo run dev --filter=@prance/web...",
+    "dev:infra": "turbo run dev --filter=infrastructure...",
     "dev:start": "bash scripts/start-dev-server.sh",
     "dev:stop": "bash scripts/stop-dev-server.sh",
-    "prebuild": "bash scripts/validate-i18n-keys.sh --warn && mkdir -p packages/database/node_modules && cp -r node_modules/@prisma packages/database/node_modules/ 2>/dev/null || true && npm run db:generate",
+    "prebuild": "bash scripts/validate-i18n-keys.sh --warn && mkdir -p packages/database/node_modules && cp -r node_modules/@prisma packages/database/node_modules/ 2>/dev/null || true && pnpm run db:generate",
     "build": "turbo run build",
-    "build:infra": "npm run build --workspace=infrastructure",
+    "build:infra": "pnpm run build --workspace=infrastructure",
     "build:lambda": "bash scripts/build-lambda-functions.sh",
     "build:clean": "bash scripts/clean-build.sh",
     "test": "turbo run test",
@@ -31,19 +34,31 @@
     "validate:api-responses": "bash scripts/validate-lambda-responses.sh",
     "validate:api-types": "bash scripts/validate-api-type-usage.sh",
     "validate:workspace-deps": "bash scripts/validate-workspace-dependencies.sh",
+    "validate:deps-size": "bash scripts/validate-dependency-size.sh",
+    "validate:monorepo": "bash scripts/validate-monorepo-boundaries.sh",
+    "validate:tests": "bash scripts/validate-test-implementation.sh",
+    "validate:design-principles": "pnpm run validate:deps-size && pnpm run validate:monorepo && pnpm run validate:tests",
+    "validate:runtime-configs": "bash scripts/validate-runtime-configs.sh",
+    "validate:runtime-configs:db": "bash scripts/validate-runtime-configs.sh --check-db",
+    "script:new": "bash scripts/new-script.sh",
+    "script:validate": "bash scripts/validate-new-script.sh",
+    "script:validate-all": "bash scripts/validate-shared-lib-usage.sh",
     "test:silence-prompt-timeout": "bash scripts/test-silence-prompt-timeout.sh",
     "clean": "turbo run clean && rm -rf node_modules",
     "clean:broken": "bash scripts/cleanup-broken-files.sh",
-    "clean:spaces": "bash scripts/clean-space-directories.sh",
+    "clean:spaces": "bash scripts/clean-space-files-and-dirs.sh",
     "clean:lambda": "bash infrastructure/scripts/pre-deploy-clean.sh",
-    "setup:dev": "npm install && npm run db:generate",
-    "db:generate": "cd packages/database && npx prisma generate",
-    "db:populate-defaults": "npx tsx scripts/populate-scenario-defaults.ts",
-    "seed:recording": "npx tsx scripts/seed-test-recording.ts",
-    "cdk:bootstrap": "cd infrastructure && npx cdk bootstrap",
-    "cdk:deploy": "echo '❌ Use npm run deploy:stack <name> or npm run deploy:websocket instead' && exit 1",
-    "cdk:deploy:unsafe": "cd infrastructure && npx cdk deploy --all",
-    "cdk:destroy": "cd infrastructure && npx cdk destroy --all",
+    "setup:dev": "pnpm install && pnpm run db:generate",
+    "install:all": "pnpm install",
+    "install:frontend": "pnpm install --filter=@prance/web --filter=@prance/database",
+    "install:infra": "pnpm install --filter=infrastructure --filter=@prance/database",
+    "db:generate": "npx prisma generate --schema=packages/database/prisma/schema.prisma",
+    "db:populate-defaults": "pnpm exec tsx scripts/populate-scenario-defaults.ts",
+    "seed:recording": "pnpm exec tsx scripts/seed-test-recording.ts",
+    "cdk:bootstrap": "cd infrastructure && pnpm exec cdk bootstrap",
+    "cdk:deploy": "echo '❌ Use pnpm run deploy:stack <name> or pnpm run deploy:websocket instead' && exit 1",
+    "cdk:deploy:unsafe": "cd infrastructure && pnpm exec cdk deploy --all",
+    "cdk:destroy": "cd infrastructure && pnpm exec cdk destroy --all",
     "deploy:check": "bash scripts/pre-deploy-check.sh",
     "deploy:stack": "bash scripts/cdk-deploy-wrapper.sh",
     "deploy:websocket": "bash scripts/deploy-lambda-websocket-manual.sh",
@@ -65,13 +80,13 @@
     "lambda:validate-zip": "bash scripts/validate-lambda-zip.sh",
     "lambda:test": "bash scripts/post-deploy-lambda-test.sh",
     "lambda:deploy-manual": "bash scripts/deploy-lambda-websocket-manual.sh",
-    "deploy:lambda": "cd infrastructure && npm run deploy:lambda",
+    "deploy:lambda": "cd infrastructure && pnpm run deploy:lambda",
     "build:deploy": "bash scripts/build-and-deploy.sh",
-    "pre-commit": "npm run validate:workspace-deps && npm run i18n:validate && npm run lambda:validate && npm run validate:api-responses && npm run consistency:validate && npm run lint && npm run typecheck",
+    "pre-commit": "pnpm run validate:workspace-deps && pnpm run i18n:validate && pnpm run lambda:validate && pnpm run validate:api-responses && pnpm run consistency:validate && pnpm run validate:runtime-configs && pnpm run lint && pnpm run typecheck",
     "env:validate": "bash scripts/validate-env.sh",
-    "env:consistency": "bash scripts/validate-env-consistency.sh",
-    "perf:test": "npx tsx scripts/performance-test.ts",
-    "perf:load": "npx tsx scripts/performance-test.ts --load 10",
+    "env:consistency": "bash scripts/validate-env-consistency-comprehensive.sh",
+    "perf:test": "pnpm exec tsx scripts/performance-test.ts",
+    "perf:load": "pnpm exec tsx scripts/performance-test.ts --load 10",
     "perf:metrics": "bash scripts/collect-metrics.sh",
     "perf:dashboard": "bash scripts/create-cloudwatch-dashboard.sh",
     "perf:alarms": "bash scripts/create-cloudwatch-alarms.sh"
@@ -89,13 +104,27 @@
     "prettier": "^3.2.4",
     "tsx": "^4.21.0",
     "turbo": "^1.12.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.7.3"
   },
   "engines": {
     "node": ">=22.0.0",
-    "npm": ">=10.0.0"
+    "pnpm": ">=10.0.0"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0"
+    "@prisma/client": "5.22.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "^19.2.4",
+      "react-dom": "^19.2.4",
+      "@types/react": "^19.2.14",
+      "@types/react-dom": "^19.2.3",
+      "typescript": "^5.7.3",
+      "@types/node": "^22.19.15"
+    }
+  },
+  "packageManager": "pnpm@10.32.1",
+  "optionalDependencies": {
+    "@next/swc-darwin-arm64": "^16.2.2"
   }
 }

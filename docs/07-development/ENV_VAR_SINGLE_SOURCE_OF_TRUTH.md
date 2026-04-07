@@ -316,7 +316,7 @@ bash scripts/sync-env-vars.sh
 
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 ### 環境変数を削除

@@ -323,7 +323,7 @@ interface SessionState {
 **検証方法:**
 ```bash
 # Lambda関数デプロイ
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # CloudWatch Logs確認
 aws logs tail /aws/lambda/prance-websocket-default-dev --follow
@@ -607,21 +607,21 @@ export interface VideoChunkErrorMessage extends WebSocketMessageBase {
 ```bash
 # 1. 型定義更新
 cd packages/shared
-npm run build
+pnpm run build
 
 # 2. Frontend更新
 cd apps/web
-npm run build
+pnpm run build
 
 # 3. Lambda関数デプロイ
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 
 # 4. E2Eテスト実行
-npm run test:e2e -- recording-reliability.spec.ts
+pnpm run test:e2e -- recording-reliability.spec.ts
 
 # 5. CloudWatch Metrics確認
-npm run perf:metrics
+pnpm run perf:metrics
 ```
 
 ---

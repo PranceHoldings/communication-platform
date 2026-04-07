@@ -242,12 +242,12 @@ DATABASE_URL=postgresql://pranceadmin:...@...cluster-....us-east-1.rds.amazonaws
 **Lambda関数デプロイ:**
 ```bash
 cd infrastructure
-npm run deploy:lambda
+pnpm run deploy:lambda
 ```
 
 **フロントエンド起動:**
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ---

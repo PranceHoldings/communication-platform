@@ -117,7 +117,7 @@ grep -rn "data-testid" app/dashboard/sessions/page.tsx
 1. **Run Stage 1 Tests** - Basic UI verification
    ```bash
    cd apps/web
-   npm run test:e2e:stage1
+   pnpm run test:e2e:stage1
    ```
 
 2. **Fix Any Selector Issues** - Adjust if tests fail
@@ -127,7 +127,7 @@ grep -rn "data-testid" app/dashboard/sessions/page.tsx
 ### Short-term (Optional)
 4. **Run Stage 2 Tests** - Mocked integration
    ```bash
-   npm run test:e2e:stage2
+   pnpm run test:e2e:stage2
    ```
 
 5. **Backend Setup for Stage 3** - Full E2E tests

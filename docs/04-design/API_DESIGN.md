@@ -1594,7 +1594,7 @@ function verifyWebhookSignature(payload, signature, secret) {
 ### JavaScript/TypeScript
 
 ```bash
-npm install @prance/sdk
+pnpm install @prance/sdk
 ```
 
 ```typescript

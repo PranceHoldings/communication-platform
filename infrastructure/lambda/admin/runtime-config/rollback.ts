@@ -22,26 +22,15 @@ export const handler = async (
   console.log('POST /api/v1/admin/runtime-config/:key/rollback - event:', JSON.stringify(event));
 
   try {
-    // Authorization check
-    const authHeader = event.headers.Authorization || event.headers.authorization;
-    if (!authHeader) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing authorization header' }),
-      };
-    }
-
-    const token = authHeader.replace('Bearer ', '');
+    // Extract user from API Gateway Lambda Authorizer context
     let payload: JWTPayload;
-
     try {
-      payload = verifyToken(token);
+      payload = verifyToken(event);
     } catch (error) {
       return {
         statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Invalid token' }),
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        body: JSON.stringify({ error: 'Unauthorized' }),
       };
     }
 
@@ -49,7 +38,7 @@ export const handler = async (
     if (payload.role !== 'SUPER_ADMIN' && payload.role !== 'CLIENT_ADMIN') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Insufficient permissions. Only SUPER_ADMIN and CLIENT_ADMIN can rollback runtime configuration.',
         }),
@@ -61,7 +50,7 @@ export const handler = async (
     if (!key) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({ error: 'Missing configuration key' }),
       };
     }
@@ -71,7 +60,7 @@ export const handler = async (
     if (!body.historyId) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({ error: 'Missing historyId in request body' }),
       };
     }
@@ -92,7 +81,7 @@ export const handler = async (
     if (!historyRecord) {
       return {
         statusCode: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'History record not found',
           historyId: body.historyId,
@@ -104,7 +93,7 @@ export const handler = async (
     if (historyRecord.key !== key) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'History record does not match configuration key',
           expected: key,
@@ -126,7 +115,7 @@ export const handler = async (
     if (!currentConfig) {
       return {
         statusCode: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Configuration not found',
           key,
@@ -138,7 +127,7 @@ export const handler = async (
     if (currentConfig.accessLevel === 'DEVELOPER_ONLY') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Access denied. This configuration is for developers only.',
         }),
@@ -148,7 +137,7 @@ export const handler = async (
     if (currentConfig.accessLevel === 'SUPER_ADMIN_READ_ONLY') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Access denied. This configuration is read-only for security reasons.',
         }),
@@ -158,7 +147,7 @@ export const handler = async (
     if (currentConfig.accessLevel === 'SUPER_ADMIN_READ_WRITE' && payload.role !== 'SUPER_ADMIN') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Access denied. Only SUPER_ADMIN can rollback this configuration.',
         }),
@@ -168,7 +157,7 @@ export const handler = async (
     if (currentConfig.accessLevel === 'CLIENT_ADMIN_READ_ONLY') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Access denied. This configuration is read-only.',
         }),
@@ -186,7 +175,7 @@ export const handler = async (
       where: { key },
       data: {
         value: rollbackValue,
-        updatedBy: payload.userId,
+        updatedBy: payload.sub,
       },
       select: {
         key: true,
@@ -209,7 +198,7 @@ export const handler = async (
         key,
         oldValue: currentConfig.value,
         newValue: rollbackValue,
-        changedBy: payload.userId,
+        changedBy: payload.sub,
         reason:
           body.reason ||
           `Rollback to previous value (history: ${body.historyId}, changed at: ${historyRecord.changedAt.toISOString()})`,
@@ -227,7 +216,7 @@ export const handler = async (
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
       body: JSON.stringify({
         data: updatedConfig,
         message: 'Runtime configuration rolled back successfully',
@@ -243,7 +232,7 @@ export const handler = async (
 
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
       body: JSON.stringify({
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error',

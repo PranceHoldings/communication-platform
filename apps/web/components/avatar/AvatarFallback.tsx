@@ -59,10 +59,10 @@ export function AvatarFallback({
 
       {/* Message */}
       <h3 style={{ margin: '0 0 10px 0', fontSize: '20px', fontWeight: 'bold' }}>
-        {t('avatar.fallback.title')}
+        {t('avatars.fallback.title')}
       </h3>
       <p style={{ margin: '0', fontSize: '14px', opacity: 0.9 }}>
-        {t('avatar.fallback.message')}
+        {t('avatars.fallback.message')}
       </p>
 
       {/* Error Details (dev mode) */}
@@ -79,7 +79,7 @@ export function AvatarFallback({
           }}
         >
           <summary style={{ cursor: 'pointer', marginBottom: '10px' }}>
-            {t('avatar.fallback.errorDetails')}
+            {t('avatars.fallback.errorDetails')}
           </summary>
           <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
             {error.message}

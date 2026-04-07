@@ -59,6 +59,10 @@
     "startFailed": "Failed to start session. Please try again.",
     "endFailed": "Failed to end session. Please try again."
   },
+  "unknown": {
+    "title": "Error",
+    "message": "Se produjo un error inesperado. Por favor, inténtelo de nuevo."
+  },
   "rateLimit": {
     "title": "Límite de velocidad excedido",
     "message": "Estás enviando audio demasiado rápido. Espera {seconds} segundos.",

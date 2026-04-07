@@ -46,7 +46,7 @@ AWS Cloud Development Kit (CDK) を使用したPranceプラットフォームの
 
 3. **デプロイ:**
    ```bash
-   npm run deploy:dev
+   pnpm run deploy:dev
    ```
 
 ---
@@ -60,10 +60,10 @@ AWS Cloud Development Kit (CDK) を使用したPranceプラットフォームの
 aws configure
 
 # 2. 依存関係インストール
-npm install
+pnpm install
 
 # 3. 1発デプロイ（すべて自動）
-npm run deploy:quick
+pnpm run deploy:quick
 ```
 
 これだけで完了です！🎉
@@ -79,17 +79,17 @@ npm run deploy:quick
 aws configure
 
 # AWS CDKの Bootstrap（初回のみ）
-npm run bootstrap
+pnpm run bootstrap
 ```
 
 ### ビルド
 
 ```bash
 # TypeScriptをコンパイル
-npm run build
+pnpm run build
 
 # ウォッチモード（開発時）
-npm run watch
+pnpm run watch
 ```
 
 ### デプロイ
@@ -100,19 +100,19 @@ npm run watch
 
 ```bash
 # 開発環境にデプロイ（デフォルト）
-npm run deploy:quick
+pnpm run deploy:quick
 
 # または環境を指定
-npm run deploy:dev        # 開発環境
-npm run deploy:staging    # ステージング環境
-npm run deploy:production # 本番環境
+pnpm run deploy:dev        # 開発環境
+pnpm run deploy:staging    # ステージング環境
+pnpm run deploy:production # 本番環境
 ```
 
 **スクリプトの動作:**
 
 1. ✅ AWS CLI・Node.js・npm確認
 2. ✅ AWS認証確認
-3. ✅ 依存関係インストール (npm ci)
+3. ✅ 依存関係インストール (pnpm install --frozen-lockfile)
 4. ✅ TypeScriptビルド
 5. ✅ CDK Synth
 6. ✅ CDK Bootstrap（初回のみ）
@@ -123,36 +123,36 @@ npm run deploy:production # 本番環境
 
 ```bash
 # すべてのスタックをデプロイ
-npm run deploy
+pnpm run deploy
 
 # 特定のスタックのみデプロイ
-npm run cdk -- deploy Prance-dev-Network
+pnpm run cdk -- deploy Prance-dev-Network
 
 # 複数スタックを指定
-npm run cdk -- deploy Prance-dev-Network Prance-dev-Cognito
+pnpm run cdk -- deploy Prance-dev-Network Prance-dev-Cognito
 
 # 環境を指定してデプロイ
-npm run cdk -- deploy --context environment=production
+pnpm run cdk -- deploy --context environment=production
 ```
 
 ### 確認・テスト
 
 ```bash
 # CloudFormationテンプレートの生成
-npm run synth
+pnpm run synth
 
 # スタックのリスト表示
-npm run cdk -- list
+pnpm run cdk -- list
 
 # 変更内容の確認（Diff）
-npm run diff
+pnpm run diff
 ```
 
 ### 削除
 
 ```bash
 # すべてのスタックを削除
-npm run destroy
+pnpm run destroy
 
 # ⚠️ 警告: 本番環境では実行しないでください
 ```
@@ -230,13 +230,13 @@ CDKはコンテキスト変数を使用して環境を切り替えます。
 
 ```bash
 # 開発環境（デフォルト）
-npm run deploy
+pnpm run deploy
 
 # ステージング環境
-npm run cdk -- deploy --context environment=staging
+pnpm run cdk -- deploy --context environment=staging
 
 # 本番環境
-npm run cdk -- deploy --context environment=production
+pnpm run cdk -- deploy --context environment=production
 ```
 
 ### 環境別の違い
@@ -279,28 +279,28 @@ npm run cdk -- deploy --context environment=production
 ```bash
 # node_modulesを再インストール
 rm -rf node_modules package-lock.json
-npm install
+pnpm install
 
 # TypeScriptキャッシュをクリア
 rm -rf cdk.out
-npm run build
+pnpm run build
 ```
 
 ### デプロイエラー
 
 ```bash
 # CDK Bootstrapが必要
-npm run bootstrap
+pnpm run bootstrap
 
 # スタック依存関係を確認
-npm run cdk -- list
+pnpm run cdk -- list
 
 # デプロイ状態を確認
-npm run status
+pnpm run status
 
 # 特定のスタックを削除して再デプロイ
-npm run cdk -- destroy Prance-dev-Lambda
-npm run cdk -- deploy Prance-dev-Lambda
+pnpm run cdk -- destroy Prance-dev-Lambda
+pnpm run cdk -- deploy Prance-dev-Lambda
 ```
 
 ### AWS認証エラー
@@ -314,7 +314,7 @@ aws configure
 
 # プロファイルを使用する場合
 export AWS_PROFILE=your-profile-name
-npm run deploy:dev
+pnpm run deploy:dev
 ```
 
 ### デプロイスクリプトエラー

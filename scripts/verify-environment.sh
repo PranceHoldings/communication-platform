@@ -7,22 +7,11 @@
 # Usage: bash scripts/verify-environment.sh
 # ==============================================================================
 
-set -e
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Counters
-PASSED=0
-FAILED=0
-
-echo "=========================================="
-echo "  Environment Verification"
-echo "=========================================="
-echo ""
+log_section "Environment Verification"
 
 # ==============================================================================
 # 1. Git Status
@@ -30,11 +19,11 @@ echo ""
 echo -n "✅ Checking Git working directory... "
 if git diff --quiet && git diff --cached --quiet; then
   echo -e "${GREEN}Clean${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
   echo -e "${YELLOW}Modified files detected${NC}"
   git status --short | head -10
-  ((PASSED++))
+  increment_counter PASSED
 fi
 
 # ==============================================================================
@@ -42,12 +31,12 @@ fi
 # ==============================================================================
 echo -n "✅ Checking Node.js version... "
 NODE_VERSION=$(node --version)
-if [[ "$NODE_VERSION" == v22.* ]]; then
+if [[ "$NODE_VERSION" == v22.* ]] || [[ "$NODE_VERSION" == v24.* ]]; then
   echo -e "${GREEN}$NODE_VERSION${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
-  echo -e "${RED}$NODE_VERSION (Expected: v22.x)${NC}"
-  ((FAILED++))
+  echo -e "${RED}$NODE_VERSION (Expected: v22.x or v24.x)${NC}"
+  increment_counter FAILED
 fi
 
 # ==============================================================================
@@ -56,7 +45,7 @@ fi
 echo -n "✅ Checking npm version... "
 NPM_VERSION=$(npm --version)
 echo -e "${GREEN}$NPM_VERSION${NC}"
-((PASSED++))
+increment_counter PASSED
 
 # ==============================================================================
 # 4. Environment File
@@ -65,11 +54,11 @@ echo -n "✅ Checking .env.local file... "
 if [ -f ".env.local" ]; then
   VAR_COUNT=$(grep -c "^[A-Z_]" .env.local 2>/dev/null || echo 0)
   echo -e "${GREEN}Found ($VAR_COUNT variables)${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
   echo -e "${RED}Not found${NC}"
   echo "   ❌ .env.local is missing. Copy from .env.example and configure."
-  ((FAILED++))
+  increment_counter FAILED
 fi
 
 # ==============================================================================
@@ -82,7 +71,7 @@ REQUIRED_VARS=(
   "DATABASE_URL"
   "AWS_REGION"
   "NEXT_PUBLIC_API_URL"
-  "NEXT_PUBLIC_WS_URL"
+  "NEXT_PUBLIC_WS_ENDPOINT"
   "JWT_SECRET"
 )
 
@@ -95,10 +84,10 @@ done
 
 if [ ${#MISSING_VARS[@]} -eq 0 ]; then
   echo -e "${GREEN}All set${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
   echo -e "${RED}Missing: ${MISSING_VARS[*]}${NC}"
-  ((FAILED++))
+  increment_counter FAILED
 fi
 
 # ==============================================================================
@@ -110,30 +99,85 @@ if command -v psql &> /dev/null; then
   if [ -n "$DB_HOST" ]; then
     if nc -z -w5 "$DB_HOST" 5432 &> /dev/null; then
       echo -e "${GREEN}Connected${NC}"
-      ((PASSED++))
+      increment_counter PASSED
     else
       echo -e "${YELLOW}Cannot reach database (might be sleeping)${NC}"
-      ((PASSED++))
+      increment_counter PASSED
     fi
   else
     echo -e "${YELLOW}Skipped (invalid DATABASE_URL)${NC}"
-    ((PASSED++))
+    increment_counter PASSED
   fi
 else
   echo -e "${YELLOW}Skipped (psql not installed)${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 fi
 
 # ==============================================================================
-# 7. Development Server Status
+# 7. Tailwind CSS Build (required before dev server)
+# ==============================================================================
+echo -n "✅ Checking Tailwind CSS... "
+TAILWIND_OUTPUT="$SCRIPT_DIR/../apps/web/styles/tailwind.output.css"
+if [ -f "$TAILWIND_OUTPUT" ]; then
+  echo -e "${GREEN}Built ($(du -h "$TAILWIND_OUTPUT" | cut -f1))${NC}"
+  increment_counter PASSED
+else
+  echo -e "${YELLOW}Not built - building now...${NC}"
+  TAILWIND_BUILD_SCRIPT="$SCRIPT_DIR/../apps/web/scripts/build-tailwind-host.sh"
+  if [ -f "$TAILWIND_BUILD_SCRIPT" ]; then
+    if bash "$TAILWIND_BUILD_SCRIPT" > /tmp/tailwind-build.log 2>&1; then
+      echo -e "   ${GREEN}✅ Tailwind CSS built successfully${NC}"
+      increment_counter PASSED
+    else
+      echo -e "   ${RED}❌ Tailwind CSS build failed${NC}"
+      tail -10 /tmp/tailwind-build.log | sed 's/^/   /'
+      increment_counter FAILED
+    fi
+  else
+    echo -e "   ${RED}❌ build-tailwind-host.sh not found${NC}"
+    increment_counter FAILED
+  fi
+fi
+
+# ==============================================================================
+# 8. Development Server (auto-start if not running)
 # ==============================================================================
 echo -n "✅ Checking development server... "
+SERVER_WAS_STARTED=false
 if lsof -ti:3000 &> /dev/null; then
   echo -e "${GREEN}Running on port 3000${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
-  echo -e "${YELLOW}Not running (will start automatically)${NC}"
-  ((PASSED++))
+  echo -e "${YELLOW}Not running - starting now...${NC}"
+  # Start dev server in background, redirect output to log
+  DEV_SERVER_LOG="/tmp/dev-server-$(date +%Y%m%d-%H%M%S).log"
+  (cd "$SCRIPT_DIR/.." && pnpm run dev > "$DEV_SERVER_LOG" 2>&1) &
+  DEV_SERVER_PID=$!
+  SERVER_WAS_STARTED=true
+
+  # Wait for server to be ready (up to 60 seconds)
+  echo -n "   Waiting for server to be ready"
+  READY=false
+  for i in $(seq 1 60); do
+    sleep 1
+    echo -n "."
+    if lsof -ti:3000 &> /dev/null; then
+      # Port is open, but wait a bit more for Next.js to finish initializing
+      sleep 2
+      READY=true
+      break
+    fi
+  done
+  echo ""
+
+  if [ "$READY" = true ]; then
+    echo -e "   ${GREEN}✅ Server started (log: $DEV_SERVER_LOG)${NC}"
+    increment_counter PASSED
+  else
+    echo -e "   ${RED}❌ Server failed to start within 60s (log: $DEV_SERVER_LOG)${NC}"
+    tail -20 "$DEV_SERVER_LOG" 2>/dev/null | sed 's/^/   /'
+    increment_counter FAILED
+  fi
 fi
 
 # ==============================================================================
@@ -142,35 +186,62 @@ fi
 echo -n "✅ Checking API endpoint configuration... "
 if [ -n "$NEXT_PUBLIC_API_URL" ]; then
   echo -e "${GREEN}$NEXT_PUBLIC_API_URL${NC}"
-  ((PASSED++))
+  increment_counter PASSED
 else
   echo -e "${RED}Not configured${NC}"
-  ((FAILED++))
+  increment_counter FAILED
+fi
+
+# ==============================================================================
+# 9. Browser Rendering Verification
+# ==============================================================================
+echo -n "✅ Checking browser rendering... "
+if lsof -ti:3000 &> /dev/null; then
+  RENDERING_SCRIPT="${SCRIPT_DIR}/verify-rendering.sh"
+
+  if [ -f "$RENDERING_SCRIPT" ]; then
+    # Step 1: HTTP + HTML content check
+    if bash "$RENDERING_SCRIPT" --skip-screenshot > /dev/null 2>&1; then
+      # Step 2: Screenshot capture
+      SCREENSHOT_FILE="/tmp/verify-rendering-$(date +%Y%m%d-%H%M%S).png"
+      if bash "$RENDERING_SCRIPT" --output "$SCREENSHOT_FILE" > /dev/null 2>&1; then
+        echo -e "${GREEN}Verified (HTTP + HTML + Screenshot)${NC}"
+        echo "   📸 Screenshot: $SCREENSHOT_FILE"
+      else
+        echo -e "${GREEN}Verified (HTTP + HTML)${NC}"
+        echo -e "   ${YELLOW}⚠ Screenshot skipped (Playwright not available)${NC}"
+      fi
+      increment_counter PASSED
+    else
+      # Show what went wrong
+      RENDER_OUTPUT=$(bash "$RENDERING_SCRIPT" --skip-screenshot 2>&1)
+      echo -e "${RED}Failed${NC}"
+      echo "$RENDER_OUTPUT" | grep -E "ERROR|error|failed|Failed" | head -5 | sed 's/^/   /'
+      increment_counter FAILED
+    fi
+  else
+    echo -e "${RED}verify-rendering.sh not found${NC}"
+    increment_counter FAILED
+  fi
+else
+  echo -e "${YELLOW}Skipped (server failed to start)${NC}"
+  increment_counter PASSED
 fi
 
 # ==============================================================================
 # Summary
 # ==============================================================================
 echo ""
-echo "=========================================="
-echo "  Summary"
-echo "=========================================="
-echo -e "Passed: ${GREEN}$PASSED${NC}"
-if [ $FAILED -gt 0 ]; then
-  echo -e "Failed: ${RED}$FAILED${NC}"
-else
-  echo -e "Failed: ${GREEN}$FAILED${NC}"
-fi
-echo ""
+print_counter_summary
 
 if [ $FAILED -eq 0 ]; then
-  echo -e "${GREEN}✅ All environment checks passed${NC}"
+  log_success "All environment checks passed"
   echo ""
   echo "You can now proceed with:"
-  echo "  npm run dev          # Start development server"
-  echo "  npm run test:e2e     # Run E2E tests"
+  echo "  pnpm run dev          # Start development server"
+  echo "  pnpm run test:e2e     # Run E2E tests"
   exit 0
 else
-  echo -e "${RED}❌ Some checks failed. Please fix the issues above.${NC}"
+  log_error "Some checks failed. Please fix the issues above."
   exit 1
 fi

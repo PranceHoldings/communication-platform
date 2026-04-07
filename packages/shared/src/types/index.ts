@@ -307,6 +307,7 @@ export interface WebSocketMessageBase {
 export interface AuthenticateMessage extends WebSocketMessageBase {
   type: 'authenticate';
   sessionId: string;
+  scenarioTitle?: string; // Optional: Scenario title for validation
   scenarioPrompt?: string; // Optional: System prompt from scenario configJson
   scenarioLanguage?: string; // Optional: Scenario language ('ja', 'en', etc.)
   initialGreeting?: string; // Optional: Initial AI greeting text from scenario
@@ -315,6 +316,15 @@ export interface AuthenticateMessage extends WebSocketMessageBase {
   enableSilencePrompt?: boolean; // Optional: Enable silence prompt from scenario
   silenceThreshold?: number; // Optional: Audio level threshold (0.0-1.0) to detect speech vs silence
   minSilenceDuration?: number; // Optional: Minimum silence duration in milliseconds to trigger speech_end
+}
+
+/**
+ * 認証失敗メッセージ（サーバー → クライアント）
+ */
+export interface AuthenticationFailedMessage extends WebSocketMessageBase {
+  type: 'authentication_failed';
+  error: string;
+  details?: Array<{ field: string; message: string; severity: string }>;
 }
 
 /**
@@ -329,6 +339,8 @@ export interface AuthenticatedMessage extends WebSocketMessageBase {
   enableSilencePrompt?: boolean; // Optional: Enable silence prompt
   silenceThreshold?: number; // Optional: Audio level threshold (0.0-1.0) to detect speech vs silence
   minSilenceDuration?: number; // Optional: Minimum silence duration in milliseconds to trigger speech_end
+  wsAckTimeoutMs?: number; // Optional: ACK timeout per retry attempt (ms), set by super admin via runtime configs
+  wsMaxRetries?: number; // Optional: Max ACK retry count before declaring chunk failure, set by super admin
 }
 
 /**
@@ -530,6 +542,25 @@ export interface SessionEndMessage extends WebSocketMessageBase {
 }
 
 /**
+ * 発話終了メッセージ（クライアント → サーバー）
+ * 無音検出時に送信し、サーバーに音声処理開始を通知する
+ */
+export interface SpeechEndMessage extends WebSocketMessageBase {
+  type: 'speech_end';
+  timestamp: number;
+}
+
+/**
+ * バリデーション警告メッセージ（サーバー → クライアント）
+ * 認証時のシナリオ設定に関する非致命的な警告
+ */
+export interface ValidationWarningServerMessage extends WebSocketMessageBase {
+  type: 'validation_warning';
+  warnings: ValidationWarning[];
+  timestamp: number;
+}
+
+/**
  * ユーザー発話メッセージ（クライアント → サーバー）
  */
 export interface UserSpeechMessage extends WebSocketMessageBase {
@@ -629,8 +660,10 @@ export interface AIFallbackMessage extends WebSocketMessageBase {
 export type ClientToServerMessage =
   | AuthenticateMessage
   | AudioChunkMessage
+  | AudioChunkRealtimeMessage
   | VideoChunkPartMessage
   | SessionEndMessage
+  | SpeechEndMessage
   | UserSpeechMessage
   | SilencePromptRequestMessage
   | PingMessage;
@@ -640,6 +673,7 @@ export type ClientToServerMessage =
  */
 export type ServerToClientMessage =
   | AuthenticatedMessage
+  | AuthenticationFailedMessage
   | AudioPartAckMessage
   | VideoChunkAckMessage
   | VideoChunkMissingMessage
@@ -658,7 +692,8 @@ export type ServerToClientMessage =
   | VersionMessage
   | RecordingPartialMessage
   | SessionLimitReachedMessage
-  | AIFallbackMessage;
+  | AIFallbackMessage
+  | ValidationWarningServerMessage;
 
 // ============================================================
 // 感情・表情解析

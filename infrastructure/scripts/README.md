@@ -12,7 +12,7 @@
 
 **自動実行されるタイミング:**
 
-- `npm run deploy` の前（`predeploy`フック）
+- `pnpm run deploy` の前（`predeploy`フック）
 - `./deploy.sh` の実行時
 
 **手動実行:**
@@ -117,7 +117,7 @@ chmod +x scripts/sync-env.js
 ## 🔄 動作フロー
 
 ```
-npm run deploy
+pnpm run deploy
     ↓
 predeploy フック実行
     ↓

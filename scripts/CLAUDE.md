@@ -3,8 +3,8 @@
 **親ドキュメント:** [../CLAUDE.md](../CLAUDE.md)
 **関連ドキュメント:** [../infrastructure/CLAUDE.md](../infrastructure/CLAUDE.md)
 
-**バージョン:** 1.1
-**最終更新:** 2026-03-31
+**バージョン:** 2.0
+**最終更新:** 2026-04-05
 
 ---
 
@@ -32,7 +32,7 @@
 
 ```bash
 # コミット前の全検証
-npm run pre-commit
+pnpm run pre-commit
 
 # 個別検証
 bash scripts/validate-env.sh
@@ -105,7 +105,7 @@ bash scripts/validate-env.sh
 
 ```bash
 cd infrastructure
-npm run lambda:predeploy
+pnpm run lambda:predeploy
 
 # または直接
 bash scripts/validate-lambda-dependencies.sh prance-scenarios-get-dev
@@ -122,7 +122,7 @@ bash scripts/validate-lambda-dependencies.sh prance-scenarios-get-dev
 
 ```bash
 # 依存関係破損時の修復
-npm run lambda:fix
+pnpm run lambda:fix
 ```
 
 #### validate-language-sync.sh
@@ -132,7 +132,7 @@ npm run lambda:fix
 **実行:**
 
 ```bash
-npm run validate:languages
+pnpm run validate:languages
 
 # または直接
 bash scripts/validate-language-sync.sh
@@ -159,10 +159,10 @@ bash scripts/validate-language-sync.sh
 **実行:**
 
 ```bash
-npm run validate:ui-settings
+pnpm run validate:ui-settings
 
 # 特定フィールドのみ検証
-npm run validate:ui-settings -- --field silencePromptTimeout
+pnpm run validate:ui-settings -- --field silencePromptTimeout
 ```
 
 **検証項目:**
@@ -328,6 +328,8 @@ bash clean-deploy.sh dev
 
 #### clean-space-files-and-dirs.sh
 
+**バージョン:** 2.0 (2026-04-03改善版)
+
 **用途:** ファイル名・ディレクトリ名に空白を含むアイテムを削除
 
 **背景:**
@@ -335,13 +337,25 @@ bash clean-deploy.sh dev
 - ビルドエラーの原因となるため、定期的な実行を推奨
 - 削除失敗時は自動的に `-broken-<timestamp>` に名称変更
 
+**v2.0の改善点:**
+- ✅ `.broken-*` ディレクトリ内部もスキャン対象に（従来は除外）
+- ✅ `find -depth` で深くネストしたディレクトリから削除
+- ✅ 4段階（ファイル）/5段階（ディレクトリ）の削除戦略
+  - Strategy 1: 通常削除 (`rm -rf`)
+  - Strategy 2: sudo削除 (`sudo rm -rf`)
+  - Strategy 3: パーミッション変更後削除 (`chmod 777 + rm`)
+  - Strategy 4: 個別削除 (`find -delete`, ディレクトリのみ)
+  - Strategy 5: リネームフォールバック (`.broken-*`)
+- ✅ 削除失敗ログを記録 (`/tmp/failed-deletions-*.log`)
+- ✅ 失敗時のユーザーガイダンス改善
+
 **実行:**
 
 ```bash
 # ドライラン（削除せずに確認のみ）
 bash scripts/clean-space-files-and-dirs.sh --dry-run
 
-# 通常実行（確認プロンプト付き）
+# 通常実行（確認プロンプト付き、.broken-* 含む）
 bash scripts/clean-space-files-and-dirs.sh
 
 # 確認なしで実行
@@ -352,18 +366,22 @@ bash scripts/clean-space-files-and-dirs.sh --all
 
 # 削除せず名称変更のみ
 bash scripts/clean-space-files-and-dirs.sh --rename-only
+
+# .broken-* を除外（v1.0互換モード）
+bash scripts/clean-space-files-and-dirs.sh --exclude-broken
 ```
 
 **処理フロー:**
-1. 空白を含むファイル・ディレクトリを検出
-2. 削除試行（通常 → sudo）
+1. 空白を含むファイル・ディレクトリを検出（深い階層から）
+2. 削除試行（4-5段階の戦略）
 3. 削除失敗時は `-broken-<timestamp>` に自動名称変更
-4. サマリーレポート表示
+4. 失敗したアイテムを `/tmp/failed-deletions-*.log` に記録
+5. サマリーレポート＋対処方法を表示
 
 **除外パターン:**
 - `node_modules/`
 - `.git/`
-- `*.broken-*` (既に名称変更済みのアイテム)
+- `*.broken-*` (オプション: `--exclude-broken` で除外可能)
 
 **デフォルトスキャンパス:**
 - `apps/`, `infrastructure/`, `packages/`, `scripts/`, `docs/`
@@ -382,7 +400,7 @@ Directories failed:    0
 ✅ All space-containing items cleaned successfully
 ```
 
-#### clean-space-directories.sh
+#### clean-space-files-and-dirs.sh
 
 **用途:** ディレクトリ名に空白を含むディレクトリを削除（ディレクトリのみ）
 
@@ -394,7 +412,7 @@ Directories failed:    0
 **実行:**
 
 ```bash
-bash scripts/clean-space-directories.sh
+bash scripts/clean-space-files-and-dirs.sh
 ```
 
 **⚠️ 注意:**
@@ -403,7 +421,20 @@ bash scripts/clean-space-directories.sh
 
 #### cleanup-broken-files.sh
 
+**バージョン:** 2.0 (2026-04-03改善版)
+
 **用途:** `.broken-*` パターンでリネームされたディレクトリを削除
+
+**v2.0の改善点:**
+- ✅ 5段階の強化された削除戦略
+  - Strategy 1: 通常削除 (`rm -rf`)
+  - Strategy 2: sudo削除 (`sudo rm -rf`)
+  - Strategy 3: アグレッシブモード（空白含むファイル先削除）
+  - Strategy 4: パーミッション変更後削除 (`chmod 777 + rm`)
+  - Strategy 5: 個別削除 (`find -delete`)
+- ✅ アグレッシブモード追加（`--aggressive`）
+- ✅ 削除失敗ログを記録 (`/tmp/cleanup-failed-*.log`)
+- ✅ 失敗時の詳細なガイダンス
 
 **実行:**
 
@@ -416,7 +447,18 @@ bash scripts/cleanup-broken-files.sh --all
 
 # 確認なしで実行
 bash scripts/cleanup-broken-files.sh --force
+
+# アグレッシブモード（.broken-* 内の空白含むファイルも削除）
+bash scripts/cleanup-broken-files.sh --all --aggressive
+
+# フルパワーモード（推奨）
+bash scripts/cleanup-broken-files.sh --all --aggressive --force
 ```
+
+**アグレッシブモードとは:**
+- `.broken-*` ディレクトリ内の空白を含むファイル・ディレクトリを先に削除
+- 今回のような「`dir 2/subdir 2/`」パターンに有効
+- 削除成功率が向上
 
 **削除対象パターン:**
 - `.broken-*`
@@ -431,6 +473,20 @@ bash scripts/cleanup-broken-files.sh --force
 ✗ 失敗: 0
 
 ✅ クリーンアップ完了
+```
+
+**失敗時の出力:**
+
+```
+✗ 失敗: 2
+
+失敗したアイテムのログ:
+  /tmp/cleanup-failed-20260403-143000.log
+
+推奨される対処方法:
+  1. アグレッシブモードで再試行
+  2. プロセスを確認・終了
+  3. システム再起動後に再試行
 ```
 
 ---
@@ -642,13 +698,399 @@ set +a
 
 ---
 
+## 📚 共有ライブラリシステム
+
+### 概要
+
+**バージョン:** Phase 4完了（2026-04-05）
+**カバレッジ:** 75/75 production scripts (100%)
+
+全てのproductionスクリプトは `scripts/lib/common.sh` 共有ライブラリを使用しています。
+
+### 提供機能
+
+#### 1. カラー出力
+```bash
+# 自動的にexportされる変数
+RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, BOLD, NC
+```
+
+#### 2. ログ関数
+```bash
+log_success "成功メッセージ"    # 緑のチェックマーク
+log_error "エラーメッセージ"    # 赤のX
+log_warning "警告メッセージ"    # 黄色の警告
+log_info "情報メッセージ"       # シアンの情報アイコン
+log_section "セクションタイトル" # セクションヘッダー
+log_step 1 "ステップ1"          # ステップ表示
+log_debug "デバッグメッセージ"  # DEBUG=true時のみ表示
+```
+
+#### 3. カウンター管理
+```bash
+reset_counters                  # 全カウンターを0にリセット
+increment_counter PASSED        # PASSEDカウンターをインクリメント
+increment_counter FAILED        # FAILEDカウンターをインクリメント
+increment_counter ERRORS        # ERRORSカウンターをインクリメント
+increment_counter WARNINGS      # WARNINGSカウンターをインクリメント
+increment_counter SKIPPED       # SKIPPEDカウンターをインクリメント
+print_counter_summary           # サマリーを表示して終了コード返却
+```
+
+#### 4. エラーハンドリング
+```bash
+die "エラーメッセージ" [exit_code]  # エラーメッセージを表示して終了
+require_command "aws" "brew install awscli"  # コマンドの存在確認
+require_file "/path/to/file" "hint"          # ファイルの存在確認
+require_directory "/path/to/dir" "hint"      # ディレクトリの存在確認
+require_env "DATABASE_URL" "hint"            # 環境変数の存在確認
+```
+
+#### 5. ユーティリティ
+```bash
+confirm "実行しますか？" "y"    # ユーザー確認プロンプト（デフォルトy）
+print_separator "=" 50          # 区切り線表示
+get_script_dir                  # スクリプトディレクトリパスを取得
+is_sourced                      # sourceされているか確認
+```
+
+### 新規スクリプト作成
+
+#### 🚀 クイックスタート（推奨）
+
+**スクリプトジェネレーターを使用:**
+
+```bash
+# インタラクティブに新規スクリプトを生成
+bash scripts/new-script.sh
+
+# プロンプトに従って入力:
+# 1. スクリプト名
+# 2. 簡単な説明
+# 3. 詳細な目的（オプション）
+# 4. セクション名（オプション）
+
+# → 自動的に共有ライブラリ統合済みスクリプトが生成されます
+```
+
+**出力:**
+- `scripts/your-script.sh` - 実行可能なスクリプト
+- ✅ 共有ライブラリ統合済み
+- ✅ 構文検証済み
+- ✅ 実行権限付与済み
+- ✅ テンプレートコメント付き
+
+**検証:**
+
+```bash
+# 新規スクリプトを厳密に検証
+bash scripts/validate-new-script.sh scripts/your-script.sh
+
+# 検証項目（7項目）:
+# [1/7] Shebang (#!/bin/bash)
+# [2/7] 共有ライブラリsource
+# [3/7] SCRIPT_DIR定義
+# [4/7] ハードコード色定義なし
+# [5/7] ログ関数使用
+# [6/7] カウンター管理使用
+# [7/7] Bash構文エラーなし
+```
+
+**Git Pre-commit Hook:**
+
+新規スクリプトをコミットする際、自動的に**厳密な検証**が実行されます:
+
+```bash
+git add scripts/your-script.sh
+git commit -m "feat: add new script"
+
+# 自動実行:
+# [8/8] Validating shared library usage in scripts...
+# 🆕 Performing strict validation on new scripts...
+# ✅ ✓ scripts/your-script.sh
+# ✅ All scripts use shared library correctly
+```
+
+#### テンプレートファイル
+
+**利用可能なテンプレート:**
+- `scripts/templates/script-template.sh` - 標準テンプレート
+- `scripts/templates/README.md` - テンプレート使用ガイド
+
+**手動でテンプレートを使用:**
+
+```bash
+# テンプレートをコピー
+cp scripts/templates/script-template.sh scripts/your-script.sh
+
+# プレースホルダーを置換
+sed -i 's/SCRIPT_NAME/your-script.sh/g' scripts/your-script.sh
+sed -i 's/Brief Description/Your description/g' scripts/your-script.sh
+sed -i 's/CREATION_DATE/2026-04-05/g' scripts/your-script.sh
+sed -i 's/SECTION_NAME/Your Section/g' scripts/your-script.sh
+
+# 実行権限付与
+chmod +x scripts/your-script.sh
+
+# 検証
+bash scripts/validate-new-script.sh scripts/your-script.sh
+```
+
+---
+
+### 新規スクリプト作成ガイドライン
+
+#### テンプレート構造
+
+```bash
+#!/bin/bash
+# ==============================================================================
+# Script Name - Brief Description
+# ==============================================================================
+# Purpose: Detailed purpose
+# Usage: bash scripts/script-name.sh [options]
+# ==============================================================================
+
+# Load shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
+# ==============================================================================
+# Configuration
+# ==============================================================================
+
+# Your configuration variables here
+
+# ==============================================================================
+# Main Logic
+# ==============================================================================
+
+log_section "Script Name"
+
+log_info "Starting process..."
+
+# Your logic here
+
+# Use counters
+if [ condition ]; then
+  log_success "Operation succeeded"
+  increment_counter PASSED
+else
+  log_error "Operation failed"
+  increment_counter FAILED
+fi
+
+# ==============================================================================
+# Summary
+# ==============================================================================
+
+print_counter_summary
+```
+
+#### ベストプラクティス
+
+1. **必ず共有ライブラリをsource**
+   ```bash
+   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+   source "$SCRIPT_DIR/lib/common.sh"
+   ```
+
+2. **色定義を独自に定義しない**
+   ```bash
+   # ❌ 禁止
+   RED='\033[0;31m'
+   GREEN='\033[0;32m'
+   
+   # ✅ 推奨
+   # 共有ライブラリの変数を直接使用
+   echo -e "${GREEN}Success${NC}"
+   # または
+   log_success "Success"
+   ```
+
+3. **ログ関数を使用**
+   ```bash
+   # ❌ 禁止
+   echo -e "${GREEN}✅ Success${NC}"
+   
+   # ✅ 推奨
+   log_success "Success"
+   ```
+
+4. **カウンター管理を使用**
+   ```bash
+   # ❌ 禁止
+   PASSED=0
+   ((PASSED++))
+   
+   # ✅ 推奨
+   increment_counter PASSED
+   ```
+
+5. **エラーハンドリング**
+   ```bash
+   # ✅ 推奨
+   require_command "aws" "brew install awscli"
+   require_file ".env.local" "Copy from .env.example"
+   require_env "DATABASE_URL" "Set in .env.local"
+   ```
+
+### 検証
+
+#### 共有ライブラリ使用検証
+
+**全スクリプトが共有ライブラリを使用しているか確認:**
+
+```bash
+bash scripts/validate-shared-lib-usage.sh
+```
+
+**期待される出力:**
+
+```
+==========================================
+  Shared Library Usage Validation
+==========================================
+ℹ️  Scanning scripts/ directory (excluding archive/)
+
+==========================================
+  Summary Report
+==========================================
+Total scripts analyzed: 75
+
+✅ Scripts using shared library (75):
+  ✓ validate-env.sh
+  ✓ detect-hardcoded-values.sh
+  ✓ ...
+
+==========================================
+  Validation Result
+==========================================
+✅ All scripts are using the shared library system correctly! 🎉
+
+Statistics:
+  • Scripts using shared lib: 75
+  • Special scripts (excluded): 0
+  • Total analyzed: 75
+```
+
+**検証項目:**
+- 共有ライブラリ source 確認
+- 古い色定義検出（`RED='\033[...'`）
+- 手動カウンター検出（`((PASSED++))`）
+- カスタムdie関数検出
+
+#### 構文チェック
+
+```bash
+# 個別スクリプト
+bash -n scripts/your-script.sh
+
+# 全スクリプト
+for script in scripts/*.sh; do
+  bash -n "$script" && echo "✓ $script"
+done
+```
+
+### アーカイブ
+
+**使用されていない古いスクリプトのアーカイブ:**
+
+```
+scripts/archive/
+├── pre-phase4-migration/        ← Phase 4移行前のスクリプト（63個）
+├── domain-migration-2024/       ← ドメイン移行スクリプト（5個）
+└── [その他のアーカイブ]
+```
+
+各アーカイブディレクトリにはREADME.mdが含まれ、目的・日時・注意事項が記載されています。
+
+---
+
+## 🔧 CI/CD統合
+
+### Pre-commit Hook設定
+
+**共有ライブラリ検証をGit pre-commit hookに統合済み（2026-04-05）**
+
+#### 自動チェック項目（8項目）
+
+```bash
+# Git pre-commit hook が自動実行するチェック
+[0/8] Schema-First Validation
+[1/8] Hardcoded Values
+[2/8] Environment Variables Consistency
+[3/8] Single Source of Truth (.env.local)
+[4/8] Duplication Management
+[5/8] ESLint on staged files
+[6/8] TypeScript Type Check
+[7/8] i18n Translation Keys Sync
+[8/8] Shared Library Usage ← 🆕 2026-04-05追加
+```
+
+#### Hook設定方法
+
+**既に設定済みの場合:**
+```bash
+# シンボリックリンク確認
+ls -la .git/hooks/pre-commit
+# → ../../scripts/git-hooks/pre-commit へのリンク
+```
+
+**新規設定（未設定の場合）:**
+```bash
+# シンボリックリンクを作成
+ln -sf ../../scripts/git-hooks/pre-commit .git/hooks/pre-commit
+
+# または install-git-hooks.sh を実行
+bash scripts/install-git-hooks.sh
+```
+
+**動作確認:**
+```bash
+# スクリプトファイルを変更してコミット
+echo "# test" >> scripts/test.sh
+git add scripts/test.sh
+git commit -m "test"
+
+# 期待される動作:
+# [8/8] Validating shared library usage in scripts...
+# ✅ All scripts use shared library correctly
+```
+
+#### Hook無効化（一時的）
+
+```bash
+# オプション1: --no-verify フラグ
+git commit --no-verify -m "message"
+
+# オプション2: 環境変数
+SKIP_PRECOMMIT=1 git commit -m "message"
+
+# ⚠️ 注意: 通常は無効化しないでください
+# 検証をスキップするとコード品質が低下します
+```
+
+#### Hook更新
+
+```bash
+# Git hookスクリプトを更新した場合
+# シンボリックリンクなので自動的に反映されます
+
+# 確認
+bash .git/hooks/pre-commit
+```
+
+---
+
 ## 📚 関連ドキュメント
 
 - [データベースクエリシステム](../docs/07-development/DATABASE_QUERY_SYSTEM.md)
 - [デプロイメント](../docs/08-operations/DEPLOYMENT.md)
 - [環境アーキテクチャ](../docs/02-architecture/ENVIRONMENT_ARCHITECTURE.md)
+- [共有ライブラリソースコード](lib/common.sh)
 
 ---
 
-**最終更新:** 2026-03-15
+**最終更新:** 2026-04-05
 **次回レビュー:** 新規スクリプト追加時

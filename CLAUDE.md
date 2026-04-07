@@ -340,7 +340,7 @@ docs/01-getting-started/             ← 初心者向けガイド
 ```bash
 # 統合デプロイスクリプト使用（自動化）
 cd infrastructure
-npm run deploy:dev-migration
+pnpm run deploy:dev-migration
 ```
 
 > 詳細手順: [infrastructure/CLAUDE.md - Rule 1](infrastructure/CLAUDE.md)
@@ -366,8 +366,8 @@ ln -s ../../scripts/prisma-schema-guard.sh .git/hooks/pre-commit
 **必須実行:**
 ```bash
 ./scripts/validate-env.sh          # 検証
-npm run env:consistency            # 整合性チェック
-pkill -f "next dev" && npm run dev  # Next.js再起動
+pnpm run env:consistency            # 整合性チェック
+pkill -f "next dev" && pnpm run dev  # Next.js再起動
 cd infrastructure && ./deploy.sh dev # Lambda反映
 ```
 
@@ -408,7 +408,7 @@ const url = `https://bucket.s3.${region}.${getAwsEndpointSuffix()}/${key}`;
 bash scripts/detect-hardcoded-values.sh
 
 # 環境変数整合性チェック（8項目）
-npm run env:consistency
+pnpm run env:consistency
 ```
 
 **新規環境変数追加手順:**
@@ -487,7 +487,7 @@ grep -r "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" | grep -v 
 2. 型定義（packages/shared）
 3. バックエンド実装（GET/UPDATE API + DEFAULT_SETTINGS）
 4. フロントエンド実装（型定義 + フォーム）
-5. 検証（`npm run validate:ui-settings`）
+5. 検証（`pnpm run validate:ui-settings`）
 
 **教訓:** デフォルト値は「最も便利な値」に設定（有効化 > 無効化）。
 
@@ -501,7 +501,7 @@ grep -r "from 'next-intl" apps/web --include="*.ts" --include="*.tsx" | grep -v 
 
 **✅ 正しい方法:**
 ```bash
-cd infrastructure && npm run deploy:lambda
+cd infrastructure && pnpm run deploy:lambda
 # CDKが自動実行: esbuildトランスパイル → bundling → 最適化zip → Lambda更新
 ```
 
@@ -629,7 +629,7 @@ grep -r "import.*useI18n.*from.*@/lib/i18n" apps/web --count  # useI18n使用確
 #### 9. 言語リスト同期検証
 **必須同期:** Frontend config/Lambda config/Message directories の3箇所
 
-**検証:** `npm run validate:languages`
+**検証:** `pnpm run validate:languages`
 
 > 詳細: [scripts/validate-language-sync.sh](scripts/validate-language-sync.sh)
 
@@ -640,9 +640,9 @@ grep -r "import.*useI18n.*from.*@/lib/i18n" apps/web --count  # useI18n使用確
 
 **コミット前必須:**
 ```bash
-npm run consistency:check    # 不整合検出
-npm run consistency:fix      # 自動修正
-npm run pre-commit           # 全チェック
+pnpm run consistency:check    # 不整合検出
+pnpm run consistency:fix      # 自動修正
+pnpm run pre-commit           # 全チェック
 ```
 
 > 詳細: [docs/04-design/CONSISTENCY_GUIDELINES.md](docs/04-design/CONSISTENCY_GUIDELINES.md)
@@ -675,17 +675,17 @@ grep -rn "^export interface \(User\|Avatar\)" apps/web infrastructure/lambda --i
 
 ```bash
 # 1. ローカル開発
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 
 # 2. ビルド・テスト
-npm run build
-npm run test
-npm run lint
+pnpm run build
+pnpm run test
+pnpm run lint
 
 # 3. インフラデプロイ (CDK)
 cd infrastructure
-npm run deploy:dev
+pnpm run deploy:dev
 
 # 4. コミット・プッシュ
 git add .
@@ -695,6 +695,200 @@ git push origin main
 
 ---
 
+## 5. 設計原則（Design Principles）
+
+### 🎯 コア原則（2026-04-02追加）
+
+このプロジェクトは以下の4つの設計原則に基づいて開発されています。これらは単なる「推奨事項」ではなく、**技術的負債を防ぎ、長期的な保守性を保証するための必須要件**です。
+
+#### 原則1: 依存関係の最小化（Minimize Dependencies）
+
+**Why:** 依存関係は「負債」である
+
+各依存関係は：
+- セキュリティリスク（脆弱性）
+- 保守コスト（バージョン更新）
+- ビルド時間の増加
+- バンドルサイズの増加
+- ベンダーロックインのリスク
+
+**How:**
+- 新規依存追加前に「自前実装できないか」検討（100行以内なら自己実装）
+- 大きなライブラリ（20+ 直接依存）は避ける
+- ユーティリティライブラリは必要な関数のみコピー
+- Tree-shakeable なライブラリを優先
+
+**Automation:** `pnpm run validate:deps-size`
+
+**判断基準:**
+
+| 実装時間 | 推奨アクション |
+|---------|--------------|
+| < 1時間 | ✅ 自己実装を推奨 |
+| 1-4時間 | ✅ 自己実装を検討 |
+| 4-8時間 | ⚠️ 軽量ライブラリを検討 |
+| > 8時間 | ✅ ライブラリ使用（慎重に選定） |
+
+**成功事例:**
+- shadcn/ui 採用（0 runtime dependencies） vs Material-UI（50+ dependencies）
+- 独自 i18n システム（200行、0 dependencies） vs next-intl（15+ dependencies）
+- native fetch（0 dependencies） vs Axios（5 dependencies）
+
+#### 原則2: ワークスペース境界の明確化（Clear Workspace Boundaries）
+
+**Why:** Monorepoでは境界が曖昧になりやすく、不適切な依存関係が技術的負債を生む
+
+**境界ルール:**
+
+```
+apps/web           → CAN import → packages/shared (types only)
+                   → CANNOT import → infrastructure
+
+infrastructure     → CAN import → packages/shared (types only)
+                   → CANNOT import → apps/web
+
+packages/shared    → CANNOT import → apps/web OR infrastructure
+                   → Only type definitions, no runtime logic
+
+packages/database  → CANNOT import → anything except Prisma
+```
+
+**How:**
+- apps/web: フロントエンド専用（React, Next.js, Browser APIs）
+- infrastructure: バックエンド専用（Lambda, AWS SDK, Prisma）
+- packages/shared: 型定義のみ（interfaces, types, enums, validation schemas）
+- 共有ロジックは各ワークスペースで独立実装
+
+**Automation:** `pnpm run validate:monorepo`
+
+**よくある違反例:**
+- ❌ Frontend が Lambda utility 関数を import → AWS SDK が bundle に含まれる（5MB増加）
+- ❌ Backend が React component を import → ビルドエラー
+- ❌ packages/shared に Prisma Client → Frontend が不要な依存を持つ
+
+**正しい実装:**
+```typescript
+// packages/shared/src/types/user.ts (✅ 型定義のみ)
+export interface User {
+  id: string;
+  email: string;
+}
+
+// apps/web/lib/api.ts (✅ Frontend)
+import type { User } from '@prance/shared';
+
+// infrastructure/lambda/auth/me/index.ts (✅ Backend)
+import type { User } from '@prance/shared';
+```
+
+#### 原則3: 実装を見てからテスト（Implementation First, Then Test）
+
+**Why:** 推測は必ず失敗する。コードが唯一の真実の源。
+
+**過去の失敗例（2026-04-01）:**
+- Next.js route を推測でテスト作成
+- 想定: `/dashboard/sessions`
+- 実際: `/sessions`（route group使用）
+- 結果: 3時間のデバッグ時間を浪費
+
+**How:**
+1. `find`/`grep` でルート・エンドポイントを確認
+2. 実装コードを読む
+3. URL/フィールド名/レスポンス構造を確認
+4. その後テストを書く
+
+**Automation:** `pnpm run validate:tests`
+
+**テスト作成前チェックリスト:**
+- [ ] 実装ファイルを見つけた（find/ls コマンド実行済み）
+- [ ] 実装コードを読んだ（推測していない）
+- [ ] URL/エンドポイントパスを確認した
+- [ ] リクエスト/レスポンス構造を確認した
+- [ ] データベーススキーマを確認した（該当する場合）
+
+**よくある推測ミス:**
+- Next.js route groups: `(dashboard)` は URL に含まれない
+- Prisma schema: `thumbnailUrl` vs `imageUrl`（フィールド名の推測）
+- API endpoints: `/api/v1/users/profile` vs `/api/v1/auth/me`（慣習による推測）
+
+#### 原則4: 自動化への投資（Invest in Automation）
+
+**Why:**
+- 1時間の自動化スクリプトが100時間のデバッグを防ぐ
+- 人間は繰り返し作業でミスをする（30%のエラー率）
+- 自動化は「再利用可能な知識」として蓄積される
+
+**投資判断基準:**
+
+| 条件 | 自動化するべきか |
+|------|----------------|
+| タスクが2回以上繰り返される | ✅ 検討 |
+| タスクがシステム正確性に重要 | ✅ 必須 |
+| タスクが人的エラーを起こしやすい | ✅ 必須 |
+| タスク失敗のコストが高い（1+ 時間） | ✅ 必須 |
+
+**ROI 実績:**
+
+| スクリプト | 作成時間 | 防止エラー数 | 節約時間 | ROI |
+|-----------|---------|-------------|---------|-----|
+| validate-workspace-dependencies.sh | 2時間 | 12+ (1週間) | 24時間 | 1200% |
+| validate-schema-interface-implementation.sh | 3時間 | 8+ (1週間) | 16時間 | 533% |
+| deploy.sh | 4時間 | 手動ミス10+ (1ヶ月) | 20時間 | 500% |
+
+**自動化パターン:**
+1. **Validation Scripts** - 設定エラー防止（validate-*.sh）
+2. **Integration Scripts** - 複数ステップの統合（deploy.sh）
+3. **Detection Scripts** - アンチパターン検出（detect-*.sh）
+4. **Fix Scripts** - 自動修正（fix-*.sh）
+
+**実装例:**
+```bash
+# 検証スクリプト例（200-300行が目安）
+scripts/validate-workspace-dependencies.sh  # 236行、8チェック
+scripts/validate-schema-interface-implementation.sh  # 220行、5チェック
+scripts/validate-env-consistency-comprehensive.sh  # 210行、6チェック
+```
+
+**Pre-commit hookに統合:**
+```bash
+# .git/hooks/pre-commit
+pnpm run validate:all  # すべての検証を自動実行
+```
+
+### 設計原則の適用方法
+
+**日常開発での使用:**
+
+1. **依存関係追加時:**
+   ```bash
+   pnpm info <package> dependencies  # 依存関係確認
+   pnpm run validate:deps-size       # 検証
+   ```
+
+2. **コード変更時:**
+   ```bash
+   pnpm run validate:monorepo  # 境界チェック
+   pnpm run validate:tests     # テスト実装チェック
+   ```
+
+3. **コミット前:**
+   ```bash
+   pnpm run pre-commit  # 全チェック自動実行
+   ```
+
+**コードレビュー時の確認:**
+- [ ] 新規依存は10個以下の直接依存か？
+- [ ] ワークスペース境界を侵犯していないか？
+- [ ] テストは実装を確認してから書いたか？
+- [ ] 繰り返し作業を自動化したか？
+
+**詳細ドキュメント:**
+- [memory/feedback_dependency_management.md](memory/feedback_dependency_management.md)
+- [memory/feedback_monorepo_rules.md](memory/feedback_monorepo_rules.md)
+- [memory/feedback_test_implementation.md](memory/feedback_test_implementation.md)
+- [memory/feedback_automation_investment.md](memory/feedback_automation_investment.md)
+
+---
 
 ## 6. プロジェクトステータス
 

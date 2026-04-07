@@ -20,6 +20,99 @@ import { DetailStats } from '@/components/analysis/detail-stats';
 import { ReportGenerator } from '@/components/reports/report-generator';
 import Link from 'next/link';
 
+function CompletedSessionView({
+  transcripts,
+  durationSec,
+  isError,
+}: {
+  transcripts: Transcript[];
+  durationSec: number | null;
+  isError?: boolean;
+}) {
+  const { t } = useI18n();
+
+  const formatDuration = (sec: number | null) => {
+    if (!sec) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">
+          {t('sessions.detail.transcript')}
+        </h2>
+        {durationSec != null && (
+          <span className="text-sm text-gray-500">
+            {t('sessions.detail.duration')}: {formatDuration(durationSec)}
+          </span>
+        )}
+      </div>
+
+      {/* Error or no recording notice */}
+      {isError && (
+        <div className="px-6 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2 text-sm text-red-700">
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          {t('sessions.detail.sessionError')}
+        </div>
+      )}
+      <div className="px-6 py-3 bg-yellow-50 border-b border-yellow-100 flex items-center gap-2 text-sm text-yellow-700">
+        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {t('sessions.detail.noRecording')}
+      </div>
+
+      {/* Transcript */}
+      <div className="divide-y max-h-[600px] overflow-y-auto">
+        {transcripts.length === 0 ? (
+          <div className="px-6 py-12 text-center text-gray-400">
+            <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <p>{t('sessions.detail.noTranscript')}</p>
+          </div>
+        ) : (
+          transcripts.map((item) => (
+            <div key={item.id} className={`px-6 py-4 flex gap-4 ${item.speaker === 'USER' ? 'bg-white' : 'bg-indigo-50'}`}>
+              <div className="shrink-0 mt-1">
+                {item.speaker === 'AI' ? (
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold">AI</span>
+                ) : (
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
+                    {t('sessions.transcript.you').substring(0, 2)}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-medium text-gray-500">
+                    {item.speaker === 'AI'
+                      ? t('sessions.transcript.ai')
+                      : t('sessions.transcript.you')}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {new Date(item.timestampStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-gray-800 text-sm whitespace-pre-wrap">{item.text}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SessionDetailPage() {
   const params = useParams();
   const { t } = useI18n();
@@ -39,6 +132,24 @@ export default function SessionDetailPage() {
   useEffect(() => {
     loadSessionData();
   }, [sessionId]);
+
+  // Auto-refresh when recording is still processing
+  useEffect(() => {
+    const isProcessing =
+      session &&
+      (session.status === 'COMPLETED' || session.status === 'ERROR') &&
+      session.recordings &&
+      session.recordings.length > 0 &&
+      (session.recordings[0] as Recording).processingStatus === 'PROCESSING';
+
+    if (!isProcessing) return;
+
+    const timer = setInterval(() => {
+      loadSessionData();
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [session]);
 
   const loadSessionData = async () => {
     setLoading(true);
@@ -175,11 +286,33 @@ export default function SessionDetailPage() {
       </div>
 
       {/* セッションプレイヤー or 録画プレイヤー */}
-      {session.status === 'COMPLETED' && session.recordings && session.recordings.length > 0 ? (
-        <RecordingPlayer
-          recording={session.recordings[0] as Recording}
-          transcripts={(session.transcripts as Transcript[]) || []}
-        />
+      {session.status === 'COMPLETED' || session.status === 'ERROR' ? (
+        session.recordings && session.recordings.length > 0 ? (
+          (session.recordings[0] as Recording).processingStatus === 'PROCESSING' ? (
+            <div className="bg-white rounded-lg shadow p-8">
+              <div className="flex flex-col items-center justify-center gap-4">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                <p className="text-lg font-medium text-gray-700">
+                  {t('sessions.player.recording.messages.processing')}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {t('sessions.player.recording.messages.processingDescription')}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <RecordingPlayer
+              recording={session.recordings[0] as Recording}
+              transcripts={(session.transcripts as Transcript[]) || []}
+            />
+          )
+        ) : (
+          <CompletedSessionView
+            transcripts={(session.transcripts as Transcript[]) || []}
+            durationSec={session.durationSec}
+            isError={session.status === 'ERROR'}
+          />
+        )
       ) : (
         <SessionPlayer session={session} avatar={avatar} scenario={scenario} />
       )}
