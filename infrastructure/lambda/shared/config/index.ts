@@ -12,6 +12,7 @@ import {
   POLLY_DEFAULTS,
   ELEVENLABS_DEFAULTS,
   AZURE_SPEECH_DEFAULTS,
+  AZURE_TTS_DEFAULTS,
   CLOUDFRONT_DEFAULTS,
   JWT_DEFAULTS,
   APP_DEFAULTS,
@@ -67,12 +68,16 @@ export const ELEVENLABS_CONFIG = {
 };
 
 // ============================================================
-// Azure Speech Services Configuration
+// Azure Speech Services Configuration (STT + TTS)
 // ============================================================
 
 export const AZURE_SPEECH_CONFIG = {
   get KEY() { return getRequiredEnv('AZURE_SPEECH_KEY'); },
   get REGION() { return getEnv('AZURE_SPEECH_REGION', AZURE_SPEECH_DEFAULTS.REGION); },
+};
+
+export const AZURE_TTS_CONFIG = {
+  get VOICE_NAME() { return getEnv('AZURE_TTS_VOICE_NAME', AZURE_TTS_DEFAULTS.VOICE_NAME); },
 };
 
 // ============================================================
@@ -146,6 +151,7 @@ export const CONFIG = {
   POLLY: POLLY_CONFIG,
   ELEVENLABS: ELEVENLABS_CONFIG,
   AZURE_SPEECH: AZURE_SPEECH_CONFIG,
+  AZURE_TTS: AZURE_TTS_CONFIG,
   CLOUDFRONT: CLOUDFRONT_CONFIG,
   JWT: JWT_CONFIG,
   APP: APP_CONFIG,

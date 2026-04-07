@@ -60,7 +60,7 @@ const SUPPORTED_LANGUAGES = ['ja', 'en', 'zh-CN', 'zh-TW', 'ko', 'es', 'pt', 'fr
 const AWS_REGION = getAwsRegion();
 const BEDROCK_REGION = getBedrockRegion();
 const BEDROCK_MODEL_ID = getRequiredEnv('BEDROCK_MODEL_ID');
-const ELEVENLABS_MODEL_ID = getRequiredEnv('ELEVENLABS_MODEL_ID');
+const AZURE_TTS_VOICE_NAME = getRequiredEnv('AZURE_TTS_VOICE_NAME');
 const STT_LANGUAGE = getRequiredEnv('STT_LANGUAGE');
 const STT_AUTO_DETECT_LANGUAGES = getSttAutoDetectLanguages();
 const SCENARIO_LANGUAGE = SUPPORTED_LANGUAGES[0]; // First supported language ('ja')
@@ -77,8 +77,6 @@ const S3_BUCKET = getS3Bucket();
 // AI/Audio services configuration
 const AZURE_SPEECH_KEY = getRequiredEnv('AZURE_SPEECH_KEY');
 const AZURE_SPEECH_REGION = getRequiredEnv('AZURE_SPEECH_REGION');
-const ELEVENLABS_API_KEY = getRequiredEnv('ELEVENLABS_API_KEY');
-const ELEVENLABS_VOICE_ID = getRequiredEnv('ELEVENLABS_VOICE_ID');
 
 // CloudFront configuration (lazy evaluation - fetched when VideoProcessor is initialized)
 const CLOUDFRONT_DOMAIN = getCloudFrontDomain();
@@ -104,9 +102,9 @@ let audioProcessor: AudioProcessor | null = null;
 function getAudioProcessor(): AudioProcessor {
   if (!audioProcessor) {
     // Check if required environment variables are set
-    if (!AZURE_SPEECH_KEY || !ELEVENLABS_API_KEY) {
+    if (!AZURE_SPEECH_KEY) {
       throw new Error(
-        'Audio processing API keys not configured. Set AZURE_SPEECH_KEY and ELEVENLABS_API_KEY environment variables.'
+        'Audio processing API keys not configured. Set AZURE_SPEECH_KEY environment variable.'
       );
     }
 
@@ -127,9 +125,7 @@ function getAudioProcessor(): AudioProcessor {
     audioProcessor = new AudioProcessor({
       azureSpeechKey: AZURE_SPEECH_KEY,
       azureSpeechRegion: AZURE_SPEECH_REGION,
-      elevenLabsApiKey: ELEVENLABS_API_KEY,
-      elevenLabsVoiceId: ELEVENLABS_VOICE_ID,
-      elevenLabsModelId: ELEVENLABS_MODEL_ID,
+      azureTtsVoiceName: AZURE_TTS_VOICE_NAME,
       bedrockRegion: BEDROCK_REGION,
       bedrockModelId: BEDROCK_MODEL_ID,
       s3Bucket: S3_BUCKET,
@@ -960,7 +956,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             timestamp: Date.now(),
           });
 
-          // Generate TTS for the prompt using ElevenLabs
+          // Generate TTS for the prompt using Azure TTS
           const silenceSessionId = connectionData?.sessionId || 'unknown';
           const audioProc = getAudioProcessor();
 
@@ -2234,7 +2230,7 @@ async function handleAudioProcessingStreaming(
 
       // Determine error type
       let errorType: 'ai_generation' | 'tts_generation' | 'stt_recognition' | 'timeout' = 'ai_generation';
-      if (errorMessage.includes('TTS') || errorMessage.includes('ElevenLabs')) {
+      if (errorMessage.includes('TTS') || errorMessage.includes('Azure TTS')) {
         errorType = 'tts_generation';
       } else if (errorMessage.includes('STT') || errorMessage.includes('Azure Speech')) {
         errorType = 'stt_recognition';

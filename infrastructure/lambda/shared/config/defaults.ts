@@ -42,7 +42,7 @@ export const POLLY_DEFAULTS = {
 } as const;
 
 // ============================================================
-// ElevenLabs (TTS Primary) Defaults
+// ElevenLabs (TTS - Legacy, replaced by Azure TTS) Defaults
 // ============================================================
 
 export const ELEVENLABS_DEFAULTS = {
@@ -52,12 +52,19 @@ export const ELEVENLABS_DEFAULTS = {
 } as const;
 
 // ============================================================
-// Azure Speech Services (STT) Defaults
+// Azure Speech Services (STT + TTS) Defaults
 // ============================================================
 
 export const AZURE_SPEECH_DEFAULTS = {
   REGION: 'eastus',
   KEY: '',
+} as const;
+
+// Azure TTS voice names (Neural voices, high quality)
+// Japanese: ja-JP-NanamiNeural (F), ja-JP-KeitaNeural (M)
+// English:  en-US-JennyNeural (F), en-US-GuyNeural (M)
+export const AZURE_TTS_DEFAULTS = {
+  VOICE_NAME: 'ja-JP-NanamiNeural', // Default: Japanese female neural voice
 } as const;
 
 // ============================================================

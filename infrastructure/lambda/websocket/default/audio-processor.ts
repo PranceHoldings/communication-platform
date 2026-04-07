@@ -4,7 +4,7 @@
  */
 
 import { AzureSpeechToText } from '../../shared/audio/stt-azure';
-import { ElevenLabsTextToSpeech } from '../../shared/audio/tts-elevenlabs';
+import { AzureTextToSpeech } from '../../shared/audio/tts-azure';
 import { BedrockAI } from '../../shared/ai/bedrock';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { logError, logWarning } from '../../shared/utils/error-logger';
@@ -20,9 +20,7 @@ const AUDIO_FORMAT = getRequiredEnv('VIDEO_FORMAT'); // Use VIDEO_FORMAT as audi
 export interface AudioProcessorConfig {
   azureSpeechKey: string;
   azureSpeechRegion: string;
-  elevenLabsApiKey: string;
-  elevenLabsVoiceId: string;
-  elevenLabsModelId?: string;
+  azureTtsVoiceName: string;
   bedrockRegion: string;
   bedrockModelId: string;
   s3Bucket: string;
@@ -63,7 +61,7 @@ export interface ProcessAudioResult {
 
 export class AudioProcessor {
   private stt: AzureSpeechToText;
-  private tts: ElevenLabsTextToSpeech;
+  private tts: AzureTextToSpeech;
   private ai: BedrockAI;
   private s3: S3Client;
   private s3Bucket: string;
@@ -82,10 +80,10 @@ export class AudioProcessor {
     });
 
     // Initialize TTS
-    this.tts = new ElevenLabsTextToSpeech({
-      apiKey: config.elevenLabsApiKey,
-      voiceId: config.elevenLabsVoiceId,
-      modelId: config.elevenLabsModelId,
+    this.tts = new AzureTextToSpeech({
+      subscriptionKey: config.azureSpeechKey,
+      region: config.azureSpeechRegion,
+      voiceName: config.azureTtsVoiceName,
     });
 
     // Initialize AI
@@ -637,7 +635,7 @@ export class AudioProcessor {
         await callbacks.onAIComplete(aiResponse);
       }
 
-      // Step 4: Synthesize AI response to speech using ElevenLabs WebSocket Streaming
+      // Step 4: Synthesize AI response to speech using Azure TTS streaming
       console.log('[AudioProcessor] Starting TTS WebSocket streaming...');
 
       // Convert Markdown to plain text for TTS
@@ -680,7 +678,7 @@ export class AudioProcessor {
 
       // Combine all TTS chunks into single audio buffer
       const ttsAudio = Buffer.concat(ttsAudioChunks);
-      const ttsContentType = 'audio/mpeg'; // ElevenLabs returns MP3
+      const ttsContentType = 'audio/mpeg'; // Azure TTS returns MP3
 
       // Callback: TTS complete
       if (callbacks.onTTSComplete) {

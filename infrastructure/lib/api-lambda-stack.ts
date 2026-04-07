@@ -1387,6 +1387,8 @@ export class ApiLambdaStack extends cdk.Stack {
         // 機密情報はSecrets Managerから取得、非機密情報はデフォルト値使用
         AZURE_SPEECH_KEY: azureSpeechSecret.secretValueFromJson('subscriptionKey').unsafeUnwrap(),
         AZURE_SPEECH_REGION: azureSpeechSecret.secretValueFromJson('region').unsafeUnwrap(),
+        AZURE_TTS_VOICE_NAME: process.env.AZURE_TTS_VOICE_NAME!,
+        // ElevenLabs (Legacy - kept for potential fallback, not used by AudioProcessor)
         ELEVENLABS_API_KEY: elevenLabsSecret.secretValueFromJson('apiKey').unsafeUnwrap(),
         ELEVENLABS_VOICE_ID: elevenLabsSecret.secretValueFromJson('voiceId').unsafeUnwrap(),
         ELEVENLABS_MODEL_ID: elevenLabsSecret.secretValueFromJson('modelId').unsafeUnwrap(),
