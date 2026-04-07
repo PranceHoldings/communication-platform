@@ -113,6 +113,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [token, setToken] = useState<string | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const isPlayingAudioRef = useRef(false); // Ref for real-time access in callbacks
+  const audioStoppedByUserRef = useRef(false); // Set true when user stops session, suppresses onerror toast
   const [pendingSessionEnd, setPendingSessionEnd] = useState(false);
   const [shouldSendSessionEnd, setShouldSendSessionEnd] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -297,7 +298,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           }
         });
       } else if (message.type === 'transcript_final') {
-        // 確定トランスクリプト
+        // セッション停止済みの場合、UIへの追加とAI処理をスキップ
+        if (message.speaker === 'USER' && pendingSessionEnd) {
+          console.log('[SessionPlayer] Transcript received after session stop, skipping UI update and sending session_end');
+          setIsProcessing(false);
+          setProcessingStage('idle');
+          setProcessingMessage('');
+          if (isConnectedRef.current && endSessionRef.current) {
+            endSessionRef.current();
+          }
+          return;
+        }
+
+        // 確定トランスクリプトをUIに追加
         setTranscript(prev => {
           const filtered = prev.filter(item => !item.partial || item.speaker !== message.speaker);
           return [
@@ -312,37 +325,12 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           ];
         });
 
-        // STT complete, check if session was stopped by user
+        // 通常のフロー: AI処理に進む
         if (message.speaker === 'USER') {
-          if (pendingSessionEnd) {
-            // セッション停止後の文字起こし - AI処理はスキップ
-            console.log(
-              '[SessionPlayer] Transcript received after session stop, sending session_end'
-            );
-            setIsProcessing(false);
-            setProcessingStage('idle');
-            setProcessingMessage('');
-
-            // Send session_end immediately
-            if (isConnectedRef.current && endSessionRef.current) {
-              endSessionRef.current();
-            }
-            return;
-          }
-
-          // 通常のフロー: AI処理に進む
           setProcessingStage('ai');
           setProcessingMessage('');
-          // Reset isProcessing flag - speech_end processing is complete
           setIsProcessing(false);
           console.log('[SessionPlayer] speech_end processing complete, silence timer can resume');
-        }
-
-        // If session end is pending, trigger it now after receiving transcript
-        if (pendingSessionEnd && message.speaker === 'USER') {
-          console.log('[SessionPlayer] Transcript received, will send session_end');
-          setPendingSessionEnd(false);
-          setShouldSendSessionEnd(true);
         }
       }
     },
@@ -415,16 +403,19 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         }
         processingStartTimeRef.current = null;
 
-        // Check if this is the initial greeting (first AI message)
+        // Mark initial greeting as complete when text arrives.
+        // The silence timer already pauses while isPlayingAudio=true, so it's safe to enable
+        // immediately — if audio follows, the timer waits; if TTS fails (no audio), timer starts.
         if (!initialGreetingCompleted) {
+          setInitialGreetingCompleted(true);
           console.log(
-            '[SessionPlayer] Initial AI greeting completed, silence timer will start after audio playback'
+            '[SessionPlayer] Initial AI greeting text received — initialGreetingCompleted=true. ' +
+            'Silence timer will wait for audio to finish (isPlayingAudio gates the timer).'
           );
-          // Note: We'll set initialGreetingCompleted=true when audio playback finishes
         }
       }
     },
-    [initialGreetingCompleted]
+    [initialGreetingCompleted, setInitialGreetingCompleted]
   );
 
   const handleProcessingUpdate = useCallback(
@@ -613,9 +604,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             URL.revokeObjectURL(audioUrl);
           }
 
-          // MEDIA_ERR_ABORTED (code 1) happens when src is cleared on session stop — expected, not an error
-          const isAborted = audioRef.current?.error?.code === 1 || !audioRef.current?.src;
+          // MEDIA_ERR_ABORTED (code 1) or intentional stop (audioStoppedByUserRef) — expected, not an error
+          const isAborted =
+            audioStoppedByUserRef.current ||
+            audioRef.current?.error?.code === 1 ||
+            status === 'COMPLETED';
           if (isAborted) {
+            audioStoppedByUserRef.current = false; // reset after handling
             console.log('[SessionPlayer] Audio playback aborted (session stopped)');
           } else {
             console.error('[SessionPlayer] Audio playback error:', error);
@@ -707,6 +702,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         setProcessingStage('idle');
         setProcessingMessage('');
         console.log('[SessionPlayer] Processing flags reset, silence timer can resume');
+        // If user stopped session, finalize it even though there was no audio
+        if (pendingSessionEnd) {
+          console.log('[SessionPlayer] Non-critical error after session stop - sending session_end');
+          if (isConnectedRef.current && endSessionRef.current) {
+            endSessionRef.current();
+          }
+        }
         return; // Don't show toast for expected silence
       }
 
@@ -745,49 +747,45 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           : undefined,
       });
     },
-    [getErrorMessage, getMicrophoneInstructions, t]
+    [pendingSessionEnd, getErrorMessage, getMicrophoneInstructions, t]
   );
 
   const handleNoSpeechDetected = useCallback(
     (_message: { message: string; timestamp: number }) => {
-      // Not an error - just guidance for user
-      console.log('[SessionPlayer] No speech detected - providing user guidance');
-
       // Reset processing flag
       setIsProcessing(false);
       setProcessingStage('idle');
       setProcessingMessage('');
 
-      // Show user-friendly guidance message
-      const guidanceMessage = t('sessions.player.noSpeech.guidance', {
-        defaultValue: 'No speech detected. Please speak louder or move closer to your microphone.',
-      });
+      // If session stop was requested, send session_end now (no transcript will arrive)
+      if (pendingSessionEnd) {
+        console.log('[SessionPlayer] No speech detected after session stop - sending session_end');
+        if (isConnectedRef.current && endSessionRef.current) {
+          endSessionRef.current();
+        }
+        return;
+      }
 
-      toast.warning(guidanceMessage, {
+      // Not stopping — just guidance for user (audio too quiet or no speech detected)
+      console.log('[SessionPlayer] No speech detected - providing user guidance');
+
+      toast.warning(t('sessions.player.noSpeech.guidance'), {
         duration: 6000,
         action: {
-          label: t('sessions.player.noSpeech.showTips', { defaultValue: 'Show Tips' }),
+          label: t('sessions.player.noSpeech.showTips'),
           onClick: () => {
             const tips = [
-              t('sessions.player.noSpeech.tip1', {
-                defaultValue: '• Speak louder and more clearly',
-              }),
-              t('sessions.player.noSpeech.tip2', {
-                defaultValue: '• Move closer to your microphone (10-20cm)',
-              }),
-              t('sessions.player.noSpeech.tip3', {
-                defaultValue: '• Check your microphone volume settings',
-              }),
-              t('sessions.player.noSpeech.tip4', {
-                defaultValue: '• Ensure your microphone is not muted',
-              }),
+              t('sessions.player.noSpeech.tip1'),
+              t('sessions.player.noSpeech.tip2'),
+              t('sessions.player.noSpeech.tip3'),
+              t('sessions.player.noSpeech.tip4'),
             ].join('\n');
             toast.info(tips, { duration: 10000 });
           },
         },
       });
     },
-    [t]
+    [pendingSessionEnd, t]
   );
 
   // Phase 1.6.1 Day 36: Handle session limit reached
@@ -1718,6 +1716,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
 
       // 2b. Stop any currently playing AI audio immediately
       if (audioRef.current) {
+        audioStoppedByUserRef.current = true; // suppress onerror toast for this intentional stop
         audioRef.current.pause();
         audioRef.current.src = '';
         setIsPlayingAudio(false);
@@ -1867,8 +1866,27 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       if (status === 'ACTIVE' || status === 'PAUSED' || status === 'READY') {
         console.log('[SessionPlayer] Browser closing - triggering session cleanup');
 
-        // Trigger session stop immediately
+        // Trigger session stop via WebSocket (best-effort)
         handleStop();
+
+        // Fallback: fire a keepalive REST request so the session is ended
+        // even if the WebSocket is already disconnected or closes before the
+        // message reaches the server.
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+        if (token && apiBase && session?.id) {
+          fetch(`${apiBase}/sessions/${session.id}/end`, { // keepalive-fetch: intentional direct fetch for beforeunload
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({}),
+            keepalive: true, // ensures the request completes even after page unload
+          }).catch(() => {
+            // Silently ignore — the disconnect Lambda is the final safety net
+          });
+        }
 
         // Show browser confirmation dialog to give time for cleanup
         event.preventDefault();
@@ -1895,7 +1913,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [status, handleStop]);
+  }, [status, handleStop, session]);
 
   // 録画機能 - ビデオチャンクハンドラー (Phase 1.6.1: ACK tracking with retry)
   const handleVideoChunk = useCallback(
@@ -2105,7 +2123,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           startVideoRecording().catch(err => {
             console.error('[SessionPlayer] Failed to start video recording:', err);
             console.error('[SessionPlayer] Video recording error details:', err.message, err.stack);
-            toast.warning('ビデオ録画の開始に失敗しました（音声は正常に動作します）');
+            toast.warning(t('sessions.player.recording.messages.startFailed'));
           });
         } else {
           console.warn('[SessionPlayer] Composite canvas not ready, skipping video recording');
@@ -2765,6 +2783,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
               </button>
               <button
                 onClick={handleStop}
+                data-testid="stop-button"
                 className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                 aria-label={t('sessions.player.actions.stop') + ' (Space or Escape)'}
               >
@@ -2786,7 +2805,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           )}
 
           {status === 'COMPLETED' && (
-            <div className="text-center py-2">
+            <div className="text-center py-2" data-testid="session-ended">
               <p className="text-lg font-semibold text-gray-700">
                 {t('sessions.player.completed.title')}
               </p>

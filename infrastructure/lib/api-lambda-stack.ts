@@ -45,6 +45,7 @@ export class ApiLambdaStack extends cdk.Stack {
   public readonly listSessionsFunction: nodejs.NodejsFunction;
   public readonly createSessionFunction: nodejs.NodejsFunction;
   public readonly getSessionFunction: nodejs.NodejsFunction;
+  public readonly endSessionFunction: nodejs.NodejsFunction;
   public readonly listScenariosFunction: nodejs.NodejsFunction;
   public readonly createScenarioFunction: nodejs.NodejsFunction;
   public readonly getScenarioFunction: nodejs.NodejsFunction;
@@ -725,6 +726,21 @@ export class ApiLambdaStack extends cdk.Stack {
       bundling: prismaBundlingConfig,
     });
 
+    // セッション終了Lambda関数（REST fallback for WebSocket unavailable）
+    this.endSessionFunction = new nodejs.NodejsFunction(this, 'EndSessionFunction', {
+      ...commonLambdaProps,
+      functionName: `prance-sessions-end-${props.environment}`,
+      description: 'End an active session via REST API (fallback for WebSocket)',
+      entry: path.join(__dirname, '../lambda/sessions/end/index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [props.lambdaSecurityGroup],
+      bundling: prismaBundlingConfig,
+    });
+
     // ==================== シナリオ管理Lambda関数 ====================
 
     // シナリオ一覧取得Lambda関数
@@ -1299,36 +1315,33 @@ export class ApiLambdaStack extends cdk.Stack {
     });
 
     // WebSocket $disconnect Handler
+    // Needs Prisma + VPC to update session status when WebSocket disconnects unexpectedly
     const websocketDisconnectFunction = new nodejs.NodejsFunction(
       this,
       'WebSocketDisconnectFunction',
       {
         runtime: lambda.Runtime.NODEJS_22_X,
         architecture: lambda.Architecture.ARM_64,
-        timeout: cdk.Duration.seconds(10),
-        memorySize: 256,
+        timeout: cdk.Duration.seconds(29), // WebSocket $disconnect must return within 29s
+        memorySize: 512,
+        vpc: props.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        securityGroups: [props.lambdaSecurityGroup],
         tracing: lambda.Tracing.ACTIVE,
         logRetention:
           props.environment === 'production'
             ? logs.RetentionDays.ONE_MONTH
             : logs.RetentionDays.ONE_WEEK,
         functionName: `prance-websocket-disconnect-${props.environment}`,
-        description: 'WebSocket $disconnect handler',
+        description: 'WebSocket $disconnect handler — marks ACTIVE sessions as COMPLETED on disconnect',
         entry: path.join(__dirname, '../lambda/websocket/disconnect/index.ts'),
         handler: 'handler',
         environment: {
-          // AWS_REGION is automatically provided by Lambda runtime
-          ENVIRONMENT: props.environment,
-          LOG_LEVEL: props.environment === 'production' ? 'INFO' : 'DEBUG',
-          NODE_ENV: props.environment === 'production' ? 'production' : 'development',
+          ...commonEnvironment,
           CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
+          DATABASE_URL,
         },
-        bundling: {
-          minify: props.environment === 'production',
-          sourceMap: true,
-          target: 'es2020',
-          externalModules: ['aws-sdk'],
-        },
+        bundling: prismaBundlingConfig,
       }
     );
 
@@ -1893,6 +1906,11 @@ export class ApiLambdaStack extends cdk.Stack {
       allowTestInvoke: props.environment !== 'production',
     });
 
+    const endSessionIntegration = new apigateway.LambdaIntegration(this.endSessionFunction, {
+      proxy: true,
+      allowTestInvoke: props.environment !== 'production',
+    });
+
     const listScenariosIntegration = new apigateway.LambdaIntegration(this.listScenariosFunction, {
       proxy: true,
       allowTestInvoke: props.environment !== 'production',
@@ -2201,6 +2219,14 @@ export class ApiLambdaStack extends cdk.Stack {
     // GET /api/v1/sessions/{id} (Get session by ID)
     const sessionIdResource = sessionsResource.addResource('{id}');
     sessionIdResource.addMethod('GET', getSessionIntegration, {
+      apiKeyRequired: false,
+      authorizer: this.authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
+    });
+
+    // PUT /api/v1/sessions/{id}/end (End an active session via REST, fallback for WebSocket)
+    const endSessionResource = sessionIdResource.addResource('end');
+    endSessionResource.addMethod('PUT', endSessionIntegration, {
       apiKeyRequired: false,
       authorizer: this.authorizer,
       authorizationType: apigateway.AuthorizationType.CUSTOM,
@@ -2678,6 +2704,7 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseSecret.grantRead(this.listSessionsFunction);
     props.databaseSecret.grantRead(this.createSessionFunction);
     props.databaseSecret.grantRead(this.getSessionFunction);
+    props.databaseSecret.grantRead(this.endSessionFunction);
     props.databaseSecret.grantRead(this.listScenariosFunction);
     props.databaseSecret.grantRead(this.createScenarioFunction);
     props.databaseSecret.grantRead(this.getScenarioFunction);
@@ -2697,6 +2724,7 @@ export class ApiLambdaStack extends cdk.Stack {
     props.databaseCluster.connections.allowDefaultPortFrom(this.listSessionsFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.createSessionFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.getSessionFunction);
+    props.databaseCluster.connections.allowDefaultPortFrom(this.endSessionFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.listScenariosFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.createScenarioFunction);
     props.databaseCluster.connections.allowDefaultPortFrom(this.getScenarioFunction);

@@ -429,15 +429,22 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           wsMaxRetries,   // Frontend max ACK retries
         });
 
-        // If initial greeting is provided, generate TTS and send audio
+        // If initial greeting is provided, send text immediately then generate TTS
         if (initialGreeting) {
-          console.log('[authenticate] Generating TTS for initial greeting:', {
+          console.log('[authenticate] Sending initial greeting text and generating TTS:', {
             textLength: initialGreeting.length,
             language: scenarioLanguage,
           });
 
+          // Send text transcript FIRST — text display must not wait for TTS
+          await sendToConnection(connectionId, {
+            type: 'avatar_response_final',
+            text: initialGreeting,
+            timestamp: Date.now(),
+          });
+
           try {
-            // Generate TTS for initial greeting
+            // Generate TTS for initial greeting (audio is optional — text already sent)
             const audioProc = getAudioProcessor();
             const ttsResult = await audioProc.generateSimpleSpeech(initialGreeting);
 
@@ -461,15 +468,6 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             // Generate audio URL (CloudFront)
             const audioUrl = `https://${CLOUDFRONT_DOMAIN}/${audioKey}`;
 
-            console.log('[authenticate] Initial greeting audio saved to S3:', audioKey);
-
-            // Send avatar_response_final for transcript display
-            await sendToConnection(connectionId, {
-              type: 'avatar_response_final',
-              text: initialGreeting,
-              timestamp: Date.now(),
-            });
-
             // Send audio_response with S3 URL
             await sendToConnection(connectionId, {
               type: 'audio_response',
@@ -478,11 +476,11 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               timestamp: Date.now(),
             });
 
-            console.log('[authenticate] Initial greeting sent successfully');
+            console.log('[authenticate] Initial greeting sent successfully (text + audio)');
           } catch (error) {
             console.error('[authenticate] Failed to generate initial greeting TTS:', error);
-            // Don't break authentication - just log the error
-            // The text will still be displayed in the transcript
+            // Text transcript was already sent above — audio is gracefully degraded
+            console.log('[authenticate] Initial greeting text was sent; audio skipped due to TTS error');
           }
         }
         break;
@@ -1497,6 +1495,33 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         if (connectionData?.videoChunksCount && connectionData.videoChunksCount > 0) {
           console.log(`Processing ${connectionData.videoChunksCount} video chunks from S3`);
 
+          const { getRecordingKey } = await import('../../shared/config/s3-paths');
+          const { getVideoChunksPrefix } = await import('../../shared/config/s3-paths');
+          const videoSessionId = connectionData.sessionId || 'unknown';
+
+          // Create recording record with PROCESSING status BEFORE combining video.
+          // This ensures the record always exists in DB even if combining fails.
+          let recordingId: string | null = null;
+          try {
+            const pendingRecording = await prisma.recording.create({
+              data: {
+                sessionId: videoSessionId,
+                type: 'COMBINED',
+                s3Key: getRecordingKey(videoSessionId, VIDEO_FORMAT), // placeholder, updated on success
+                s3Url: '',
+                fileSizeBytes: BigInt(0),
+                videoChunksCount: connectionData.videoChunksCount,
+                processingStatus: 'PROCESSING',
+                format: VIDEO_FORMAT,
+                resolution: VIDEO_RESOLUTION,
+              },
+            });
+            recordingId = pendingRecording.id;
+            console.log('[session_end] Recording record created with PROCESSING status:', recordingId);
+          } catch (dbError) {
+            console.error('[session_end] Failed to create initial recording record:', dbError);
+          }
+
           try {
             await sendToConnection(connectionId, {
               type: 'processing_update',
@@ -1505,10 +1530,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
             });
 
             const videoProc = getVideoProcessor();
-            const sessionId = connectionData.sessionId || 'unknown';
 
             // Combine video chunks using ffmpeg
-            const result = await videoProc.combineChunks(sessionId);
+            const result = await videoProc.combineChunks(videoSessionId);
 
             console.log('Video processing complete:', result);
 
@@ -1518,49 +1542,43 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
               progress: 1.0,
             });
 
-            // Save recording metadata to PostgreSQL
+            // Update the recording record to COMPLETED
             try {
-              const recording = await prisma.recording.create({
-                data: {
-                  sessionId: sessionId,
-                  type: 'COMBINED',
-                  s3Key: result.finalVideoKey,
-                  s3Url: `https://${S3_BUCKET}.s3.${AWS_REGION}.${getAwsEndpointSuffix()}/${result.finalVideoKey}`,
-                  cdnUrl: result.cloudFrontUrl,
-                  fileSizeBytes: BigInt(result.finalVideoSize),
-                  durationSec: Math.floor(result.duration / 1000), // Convert ms to seconds
-                  format: VIDEO_FORMAT,
-                  resolution: VIDEO_RESOLUTION,
-                  videoChunksCount: connectionData.videoChunksCount,
-                  processingStatus: 'COMPLETED',
-                  processedAt: new Date(),
-                  // Phase 1.6.1 Day 33: Save performance metrics
-                  metadata: result.metrics ? {
-                    performanceMetrics: {
-                      listChunksTimeMs: result.metrics.listChunksTime,
-                      downloadTimeMs: result.metrics.downloadTime,
-                      ffmpegTimeMs: result.metrics.ffmpegTime,
-                      uploadTimeMs: result.metrics.uploadTime,
-                      cleanupTimeMs: result.metrics.cleanupTime,
-                      totalTimeMs: result.metrics.totalTime,
-                      chunksCount: result.metrics.chunksCount,
-                      originalSizeBytes: result.metrics.originalSize,
-                      finalSizeBytes: result.metrics.finalSize,
-                      compressionRatio: (result.metrics.finalSize / result.metrics.originalSize * 100).toFixed(2) + '%',
-                      downloadSpeedMBps: (result.metrics.originalSize / (result.metrics.downloadTime / 1000) / 1024 / 1024).toFixed(2),
-                      uploadSpeedMBps: (result.metrics.finalSize / (result.metrics.uploadTime / 1000) / 1024 / 1024).toFixed(2),
-                    },
-                  } : undefined,
-                },
-              });
-              console.log('Recording metadata saved to PostgreSQL:', {
-                recordingId: recording.id,
-                sessionId,
-                performanceMetrics: result.metrics ? 'saved' : 'not available',
-              });
+              if (recordingId) {
+                await prisma.recording.update({
+                  where: { id: recordingId },
+                  data: {
+                    s3Key: result.finalVideoKey,
+                    s3Url: `https://${S3_BUCKET}.s3.${AWS_REGION}.${getAwsEndpointSuffix()}/${result.finalVideoKey}`,
+                    cdnUrl: result.cloudFrontUrl,
+                    fileSizeBytes: BigInt(result.finalVideoSize),
+                    durationSec: Math.floor(result.duration / 1000),
+                    processingStatus: 'COMPLETED',
+                    processedAt: new Date(),
+                  },
+                });
+              } else {
+                // Fallback: create the record if initial creation failed
+                await prisma.recording.create({
+                  data: {
+                    sessionId: videoSessionId,
+                    type: 'COMBINED',
+                    s3Key: result.finalVideoKey,
+                    s3Url: `https://${S3_BUCKET}.s3.${AWS_REGION}.${getAwsEndpointSuffix()}/${result.finalVideoKey}`,
+                    cdnUrl: result.cloudFrontUrl,
+                    fileSizeBytes: BigInt(result.finalVideoSize),
+                    durationSec: Math.floor(result.duration / 1000),
+                    format: VIDEO_FORMAT,
+                    resolution: VIDEO_RESOLUTION,
+                    videoChunksCount: connectionData.videoChunksCount,
+                    processingStatus: 'COMPLETED',
+                    processedAt: new Date(),
+                  },
+                });
+              }
+              console.log('Recording metadata saved to PostgreSQL:', { recordingId, videoSessionId });
             } catch (dbError) {
-              console.error('Failed to save recording metadata to PostgreSQL:', dbError);
-              // Continue even if DB save fails - video is already in S3
+              console.error('Failed to update recording metadata to PostgreSQL:', dbError);
             }
 
             // Send video URL to client
@@ -1574,14 +1592,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           } catch (error) {
             console.error('Failed to process video:', error);
 
-            // Phase 1.6.1 Day 34: Save partial recording info with detailed error context
+            // Update recording record to ERROR status
             try {
-              const sessionId = connectionData.sessionId || 'unknown';
-              const { getRecordingKey } = await import('../../shared/config/s3-paths');
-              const { getVideoChunksPrefix } = await import('../../shared/config/s3-paths');
-
               // List all video chunks that were successfully saved
-              const chunksPrefix = getVideoChunksPrefix(sessionId);
+              const chunksPrefix = getVideoChunksPrefix(videoSessionId);
               const listResponse = await s3Client.send(
                 new ListObjectsV2Command({
                   Bucket: S3_BUCKET,
@@ -1597,43 +1611,31 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                   lastModified: obj.LastModified?.toISOString(),
                 }));
 
-              console.log('[session_end] Partial recording saved:', {
-                totalChunksExpected: connectionData.videoChunksCount || 0,
-                chunksActuallySaved: savedChunks.length,
-                savedChunksKeys: savedChunks.map(c => c.key),
-              });
+              console.log('[session_end] Video combine failed, saved chunks in S3:', savedChunks.length);
 
-              const recording = await prisma.recording.create({
-                data: {
-                  sessionId: sessionId,
-                  type: 'COMBINED',
-                  s3Key: getRecordingKey(sessionId, VIDEO_FORMAT),
-                  s3Url: '',
-                  fileSizeBytes: BigInt(0),
-                  videoChunksCount: connectionData.videoChunksCount || 0,
-                  processingStatus: 'ERROR',
-                  errorMessage: error instanceof Error ? error.message : 'Unknown error',
-                  // Phase 1.6.1 Day 34: Partial recording metadata
-                  metadata: {
-                    partialRecording: true,
-                    savedChunks: savedChunks,
-                    totalChunksExpected: connectionData.videoChunksCount || 0,
-                    chunksActuallySaved: savedChunks.length,
-                    missingChunks: (connectionData.videoChunksCount || 0) - savedChunks.length,
-                    errorDetails: {
-                      message: error instanceof Error ? error.message : 'Unknown error',
-                      stack: error instanceof Error ? error.stack : undefined,
-                      timestamp: new Date().toISOString(),
-                    },
+              const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+              if (recordingId) {
+                await prisma.recording.update({
+                  where: { id: recordingId },
+                  data: {
+                    processingStatus: 'ERROR',
+                    errorMessage: errorMsg,
                   },
-                },
-              });
-
-              console.log('Recording error metadata with partial info saved to PostgreSQL:', {
-                recordingId: recording.id,
-                sessionId,
-                partialChunks: savedChunks.length,
-              });
+                });
+              } else {
+                await prisma.recording.create({
+                  data: {
+                    sessionId: videoSessionId,
+                    type: 'COMBINED',
+                    s3Key: getRecordingKey(videoSessionId, VIDEO_FORMAT),
+                    s3Url: '',
+                    fileSizeBytes: BigInt(0),
+                    videoChunksCount: connectionData.videoChunksCount || 0,
+                    processingStatus: 'ERROR',
+                    errorMessage: errorMsg,
+                  },
+                });
+              }
 
               // Notify client about partial recording
               await sendToConnection(connectionId, {
@@ -1641,10 +1643,10 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
                 message: 'Recording partially saved due to processing error',
                 savedChunks: savedChunks.length,
                 totalChunks: connectionData.videoChunksCount || 0,
-                sessionId,
+                sessionId: videoSessionId,
               });
             } catch (dbError) {
-              console.error('Failed to save recording error metadata to PostgreSQL:', dbError);
+              console.error('Failed to update recording error status in PostgreSQL:', dbError);
             }
 
             await sendToConnection(connectionId, {
@@ -2187,6 +2189,25 @@ async function handleAudioProcessingStreaming(
       errorMessage.includes('NotRecognized') ||
       errorMessage.includes('No speech detected') ||
       errorMessage.includes('No speech recognized');
+
+    // If AI failed mid-stream, save whatever partial response was accumulated
+    if (!isNoSpeechError && fullAIResponse && fullAIResponse.trim().length > 0) {
+      try {
+        await prisma.transcript.create({
+          data: {
+            sessionId,
+            speaker: 'AI',
+            text: fullAIResponse,
+            timestampStart: Date.now(),
+            timestampEnd: Date.now(),
+            confidence: 0.5,
+          },
+        });
+        console.log('[handleAudioProcessingStreaming] Partial AI transcript saved to database');
+      } catch (dbErr) {
+        console.error('[handleAudioProcessingStreaming] Failed to save partial AI transcript:', dbErr);
+      }
+    }
 
     if (isNoSpeechError) {
       // This is not an error - just means the user didn't speak or audio is too quiet

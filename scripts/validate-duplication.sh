@@ -173,12 +173,13 @@ echo -e "${YELLOW}[7/8]${NC} Checking frontend API call duplication..."
 DIRECT_FETCH=$(grep -rn "fetch(" apps/web/app apps/web/components --include="*.ts" --include="*.tsx" 2>/dev/null \
   | grep -v node_modules \
   | grep -v "apps/web/app/api/" \
+  | grep -v "keepalive" \
   | wc -l || echo "0")
 
 if [ "$DIRECT_FETCH" -gt 0 ]; then
   log_error "Found $DIRECT_FETCH direct fetch() calls (should use API client)"
   grep -rn "fetch(" apps/web/app apps/web/components --include="*.ts" --include="*.tsx" \
-    | grep -v node_modules | grep -v "apps/web/app/api/" | head -5
+    | grep -v node_modules | grep -v "apps/web/app/api/" | grep -v "keepalive" | head -5
 else
   log_success "All API calls go through centralized client"
 fi

@@ -113,6 +113,14 @@ export async function deleteSession(id: string): Promise<void> {
   apiClient.unwrapVoidResponse(response);
 }
 
+/**
+ * セッションを強制終了（WebSocket切断時のフォールバック）
+ */
+export async function endSession(id: string): Promise<{ id: string; status: string; durationSec?: number }> {
+  const response = await apiClient.put<{ id: string; status: string; durationSec?: number }>(`/sessions/${id}/end`, {});
+  return apiClient.unwrapResponse(response);
+}
+
 // Backward compatibility - オブジェクト形式のエクスポートも維持
 export const sessionsApi = {
   list: listSessions,
@@ -120,4 +128,5 @@ export const sessionsApi = {
   get: getSession,
   update: updateSession,
   delete: deleteSession,
+  end: endSession,
 };

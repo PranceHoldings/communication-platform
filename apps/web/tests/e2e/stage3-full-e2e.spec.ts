@@ -40,10 +40,11 @@ test.describe('Stage 3: Full E2E Tests', () => {
     // Start session
     await sessionPlayer.startSession();
 
-    // Wait for WebSocket connection (CONNECTING → READY)
-    await sessionPlayer.waitForStatus('READY', 15000);
+    // Wait for WebSocket connection and authentication (READY → ACTIVE)
+    // READY = button clicked, ACTIVE = WebSocket connected + authenticated + recording started
+    await sessionPlayer.waitForStatus('ACTIVE', 15000);
 
-    // Verify microphone is recording
+    // Verify microphone is recording (startRecording() is called when ACTIVE)
     await authenticatedPage.waitForTimeout(1000);
     const isMicRecording = await sessionPlayer.isMicrophoneRecording();
     expect(isMicRecording).toBe(true);
@@ -54,17 +55,30 @@ test.describe('Stage 3: Full E2E Tests', () => {
 
     // Start session
     await sessionPlayer.startSession();
-    await sessionPlayer.waitForStatus('READY', 15000);
 
-    // Wait for initial greeting message
-    await sessionPlayer.waitForNewTranscriptMessage(30000);
+    // Wait for ACTIVE state — text arrives almost immediately after authentication with Lambda fix
+    // Use waitForAnyStatus to handle fast READY→ACTIVE transitions
+    await sessionPlayer.waitForAnyStatus(['READY', 'ACTIVE'], 20000);
+    console.log('[Test] Session started, checking for greeting...');
+
+    // With Lambda fix, avatar_response_final text is sent before TTS generation.
+    // The greeting may already be in the transcript by the time we check.
+    await authenticatedPage.waitForTimeout(3000);
+    const count = await sessionPlayer.getTranscriptMessageCount();
+    if (count === 0) {
+      // Greeting not yet arrived — wait for it
+      console.log('[Test] Greeting not yet in transcript, waiting...');
+      await sessionPlayer.waitForNewTranscriptMessage(30000);
+    } else {
+      console.log(`[Test] Greeting already in transcript (${count} messages)`);
+    }
 
     // Verify greeting is from AI
     const greeting = await sessionPlayer.getLatestTranscriptMessage();
     expect(greeting?.speaker).toBe('AI');
     expect(greeting?.text).toBeTruthy();
 
-    // Status should transition to ACTIVE after greeting
+    // Status should be ACTIVE
     await sessionPlayer.waitForStatus('ACTIVE', 10000);
 
     // Silence timer visibility depends on scenario settings (showSilenceTimer)
@@ -72,8 +86,10 @@ test.describe('Stage 3: Full E2E Tests', () => {
     // Not asserting timer visibility here - it depends on scenario configuration
   });
 
-  test('S3-003: AI responds to silence with silence prompt', async ({ authenticatedPage, testSessionId }) => {
-    await sessionPlayer.goto(testSessionId);
+  test('S3-003: AI responds to silence with silence prompt', async ({ authenticatedPage, greetingTestSessionId }) => {
+    test.slow(); // Cold start + AI processing can take 40-50s
+
+    await sessionPlayer.goto(greetingTestSessionId);
 
     // Start session and wait for active state
     await sessionPlayer.startSession();
@@ -182,8 +198,10 @@ test.describe('Stage 3: Full E2E Tests', () => {
     expect(duration).not.toBe('0:00');
   });
 
-  test('S3-007: Multiple silence prompt cycles in one session', async ({ authenticatedPage: _authenticatedPage, testSessionId }) => {
-    await sessionPlayer.goto(testSessionId);
+  test('S3-007: Multiple silence prompt cycles in one session', async ({ authenticatedPage: _authenticatedPage, greetingTestSessionId }) => {
+    test.slow(); // Multiple AI exchanges with potential cold start delay
+
+    await sessionPlayer.goto(greetingTestSessionId);
 
     // Start session
     await sessionPlayer.startSession();
@@ -243,8 +261,10 @@ test.describe('Stage 3: Full E2E Tests', () => {
     await authenticatedPage.waitForTimeout(3000);
   });
 
-  test('S3-009: Silence timer resets after AI silence prompt response', async ({ authenticatedPage, testSessionId }) => {
-    await sessionPlayer.goto(testSessionId);
+  test('S3-009: Silence timer resets after AI silence prompt response', async ({ authenticatedPage, greetingTestSessionId }) => {
+    test.slow(); // Cold start + AI processing can take 40-50s
+
+    await sessionPlayer.goto(greetingTestSessionId);
 
     // Start session
     await sessionPlayer.startSession();
@@ -284,11 +304,11 @@ test.describe('Stage 3: Full E2E Tests', () => {
 
   test('S3-010: Long session with multiple silence prompt exchanges (stress test)', async ({
     authenticatedPage,
-    testSessionId,
+    greetingTestSessionId,
   }) => {
-    test.slow(); // Mark as slow test (3x timeout)
+    test.setTimeout(420000); // 7 minutes: cold start (~50s) + greeting + 3 silence prompts (~50s each) + stop
 
-    await sessionPlayer.goto(testSessionId);
+    await sessionPlayer.goto(greetingTestSessionId);
 
     // Start session
     await sessionPlayer.startSession();

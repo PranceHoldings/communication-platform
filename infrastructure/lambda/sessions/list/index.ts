@@ -93,6 +93,30 @@ export const handler: APIGatewayProxyHandler = async event => {
 
     console.log(`Found ${sessions.length} sessions for user ${user.userId}`);
 
+    // Auto-correct stale ACTIVE sessions (WebSocket disconnected without session_end)
+    const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+    const now = new Date();
+    const staleIds = sessions
+      .filter(
+        (s: any) =>
+          s.status === 'ACTIVE' &&
+          now.getTime() - new Date(s.startedAt).getTime() > TWO_HOURS_MS
+      )
+      .map((s: any) => s.id);
+
+    if (staleIds.length > 0) {
+      console.log(`[list] Marking ${staleIds.length} stale sessions as ERROR`);
+      prisma.session
+        .updateMany({ where: { id: { in: staleIds } }, data: { status: 'ERROR', endedAt: now } })
+        .catch((err: unknown) => console.error('[list] Failed to mark stale sessions:', err));
+      sessions.forEach((s: any) => {
+        if (staleIds.includes(s.id)) {
+          s.status = 'ERROR';
+          s.endedAt = now;
+        }
+      });
+    }
+
     return successResponse({
       sessions: sessions.map((session: any) => ({
         id: session.id,

@@ -566,8 +566,17 @@ export class AudioProcessor {
       // Step 1: Save audio to S3 temporarily
       await this.saveAudioToS3(audioData, sessionId, 'input');
 
-      // Step 2: Transcribe audio using Azure STT
-      const transcript = await this.transcribeAudio(audioData, scenarioLanguage);
+      // Step 2: Transcribe audio using Azure STT (30-second timeout)
+      const STT_TIMEOUT_MS = 30_000;
+      const transcript = await Promise.race([
+        this.transcribeAudio(audioData, scenarioLanguage),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error('STT timeout: Azure Speech Services did not respond within 30 seconds')),
+            STT_TIMEOUT_MS
+          )
+        ),
+      ]);
 
       if (!transcript || transcript.trim().length === 0) {
         throw new Error('No speech detected in audio');

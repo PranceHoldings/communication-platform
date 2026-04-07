@@ -36,7 +36,16 @@
     "notFound": "セッションが見つかりません",
     "backToList": "セッション一覧に戻る",
     "session": "セッション",
-    "dashboard": "ダッシュボード"
+    "dashboard": "ダッシュボード",
+    "transcript": "会話の文字起こし",
+    "duration": "所要時間",
+    "sessionError": "このセッションはエラーで終了しました。部分的な文字起こしが以下に表示される場合があります。",
+    "noRecording": "このセッションの録画は利用できません。",
+    "noTranscript": "文字起こしはありません。"
+  },
+  "transcript": {
+    "you": "あなた",
+    "ai": "AI"
   },
   "create": {
     "button": "セッションを作成"
@@ -249,7 +258,8 @@
         "errorUnknown": "不明なエラーが発生しました",
         "processing": "録画を処理中",
         "processingDescription": "動画の処理が完了するまでお待ちください。数分かかる場合があります。",
-        "notSupported": "お使いのブラウザは録画に対応していません"
+        "notSupported": "お使いのブラウザは録画に対応していません",
+        "startFailed": "ビデオ録画の開始に失敗しました（音声は正常に動作します）"
       }
     },
     "validation": {

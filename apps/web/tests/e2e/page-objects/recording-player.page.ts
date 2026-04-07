@@ -95,19 +95,27 @@ export class RecordingPlayerPage {
   }
 
   /**
-   * Play video
+   * Play video — clicks play button then waits up to 3s for video to actually start playing
    */
-  async play() {
+  async play(timeout = 3000) {
     await this.playPauseButton.click();
-    await this.page.waitForTimeout(500);
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      if (await this.isPlaying()) return;
+      await this.page.waitForTimeout(200);
+    }
   }
 
   /**
-   * Pause video
+   * Pause video — clicks pause button then waits up to 2s for video to actually pause
    */
-  async pause() {
+  async pause(timeout = 2000) {
     await this.playPauseButton.click();
-    await this.page.waitForTimeout(500);
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      if (!(await this.isPlaying())) return;
+      await this.page.waitForTimeout(200);
+    }
   }
 
   /**
@@ -182,13 +190,19 @@ export class RecordingPlayerPage {
   }
 
   /**
-   * Get duration
+   * Get duration — waits for video metadata to load (duration can be NaN before loadedmetadata)
    */
-  async getDuration(): Promise<number> {
-    const videoElement = await this.video.elementHandle();
-    if (!videoElement) return 0;
-
-    return await videoElement.evaluate((video: HTMLVideoElement) => video.duration);
+  async getDuration(timeout = 10000): Promise<number> {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      const videoElement = await this.video.elementHandle();
+      if (videoElement) {
+        const dur = await videoElement.evaluate((video: HTMLVideoElement) => video.duration);
+        if (dur && !isNaN(dur) && isFinite(dur)) return dur;
+      }
+      await this.page.waitForTimeout(500);
+    }
+    return NaN;
   }
 
   /**
