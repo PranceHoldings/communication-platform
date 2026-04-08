@@ -25,7 +25,7 @@ const GREETING_AVATAR_ID = 'af54feb4-86e3-4597-ae78-3a40b14f545a';
  * Known test session with recordings for E2E tests
  * This session has been prepared with COMPLETED status and recordings
  */
-const KNOWN_TEST_SESSION_WITH_RECORDING = '44040076-ebb5-4579-b019-e81c0ad1713c';
+const KNOWN_TEST_SESSION_WITH_RECORDING = 'bd396629-2372-4bcd-9335-08f43d462b42';
 
 /**
  * E2E Test scenario with initialGreeting + systemPrompt configured.
@@ -37,11 +37,12 @@ const E2E_TEST_AVATAR_ID = 'af54feb4-86e3-4597-ae78-3a40b14f545a';
 
 export const test = base.extend<SessionFixture>({
   testSessionId: async ({ authenticatedPage }, use) => {
-    // Provide a session where the SessionPlayer UI is rendered (status = ACTIVE).
-    // Strategy:
-    //   1. Check recent sessions for an ACTIVE one.
-    //   2. If none exists, create a fresh session using the most recent session's
-    //      scenarioId + avatarId so we always have a predictable ACTIVE session.
+    // Always create a FRESH session for each test.
+    //
+    // Why: Reusing an existing ACTIVE session causes the SessionPlayer to auto-connect
+    // via WebSocket (because it sees sessionStatus=ACTIVE + valid token), which removes
+    // the "Start Session" button before the test can click it. A newly-created session
+    // starts with a clean slate and always shows the Start button.
     try {
       const accessToken = await authenticatedPage.evaluate(() => {
         return localStorage.getItem('accessToken');
@@ -66,62 +67,54 @@ export const test = base.extend<SessionFixture>({
       };
 
       console.log(`🔑 Access Token: ${accessToken.substring(0, 20)}...`);
-      console.log(`🌐 API URL: ${apiUrl}/sessions?limit=10`);
+      console.log(`🌐 Creating fresh session via: ${apiUrl}/sessions`);
 
-      const response = await authenticatedPage.request.get(`${apiUrl}/sessions?limit=10`, {
-        headers: authHeaders,
-      });
-
-      console.log(`📡 Response Status: ${response.status()}`);
-
-      if (!response.ok()) {
-        const body = await response.text();
-        console.log(`❌ Response Body: ${body}`);
-        throw new Error(`API request failed: ${response.status()} ${response.statusText()}`);
-      }
-
-      const data = await response.json();
-      const sessions = data.data?.sessions || data.sessions || [];
-      console.log(`📊 Found ${sessions.length} sessions`);
-
-      // Prefer an ACTIVE session — it renders SessionPlayer (the component under test)
-      const activeSession = sessions.find((s: any) => s.status === 'ACTIVE');
-      if (activeSession) {
-        console.log(`✅ Found ACTIVE session: ${activeSession.id}`);
-        await use(activeSession.id);
-        return;
-      }
-
-      // No ACTIVE session — create one so the page shows SessionPlayer
-      console.log('⚠️  No ACTIVE session found. Creating a fresh session for UI tests...');
-
-      if (sessions.length === 0) {
-        throw new Error(
-          'No sessions found in database. Please create at least one session before running E2E tests.'
-        );
-      }
-
-      // Always create new sessions with the known E2E test scenario for predictable behavior
+      // Always create a new session so the player starts in a clean IDLE state
       const createResponse = await authenticatedPage.request.post(`${apiUrl}/sessions`, {
         headers: authHeaders,
         data: { scenarioId: E2E_TEST_SCENARIO_ID, avatarId: E2E_TEST_AVATAR_ID },
       });
 
-      if (!createResponse.ok()) {
-        // Fall back to any session if creation fails
-        console.warn(`⚠️  Session creation failed (${createResponse.status()}). Falling back to most recent session.`);
-        console.log(`✅ Using fallback session ID: ${sessions[0].id}`);
+      if (createResponse.ok()) {
+        const created = await createResponse.json();
+        const newSessionId = (created.data || created).id;
+        console.log(`✅ Created fresh ACTIVE session: ${newSessionId}`);
+        await use(newSessionId);
+        return;
+      }
+
+      // Fallback: if creation fails (e.g. quota), fall back to most recent ACTIVE session
+      console.warn(`⚠️  Session creation failed (${createResponse.status()}). Falling back to existing ACTIVE session...`);
+
+      const listResponse = await authenticatedPage.request.get(`${apiUrl}/sessions?limit=10`, {
+        headers: authHeaders,
+      });
+
+      if (!listResponse.ok()) {
+        throw new Error(`Failed to list sessions: ${listResponse.status()} ${listResponse.statusText()}`);
+      }
+
+      const data = await listResponse.json();
+      const sessions = data.data?.sessions || data.sessions || [];
+      console.log(`📊 Found ${sessions.length} sessions`);
+
+      const activeSession = sessions.find((s: any) => s.status === 'ACTIVE');
+      if (activeSession) {
+        console.log(`✅ Fallback: using ACTIVE session: ${activeSession.id}`);
+        await use(activeSession.id);
+        return;
+      }
+
+      if (sessions.length > 0) {
+        console.log(`✅ Fallback: using most recent session: ${sessions[0].id}`);
         await use(sessions[0].id);
         return;
       }
 
-      const created = await createResponse.json();
-      const newSessionId = (created.data || created).id;
-      console.log(`✅ Created fresh ACTIVE session: ${newSessionId}`);
-      await use(newSessionId);
+      throw new Error('No sessions available. Ensure the API is running and the scenario/avatar IDs are valid.');
 
     } catch (error) {
-      console.error('Failed to fetch/create test session:', error);
+      console.error('Failed to create/fetch test session:', error);
       throw new Error(
         'Could not obtain a test session. Ensure the API is running and at least one session exists.'
       );

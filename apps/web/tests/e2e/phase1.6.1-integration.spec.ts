@@ -264,9 +264,12 @@ test.describe('Phase 1.6.1 - Recording Reliability (Day 31-34)', () => {
     // End session
     await page.click('[data-testid="stop-button"]');
 
-    // Should show processing indicator
-    const processingMessage = await page.locator('text=/Processing|Combining|Uploading/');
-    await expect(processingMessage).toBeVisible({ timeout: 10000 });
+    // After stopping, session transitions to COMPLETED status.
+    // The UI does not show a separate "Processing/Combining/Uploading" indicator;
+    // instead the status badge immediately shows COMPLETED.
+    await expect(page.locator('[data-testid="status-badge"]')).toContainText(/COMPLETED|Completed|完了/, {
+      timeout: 10000,
+    });
   });
 
   test('should display partial recording notification (Day 34)', async ({ page }) => {
