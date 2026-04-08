@@ -288,16 +288,18 @@ docs/01-getting-started/             ← 初心者向けガイド
 
 ### フロントエンド
 
-- **Next.js 15** (App Router, SSR/SSG)
+- **Next.js 15.5.14** (App Router, SSR/SSG)
+- **React 19.2.4** (完全移行済み)
 - **Three.js** (3Dアバターレンダリング)
 - **Live2D Cubism SDK 5** (2Dアニメアバター)
 - **AWS Amplify Hosting** (CI/CD統合)
 - **shadcn/ui + Tailwind CSS** (UIコンポーネント)
-- **next-intl** (多言語対応)
+- **Custom i18n System** (多言語対応、next-intl不使用)
 
 ### バックエンド (サーバーレス)
 
 - **AWS Lambda** (Node.js 22 LTS Runtime, ARM64)
+- **pnpm 10.32.1** (パッケージマネージャ)
 - **AWS API Gateway** (REST/WebSocket)
 - **AWS IoT Core** (リアルタイムWebSocket、100万同時接続対応)
 - **Prisma ORM** (TypeScript型安全)
@@ -306,8 +308,7 @@ docs/01-getting-started/             ← 初心者向けガイド
 ### AI・音声サービス
 
 - **AWS Bedrock (Claude Sonnet 4.6)** - 会話AI
-- **ElevenLabs API** - TTS（プライマリ）
-- **Azure Speech Services** - STT
+- **Azure Cognitive Services** - TTS + STT（統合済み）
 - **AWS Rekognition** - 感情解析
 
 ### データストア

@@ -1,9 +1,9 @@
 # 技術スタック詳細
 
-**バージョン:** 2.0
+**バージョン:** 2.1
 **作成日:** 2026-03-05
-**最終更新:** 2026-03-05
-**ステータス:** Phase 0 完了
+**最終更新:** 2026-04-08
+**ステータス:** Phase 1-5 全完了 🎉
 
 ---
 
@@ -28,21 +28,21 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        フロントエンド                            │
-│  Next.js 15 | React 19 | TypeScript 5.7 | Tailwind CSS 4.0    │
-│  Three.js | Live2D SDK 5 | shadcn/ui | next-intl              │
+│  Next.js 15.5 | React 19.2.4 | TypeScript 5.7.3 | Tailwind 4  │
+│  Three.js | Live2D SDK 5 | shadcn/ui | Custom i18n System      │
 └────────────────────┬────────────────────────────────────────────┘
                      │
                      ↓ (REST API + WebSocket)
 ┌─────────────────────────────────────────────────────────────────┐
 │                        バックエンド (AWS)                        │
-│  Lambda (Node.js 20) | API Gateway | AWS IoT Core              │
+│  Lambda (Node.js 22) | API Gateway | AWS IoT Core              │
 │  Prisma ORM 5.22 | PostgreSQL 15.4 | DynamoDB | Redis          │
 └────────────────────┬────────────────────────────────────────────┘
                      │
                      ↓ (API統合)
 ┌─────────────────────────────────────────────────────────────────┐
 │                      AI・音声サービス                            │
-│  AWS Bedrock (Claude Sonnet 4.6) | ElevenLabs | Azure Speech   │
+│  AWS Bedrock (Claude Sonnet 4.6) | Azure Cognitive Services    │
 │  AWS Rekognition | MediaConvert                                │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -63,7 +63,7 @@
 
 #### Next.js 15
 
-**バージョン**: 15.1.3
+**バージョン**: 15.5.14
 **ライセンス**: MIT
 
 **採用理由:**
@@ -109,7 +109,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 #### React 19
 
-**バージョン**: 19.0.0
+**バージョン**: 19.2.4
 **ライセンス**: MIT
 
 **主要機能:**
@@ -140,7 +140,7 @@ export default function SessionPlayer({ sessionId }: { sessionId: string }) {
 
 #### TypeScript 5.7
 
-**バージョン**: 5.7.2
+**バージョン**: 5.7.3
 **ライセンス**: Apache-2.0
 
 **設定 (tsconfig.json):**
@@ -426,61 +426,47 @@ export function Avatar2D({ modelPath }: { modelPath: string }) {
 
 ### 2.4 多言語対応
 
-#### next-intl
+#### Custom i18n System（独自実装）
 
-**バージョン**: 3.22.0
-**ライセンス**: MIT
+**バージョン**: 独自実装（next-intl 非使用）
+**ライセンス**: N/A（プロジェクト内実装）
 
-**設定 (middleware.ts):**
-
-```typescript
-import createMiddleware from 'next-intl/middleware';
-
-export default createMiddleware({
-  locales: ['ja', 'en'],
-  defaultLocale: 'ja',
-});
-
-export const config = {
-  matcher: ['/', '/(ja|en)/:path*'],
-};
-```
+> **⚠️ 重要:** next-intl は使用禁止。独自 `useI18n` フックのみ使用すること。
+> 詳細: [docs/07-development/I18N_SYSTEM_GUIDELINES.md](../07-development/I18N_SYSTEM_GUIDELINES.md)
 
 **使用例:**
 
 ```typescript
-// app/[locale]/page.tsx
-import { useTranslations } from 'next-intl';
+// components/MyComponent.tsx
+import { useI18n } from '@/lib/i18n/provider';
 
-export default function HomePage() {
-  const t = useTranslations('HomePage');
+export function MyComponent() {
+  const { t, locale } = useI18n();
 
   return (
     <div>
-      <h1>{t('title')}</h1>
-      <p>{t('description')}</p>
+      <h1>{t('common.welcome')}</h1>
+      <p>{t('dashboard.description')}</p>
     </div>
   );
 }
 ```
 
-**言語リソースファイル (messages/ja.json):**
+**言語リソースファイル:**
 
-```json
-{
-  "HomePage": {
-    "title": "Prance Communication Platform",
-    "description": "AIアバターとリアルタイム会話"
-  }
-}
+```
+apps/web/messages/
+├── en/common.json
+├── ja/common.json
+└── [10言語対応]
 ```
 
 **特徴:**
 
-- **RSC対応**: React Server Componentsで使用可能
-- **型安全**: TypeScript型定義自動生成
-- **リッチフォーマット**: 複数形、日時、数値フォーマット
-- **動的言語切り替え**: URLパスベース (`/ja/`, `/en/`)
+- **依存関係ゼロ**: next-intlなし（200行の独自実装）
+- **10言語対応**: 日英中韓西葡仏独伊＋地域バリアント
+- **Cookie管理**: `NEXT_LOCALE` クッキーでロケール管理（`apps/web/lib/cookies.ts`）
+- **型安全**: TypeScriptサポート
 
 ---
 
@@ -488,9 +474,9 @@ export default function HomePage() {
 
 ### 3.1 ランタイム・フレームワーク
 
-#### Node.js 20 (AWS Lambda)
+#### Node.js 22 (AWS Lambda)
 
-**バージョン**: 20.x (LTS)
+**バージョン**: 22.x (LTS)
 **ライセンス**: MIT
 
 **Lambda設定:**
@@ -498,7 +484,7 @@ export default function HomePage() {
 ```typescript
 // infrastructure/lib/lambda-stack.ts
 new lambda.Function(this, 'ApiFunction', {
-  runtime: lambda.Runtime.NODEJS_20_X,
+  runtime: lambda.Runtime.NODEJS_22_X,
   architecture: lambda.Architecture.ARM_64, // Graviton2
   handler: 'index.handler',
   memorySize: 1024,
@@ -750,63 +736,67 @@ export async function generateAIResponse(
 
 ### 4.2 音声サービス
 
-#### ElevenLabs (TTS)
+#### Azure Cognitive Services (TTS + STT)
 
-**バージョン**: API v1
-**ライセンス**: Commercial (有料プラン)
+**バージョン**: Cognitive Services Speech SDK 1.40
+**ライセンス**: Azure Managed Service
 
-**料金:**
+> **📌 移行履歴:** ElevenLabs TTS → Azure Cognitive Services TTS（2026-04-06、コミット b47cbd6）
+> 理由: コスト最適化・統合簡素化（STTと同一サービスに統一）
 
-| プラン  | 月額 | 文字数/月 |
-| ------- | ---- | --------- |
-| Free    | $0   | 10,000    |
-| Starter | $5   | 30,000    |
-| Creator | $22  | 100,000   |
-| Pro     | $99  | 500,000   |
-| Scale   | $330 | 2,000,000 |
+**料金 (TTS):**
+
+| 項目            | 価格             |
+| --------------- | ---------------- |
+| Standard voices | $4/100万文字     |
+| Neural voices   | $16/100万文字    |
+
+**料金 (STT):**
+
+| 項目          | 価格 (1時間) |
+| ------------- | ------------ |
+| Standard      | $1.00        |
+| Custom Speech | $1.40        |
 
 **SDK:**
 
 ```bash
-pnpm install elevenlabs
+pnpm install microsoft-cognitiveservices-speech-sdk
 ```
 
-**使用例:**
+**使用例 (TTS):**
 
 ```typescript
-// apps/api/src/services/tts.service.ts
-import { ElevenLabsClient } from 'elevenlabs';
+// infrastructure/lambda/shared/audio/tts-azure.ts
+import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
 
-const client = new ElevenLabsClient({
-  apiKey: process.env.ELEVENLABS_API_KEY,
-});
+export async function synthesizeSpeech(text: string, voice: string): Promise<Buffer> {
+  const speechConfig = sdk.SpeechConfig.fromSubscription(
+    process.env.AZURE_SPEECH_KEY!,
+    process.env.AZURE_SPEECH_REGION!
+  );
+  speechConfig.speechSynthesisVoiceName = voice;
 
-export async function generateSpeech(text: string, voiceId: string): Promise<Buffer> {
-  const audio = await client.generate({
-    voice: voiceId,
-    text,
-    model_id: 'eleven_multilingual_v2',
+  const synthesizer = new sdk.SpeechSynthesizer(speechConfig);
+  return new Promise((resolve, reject) => {
+    synthesizer.speakTextAsync(text, result => {
+      resolve(Buffer.from(result.audioData));
+    }, reject);
   });
-
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of audio) {
-    chunks.push(chunk);
-  }
-
-  return Buffer.concat(chunks);
 }
 ```
 
 **特徴:**
 
-- **高品質TTS**: 自然な音声合成
-- **音声クローニング**: カスタムボイス作成
-- **Visemeデータ**: リップシンク用タイムスタンプ
-- **多言語対応**: 29言語サポート
+- **TTS + STT 統合**: 同一サービスでコスト・管理簡素化
+- **高品質ニューラル音声**: 自然な音声合成
+- **リアルタイムSTT**: ストリーミング認識
+- **多言語**: 100+ 言語対応
+- **カスタムモデル**: ドメイン固有語彙対応
 
 ---
 
-#### Azure Speech Services (STT)
+#### Azure Speech Services (STT 詳細)
 
 **バージョン**: Cognitive Services Speech SDK 1.40
 **ライセンス**: Azure Managed Service
@@ -1307,15 +1297,20 @@ export async function createSubscription(customerId: string, priceId: string) {
 
 ### 8.1 パッケージマネージャ
 
-#### npm 10
+#### pnpm 10
 
-**バージョン**: 10.9.2
+**バージョン**: 10.32.1
 **設定 (.npmrc):**
 
 ```ini
 engine-strict=true
 save-exact=true
+shamefully-hoist=true
 ```
+
+> **📌 移行履歴:** npm 10 → pnpm 10.32.1（2026-04-03）
+> 詳細: [docs/06-infrastructure/NPM_TO_PNPM_MIGRATION_REPORT.md](../06-infrastructure/NPM_TO_PNPM_MIGRATION_REPORT.md)
+> 効果: インストール 60%高速化、ディスク 50%削減
 
 ---
 
@@ -1412,7 +1407,7 @@ export default defineConfig({
 - **Level 2 (Stage 2):** Integration Tests (Mock)
 - **Level 3 (Stage 3-5):** System E2E Tests（全スタック）
 
-**テスト成功率:** 35/35 (100%) ✅
+**テスト結果:** 85 passed / 21 skipped / 0 failed ✅
 
 詳細: [apps/web/tests/e2e/README.md](../../apps/web/tests/e2e/README.md)
 
@@ -1424,12 +1419,13 @@ export default defineConfig({
 
 | パッケージ           | バージョン | 理由                           |
 | -------------------- | ---------- | ------------------------------ |
-| **Next.js**          | 15.1.3     | 安定版、App Router完全サポート |
-| **React**            | 19.0.0     | Server Components対応          |
-| **TypeScript**       | 5.7.2      | 最新機能、型推論強化           |
+| **Next.js**          | 15.5.14    | 安定版、App Router完全サポート |
+| **React**            | 19.2.4     | Server Components対応          |
+| **TypeScript**       | 5.7.3      | 最新機能、型推論強化           |
 | **Prisma**           | 5.22.0     | PostgreSQL 15対応、安定版      |
 | **AWS CDK**          | 2.169.0    | 最新AWSサービス対応            |
-| **Node.js (Lambda)** | 20.x       | LTS、Lambda最新ランタイム      |
+| **Node.js (Lambda)** | 22.x       | LTS、Lambda最新ランタイム      |
+| **pnpm**             | 10.32.1    | 高速・省スペースパッケージ管理 |
 
 ### セマンティックバージョニング
 
@@ -1458,5 +1454,5 @@ export default defineConfig({
 
 ---
 
-**最終更新:** 2026-03-05
-**次回レビュー予定:** Phase 1 完了時
+**最終更新:** 2026-04-08
+**次回レビュー予定:** 次Phase開始時
