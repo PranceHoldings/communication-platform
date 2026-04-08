@@ -16,8 +16,10 @@ echo -e "${BLUE}🚀 Prance Platform - シンプルデプロイ${NC}"
 echo "=============================================="
 
 # 環境名の取得（デフォルト: dev）
-ENVIRONMENT="${1:-dev}"
-echo -e "${BLUE}📍 環境: ${ENVIRONMENT}${NC}\n"
+# NOTE: Use DEPLOY_ENV (not ENVIRONMENT) to avoid being overridden when .env.local
+# is sourced below (which contains ENVIRONMENT=dev for app config purposes).
+DEPLOY_ENV="${1:-dev}"
+echo -e "${BLUE}📍 環境: ${DEPLOY_ENV}${NC}\n"
 
 # プロジェクトルートを取得
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -98,13 +100,13 @@ fi
 # 5. CDK Synth
 echo -e "\n${YELLOW}🔍 CloudFormationテンプレートを生成中...${NC}"
 cd "$PROJECT_ROOT/infrastructure"
-npm run synth -- --context environment=${ENVIRONMENT} > /dev/null
+npm run synth -- --context environment=${DEPLOY_ENV} > /dev/null
 echo -e "${GREEN}✅ Synth完了${NC}"
 
 # 6. CDK Deploy
 echo -e "\n${YELLOW}🚢 スタックをデプロイ中...${NC}"
 npm run deploy -- \
-  --context environment=${ENVIRONMENT} \
+  --context environment=${DEPLOY_ENV} \
   --require-approval never \
   --progress events
 
