@@ -5,8 +5,8 @@ import { useEffect, useRef, useCallback } from 'react';
 export type CompositeLayout = 'side-by-side' | 'picture-in-picture';
 
 interface VideoComposerProps {
-  avatarCanvasRef: React.RefObject<HTMLCanvasElement>;
-  userVideoRef: React.RefObject<HTMLVideoElement>;
+  avatarCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+  userVideoRef: React.RefObject<HTMLVideoElement | null>;
   layout?: CompositeLayout;
   width?: number;
   height?: number;
