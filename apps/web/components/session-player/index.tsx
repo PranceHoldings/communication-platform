@@ -605,10 +605,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           }
 
           // MEDIA_ERR_ABORTED (code 1) or intentional stop (audioStoppedByUserRef) — expected, not an error
+          // Note: status === 'COMPLETED' is handled by early return at the top of this callback
           const isAborted =
             audioStoppedByUserRef.current ||
-            audioRef.current?.error?.code === 1 ||
-            status === 'COMPLETED';
+            audioRef.current?.error?.code === 1;
           if (isAborted) {
             audioStoppedByUserRef.current = false; // reset after handling
             console.log('[SessionPlayer] Audio playback aborted (session stopped)');
