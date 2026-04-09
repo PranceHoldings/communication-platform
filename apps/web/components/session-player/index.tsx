@@ -95,7 +95,13 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const { t } = useI18n();
   const { getErrorMessage, getMicrophoneInstructions } = useErrorMessage();
   const [status, setStatus] = useState<SessionPlayerStatus>('IDLE');
+  const statusRef = useRef<SessionPlayerStatus>('IDLE'); // Ref mirror to avoid stale closures
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
+
+  // Keep statusRef in sync with status state to avoid stale closures in callbacks
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   // Debug: Log SessionPlayer initialization
   useEffect(() => {
@@ -298,19 +304,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
           }
         });
       } else if (message.type === 'transcript_final') {
-        // セッション停止済みの場合、UIへの追加とAI処理をスキップ
-        if (message.speaker === 'USER' && pendingSessionEnd) {
-          console.log('[SessionPlayer] Transcript received after session stop, skipping UI update and sending session_end');
-          setIsProcessing(false);
-          setProcessingStage('idle');
-          setProcessingMessage('');
-          if (isConnectedRef.current && endSessionRef.current) {
-            endSessionRef.current();
-          }
-          return;
-        }
-
-        // 確定トランスクリプトをUIに追加
+        // 確定トランスクリプトをUIに追加（セッション停止済みでも表示する）
         setTranscript(prev => {
           const filtered = prev.filter(item => !item.partial || item.speaker !== message.speaker);
           return [
@@ -324,6 +318,18 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
             },
           ];
         });
+
+        // セッション停止済みの場合、AI処理をスキップしてsession_endを送信
+        if (message.speaker === 'USER' && pendingSessionEnd) {
+          console.log('[SessionPlayer] Transcript received after session stop, skipping AI processing and sending session_end');
+          setIsProcessing(false);
+          setProcessingStage('idle');
+          setProcessingMessage('');
+          if (isConnectedRef.current && endSessionRef.current) {
+            endSessionRef.current();
+          }
+          return;
+        }
 
         // 通常のフロー: AI処理に進む
         if (message.speaker === 'USER') {
@@ -1928,7 +1934,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       if (
         isConnectedRef.current &&
         isAuthenticated &&
-        status === 'ACTIVE' &&
+        statusRef.current === 'ACTIVE' &&
         sendVideoChunkRef.current
       ) {
         try {
@@ -1976,7 +1982,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         console.warn('[SessionPlayer] Skipping video chunk - not authenticated yet');
       }
     },
-    [status, isAuthenticated, handleAckTimeout, ACK_TIMEOUT_MS]
+    [isAuthenticated, handleAckTimeout, ACK_TIMEOUT_MS]
   );
 
   const handleVideoRecordingComplete = useCallback(

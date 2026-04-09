@@ -292,7 +292,15 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     // rejected as duplicates (seq 0 < server's accumulated expectedAudioSequence).
     // sequenceNumberRef continues from wherever it left off.
     speechEndSentRef.current = true; // Prevent speech_end until first chunk is sent
-    lastSpeechTimeRef.current = Date.now();
+    // Grace period: prevent speech_end from firing immediately after restart.
+    // The new MediaRecorder emits its EBML header as the very first chunk (~1s).
+    // If we set lastSpeechTimeRef = Date.now(), a 500ms pause triggers speech_end
+    // before a second chunk arrives, causing Lambda to process only the EBML header
+    // chunk and then DELETE it. Subsequent chunks then start without an EBML header
+    // and Lambda rejects them with "First chunk does not have EBML header".
+    // By adding 2000ms, speech_end cannot fire until at least 2s after restart,
+    // ensuring chunk-N (EBML) and chunk-N+1 are both in S3 before any processing.
+    lastSpeechTimeRef.current = Date.now() + 2000;
     speechStartTimeRef.current = null; // Reset speech start tracking
 
     logger.logRestartPhase2(sequenceNumberRef.current, speechEndSentRef.current);

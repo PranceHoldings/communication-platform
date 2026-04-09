@@ -578,22 +578,39 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
         // Phase 1.6.1 Day 32: Sequence order check
         const expectedSequence = connectionData?.expectedAudioSequence || 0;
+        // lastCleanedUpSequence tracks the highest sequence number that was cleaned up in
+        // the most recent speech_end. Chunks AT OR BELOW this are from a past turn and should
+        // be rejected even if late. Chunks ABOVE this but below expectedSequence are late
+        // arrivals from the CURRENT turn (e.g. EBML header delayed by network) — save them.
+        const lastCleanedUpSequence = (connectionData as any)?.lastCleanedUpSequence ?? -1;
         if (rtSequenceNumber < expectedSequence) {
-          console.warn('[audio_chunk_realtime] Out-of-order chunk (too old):', {
+          if (rtSequenceNumber <= lastCleanedUpSequence) {
+            // Truly stale: belongs to a past turn that was already cleaned up
+            console.warn('[audio_chunk_realtime] Stale chunk from past turn (rejected):', {
+              sessionId: rtSessionId,
+              sequenceNumber: rtSequenceNumber,
+              lastCleanedUpSequence,
+              expected: expectedSequence,
+              chunkId: rtChunkId,
+            });
+            await sendToConnection(connectionId, {
+              type: 'chunk_ack',
+              chunkId: rtChunkId,
+              status: 'duplicate',
+              timestamp: Date.now(),
+            });
+            break;
+          }
+          // Late chunk from the CURRENT turn (e.g. EBML header chunk delayed by network).
+          // Save it so the full audio segment can be reconstructed at speech_end.
+          console.warn('[audio_chunk_realtime] Late chunk from current turn, saving anyway:', {
             sessionId: rtSessionId,
             sequenceNumber: rtSequenceNumber,
             expected: expectedSequence,
+            lastCleanedUpSequence,
             chunkId: rtChunkId,
           });
-
-          // Old chunk - send duplicate ACK
-          await sendToConnection(connectionId, {
-            type: 'chunk_ack',
-            chunkId: rtChunkId,
-            status: 'duplicate',
-            timestamp: Date.now(),
-          });
-          break;
+          // Fall through to save normally
         }
 
         if (rtSequenceNumber > expectedSequence) {
@@ -636,7 +653,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
 
           // Phase 1.6.1 Day 32: Update sequence tracking
           const updatedReceivedChunks = [...(connectionData?.receivedAudioChunks || []), rtSequenceNumber];
-          const updatedExpectedSequence = rtSequenceNumber + 1;
+          // For late chunks (rtSequenceNumber < expectedSequence), do NOT roll back
+          // expectedAudioSequence — it must only ever increase.
+          const updatedExpectedSequence = Math.max(expectedSequence, rtSequenceNumber + 1);
 
           // Update connection data with latest sequence number
           await updateConnectionData(connectionId, {
@@ -803,13 +822,18 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
           // Clean up real-time chunks from S3 using shared utility
           await cleanupChunks(s3Client, S3_BUCKET, result.chunkKeys);
 
-          // Reset real-time chunk tracking and clear processing flag
+          // Reset real-time chunk tracking and clear processing flag.
+          // Record lastCleanedUpSequence so that the out-of-order check in
+          // audio_chunk_realtime can distinguish "late but current-turn chunk" from
+          // "stale chunk from a past turn that was already cleaned up".
+          const lastProcessedSequence = connectionData?.realtimeAudioSequenceNumber ?? -1;
           await updateConnectionData(connectionId, {
             realtimeAudioSequenceNumber: -1,
             realtimeAudioChunkCount: 0,
             realtimeAudioProcessing: false,
             lastAudioProcessingStartTime: undefined,
-          });
+            lastCleanedUpSequence: lastProcessedSequence,
+          } as any);
 
           console.log('[speech_end] Real-time audio processing complete');
 

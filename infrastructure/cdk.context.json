@@ -14,5 +14,14 @@
   "hosted-zone:account=010438500933:domainName=prance.jp:region=us-east-1": {
     "Id": "/hostedzone/Z061444035YYGCPJ5IJT0",
     "Name": "prance.jp."
-  }
+  },
+  "hosted-zone:account=010438500933:domainName=prance.jp:region=ap-northeast-1": {
+    "Id": "/hostedzone/Z061444035YYGCPJ5IJT0",
+    "Name": "prance.jp."
+  },
+  "availability-zones:account=010438500933:region=ap-northeast-1": [
+    "ap-northeast-1a",
+    "ap-northeast-1c",
+    "ap-northeast-1d"
+  ]
 }
