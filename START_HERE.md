@@ -1,11 +1,11 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-04-08 (Day 48 - ドキュメント更新・E2Eテスト拡充)
+**最終更新:** 2026-04-10 (Day 50 - 音声認識バグ2件修正・Lambda v1.1.5デプロイ)
 **開発環境:** Mac上のDocker（Linux） + Mac ホスト Tailwind ビルド
 **現在の Phase:** 全Phase（1-5）完了 🎉 → Staging/Production展開待ち
 **次のアクション:** Staging環境デプロイ → Production展開
-**ステータス:** dev ブランチ、全修正コミット済み ✅
-**最新コミット:** b53ebae "chore(gitignore): exclude CDK compiled TypeScript outputs"
+**ステータス:** dev ブランチ、全修正コミット済み・プッシュ済み ✅
+**最新コミット:** e7af38a "chore: Lambda deployment prep, CORS update, dashboard cleanup"
 **開発サーバー:** http://localhost:3000
 **🟢 Tailwind CSS:** Mac ホストビルド方式で完全動作 ✅
 
@@ -100,38 +100,29 @@ pnpm run test:e2e -- --grep="stage3"
 
 詳細: [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md)
 
-### 🎯 最新達成 (Day 48 - 2026-04-08) - ドキュメント更新・E2Eテスト拡充
+### 🎯 最新達成 (Day 50 - 2026-04-10) - 音声認識バグ2件修正
 
 **ブランチ:** dev
-**コミット:** b53ebae "chore(gitignore): exclude CDK compiled TypeScript outputs"
+**コミット:** 72198ea → e7af38a（プッシュ済み）
+**Lambda:** v1.1.5 デプロイ済み（prance-websocket-default-v2-dev）
 
 **完了作業:**
 
-1. **✅ サイレンスタイマーテスト実装** (コミット c1ec4a5)
-   - TIMER-001: タイマー表示・カウント確認
-   - TIMER-002: AI音声再生時のタイマーリセット確認（実WAVデータ使用）
+1. **✅ Bug 1: AI TTS再生中エコーによる誤restart** (コミット 72198ea)
+   - `useAudioRecorder.ts`: `isAiRespondingRef.current === true` 時に `restartRecording()` を抑止
+   - 原因: raw AudioContext analyser がスピーカーエコーを800ms発話と誤検知 → 無音MediaRecorder起動 → Azure STT InitialSilenceTimeout
 
-2. **✅ エラーハンドリングテスト実装** (コミット c1ec4a5)
-   - ErrorGuidanceコンポーネントのテスト（WebSocketエラーメッセージ経由）
-   - 多言語対応テスト（context.addCookies でロケール設定）
+2. **✅ Bug 2: チャンクファイル名とソート関数の不一致** (コミット 72198ea)
+   - `getRealtimeChunkKey`: `chunk-000005.webm` → `{timestamp}-{seq}.webm` へ変更
+   - sort関数の regex `/(\d+)-(\d+)\.\w+$/` と完全一致、warningも`validateChunkOrder`の誤動作も解消
+   - video チャンクと同一フォーマットに統一
 
-3. **✅ .gitignore 更新** (コミット b53ebae)
-   - CDKコンパイル成果物（infrastructure/bin/*.js, lib/*.js等）を除外
+3. **✅ その他** (コミット e7af38a)
+   - next.config.js: Lambda向け standalone output 設定
+   - lambda.js: 静的ファイル配信追加
+   - api-lambda-stack.ts: dev.app.prance.jp を CORS 許可オリジンに追加
 
-4. **✅ ドキュメント整理** (進行中)
-   - ルートの一時ファイル3件削除（PENDING_PUSH.md等）
-   - 3ファイルを適切なdocs/サブディレクトリに移動
-
-### 🎯 最新達成 (Day 46 - 2026-04-06) - 沈黙プロンプト修正・E2Eテスト全パス
-
-**完了作業:**
-
-1. **✅ 沈黙プロンプト バグ修正** (コミット c5d44c8)
-   - `isMicRecordingRef.current` チェック削除 → 沈黙プロンプトが正常に送信されるように修正
-   - STT遅延削減: `EndSilenceTimeoutMs` 2000ms → 1000ms
-
-2. **✅ Stage 3 E2E全10テストパス** (コミット 62a16f2)
-   - STTベーステスト → 沈黙プロンプトフローで置き換え
+4. **✅ E2E全35テスト合格** (Stage 0-5 全て ✅)
 
 **既知の問題（非ブロッキング）:**
 - **sonner v2 "Maximum update depth exceeded"** - React 19 + sonner v2.0.7の互換性バグ
@@ -171,13 +162,13 @@ bash scripts/detect-hardcoded-values.sh      # ハードコード検出
 | TypeScript | 5.7.3 |
 | Node.js (Lambda) | 22.x |
 | Lambda関数 | 102個（Dev: 51, Production: 51）|
-| E2Eテスト | **85 passed / 21 skipped / 0 failed** ✅ |
+| E2Eテスト | **35+ passed / 0 failed** ✅ (Stage 0-5全合格) |
 | スクリプト統合 | Phase 1-4 完了（60/60、100%）|
 | Tailwind CSS | 完全動作（Mac ホストビルド方式）|
 
 ---
 
-**最終更新:** 2026-04-08 (Day 48)
+**最終更新:** 2026-04-10 (Day 50)
 **Production Status:** 🚀 **稼働中** - https://app.prance.jp
 **Staging Status:** 🎯 **準備完了** - デプロイ待ち
 **次のマイルストーン:** Staging環境デプロイ → 24-48h監視 → Production展開

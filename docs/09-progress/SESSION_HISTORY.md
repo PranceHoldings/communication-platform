@@ -1,5 +1,55 @@
 # Prance Alpha開発 - セッション進捗まとめ
 
+**最終更新:** 2026-04-10
+**セッション:** Day 50 - 音声認識バグ2件修正 + E2E全テスト合格
+
+---
+
+## ✅ Day 50: 音声認識バグ2件修正 + チャンクファイル名統一（2026-04-10）
+
+### セッション概要
+
+- **実施内容:** 2ターン目「No speech detected」バグの根本原因特定・修正
+- **コミット:** 72198ea, e7af38a → e7af38a (push済み)
+- **状態:** ✅ **全修正デプロイ完了（Lambda v1.1.5）・E2E 35テスト全合格**
+
+### 実施作業
+
+**Bug 1: AI TTS再生中のエコーによる誤restart（根本原因）**
+
+- `useAudioRecorder.ts` の `monitorAudioLevel` で `restartRecording()` を呼ぶ際に
+  `isAiRespondingRef.current === true` の場合はrestartを抑止する処理を追加
+- 問題の原因: `AudioContext` analyserはエコーキャンセル前の生音声を見ているため、
+  AI TTS再生中にスピーカーからの音を「発話800ms継続」と判定し `restartRecording()` を呼んでいた
+  → 新しい MediaRecorder はエコーキャンセル後の無音を録音 → S3に無音チャンクが蓄積
+  → `speech_end` 時に無音チャンクを含む37チャンクをAzure STTへ送信 → `InitialSilenceTimeout` × 3
+- 修正後: AI応答中は `speechStartTimeRef = null` でリセット、AI終了後に800ms再確認してからrestart
+
+**Bug 2: チャンクファイル名とソート関数の不一致**
+
+- `getRealtimeChunkKey` が `chunk-000005.webm` を生成していたが、
+  `sortChunksByTimestampAndIndex` は `/(\d+)-(\d+)\.\w+$/` パターン（`{timestamp}-{seq}`）を期待
+  → 毎回 fallback `localeCompare` が呼ばれ、`validateChunkOrder` も常に invalid を返していた
+- 修正: `getRealtimeChunkKey(sessionId, timestamp, sequenceNumber)` に変更し
+  `{timestamp}-{sequenceNumber}.webm` 形式へ統一（video チャンクと同一フォーマット）
+- `chunk-utils.ts`: `generateChunkKey` の誤ったdocstring修正、`validateChunkOrder` のコメント修正
+- `index.ts`: `rtTimestamp` を `getRealtimeChunkKey` へ渡すよう修正、Lambda version → 1.1.5
+- `s3-paths.test.ts`: 新フォーマットに合わせてテスト更新
+
+**E2E テスト結果**
+
+| Stage | 結果 |
+|-------|------|
+| Stage 0: Smoke (5) | ✅ 5/5 |
+| Stage 1: Basic UI (10) | ✅ 10/10 |
+| Stage 2: Mocked Integration (8) | ✅ 8/8 |
+| Stage 3: Real WebSocket (19) | ✅ 19/19 |
+| Stage 4: Recording (10) | ✅ 10/10 |
+| Stage 5: Analysis (1) | ✅ 1/1 |
+| Auth / Phase1.6.1 / Error Handling | ✅ 全合格 |
+
+---
+
 **最終更新:** 2026-04-02
 **セッション:** Day 42 - React 19移行完了 + Backend統合問題解決 🎉
 
