@@ -497,28 +497,54 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
             // Check if speech has continued for minimum duration
             const speechDuration = now - speechStartTimeRef.current;
             if (speechDuration >= MINIMUM_SPEECH_DURATION) {
-              // Confirmed speech - RESTART to get fresh EBML header
-              logger.info(
-                LogPhase.RECORDING,
-                'Confirmed speech detected - restarting recorder for fresh EBML header',
-                {
-                  level: normalizedLevel.toFixed(3),
-                  threshold: speechDetectionThreshold,
-                  speechDuration,
-                  currentSequence: sequenceNumberRef.current,
-                }
-              );
+              // Guard: the AudioContext analyser sees raw (pre-echo-cancel) audio, so it
+              // picks up AI TTS playback reflected in the microphone and treats it as
+              // "confirmed speech".  The MediaRecorder, however, applies echo cancellation
+              // and captures near-silence.  Restarting during AI response would produce a
+              // turn whose S3 chunks start with ~8 seconds of silence, causing Azure STT
+              // to return InitialSilenceTimeout even though the user spoke later.
+              //
+              // Solution: when the AI is currently responding, discard the speech sample
+              // and wait until the AI finishes before allowing a restart.  The recorder
+              // Rn+1 created by the session player after the previous speech_end will
+              // keep running silently until the user's real speech is confirmed post-AI.
+              const isAiResponding = isAiRespondingRef?.current ?? false;
+              if (isAiResponding) {
+                logger.debug(
+                  LogPhase.RECORDING,
+                  'Confirmed speech during AI response — suppressing restart (echo from speakers)',
+                  {
+                    level: normalizedLevel.toFixed(3),
+                    speechDuration,
+                    currentSequence: sequenceNumberRef.current,
+                  }
+                );
+                // Reset so we re-confirm 800ms of speech AFTER the AI finishes
+                speechStartTimeRef.current = null;
+              } else {
+                // Confirmed real speech - RESTART to get fresh EBML header
+                logger.info(
+                  LogPhase.RECORDING,
+                  'Confirmed speech detected - restarting recorder for fresh EBML header',
+                  {
+                    level: normalizedLevel.toFixed(3),
+                    threshold: speechDetectionThreshold,
+                    speechDuration,
+                    currentSequence: sequenceNumberRef.current,
+                  }
+                );
 
-              // CRITICAL: Restart recorder to ensure sequence 0 with EBML header
-              restartRecording();
+                // CRITICAL: Restart recorder to ensure sequence 0 with EBML header
+                restartRecording();
 
-              // Enable chunk transmission after restart
-              // Note: restartRecording() sets speechEndSentRef = true in Phase 2,
-              // so we override it here to enable transmission
-              speechEndSentRef.current = false;
+                // Enable chunk transmission after restart
+                // Note: restartRecording() sets speechEndSentRef = true in Phase 2,
+                // so we override it here to enable transmission
+                speechEndSentRef.current = false;
 
-              // Reset speech start tracking
-              speechStartTimeRef.current = null;
+                // Reset speech start tracking
+                speechStartTimeRef.current = null;
+              }
             }
           }
         } else {

@@ -70,6 +70,9 @@ export function sortChunksByTimestampAndIndex(chunks: S3Object[]): S3Object[] {
 /**
  * Validate chunk order to detect missing or duplicate chunks
  *
+ * Handles two filename formats:
+ *   - Realtime audio / video: {timestamp}-{sequenceNumber}.{ext}  (e.g. 1772952987123-5.webm)
+ *
  * @param chunks - Sorted array of S3 objects
  * @returns Validation result with details
  */
@@ -83,6 +86,7 @@ export function validateChunkOrder(chunks: S3Object[]): {
   const duplicates = new Set<number>();
 
   for (const chunk of chunks) {
+    // Format: {timestamp}-{sequenceNumber}.{ext}
     const match = chunk.Key?.match(/(\d+)-(\d+)\.\w+$/);
     if (match) {
       const chunkNum = parseInt(match[2], 10);
@@ -145,7 +149,11 @@ export function logSortedChunks(chunks: S3Object[], context: string, count: numb
  * Generate S3 key for chunk storage
  *
  * Generates a consistent filename format for audio/video chunks:
- * sessions/{sessionId}/{chunkType}-chunks/{timestamp}-{chunkNumber}.{extension}
+ *   audio → sessions/{sessionId}/audio-chunks/{timestamp}-{chunkNumber}.{extension}
+ *   video → sessions/{sessionId}/video-chunks/{timestamp}-{chunkNumber}.{extension}
+ *
+ * NOTE: Real-time audio chunks use getRealtimeChunkKey() (→ realtime-chunks/ prefix),
+ *       not this function. This function is for video chunks and non-realtime audio.
  *
  * @param sessionId - Session ID
  * @param chunkType - Type of chunk ('audio' or 'video')
@@ -155,8 +163,8 @@ export function logSortedChunks(chunks: S3Object[], context: string, count: numb
  * @returns S3 key path
  *
  * @example
- * generateChunkKey('abc123', 'audio', 1772952987123, 5, 'webm')
- * // Returns: 'sessions/abc123/realtime-chunks/1772952987123-5.webm'
+ * generateChunkKey('abc123', 'video', 1772952987123, 5, 'webm')
+ * // Returns: 'sessions/abc123/video-chunks/1772952987123-5.webm'
  */
 export function generateChunkKey(
   sessionId: string,

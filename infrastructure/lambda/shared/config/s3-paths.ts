@@ -90,13 +90,20 @@ export function getRealtimeChunksPrefix(sessionId: string): string {
 /**
  * Generate S3 key for a specific real-time audio chunk
  *
+ * Format matches the video chunk convention ({timestamp}-{sequenceNumber}.webm)
+ * so that sortChunksByTimestampAndIndex works correctly for both audio and video.
+ *
  * @param sessionId - Session ID
+ * @param timestamp - Unix timestamp in ms (from the frontend chunk message)
  * @param sequenceNumber - Chunk sequence number
- * @returns S3 key (e.g., 'sessions/abc123/realtime-chunks/chunk-000005.webm')
+ * @returns S3 key (e.g., 'sessions/abc123/realtime-chunks/1772952987123-5.webm')
  */
-export function getRealtimeChunkKey(sessionId: string, sequenceNumber: number): string {
-  const paddedSeq = sequenceNumber.toString().padStart(6, '0');
-  return `${getRealtimeChunksPrefix(sessionId)}chunk-${paddedSeq}.webm`;
+export function getRealtimeChunkKey(
+  sessionId: string,
+  timestamp: number,
+  sequenceNumber: number
+): string {
+  return `${getRealtimeChunksPrefix(sessionId)}${timestamp}-${sequenceNumber}.webm`;
 }
 
 /**

@@ -64,15 +64,25 @@ describe('getRealtimeChunksPrefix', () => {
 });
 
 describe('getRealtimeChunkKey', () => {
-  it('returns sessions/{id}/realtime-chunks/chunk-{padded}.webm format', () => {
-    expect(getRealtimeChunkKey(SESSION_ID, 5)).toBe(
-      `sessions/${SESSION_ID}/realtime-chunks/chunk-000005.webm`
+  it('returns sessions/{id}/realtime-chunks/{timestamp}-{seq}.webm format', () => {
+    expect(getRealtimeChunkKey(SESSION_ID, 1772952987123, 5)).toBe(
+      `sessions/${SESSION_ID}/realtime-chunks/1772952987123-5.webm`
     );
   });
 
-  it('zero-pads sequence number to 6 digits', () => {
-    expect(getRealtimeChunkKey(SESSION_ID, 1)).toContain('chunk-000001.webm');
-    expect(getRealtimeChunkKey(SESSION_ID, 999999)).toContain('chunk-999999.webm');
+  it('produces consistent format regardless of sequence number magnitude', () => {
+    expect(getRealtimeChunkKey(SESSION_ID, 1772952987123, 1)).toBe(
+      `sessions/${SESSION_ID}/realtime-chunks/1772952987123-1.webm`
+    );
+    expect(getRealtimeChunkKey(SESSION_ID, 1772952987123, 999)).toBe(
+      `sessions/${SESSION_ID}/realtime-chunks/1772952987123-999.webm`
+    );
+  });
+
+  it('format matches sortChunksByTimestampAndIndex regex pattern', () => {
+    const key = getRealtimeChunkKey(SESSION_ID, 1772952987123, 5);
+    // The sort function uses /(\d+)-(\d+)\.\w+$/ to extract timestamp and seq
+    expect(key).toMatch(/(\d+)-(\d+)\.webm$/);
   });
 });
 

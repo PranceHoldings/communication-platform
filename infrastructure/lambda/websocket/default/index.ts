@@ -44,9 +44,9 @@ import { getAwsRegion, getBedrockRegion, getSttAutoDetectLanguages, getEnableAut
 import { LANGUAGE_DEFAULTS, DYNAMODB_DEFAULTS } from '../../shared/config/defaults';
 
 // Lambda function version
-const LAMBDA_VERSION = '1.1.4'; // Day 36: Fixed CLOUDFRONT eager evaluation
+const LAMBDA_VERSION = '1.1.5'; // fix: audio realtime chunk filename {timestamp}-{seq}.webm (matches sort function)
 const LAMBDA_NAME = 'websocket-default-handler';
-const BUILD_TIMESTAMP = '2026-03-22T12:10:00Z'; // Force CDK rebuild - lazy CLOUDFRONT config
+const BUILD_TIMESTAMP = '2026-04-09T22:30:00Z'; // fix: audio chunk key uses timestamp-seq format
 const FORCE_REBUILD_FLAG = true; // Day 36: Prisma Client initialization fix
 
 // Build identifier - unique filename format
@@ -627,7 +627,7 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         try {
           // Save this chunk to S3 for later processing (on speech_end)
           const { getRealtimeChunkKey } = await import('../../shared/config/s3-paths');
-          const rtChunkKey = getRealtimeChunkKey(rtSessionId, rtSequenceNumber);
+          const rtChunkKey = getRealtimeChunkKey(rtSessionId, rtTimestamp, rtSequenceNumber);
           const rtAudioBuffer = Buffer.from(rtAudioData, 'base64');
 
           await s3Client.send(
