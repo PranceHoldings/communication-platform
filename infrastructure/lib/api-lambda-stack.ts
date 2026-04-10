@@ -154,11 +154,11 @@ export class ApiLambdaStack extends cdk.Stack {
         }),
       },
       defaultCorsPreflightOptions: {
-        // CORS設定: Dev環境ではlocalhost:3000を許可、Production環境では特定ドメインのみ
+        // CORS設定: Dev環境ではlocalhost:3000とdev.app.prance.jpを許可、Production環境では特定ドメインのみ
         allowOrigins:
           props.environment === 'production'
             ? ['https://app.prance.jp']
-            : ['http://localhost:3000', 'https://app.prance.jp'],
+            : ['http://localhost:3000', 'https://dev.app.prance.jp', 'https://app.prance.jp'],
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: ['Content-Type', 'Authorization', 'X-Api-Key'],
         allowCredentials: true,
@@ -172,7 +172,7 @@ export class ApiLambdaStack extends cdk.Stack {
     const allowedOrigins =
       props.environment === 'production'
         ? ['https://app.prance.jp']
-        : ['http://localhost:3000', 'https://app.prance.jp'];
+        : ['http://localhost:3000', 'https://dev.app.prance.jp', 'https://app.prance.jp'];
 
     this.restApi.addGatewayResponse('Unauthorized', {
       type: apigateway.ResponseType.UNAUTHORIZED,

@@ -222,10 +222,6 @@ export default function DashboardPage() {
                             // Only render image if it's a local path (not external URL)
                             const isLocalPath = thumbnailUrl && !thumbnailUrl.startsWith('http://') && !thumbnailUrl.startsWith('https://');
 
-                            if (thumbnailUrl && !isLocalPath) {
-                              console.warn('[Dashboard] External thumbnail URL detected, using fallback:', thumbnailUrl);
-                            }
-
                             return isLocalPath ? (
                               <img
                                 src={thumbnailUrl}

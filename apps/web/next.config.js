@@ -8,8 +8,11 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 const nextConfig = {
   reactStrictMode: true,
 
-  // Amplify Hosting deployment (SSR enabled by default)
-  // Note: Remove 'output: standalone' for Amplify - it's only for Lambda
+  // Lambda deployment requires standalone output
+  output: 'standalone',
+
+  // Fix workspace root detection (prevents deep nesting due to /Users/ken/package-lock.json)
+  outputFileTracingRoot: path.resolve(__dirname, '../../'),
 
   // 実験的機能
   experimental: {

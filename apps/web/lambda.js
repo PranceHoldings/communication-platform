@@ -7,6 +7,65 @@
  */
 
 const { Readable } = require('stream');
+const fs = require('fs');
+const path = require('path');
+
+// MIME type map for static files
+const MIME_TYPES = {
+  '.css': 'text/css',
+  '.js': 'application/javascript',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.eot': 'application/vnd.ms-fontobject',
+  '.txt': 'text/plain',
+  '.webp': 'image/webp',
+  '.glb': 'model/gltf-binary',
+  '.gltf': 'model/gltf+json',
+};
+
+/**
+ * Serve static files from the Lambda filesystem
+ * Handles /_next/static/* and /public/* paths
+ */
+function serveStaticFile(urlPath) {
+  let filePath;
+
+  if (urlPath.startsWith('/_next/static/')) {
+    filePath = path.join(__dirname, '.next', 'static', urlPath.slice('/_next/static/'.length));
+  } else if (urlPath.startsWith('/public/')) {
+    filePath = path.join(__dirname, 'public', urlPath.slice('/public/'.length));
+  } else {
+    // Check if file exists directly in public/
+    filePath = path.join(__dirname, 'public', urlPath);
+  }
+
+  try {
+    const data = fs.readFileSync(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    const isText = contentType.startsWith('text/') || contentType === 'application/javascript' || contentType === 'application/json';
+
+    return {
+      statusCode: 200,
+      headers: {
+        'content-type': contentType,
+        'cache-control': 'public, max-age=31536000, immutable',
+      },
+      body: isText ? data.toString('utf-8') : data.toString('base64'),
+      isBase64Encoded: !isText,
+    };
+  } catch (e) {
+    return null;
+  }
+}
 
 // Initialize Next.js app in standalone mode
 let app;
@@ -191,6 +250,14 @@ function createMockResponse() {
  */
 exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false;
+
+  const urlPath = event.requestContext?.http?.path || '/';
+
+  // Serve static files directly from filesystem (Next.js standalone does not serve these)
+  if (urlPath.startsWith('/_next/static/') || urlPath.startsWith('/images/') || urlPath.startsWith('/models/') || urlPath.startsWith('/fonts/')) {
+    const staticResponse = serveStaticFile(urlPath);
+    if (staticResponse) return staticResponse;
+  }
 
   try {
     const nextApp = await initNextApp();
