@@ -1,11 +1,11 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-04-10 (Day 50 - 音声認識バグ2件修正・Lambda v1.1.5デプロイ)
+**最終更新:** 2026-04-24 (Day 52 - 商用品質音声改善)
 **開発環境:** Mac上のDocker（Linux） + Mac ホスト Tailwind ビルド
-**現在の Phase:** 全Phase（1-5）完了 🎉 → Staging/Production展開待ち
+**現在の Phase:** 全Phase（1-5）完了 🎉 → 商用品質改善中
 **次のアクション:** Staging環境デプロイ → Production展開
-**ステータス:** dev ブランチ、全修正コミット済み・プッシュ済み ✅
-**最新コミット:** e7af38a "chore: Lambda deployment prep, CORS update, dashboard cleanup"
+**ステータス:** dev ブランチ、全修正コミット済み（未プッシュ）
+**最新コミット:** 5e44362 "perf(tts): real streaming WebSocket + sentence-level AI→TTS pipeline"
 **開発サーバー:** http://localhost:3000
 **🟢 Tailwind CSS:** Mac ホストビルド方式で完全動作 ✅
 
@@ -58,7 +58,19 @@ git log --oneline -5
 
 ## 🚀 次のアクション
 
-### 0. Staging環境デプロイ 🔴 推奨
+### 0. 商用品質音声改善 ✅ 完了 (Day 52)
+
+**コミット:** 538cfc7, 5e44362（dev ブランチ、デプロイ済み）
+
+1. **TTSストリーミングリアルタイム再生**: `useAudioPlayer.playChunk()` をSessionPlayerに接続。
+   Lambda から届くMP3チャンクをWeb Audio APIで即座に再生（`audio_response` URLを待たずに再生開始）
+2. **バージイン**: AI発話中のユーザー発話を検出してAI音声を即座に停止。
+   `onBargeIn` コールバックでWeb Audio APIとHTMLAudioElement両方を停止
+3. **ElevenLabs真のストリーミング**: WebSocketチャンクを収集後replay → 到着順即座yield に改善
+4. **センテンス単位AI→TTSパイプライン**: AI生成完了を待たずにセンテンス区切りでTTS開始。
+   Multi-sentenceレスポンスで最初の音声到着レイテンシ〜1-3s削減
+
+### 1. Staging環境デプロイ 🔴 推奨
 
 ```bash
 # 1. Stagingブランチにマージ
@@ -75,7 +87,7 @@ cd ../apps/web
 pnpm run test:e2e -- --grep="stage3"
 ```
 
-### 1. Production環境デプロイ（Staging検証後）
+### 2. Production環境デプロイ（Staging検証後）
 
 **Gradual Rollout戦略:**
 1. Phase 1 (10%): 2-4時間監視、Error rate > 0.5%でロールバック
@@ -100,7 +112,31 @@ pnpm run test:e2e -- --grep="stage3"
 
 詳細: [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md)
 
-### 🎯 最新達成 (Day 50 - 2026-04-10) - 音声認識バグ2件修正
+### 🎯 最新達成 (Day 52 - 2026-04-24) - 商用品質音声改善
+
+**ブランチ:** dev
+**コミット:** 538cfc7, 5e44362（Lambda v1.2.0 デプロイ済み）
+
+**完了作業:**
+
+1. **✅ TTSストリーミング再生有効化**
+   - `handleTTSAudioChunk` を `useAudioPlayer.playChunk()` に接続
+   - Lambda の `audio_chunk` メッセージをWeb Audio APIで即座に再生
+   - `audio_response` URL重複再生を防止
+
+2. **✅ バージイン実装**
+   - `useAudioRecorder.onBargeIn`: AI発話中の確認済み発話でトリガー
+   - `SessionPlayer.handleBargeIn`: Web Audio + HTMLAudioElement両方停止
+   - `bargedInRef`: バージイン後の遅延 `audio_response` URL抑制
+
+3. **✅ ElevenLabs TTS 真のストリーミング**
+   - WebSocketチャンクをキュー+Promiseパターンで到着順即座yield
+
+4. **✅ AI→TTSセンテンスレベルパイプライン**
+   - センテンス区切り(. ! ? 。)でTTSを開始
+   - Multi-sentenceで最初の音声まで〜1-3s削減
+
+### 🎯 前回達成 (Day 50 - 2026-04-10) - 音声認識バグ2件修正
 
 **ブランチ:** dev
 **コミット:** 72198ea → e7af38a（プッシュ済み）
