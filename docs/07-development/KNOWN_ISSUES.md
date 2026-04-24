@@ -563,13 +563,109 @@ pnpm run dev
 
 ---
 
+---
+
+### Issue #9: seed-recording-data.ts がS3に実ファイルを作成しない
+
+**発生日:** 2026-04-25 (Day 53)
+**状態:** ✅ **修正済み**（2026-04-25）
+**影響:** シードデータのDB録画レコードにCDN URLが設定されているが、S3に実ファイルが存在せず動画再生テストが失敗する
+
+#### 問題詳細
+
+`infrastructure/lambda/test/seed-recording-data.ts` はDBに `processing_status='COMPLETED'` の録画レコードを作成するが、S3への実ファイルアップロードを行わない。
+
+**シードデータの見分け方:**
+- `file_size_bytes = 5242880`（ちょうど5MB・固定値）
+- `duration_sec = 120`（ちょうど2分・固定値）
+- `video_chunks_count = 24`（固定値）
+- `created_at = processed_at`（同一ミリ秒）
+- S3を確認するとオブジェクトが存在しない
+
+**影響範囲:** DB上では5件中5件が `COMPLETED` だが、S3に実ファイルがあるのは1件のみ（今回アップロードしたダミー）
+
+#### 根本原因
+
+```typescript
+// seed-recording-data.ts がやっていること
+await prisma.recording.create({
+  data: {
+    s3Key: 'sessions/{id}/recording.webm',  // ← S3パスをDBに書くだけ
+    fileSizeBytes: BigInt(5242880),          // ← フェイク値
+    processingStatus: 'COMPLETED',
+    // S3へのアップロードは一切ない
+  },
+});
+```
+
+#### 解決方法
+
+シーダーがS3テンプレートファイルをコピーするよう修正（2026-04-25実装）：
+
+1. `test-assets/recording-template.webm` をS3に保存（60秒のテスト動画）
+2. `seed-recording-data.ts` がセッション用パスへ `CopyObjectCommand` で複製
+3. 実ファイルサイズ・CDN URLをDBに正確に記録
+
+**テンプレートファイルの生成・アップロード（一度だけ実行）:**
+```bash
+ffmpeg -f lavfi -i "color=c=blue:s=1280x720:d=60" \
+       -f lavfi -i "sine=frequency=440:duration=60" \
+       -c:v libvpx-vp9 -b:v 200k -c:a libopus -t 60 \
+       /tmp/test-recording.webm
+aws s3 cp /tmp/test-recording.webm \
+  s3://prance-recordings-dev-010438500933/test-assets/recording-template.webm \
+  --content-type video/webm
+```
+
+---
+
+### Issue #10: db-query Lambda の読み取り専用チェックに false-positive
+
+**発生日:** 2026-04-25 (Day 53)
+**状態:** ✅ **修正済み**（2026-04-25）
+**影響:** `created_at`・`updated_at` などを含む `SELECT` クエリが不当にブロックされる
+
+#### 問題詳細
+
+`infrastructure/lambda/db-query/index.ts` の `isReadOnlyQuery()` 関数が、禁止キーワード（`CREATE`, `UPDATE` 等）を部分文字列一致でチェックするため、カラム名に含まれる場合も誤拒否する。
+
+```typescript
+// ❌ 問題のあるコード
+if (normalized.includes(keyword)) {  // ← 部分一致
+  return false;
+}
+// "SELECT ... ORDER BY created_at" → 'CREATE' が 'CREATED_AT' に含まれる → 誤ブロック
+// "SELECT ... updated_at" → 'UPDATE' が 'UPDATED_AT' に含まれる → 誤ブロック
+```
+
+**影響を受けるカラム名:**
+- `created_at` → `CREATE` に一致
+- `updated_at` → `UPDATE` に一致
+- `deleted_at` → `DELETE` に一致
+
+#### 解決方法
+
+単語境界（`\b`）を使ったワードマッチに変更（2026-04-25実装）：
+
+```typescript
+// ✅ 修正後
+const keywordPattern = new RegExp(`\\b${keyword}\\b`);
+if (keywordPattern.test(normalized)) {
+  return false;
+}
+// "CREATED_AT" は \bCREATE\b にマッチしない（Cの後に非単語文字がないため）
+```
+
+---
+
 ## 📚 関連ドキュメント
 
 - [セッション再開プロトコル](SESSION_RESTART_PROTOCOL.md)
 - [トラブルシューティング](../01-getting-started/FAQ.md)
 - [環境変数管理](../02-architecture/ENVIRONMENT_ARCHITECTURE.md)
+- [録画データライフサイクル](../05-modules/CONVERSATION_FLOW.md#-録画データライフサイクル)
 
 ---
 
-**最終更新:** 2026-03-19 22:00 JST (Day 27)
+**最終更新:** 2026-04-25 (Day 53)
 **次回レビュー:** 問題解決時、または新規問題発生時

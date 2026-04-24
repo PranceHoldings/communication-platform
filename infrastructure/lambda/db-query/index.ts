@@ -57,7 +57,8 @@ function isReadOnlyQuery(sql: string): boolean {
 
   // Allow only SELECT queries (including WITH clause)
   if (normalized.startsWith('SELECT') || normalized.startsWith('WITH')) {
-    // Disallow dangerous keywords
+    // Disallow dangerous keywords — use word boundary matching to avoid false positives
+    // on column names like created_at (CREATE), updated_at (UPDATE), deleted_at (DELETE)
     const dangerous = [
       'INSERT',
       'UPDATE',
@@ -70,7 +71,7 @@ function isReadOnlyQuery(sql: string): boolean {
       'REVOKE',
     ];
     for (const keyword of dangerous) {
-      if (normalized.includes(keyword)) {
+      if (new RegExp(`\\b${keyword}\\b`).test(normalized)) {
         return false;
       }
     }

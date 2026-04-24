@@ -928,6 +928,135 @@ AI応答フローでは restartRecording が2回呼ばれる:
 
 ---
 
+## 🎬 録画データライフサイクル
+
+セッション中に生成されるビデオ録画データの保存・管理フローを説明する。
+S3とDBの関係を正確に理解することで、不整合（DBにレコードあり・S3に実態なし）の検出と原因特定が可能になる。
+
+### S3保存パス体系
+
+```
+s3://prance-recordings-{env}-{account}/
+│
+├── sessions/{sessionId}/video-chunks/          ← セッション中に1秒ごとに保存
+│   ├── {timestamp}-{sequenceNumber}.webm       ← 例: 1000-0.webm, 2016-1.webm
+│   └── ...（セッション中のチャンク全件）
+│
+├── sessions/{sessionId}/realtime-chunks/       ← 音声チャンク（STT用）
+│   └── {timestamp}-{sequenceNumber}.webm
+│
+└── sessions/{sessionId}/recording.webm         ← 最終合成ファイル（CDN配信対象）
+```
+
+### ビデオデータのライフサイクル
+
+```
+[セッション中]
+  useVideoRecorder.ondataavailable (1秒ごと)
+    → WebSocket: { type: 'video_chunk', videoData: base64, ... }
+    → Lambda (video_chunk_realtime handler)
+    → S3保存: sessions/{sessionId}/video-chunks/{timestamp}-{seq}.webm
+    → DB: videoChunksCount++ (DynamoDB ConnectionData)
+
+[session_end受信時 - VideoProcessor.combineChunks()]
+  1. S3 ListObjects: sessions/{sessionId}/video-chunks/ 一覧取得
+  2. タイムスタンプ→シーケンス番号でソート
+  3. 並列ダウンロード（4チャンク同時）→ /tmp/ に展開
+  4. ffmpeg -f concat: 全チャンクを結合
+  5. S3アップロード: sessions/{sessionId}/recording.webm  ← 最終ファイル
+  6. DB更新:
+     - recordings.processing_status: PROCESSING → COMPLETED
+     - recordings.cdn_url: CloudFront URL
+     - recordings.file_size_bytes: 実ファイルサイズ
+     - recordings.duration_sec: ffmpeg出力から算出
+  7. 一時ファイル削除: /tmp/video-{sessionId}-{timestamp}/
+```
+
+### DBレコードの作成タイミング
+
+```
+session_end受信
+  ↓
+recordings.create({ processingStatus: 'PROCESSING', ... })  ← 先にDBレコード作成
+  ↓
+VideoProcessor.combineChunks()  ← 実際のS3処理
+  ↓
+  成功: recordings.update({ processingStatus: 'COMPLETED', s3Key, cdnUrl, ... })
+  失敗: recordings.update({ processingStatus: 'ERROR', errorMessage })
+```
+
+**重要:** DBレコードは `combineChunks()` 開始前に `PROCESSING` で作成される。
+処理失敗時も `ERROR` ステータスで更新されるため、
+`COMPLETED` でありながらS3に実態がない状態は通常フローでは発生しない。
+
+### ⚠️ S3/DB不整合が発生するケース
+
+以下のケースでは「DBにCOMPLETEDレコードあり・S3に実態なし」の状態になる：
+
+#### ケース1: `seed-recording-data.ts` によるテストシード（最多）
+
+```typescript
+// infrastructure/lambda/test/seed-recording-data.ts
+await prisma.recording.create({
+  data: {
+    s3Key: 'sessions/{id}/recording.webm',   // S3パスをDBに書くだけ
+    fileSizeBytes: BigInt(5242880),           // 5MB固定値（フェイク）
+    processingStatus: 'COMPLETED',
+    // ↑ S3への実ファイルアップロードは一切行わない
+  },
+});
+```
+
+シードデータの特徴（見分け方）：
+- `file_size_bytes = 5242880`（ちょうど5MB）
+- `duration_sec = 120`（ちょうど2分）
+- `video_chunks_count = 24`（固定値）
+- `created_at = processed_at`（同一ミリ秒）
+- S3を確認するとオブジェクトが存在しない
+
+#### ケース2: `combineChunks()` が成功したが後続のS3アップロードが失敗
+
+DynamoDB ConnectionDataの `videoChunksCount` が 0 の場合、combineChunks はスキップされ
+DB録画レコードも作成されないため、実際には `COMPLETED` + S3なしにはならない。
+
+#### ケース3: S3バケットのライフサイクルポリシーによる自動削除
+
+現在のdev環境ではライフサイクルポリシーは設定されていないが、
+設定した場合は実態のないCOMPLETEDレコードが残り得る。
+
+### 不整合の確認方法
+
+```bash
+# 1. DBのCOMPLETE録画一覧確認
+bash scripts/db-query.sh "SELECT session_id, file_size_bytes, video_chunks_count FROM recordings WHERE processing_status = 'COMPLETED'"
+
+# 2. S3の実ファイル確認
+aws s3 ls s3://prance-recordings-dev-010438500933/sessions/{session_id}/ --recursive | grep "recording.webm"
+
+# 3. ファイルが存在しない場合、シードデータか確認（file_size_bytes=5242880 が目印）
+```
+
+### E2Eテスト用の対処方法
+
+シードデータ（S3なし）でE2E録画テストを実行する場合、ダミーファイルをS3にアップロードする：
+
+```bash
+# 60秒のテスト動画を生成してS3にアップロード
+ffmpeg -f lavfi -i "color=c=blue:s=1280x720:d=60" \
+       -f lavfi -i "sine=frequency=440:duration=60" \
+       -c:v libvpx-vp9 -b:v 200k -c:a libopus -t 60 \
+       /tmp/test-recording.webm
+
+aws s3 cp /tmp/test-recording.webm \
+  s3://prance-recordings-dev-010438500933/sessions/{session_id}/recording.webm \
+  --content-type video/webm
+```
+
+**恒久解決策:** `seed-recording-data.ts` にS3アップロード処理を追加し、
+シードと同時に実ファイルもS3に作成する。
+
+---
+
 ## 🚀 v1.2 商用品質改善（2026-04-24実装）
 
 ### 1. TTSストリーミングリアルタイム再生

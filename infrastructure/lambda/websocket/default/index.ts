@@ -266,12 +266,21 @@ interface ConnectionData {
   [key: string]: unknown;
 }
 
-export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyResultV2> => {
+export const handler = async (event: WebSocketEvent | Record<string, unknown>): Promise<APIGatewayProxyResultV2 | void> => {
   console.log('[Lambda Version]', LAMBDA_VERSION, '- Batch 4:', FORCE_REBUILD_FLAG ? 'chunk-utils.ts migrated' : 'old', '- BuildID:', BUILD_ID);
   console.log('WebSocket Default Handler Event:', JSON.stringify(event, null, 2));
 
-  const connectionId = event.requestContext.connectionId;
-  const body = event.body;
+  // Handle direct invocation for video processing (triggered by disconnect handler)
+  if ((event as any).type === 'process_video_on_disconnect') {
+    const { sessionId, videoChunksCount } = event as any;
+    console.log(`[process_video_on_disconnect] Processing ${videoChunksCount} video chunks for session ${sessionId}`);
+    await processVideoForSession(sessionId, videoChunksCount);
+    return;
+  }
+
+  const wsEvent = event as WebSocketEvent;
+  const connectionId = wsEvent.requestContext.connectionId;
+  const body = wsEvent.body;
 
   try {
     if (!body) {
@@ -2712,5 +2721,73 @@ async function sendToConnection(connectionId: string, data: unknown): Promise<vo
   } catch (error) {
     console.error(`Failed to send message to connection ${connectionId}:`, error);
     throw error;
+  }
+}
+
+/**
+ * Process video chunks for a session that disconnected without sending session_end.
+ * Invoked asynchronously by the disconnect handler when videoChunksCount > 0.
+ */
+async function processVideoForSession(sessionId: string, videoChunksCount: number): Promise<void> {
+  const { getRecordingKey } = await import('../../shared/config/s3-paths');
+
+  let recordingId: string | null = null;
+  try {
+    const pendingRecording = await prisma.recording.create({
+      data: {
+        sessionId,
+        type: 'COMBINED',
+        s3Key: getRecordingKey(sessionId, VIDEO_FORMAT),
+        s3Url: '',
+        fileSizeBytes: BigInt(0),
+        videoChunksCount,
+        processingStatus: 'PROCESSING',
+        format: VIDEO_FORMAT,
+        resolution: VIDEO_RESOLUTION,
+      },
+    });
+    recordingId = pendingRecording.id;
+    console.log('[processVideoForSession] Recording record created:', recordingId);
+  } catch (dbError) {
+    console.error('[processVideoForSession] Failed to create recording record:', dbError);
+  }
+
+  try {
+    const videoProc = getVideoProcessor();
+    const result = await videoProc.combineChunks(sessionId);
+    console.log('[processVideoForSession] Video processing complete:', result);
+
+    if (recordingId) {
+      await prisma.recording.update({
+        where: { id: recordingId },
+        data: {
+          s3Key: result.finalVideoKey,
+          s3Url: `https://${S3_BUCKET}.s3.${AWS_REGION}.${getAwsEndpointSuffix()}/${result.finalVideoKey}`,
+          cdnUrl: result.cloudFrontUrl,
+          fileSizeBytes: BigInt(result.finalVideoSize),
+          durationSec: Math.floor(result.duration / 1000),
+          processingStatus: 'COMPLETED',
+          processedAt: new Date(),
+        },
+      });
+      console.log('[processVideoForSession] Recording updated to COMPLETED:', recordingId);
+    }
+  } catch (error) {
+    console.error('[processVideoForSession] Video processing failed:', error);
+    if (recordingId) {
+      try {
+        await prisma.recording.update({
+          where: { id: recordingId },
+          data: {
+            processingStatus: 'ERROR',
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          },
+        });
+      } catch (dbError) {
+        console.error('[processVideoForSession] Failed to update recording to ERROR:', dbError);
+      }
+    }
+  } finally {
+    await prisma.$disconnect();
   }
 }

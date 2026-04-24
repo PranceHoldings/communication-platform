@@ -7,13 +7,23 @@
 
 import { Handler } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
+import { S3Client, CopyObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { generateCdnUrl } from '../../shared/utils/url-generator';
 import { getRecordingKey } from '../../shared/config/s3-paths';
-import { getCloudFrontDomain } from '../../shared/utils/env-validator';
+import { getCloudFrontDomain, getS3Bucket, getAwsRegion } from '../../shared/utils/env-validator';
 
 const prisma = new PrismaClient();
+const s3Client = new S3Client({ region: getAwsRegion() });
 
 const CLOUDFRONT_DOMAIN = getCloudFrontDomain();
+const S3_BUCKET = getS3Bucket();
+
+// Template file that must exist in S3 (upload once with ffmpeg):
+// ffmpeg -f lavfi -i "color=c=blue:s=1280x720:d=60" \
+//        -f lavfi -i "sine=frequency=440:duration=60" \
+//        -c:v libvpx-vp9 -b:v 200k -c:a libopus -t 60 /tmp/test-recording.webm
+// aws s3 cp /tmp/test-recording.webm s3://{bucket}/test-assets/recording-template.webm
+const TEMPLATE_S3_KEY = 'test-assets/recording-template.webm';
 
 interface SeedEvent {
   sessionId?: string; // Optional: specific session to seed
@@ -106,23 +116,45 @@ export const handler: Handler<SeedEvent, SeedResponse> = async event => {
     if (session.recordings.length === 0) {
       console.log('Creating recording...');
 
-      const mockS3Key = getRecordingKey(session.id, 'webm');
-      const mockS3Url = generateCdnUrl(mockS3Key);
-      const mockCdnUrl = generateCdnUrl(mockS3Key);
+      const recordingS3Key = getRecordingKey(session.id, 'webm');
+      const recordingCdnUrl = generateCdnUrl(recordingS3Key);
+
+      // Copy template file to session path so CDN URL resolves to a real file
+      let actualFileSizeBytes = BigInt(0);
+      let actualDurationSec = 60;
+      try {
+        const templateHead = await s3Client.send(
+          new HeadObjectCommand({ Bucket: S3_BUCKET, Key: TEMPLATE_S3_KEY })
+        );
+        await s3Client.send(
+          new CopyObjectCommand({
+            Bucket: S3_BUCKET,
+            CopySource: `${S3_BUCKET}/${TEMPLATE_S3_KEY}`,
+            Key: recordingS3Key,
+            ContentType: 'video/webm',
+          })
+        );
+        actualFileSizeBytes = BigInt(templateHead.ContentLength ?? 0);
+        console.log('Recording file copied to S3:', recordingS3Key);
+      } catch (s3Error) {
+        // Template not found — proceed without S3 file (DB record only)
+        // To fix, upload the template: see KNOWN_ISSUES.md Issue #9
+        console.warn('[seed] Template not found at', TEMPLATE_S3_KEY, '— DB record will be created without S3 file:', s3Error);
+      }
 
       await prisma.recording.create({
         data: {
           sessionId: session.id,
           type: 'COMBINED',
-          s3Key: mockS3Key,
-          s3Url: mockS3Url,
-          cdnUrl: mockCdnUrl,
-          fileSizeBytes: BigInt(5242880), // 5MB
-          durationSec: 120, // 2 minutes
-          durationMs: 120000,
+          s3Key: recordingS3Key,
+          s3Url: recordingCdnUrl,
+          cdnUrl: recordingCdnUrl,
+          fileSizeBytes: actualFileSizeBytes || BigInt(5242880),
+          durationSec: actualDurationSec,
+          durationMs: actualDurationSec * 1000,
           format: 'webm',
           resolution: '1280x720',
-          videoChunksCount: 24,
+          videoChunksCount: 0,
           processingStatus: 'COMPLETED',
           processedAt: new Date(),
         },

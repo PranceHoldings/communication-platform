@@ -4,19 +4,24 @@
  *
  * On disconnect: reads the DynamoDB connection record to find the sessionId,
  * then marks any ACTIVE session as COMPLETED so it never stays stuck as ACTIVE.
+ * If video chunks were being recorded, triggers async video processing.
  */
 
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, DeleteCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { getAwsRegion, getConnectionsTableName } from '../../shared/config';
+import { getOptionalEnv } from '../../shared/utils/env-validator';
 import { prisma } from '../../shared/database/prisma';
 
 const dynamoDb = DynamoDBDocumentClient.from(
   new DynamoDBClient({ region: getAwsRegion() })
 );
+const lambdaClient = new LambdaClient({ region: getAwsRegion() });
 
 const CONNECTIONS_TABLE = getConnectionsTableName();
+const VIDEO_PROCESSOR_FUNCTION = getOptionalEnv('VIDEO_PROCESSOR_FUNCTION_NAME', '');
 
 interface WebSocketEvent {
   requestContext: {
@@ -32,8 +37,9 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
   const connectionId = event.requestContext.connectionId;
 
   try {
-    // Read connection data BEFORE deleting so we can find the sessionId
+    // Read connection data BEFORE deleting so we can find sessionId and videoChunksCount
     let sessionId: string | undefined;
+    let videoChunksCount = 0;
     try {
       const getResult = await dynamoDb.send(
         new GetCommand({
@@ -42,7 +48,8 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         })
       );
       sessionId = getResult.Item?.sessionId as string | undefined;
-      console.log(`Connection ${connectionId} was for session: ${sessionId ?? '(none)'}`);
+      videoChunksCount = (getResult.Item?.videoChunksCount as number) || 0;
+      console.log(`Connection ${connectionId} was for session: ${sessionId ?? '(none)'}, videoChunksCount: ${videoChunksCount}`);
     } catch (readErr) {
       console.error('Failed to read connection data on disconnect:', readErr);
     }
@@ -84,6 +91,28 @@ export const handler = async (event: WebSocketEvent): Promise<APIGatewayProxyRes
         // Non-critical: stale session cleanup in list/get APIs will catch this
       } finally {
         await prisma.$disconnect();
+      }
+
+      // If video chunks were recorded but session_end never triggered processing,
+      // invoke the video processor Lambda asynchronously so the recording gets combined.
+      if (videoChunksCount > 0 && VIDEO_PROCESSOR_FUNCTION) {
+        try {
+          const payload = JSON.stringify({
+            type: 'process_video_on_disconnect',
+            sessionId,
+            videoChunksCount,
+          });
+          await lambdaClient.send(
+            new InvokeCommand({
+              FunctionName: VIDEO_PROCESSOR_FUNCTION,
+              InvocationType: 'Event', // async — don't wait for result
+              Payload: Buffer.from(payload),
+            })
+          );
+          console.log(`Triggered async video processing for session ${sessionId} (${videoChunksCount} chunks)`);
+        } catch (invokeErr) {
+          console.error(`Failed to trigger video processing for session ${sessionId}:`, invokeErr);
+        }
       }
     }
 

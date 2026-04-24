@@ -1340,6 +1340,7 @@ export class ApiLambdaStack extends cdk.Stack {
           ...commonEnvironment,
           CONNECTIONS_TABLE_NAME: props.websocketConnectionsTable.tableName,
           DATABASE_URL,
+          VIDEO_PROCESSOR_FUNCTION_NAME: `prance-websocket-default-v2-${props.environment}`,
         },
         bundling: prismaBundlingConfig,
       }
@@ -1512,6 +1513,9 @@ export class ApiLambdaStack extends cdk.Stack {
 
     // S3 permissions for default handler (audio/video storage)
     props.recordingsBucket.grantReadWrite(this.websocketDefaultFunction);
+
+    // Allow disconnect handler to invoke the default handler for async video processing
+    this.websocketDefaultFunction.grantInvoke(websocketDisconnectFunction);
 
     // Secrets Manager permissions for WebSocket handlers
     // Connect handler needs JWT secret for authentication
