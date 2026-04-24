@@ -587,42 +587,87 @@ export class AudioProcessor {
         await callbacks.onTranscriptComplete(transcript);
       }
 
-      // Step 3: Stream AI response using Bedrock
+      // Step 3+4: Pipeline AI response streaming with TTS (sentence-level parallelism)
+      // Accumulate AI chunks into sentences, start TTS on each sentence as it completes.
+      // This reduces perceived latency: first audio arrives while AI is still generating.
       const aiResponseChunks: string[] = [];
       let chunkCount = 0;
+      let ttsChunkCount = 0;
+      const ttsAudioChunks: Buffer[] = [];
+      let sentenceBuffer = '';
 
-      if (scenarioPrompt) {
-        // Use streaming scenario response
-        for await (const chunk of this.ai.streamScenarioResponse(
-          transcript,
-          scenarioPrompt,
-          conversationHistory
-        )) {
+      // Sentence boundary detection: flush TTS when a sentence ends
+      const SENTENCE_BOUNDARY = /[.!?。！？\n]/;
+      const MIN_SENTENCE_CHARS = 15; // Avoid flushing on very short fragments
+
+      const flushSentence = async (text: string, isLast: boolean) => {
+        const cleanText = markdownToPlainText(text.trim());
+        if (!cleanText) return;
+
+        console.log('[AudioProcessor] Flushing sentence to TTS:', {
+          length: cleanText.length,
+          isLast,
+        });
+
+        try {
+          const ttsStream = await this.tts.generateSpeechWebSocketStream({
+            text: cleanText,
+            stability: 0.5,
+            similarityBoost: 0.75,
+          });
+
+          for await (const chunk of ttsStream) {
+            ttsChunkCount++;
+            if (callbacks.onTTSChunk) {
+              // isFinal on last sentence's last ElevenLabs chunk = truly final for this turn
+              const isFinalChunk = isLast && chunk.isFinal;
+              await callbacks.onTTSChunk(chunk.audio, isFinalChunk);
+            }
+            ttsAudioChunks.push(Buffer.from(chunk.audio, 'base64'));
+          }
+        } catch (err) {
+          console.error('[AudioProcessor] TTS sentence flush failed:', err);
+          throw err;
+        }
+      };
+
+      // Get AI stream
+      const aiStream = scenarioPrompt
+        ? this.ai.streamScenarioResponse(transcript, scenarioPrompt, conversationHistory)
+        : this.ai.streamResponse({ userMessage: transcript, conversationHistory });
+
+      try {
+        for await (const chunk of aiStream) {
           aiResponseChunks.push(chunk);
           chunkCount++;
+          sentenceBuffer += chunk;
 
-          // Callback: AI chunk received
           if (callbacks.onAIChunk) {
             await callbacks.onAIChunk(chunk);
           }
-        }
-      } else {
-        // Use streaming general response
-        for await (const chunk of this.ai.streamResponse({
-          userMessage: transcript,
-          conversationHistory,
-        })) {
-          aiResponseChunks.push(chunk);
-          chunkCount++;
 
-          // Callback: AI chunk received
-          if (callbacks.onAIChunk) {
-            await callbacks.onAIChunk(chunk);
+          // Check for sentence boundary to flush TTS
+          if (
+            sentenceBuffer.length >= MIN_SENTENCE_CHARS &&
+            SENTENCE_BOUNDARY.test(sentenceBuffer)
+          ) {
+            const toFlush = sentenceBuffer;
+            sentenceBuffer = '';
+            await flushSentence(toFlush, false);
           }
         }
+
+        // Flush remaining text (last sentence, possibly without terminal punctuation)
+        if (sentenceBuffer.trim().length > 0) {
+          await flushSentence(sentenceBuffer, true);
+          sentenceBuffer = '';
+        }
+      } catch (error) {
+        console.error('[AudioProcessor] AI+TTS pipeline failed:', error);
+        throw error;
       }
 
-      // Combine all chunks into full AI response
+      // Combine all AI chunks into full response
       const aiResponse = aiResponseChunks.join('');
 
       console.log('[AudioProcessor] AI Streaming complete:', {
@@ -635,50 +680,13 @@ export class AudioProcessor {
         await callbacks.onAIComplete(aiResponse);
       }
 
-      // Step 4: Synthesize AI response to speech using Azure TTS streaming
-      console.log('[AudioProcessor] Starting TTS WebSocket streaming...');
-
-      // Convert Markdown to plain text for TTS
-      const ttsText = markdownToPlainText(aiResponse);
-
-      let ttsChunkCount = 0;
-      const ttsAudioChunks: Buffer[] = [];
-
-      try {
-        // CRITICAL: generateSpeechWebSocketStream returns Promise<AsyncGenerator>
-        // Must await the Promise first to get the generator
-        const ttsStream = await this.tts.generateSpeechWebSocketStream({
-          text: ttsText,
-          stability: 0.5,
-          similarityBoost: 0.75,
-        });
-
-        for await (const chunk of ttsStream) {
-          ttsChunkCount++;
-
-          // Callback: TTS chunk received
-          if (callbacks.onTTSChunk) {
-            await callbacks.onTTSChunk(chunk.audio, chunk.isFinal);
-          }
-
-          // Collect audio chunks for final result
-          const audioBuffer = Buffer.from(chunk.audio, 'base64');
-          ttsAudioChunks.push(audioBuffer);
-
-          if (chunk.isFinal) {
-            console.log('[AudioProcessor] TTS streaming complete:', {
-              totalChunks: ttsChunkCount,
-            });
-          }
-        }
-      } catch (error) {
-        console.error('[AudioProcessor] TTS streaming failed:', error);
-        throw error;
-      }
+      console.log('[AudioProcessor] TTS streaming complete:', {
+        totalTTSChunks: ttsChunkCount,
+      });
 
       // Combine all TTS chunks into single audio buffer
       const ttsAudio = Buffer.concat(ttsAudioChunks);
-      const ttsContentType = 'audio/mpeg'; // Azure TTS returns MP3
+      const ttsContentType = 'audio/mpeg';
 
       // Callback: TTS complete
       if (callbacks.onTTSComplete) {

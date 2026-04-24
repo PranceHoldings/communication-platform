@@ -303,105 +303,106 @@ export class ElevenLabsTextToSpeech {
       useSpeakerBoost = true,
     } = options;
 
-    return new Promise<AsyncGenerator<{ audio: string; isFinal: boolean }>>((resolve, reject) => {
-      // WebSocket streaming endpoint
-      const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${this.voiceId}/stream-input?model_id=${this.modelId}&optimize_streaming_latency=3`;
+    // WebSocket streaming endpoint
+    const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${this.voiceId}/stream-input?model_id=${this.modelId}&optimize_streaming_latency=3`;
 
-      console.log('[ElevenLabsTTS] Opening WebSocket connection:', {
-        voiceId: this.voiceId,
-        modelId: this.modelId,
-        textLength: text.length,
-      });
-
-      const ws = new WebSocket(wsUrl);
-      const chunks: { audio: string; isFinal: boolean }[] = [];
-      let isConnected = false;
-      let hasError = false;
-
-      ws.on('open', () => {
-        console.log('[ElevenLabsTTS] WebSocket connected');
-        isConnected = true;
-
-        // Send initial configuration
-        const initMessage = {
-          text: ' ',
-          voice_settings: {
-            stability,
-            similarity_boost: similarityBoost,
-            style,
-            use_speaker_boost: useSpeakerBoost,
-          },
-          xi_api_key: this.apiKey,
-        };
-
-        ws.send(JSON.stringify(initMessage));
-
-        // Send text content
-        const textMessage = {
-          text,
-          try_trigger_generation: true,
-        };
-
-        ws.send(JSON.stringify(textMessage));
-
-        // Send EOS (End of Stream) signal
-        const eosMessage = {
-          text: '',
-        };
-
-        ws.send(JSON.stringify(eosMessage));
-      });
-
-      ws.on('message', (data: WebSocket.Data) => {
-        try {
-          const message = JSON.parse(data.toString());
-
-          // Log message for debugging
-          console.log('[ElevenLabsTTS] Received message:', {
-            hasAudio: 'audio' in message,
-            audioLength: message.audio ? message.audio.length : 0,
-            isFinal: message.isFinal,
-          });
-
-          // Check if 'audio' field exists (not just truthy check)
-          if ('audio' in message && message.audio !== null && message.audio !== undefined) {
-            chunks.push({
-              audio: message.audio,
-              isFinal: message.isFinal || false,
-            });
-          }
-
-          if (message.isFinal) {
-            console.log('[ElevenLabsTTS] WebSocket streaming complete:', {
-              totalChunks: chunks.length,
-              totalAudioBytes: chunks.reduce((sum, c) => sum + (c.audio?.length || 0), 0),
-            });
-            ws.close();
-          }
-        } catch (error) {
-          console.error('[ElevenLabsTTS] Failed to parse WebSocket message:', error);
-        }
-      });
-
-      ws.on('close', () => {
-        console.log('[ElevenLabsTTS] WebSocket closed');
-        if (!hasError) {
-          // Resolve with generator that yields collected chunks
-          resolve(
-            (async function* () {
-              for (const chunk of chunks) {
-                yield chunk;
-              }
-            })()
-          );
-        }
-      });
-
-      ws.on('error', error => {
-        console.error('[ElevenLabsTTS] WebSocket error:', error);
-        hasError = true;
-        reject(error);
-      });
+    console.log('[ElevenLabsTTS] Opening WebSocket connection:', {
+      voiceId: this.voiceId,
+      modelId: this.modelId,
+      textLength: text.length,
     });
+
+    const ws = new WebSocket(wsUrl);
+
+    // Use a queue + resolve/reject pattern to bridge event-based WebSocket
+    // into an async generator that yields chunks as they arrive (true streaming).
+    type QueueEntry =
+      | { type: 'chunk'; value: { audio: string; isFinal: boolean } }
+      | { type: 'done' }
+      | { type: 'error'; error: Error };
+
+    const queue: QueueEntry[] = [];
+    let waitResolve: (() => void) | null = null;
+
+    const enqueue = (entry: QueueEntry) => {
+      queue.push(entry);
+      if (waitResolve) {
+        const r = waitResolve;
+        waitResolve = null;
+        r();
+      }
+    };
+
+    ws.on('open', () => {
+      console.log('[ElevenLabsTTS] WebSocket connected');
+
+      // Send initial configuration
+      ws.send(JSON.stringify({
+        text: ' ',
+        voice_settings: {
+          stability,
+          similarity_boost: similarityBoost,
+          style,
+          use_speaker_boost: useSpeakerBoost,
+        },
+        xi_api_key: this.apiKey,
+      }));
+
+      // Send text content
+      ws.send(JSON.stringify({
+        text,
+        try_trigger_generation: true,
+      }));
+
+      // Send EOS (End of Stream) signal
+      ws.send(JSON.stringify({ text: '' }));
+    });
+
+    ws.on('message', (data: WebSocket.Data) => {
+      try {
+        const message = JSON.parse(data.toString());
+
+        console.log('[ElevenLabsTTS] Received message:', {
+          hasAudio: 'audio' in message,
+          audioLength: message.audio ? message.audio.length : 0,
+          isFinal: message.isFinal,
+        });
+
+        if ('audio' in message && message.audio !== null && message.audio !== undefined) {
+          enqueue({ type: 'chunk', value: { audio: message.audio, isFinal: message.isFinal || false } });
+        }
+
+        if (message.isFinal) {
+          console.log('[ElevenLabsTTS] WebSocket streaming complete');
+          ws.close();
+        }
+      } catch (error) {
+        console.error('[ElevenLabsTTS] Failed to parse WebSocket message:', error);
+      }
+    });
+
+    ws.on('close', () => {
+      console.log('[ElevenLabsTTS] WebSocket closed');
+      enqueue({ type: 'done' });
+    });
+
+    ws.on('error', error => {
+      console.error('[ElevenLabsTTS] WebSocket error:', error);
+      enqueue({ type: 'error', error });
+    });
+
+    // Return async generator that yields chunks as they arrive from the WebSocket
+    return (async function* () {
+      while (true) {
+        if (queue.length === 0) {
+          // Wait for next entry
+          await new Promise<void>(resolve => { waitResolve = resolve; });
+        }
+        const entry = queue.shift()!;
+        if (entry.type === 'done') break;
+        if (entry.type === 'error') throw entry.error;
+        yield entry.value;
+      }
+    })();
   }
 }
