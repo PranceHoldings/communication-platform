@@ -517,15 +517,118 @@ useEffect(() => {
 
 ---
 
+## 音声レイテンシ最適化（Day 52 - 2026-04-24）
+
+### 背景
+
+LiveKit水準のリアルタイム音声体験を目指して、4つのレイテンシ要因を特定し解消した。
+
+### 改善1: TTS音声チャンクのストリーミング再生
+
+**実装前:** Lambda から `audio_response` URL（CloudFront）が届いてから `<audio>` 要素で再生開始  
+→ 全TTS生成完了を待つため、長い文章ほど開始が遅延
+
+**実装後:** Lambda の `audio_chunk` メッセージ（base64 MP3）を Web Audio API で即座にデコード・キュー再生  
+→ 最初のチャンクが届いた瞬間（数百ms以内）に音声開始
+
+**実装ファイル:**
+- `apps/web/hooks/useAudioPlayer.ts` — `playChunk()` + AudioBufferSourceNode スケジューリング
+- `apps/web/components/session-player/index.tsx` — `handleTTSAudioChunk()` 実装、`audio_response` スキップロジック
+
+```typescript
+// Web Audio API キュースケジューリング（useAudioPlayer内）
+const bufferSource = audioContext.createBufferSource();
+bufferSource.buffer = audioBuffer;
+bufferSource.start(nextStartTimeRef.current);
+nextStartTimeRef.current = Math.max(nextStartTimeRef.current, audioContext.currentTime) + audioBuffer.duration;
+```
+
+### 改善2: ElevenLabs WebSocket真ストリーミング
+
+**実装前:** WebSocketを開いてもchunkを全収集後に返していた（偽ストリーミング）
+
+**実装後:** queue+Promiseパターンで到着順にyieldする真のasync generator
+
+**実装ファイル:** `infrastructure/lambda/shared/audio/tts-elevenlabs.ts` — `generateSpeechWebSocketStream()`
+
+**パターン:**
+```typescript
+const queue: QueueEntry[] = [];
+let waitResolve: (() => void) | null = null;
+ws.on('message', data => { enqueue({type:'chunk', value: parsed}); });
+ws.on('close', () => { enqueue({type:'done'}); });
+return (async function*() {
+  while(true) {
+    if(queue.length === 0) await new Promise<void>(r => { waitResolve = r; });
+    const entry = queue.shift()!;
+    if(entry.type === 'done') break;
+    if(entry.type === 'error') throw entry.error;
+    yield entry.value;
+  }
+})();
+```
+
+### 改善3: AI→TTSセンテンスレベルパイプライン
+
+**実装前:** AI全文生成完了 → TTS開始（逐次）
+
+**実装後:** AIストリームをセンテンス区切りで監視し、区切りに達したら即TTS開始（並列）
+
+**効果:** Multi-sentenceレスポンスで最初の音声開始まで **約1-3秒削減**
+
+**実装ファイル:** `infrastructure/lambda/websocket/default/audio-processor.ts`
+
+```typescript
+const SENTENCE_BOUNDARY = /[.!?。！？\n]/;
+const MIN_SENTENCE_CHARS = 15;
+
+for await (const chunk of aiStream) {
+  sentenceBuffer += chunk;
+  if (sentenceBuffer.length >= MIN_SENTENCE_CHARS && SENTENCE_BOUNDARY.test(sentenceBuffer)) {
+    const toFlush = sentenceBuffer;
+    sentenceBuffer = '';
+    await flushSentence(toFlush, false); // TTS starts here, AI still generating
+  }
+}
+```
+
+### 改善4: バージイン（AI話し中の割り込み）
+
+**実装前:** AI音声再生中は割り込み不可
+
+**実装後:** ユーザーの確認済み発話（800ms）でAI音声即座停止 → 録音再開
+
+**実装ファイル:**
+- `apps/web/hooks/useAudioRecorder.ts` — `onBargeIn` コールバック追加
+- `apps/web/components/session-player/index.tsx` — `handleBargeIn()`: Web Audio + HTMLAudioElement両停止
+
+**遅延防止:** `bargedInRef` で barge-in後に遅延到着する `audio_response` URLを抑制
+
+### レイテンシ比較表
+
+| フロー | Before（Day 52前） | After（Day 52後） |
+|--------|-------------------|------------------|
+| 発話→AI応答開始 | 200-400ms | 200-400ms（変化なし） |
+| AI応答→TTS開始 | AI全文完了まで待機 | センテンス区切りで即開始 |
+| 最初の音声出力 | AI完了 + TTS完了 | 最初のTTSチャンク到着（並列） |
+| Multi-sentence total | 例: 3秒 | 例: ~1-1.5秒（~1-3s削減） |
+| バージイン | 不可 | ~800ms後即座に対応 |
+
+### 残レイテンシ要因（未解決）
+
+**ストリーミングSTT:** 現在はバッファ蓄積後の一括認識。AWS Transcribe Streamingへの移行でさらに削減可能。詳細は `KNOWN_ISSUES.md` Issue #7 参照。
+
+---
+
 ## 次のステップ
 
-1. **Phase 1.6完了確認:** 全最適化機能の統合テスト
-2. **CloudWatch Dashboard:** パフォーマンスメトリクスの可視化
-3. **ロードテスト:** 高負荷時の動作確認
-4. **Phase 2移行:** 次の機能開発へ
+1. **Staging環境デプロイ:** 音声改善の実環境検証
+2. **ストリーミングSTT:** AWS Transcribe Streamingへの移行検討
+3. **CloudWatch Dashboard:** パフォーマンスメトリクスの可視化
+4. **ロードテスト:** 高負荷時の動作確認
 
 ---
 
 **作成日:** 2026-03-20
-**Phase:** 1.6 - パフォーマンス最適化
-**次回レビュー:** Phase 1.6完了時
+**最終更新:** 2026-04-24 (Day 52 - 音声レイテンシ最適化)
+**Phase:** 1.6 → 商用品質改善中

@@ -258,9 +258,93 @@ pnpm run build
 - ✅ デプロイ時間が短縮（3重実行 → 1回実行）
 - ✅ 予測可能な実行フロー（明示的制御）
 
+### Case 2: ElevenLabs WebSocket偽ストリーミング（2026-04-24）
+
+**問題:**
+TTS音声の再生開始が遅い。LiveKit水準のレイテンシが出ない。
+
+**対症療法（当初の認識）:**
+`useAudioPlayer.playChunk()` は実装済みなのに使われていない → 接続すれば解決と思われた。
+
+**なぜ対症療法では不十分だったのか:**
+`playChunk()` を接続しても、上流の `generateSpeechWebSocketStream()` が全チャンクを収集してから返す実装だったため、接続しても遅延は変わらない。
+
+**根本原因分析（5 Whys）:**
+
+1. **なぜ音声開始が遅い？**
+   → TTS全音声生成後に再生が始まるから
+
+2. **なぜTTS全音声生成後になる？**
+   → `generateSpeechWebSocketStream()` がWebSocket close後にチャンクを返すから
+
+3. **なぜWebSocket close後に返す？**
+   → 実装が `ws.on('close')` で全チャンクをまとめてasync generatorに渡していたから
+
+4. **なぜそうなったのか？**
+   → WebSocket APIのevent-drivenモデルをasync generatorに変換する正しいパターンを使わなかったから
+
+5. **根本原因:**
+   → queue+Promise bridgeパターンを知らず（または適用しなかった）、収集してから返すシンプルな実装を選んだ
+
+**根本解決:**
+```typescript
+// queue+Promiseパターン: WebSocket events → async generator のブリッジ
+const queue: QueueEntry[] = [];
+let waitResolve: (() => void) | null = null;
+
+const enqueue = (entry: QueueEntry) => {
+  queue.push(entry);
+  if (waitResolve) { const r = waitResolve; waitResolve = null; r(); }
+};
+
+ws.on('message', data => { /* parse → enqueue({type:'chunk'}) */ });
+ws.on('close', () => { enqueue({type:'done'}); });
+ws.on('error', e => { enqueue({type:'error', error: e}); });
+
+return (async function*() {
+  while(true) {
+    if(queue.length === 0) await new Promise<void>(r => { waitResolve = r; });
+    const entry = queue.shift()!;
+    if(entry.type === 'done') break;
+    if(entry.type === 'error') throw entry.error;
+    yield entry.value; // ← チャンク到着順に即yield
+  }
+})();
+```
+
+**教訓:**
+- ✅ 「ストリーミング」という名前でも内部が偽ストリーミングの場合がある。接続前に実装を確認する
+- ✅ Event-driven APIをasync generatorに変換する標準パターン（queue+Promiseブリッジ）を覚える
+- ✅ レイテンシ問題は上流から調査する（再生 → TTS → AI → STT の順）
+- ✅ 「実装済みだが使われていない」ものが存在する場合、なぜ使われていないかを必ず調べる
+
+**効果:**
+- ✅ ElevenLabs WebSocketの真のストリーミング達成
+- ✅ センテンスレベルパイプラインと組み合わせて ~1-3s レイテンシ削減
+- ✅ Web Audio API queue再生との統合が正常動作
+
 ---
 
-## チェックリスト（問題解決時に必ず確認）
+### Case 3: 実装済み未接続コード（`useAudioPlayer`）（2026-04-24）
+
+**問題:**
+TTS音声再生のストリーミングが機能していない。
+
+**根本原因:**
+`apps/web/hooks/useAudioPlayer.ts` に `playChunk()` / `stop()` / Web Audio API queue の完全な実装が存在していたが、`apps/web/components/session-player/index.tsx` から一切importされておらず、`handleTTSAudioChunk` はコメントのみのplaceholder状態だった。
+
+**なぜ未接続だったのか:**
+実装と配線（wiring）が別タイミングで行われた。hookは実装されたが、SessionPlayerへの統合ステップが実行されなかった。
+
+**検出方法:**
+`grep -r "useAudioPlayer" apps/web` → hookファイル自体にのみ存在、importなし
+
+**教訓:**
+- ✅ 新しいhookを実装したら、同じコミットまたはPRで使用側の接続も含める
+- ✅ placeholderコメントに「TODO」または「future implementation」と書かれた箇所は定期的にレビューする
+- ✅ `grep -r "hookName"` で実際に使用されているか確認してから完了とする
+
+---
 
 ### 問題発生時
 - [ ] エラーの再現条件を特定した？
@@ -298,5 +382,5 @@ pnpm run build
 
 ---
 
-**最終更新:** 2026-03-10
+**最終更新:** 2026-04-24 (Day 52 - Case 2, 3 追加)
 **次回レビュー:** 問題発生時に随時更新

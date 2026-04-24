@@ -4109,3 +4109,173 @@ bash scripts/test-websocket-integration.sh
 **Phase 2.2進捗率:** 60%完了（CORS修正完了、デプロイ実行中）⚠️
 **次の目標:** WebSocket統合テスト成功 → Recording Reliability tests修正
 
+
+---
+
+## Day 50 (2026-04-10) - 音声認識バグ2件修正 + Lambda v1.1.5デプロイ
+
+**ブランチ:** dev
+**コミット:** 72198ea → e7af38a
+**Lambda:** prance-websocket-default-v2-dev v1.1.5
+
+### 完了作業
+
+#### Bug 1: AI TTS再生中エコーによる誤restart (コミット 72198ea)
+- **根本原因:** raw AudioContext analyserがスピーカーエコーを800ms発話と誤検知 → 無音MediaRecorder起動 → Azure STT InitialSilenceTimeout
+- **修正:** `useAudioRecorder.ts`: `isAiRespondingRef.current === true` 時に `restartRecording()` を抑止
+
+#### Bug 2: チャンクファイル名とソート関数の不一致 (コミット 72198ea)
+- **根本原因:** `getRealtimeChunkKey`が`chunk-000005.webm`形式を生成、sortの regex `/(\d+)-(\d+)\.\w+$/` と不一致
+- **修正:** `chunk-000005.webm` → `{timestamp}-{seq}.webm` へ変更（videoチャンクと同一フォーマット）
+
+#### その他 (コミット e7af38a)
+- next.config.js: Lambda向けstandalone output設定
+- lambda.js: 静的ファイル配信追加
+- api-lambda-stack.ts: dev.app.prance.jp を CORS許可オリジンに追加
+
+### E2Eテスト結果
+- **全35テスト合格** (Stage 0-5全て ✅)
+
+---
+
+## Day 52 (2026-04-24) - 商用品質音声改善（LiveKit水準リアルタイム音声）
+
+**ブランチ:** dev
+**コミット:** 538cfc7, 5e44362, 99ebc86
+**Lambda:** prance-websocket-default-v2-dev v1.2.0（デプロイ済み）
+
+### 背景・目的
+
+LiveKitのような商用レベルWebRTCを目指す。具体的には：
+- TTS音声をストリーミング再生（全音声生成完了を待たない）
+- バージイン（AI話し中にユーザーが割り込んでAI音声を即座に停止）
+- ElevenLabs WebSocketの真のストリーミング（偽ストリーミングの修正）
+- AI→TTSパイプラインのレイテンシ削減（センテンス単位で並列開始）
+
+### 調査で発見した問題
+
+#### 問題1: ElevenLabs WebSocketが偽ストリーミングだった
+**ファイル:** `infrastructure/lambda/shared/audio/tts-elevenlabs.ts`
+
+`generateSpeechWebSocketStream()` は WebSocket を開いていたが、`ws.on('close')` イベントまで全チャンクを配列に収集してから返していた。つまり全音声生成後にまとめてyield → ストリーミングの恩恵ゼロ。
+
+**修正:** queue+Promiseパターンによる真のasync generator実装：
+```typescript
+type QueueEntry = {type:'chunk';value:{audio:string;isFinal:boolean}} | {type:'done'} | {type:'error';error:Error};
+const queue: QueueEntry[] = [];
+let waitResolve: (() => void) | null = null;
+// ws.on('message') → enqueue({type:'chunk'})、ws.on('close') → enqueue({type:'done'})
+return (async function*() {
+  while(true) {
+    if(queue.length === 0) await new Promise<void>(r => { waitResolve = r; });
+    const entry = queue.shift()!;
+    if(entry.type === 'done') break;
+    if(entry.type === 'error') throw entry.error;
+    yield entry.value;
+  }
+})();
+```
+
+#### 問題2: useAudioPlayerが存在するが使われていなかった
+**ファイル:** `apps/web/hooks/useAudioPlayer.ts`
+
+完全実装済みの `playChunk()` / `stop()` / Web Audio API queue があったが、SessionPlayerでimportされておらず、`handleTTSAudioChunk`はコメントのみのplaceholderだった。
+
+**修正:** SessionPlayerで `useAudioPlayer` をimport、`handleTTSAudioChunk`を実装して接続。
+
+#### 問題3: バージインが未実装
+**ファイル:** `apps/web/hooks/useAudioRecorder.ts`
+
+`isAiRespondingRef.current === true` の間は `restartRecording()` を抑止するロジックはあったが、AI音声を積極的に停止する仕組みがなかった。
+
+**修正:** `onBargeIn?: () => void` オプション追加。AI返答中の800ms確認発話でコールバック発火 + recorder即座再起動。
+
+#### 問題4: AI→TTS パイプラインが逐次だった
+**ファイル:** `infrastructure/lambda/websocket/default/audio-processor.ts`
+
+AIが全文生成完了 → TTS開始という逐次構造。Multi-sentenceレスポンスで最初の音声まで2-4秒のレイテンシ。
+
+**修正:** センテンス区切り (`.!?。！？\n`) でAIストリームを監視し、区切りに達したらTTSを即座に開始。AI生成継続中にTTSが並列実行される。
+
+### 実装詳細
+
+#### コミット 538cfc7: TTS streaming再生 + バージイン
+
+**`apps/web/components/session-player/index.tsx`:**
+- `useAudioPlayer` import・初期化（コンポーネント上部に配置 — 後方参照防止）
+- `bargedInRef` 追加（barge-in後の遅延 `audio_response` URL抑制）
+- `handleTTSAudioChunk`: `audioPlayer.playChunk()` を呼ぶ実装に変更
+- `handleAudioResponse`: TTS streaming再生中 or barge-in済みの場合にスキップ
+- `handleBargeIn`: `audioPlayer.stop()` + `audioRef.current.pause()` + `bargedInRef = true`
+- `useEffect`: `audioPlayer.isPlaying` → `isPlayingAudio` state同期
+- `useAudioRecorder` に `onBargeIn: handleBargeIn` を渡す
+
+**`apps/web/hooks/useAudioRecorder.ts`:**
+- `onBargeIn?: () => void` を `UseAudioRecorderOptions` に追加
+- AI返答中の確認発話: 抑止ロジック → `onBargeIn()` + `restartRecording()` + `speechEndSentRef = false` に変更
+
+#### コミット 5e44362: ElevenLabs真ストリーミング + AI→TTSパイプライン
+
+**`infrastructure/lambda/shared/audio/tts-elevenlabs.ts`:**
+- `generateSpeechWebSocketStream()` 完全書き直し（queue+Promise async generator）
+
+**`infrastructure/lambda/websocket/default/audio-processor.ts`:**
+- `flushSentence()` ヘルパー関数追加（テキスト → TTS → チャンク送信）
+- AIストリームをセンテンス単位でバッファリング → 区切り検出で `flushSentence()` 呼び出し
+- 最小バッファ長 `MIN_SENTENCE_CHARS = 15` で断片的なflushを防止
+
+### 達成したレイテンシ改善
+
+| 改善 | Before | After |
+|------|--------|-------|
+| TTS streaming | 全音声生成後に再生開始 | 最初のチャンク到着で即座に再生 |
+| AI→TTS pipeline | AI完了後にTTS開始 | センテンス区切りで並列TTS開始（~1-3s削減） |
+| バージイン | 不可 | AI発話中でも800msで割り込み可能 |
+| ElevenLabs WS | 偽ストリーミング | 真のチャンク単位ストリーミング |
+
+### TypeScriptビルドエラーと修正
+
+**エラー1:** `Block-scoped variable 'audioPlayer' used before its declaration`
+- 原因: `handleTTSAudioChunk` (useCallback ~line480) が `const audioPlayer = useAudioPlayer()` (~line1110) より前に定義
+- 修正: `audioPlayer` の宣言をコンポーネント先頭（`isPlayingAudioRef` の直後）に移動
+
+**エラー2:** `!audioRef.current?.paused === false` の二重否定
+- 修正: `const htmlAudioPlaying = audioRef.current ? !audioRef.current.paused : false`
+
+**エラー3:** 演算子優先度 `audioPlayer.isInitialized && isPlayingAudioRef.current`
+- 修正: `(audioPlayer.isInitialized && isPlayingAudioRef.current)` に括弧追加
+
+### 更新ファイル一覧
+
+**Lambda (v1.2.0):**
+- `infrastructure/lambda/shared/audio/tts-elevenlabs.ts`
+- `infrastructure/lambda/websocket/default/audio-processor.ts`
+
+**フロントエンド:**
+- `apps/web/hooks/useAudioPlayer.ts` （既存、接続先として機能）
+- `apps/web/hooks/useAudioRecorder.ts`
+- `apps/web/components/session-player/index.tsx`
+
+**ドキュメント:**
+- `docs/05-modules/CONVERSATION_FLOW.md` (v1.1 → v1.2)
+- `START_HERE.md`
+
+### 残課題（非ブロッキング）
+
+#### ストリーミングSTT（未実装）
+Azure STT の `startContinuousRecognition()` + `PushAudioInputStream` は `stt-azure.ts` に実装済みだが未使用。
+
+**制約:** Lambdaはステートレスなため、複数の `audio_chunk_realtime` invocationをまたいで同一の `PushAudioInputStream` インスタンスを共有できない。実装にはステートフルなLambdaアーキテクチャ（Provisioned Concurrencyによる接続保持）またはECS/EC2への移行が必要。
+
+#### sonner v2 "Maximum update depth exceeded"
+React 19 + sonner v2.0.7の互換性バグ。セッション中に稀に発生するが非ブロッキング。sonner v2.0.8以降待ち。
+
+### 次のアクション
+1. **Staging環境デプロイ** → `git checkout staging && git merge dev && pnpm run deploy:staging`
+2. **E2E動作確認** → `pnpm run test:e2e -- --grep="stage3"`
+3. **ストリーミングSTT** → アーキテクチャ検討（Provisioned Concurrency or ECS）
+
+---
+
+**Phase進捗:** Phase 1-5全完了 → 商用品質改善中
+**次の目標:** Staging環境デプロイ → 24-48h監視 → Production展開

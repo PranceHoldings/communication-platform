@@ -1,8 +1,8 @@
 # 既知の問題リスト
 
-**バージョン:** 1.5
+**バージョン:** 1.6
 **作成日:** 2026-03-19
-**最終更新:** 2026-04-04 15:00 UTC (Day 44)
+**最終更新:** 2026-04-24 (Day 52)
 
 ---
 
@@ -312,6 +312,71 @@ pnpm run test:e2e
 ---
 
 ## ⚠️ Warning Issues（警告レベルの問題）
+
+### Issue #7: ストリーミングSTT未実装（Lambda ステートレス制約）
+
+**発生日:** 2026-04-24 (Day 52)
+**状態:** ⚠️ **設計制約・アーキテクチャ変更要**
+**影響:** STTはバッファ蓄積後の一括認識のまま（リアルタイムSTT不可）
+
+#### 問題詳細
+
+`infrastructure/lambda/shared/audio/stt-azure.ts` に `startContinuousRecognition()` + `PushAudioInputStream` による真のストリーミングSTT実装が存在するが、未使用。
+
+**制約の根本原因:**
+- Lambdaは各invocationが独立したプロセス
+- `audio_chunk_realtime` メッセージが複数のLambda invocationをまたぐ
+- 同一の `PushAudioInputStream` インスタンスをinvocationをまたいで共有できない
+- 現在は音声チャンクをS3に蓄積→セッション終了後に一括STT処理
+
+**影響（現状）:**
+- リアルタイム字幕表示が遅延する
+- 会話ターンの切り替えに音声バッファ完了を待つ必要がある
+
+#### 解決策（未実装）
+
+**Option A: Provisioned Concurrency + DynamoDB ステート保持（推奨）**
+- Lambda関数を特定のconnectionIdに対して固定インスタンスに振り向け
+- Azure STT セッションをLambdaメモリ内に保持
+- 実装コスト: 高（Lambda routing変更）
+
+**Option B: ECS/Fargate によるステートフルサービス**
+- WebSocket接続ごとにコンテナプロセスを維持
+- Lambdaの制約を完全に排除
+- 実装コスト: 最高（アーキテクチャ変更）
+
+**Option C: AWS Transcribe Streaming（推奨・中期）**
+- AWS Transcribe Streaming APIはステートレスなHTTP/2ストリーミング
+- Lambdaから直接利用可能（接続保持不要）
+- 実装コスト: 低（既存の音声チャンクをTranscribeにforward）
+
+#### 回避策（現状）
+
+音声チャンクをS3蓄積 → セッション終了後にAzure STT一括認識。精度は高いがリアルタイム性はない。
+
+---
+
+### Issue #8: sonner v2 "Maximum update depth exceeded"
+
+**発生日:** 2026-04-10 (Day 50)
+**状態:** ⚠️ **ライブラリバグ待ち**
+**影響:** セッション中に稀にReactレンダリング警告（セッション継続に影響なし）
+
+#### 問題詳細
+
+```
+Warning: Maximum update depth exceeded. This can happen when a component calls setState inside useEffect...
+```
+
+- **環境:** React 19.2.4 + sonner v2.0.7
+- **頻度:** セッション中に稀に発生
+- **影響:** コンソール警告のみ、UIの動作は正常
+
+#### 対応状況
+
+sonner v2.0.8以降のリリース待ち。現時点では対応不要。
+
+---
 
 ### Issue #3: Next.js開発サーバーの初回起動が遅い
 
