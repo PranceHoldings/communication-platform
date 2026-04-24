@@ -19,6 +19,7 @@ import {
   RecordingPartialMessage,
 } from '@/hooks/useWebSocket';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useVideoRecorder } from '@/hooks/useVideoRecorder';
 import { useAudioVisualizer } from '@/hooks/useAudioVisualizer';
 import { useAudioBuffer } from '@/hooks/useAudioBuffer';
@@ -120,6 +121,10 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const isPlayingAudioRef = useRef(false); // Ref for real-time access in callbacks
   const audioStoppedByUserRef = useRef(false); // Set true when user stops session, suppresses onerror toast
+  const bargedInRef = useRef(false); // Set true on barge-in to suppress stale audio_response URL playback
+
+  // TTS streaming audio player (plays base64 MP3 chunks via Web Audio API as they arrive)
+  const audioPlayer = useAudioPlayer();
   const [pendingSessionEnd, setPendingSessionEnd] = useState(false);
   const [shouldSendSessionEnd, setShouldSendSessionEnd] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -475,7 +480,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     [t]
   );
 
-  // Phase 1.5: Handle TTS streaming chunks
+  // Phase 1.5 (activated): Handle TTS streaming chunks via Web Audio API
   const handleTTSAudioChunk = useCallback((message: TTSAudioChunkMessage) => {
     console.log('[SessionPlayer] TTS audio chunk received:', {
       audioLength: message.audio?.length || 0,
@@ -483,10 +488,32 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
       timestamp: message.timestamp,
     });
 
-    // For now, we'll wait for the final audio_response message with the complete audio URL
-    // Real-time streaming playback would require MediaSource API or Web Audio API
-    // This is a placeholder for future implementation
-  }, []);
+    // New turn started — clear barge-in flag
+    bargedInRef.current = false;
+
+    // Mark AI as responding on first chunk (before audio_response URL arrives)
+    if (!isPlayingAudioRef.current) {
+      setIsPlayingAudio(true);
+      isPlayingAudioRef.current = true;
+      setProcessingStage('idle');
+      setProcessingMessage('');
+      console.log('[SessionPlayer] TTS streaming started — isPlayingAudio=true');
+    }
+
+    // Enqueue chunk for immediate Web Audio API playback
+    audioPlayer.playChunk({
+      audio: message.audio,
+      isFinal: message.isFinal,
+      timestamp: message.timestamp,
+    }).then(() => {
+      if (message.isFinal) {
+        // Final chunk queued — isPlayingAudio will be cleared when queue drains
+        console.log('[SessionPlayer] TTS final chunk enqueued');
+      }
+    }).catch(err => {
+      console.error('[SessionPlayer] TTS chunk playback error:', err);
+    });
+  }, [audioPlayer]);
 
   const handleAudioResponse = useCallback(
     (message: AudioResponseMessage) => {
@@ -503,6 +530,20 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         if (isConnectedRef.current && endSessionRef.current) {
           endSessionRef.current();
         }
+        return;
+      }
+
+      // If TTS chunks already started streaming via Web Audio API, skip URL playback.
+      // The audio_response URL is redundant when streaming chunks have already handled playback.
+      if (audioPlayer.isPlaying || (audioPlayer.isInitialized && isPlayingAudioRef.current)) {
+        console.log('[SessionPlayer] Skipping audio_response URL — TTS streaming already playing via Web Audio');
+        return;
+      }
+
+      // Skip stale audio_response that arrives after a barge-in
+      if (bargedInRef.current) {
+        bargedInRef.current = false; // consume the flag
+        console.log('[SessionPlayer] Skipping audio_response URL — barge-in already happened');
         return;
       }
 
@@ -672,7 +713,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         toast.error(t('sessions.player.messages.audioPlaybackError'));
       }
     },
-    [t, initialGreetingCompleted, status]
+    [t, initialGreetingCompleted, status, audioPlayer]
   );
 
   const handleError = useCallback(
@@ -1134,6 +1175,24 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     flushInterval: 100, // Flush every 100ms
   });
 
+  // Sync audioPlayer.isPlaying → isPlayingAudio state and ref
+  // When Web Audio queue drains (audioPlayer.isPlaying → false), clear the global playing flag
+  // unless the HTMLAudioElement is still playing (audio_response URL fallback path)
+  useEffect(() => {
+    const htmlAudioPlaying = audioRef.current ? !audioRef.current.paused : false;
+    if (!audioPlayer.isPlaying && isPlayingAudioRef.current && !htmlAudioPlaying) {
+      setIsPlayingAudio(false);
+      isPlayingAudioRef.current = false;
+      console.log('[SessionPlayer] TTS streaming ended — isPlayingAudio=false');
+
+      // Mark initial greeting as complete when streaming audio finishes
+      if (!initialGreetingCompleted) {
+        setInitialGreetingCompleted(true);
+        console.log('[SessionPlayer] Initial greeting complete (TTS streaming ended)');
+      }
+    }
+  }, [audioPlayer.isPlaying, initialGreetingCompleted]);
+
   // Sync WebSocket values to refs (to break circular dependencies)
   useEffect(() => {
     isConnectedRef.current = isConnected;
@@ -1373,6 +1432,30 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     // リアルタイムチャンク方式（audio_chunk_realtime + speech_end）のみ使用
   }, []);
 
+  // Barge-in: user spoke while AI was responding — stop AI audio immediately
+  const handleBargeIn = useCallback(() => {
+    console.log('[SessionPlayer] Barge-in detected — stopping AI audio');
+
+    // Stop Web Audio API streaming playback
+    audioPlayer.stop();
+
+    // Stop HTMLAudioElement (audio_response URL fallback)
+    if (audioRef.current && !audioRef.current.paused) {
+      audioStoppedByUserRef.current = true; // suppress onerror/abort toast
+      audioRef.current.pause();
+      audioRef.current.src = ''; // triggers MEDIA_ERR_ABORTED — suppressed by audioStoppedByUserRef
+    }
+
+    // Clear playing state immediately so recorder restarts
+    setIsPlayingAudio(false);
+    isPlayingAudioRef.current = false;
+
+    // Mark barge-in to suppress any stale audio_response URL that arrives later
+    bargedInRef.current = true;
+
+    console.log('[SessionPlayer] AI audio stopped — recorder will restart for user speech');
+  }, [audioPlayer]);
+
   const {
     isRecording: isMicRecording,
     audioLevel,
@@ -1390,6 +1473,7 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
     onSpeechEnd: handleSpeechEnd, // Silence detection callback
     onRecordingComplete: handleRecordingComplete, // Still keep for complete recording
     onError: handleRecordingError,
+    onBargeIn: handleBargeIn, // Barge-in: stop AI audio when user starts speaking
     silenceThreshold: scenario.silenceThreshold ?? 0.12, // Use scenario setting or default 0.12 (raised to avoid ambient noise ~10%)
     silenceDuration: scenario.minSilenceDuration ?? 1000, // Use scenario setting or default 1000ms (increased from 500ms to avoid cutting off mid-speech)
     isAiRespondingRef: isPlayingAudioRef, // Ref for real-time AI audio state (fixes closure issue)
@@ -1637,6 +1721,14 @@ export function SessionPlayer({ session, avatar, scenario }: SessionPlayerProps)
         audioRef.current.volume = 1.0;
         audioRef.current.muted = false;
         console.log('[SessionPlayer] Audio element initialized for AI responses');
+      }
+
+      // Initialize Web Audio API player for TTS streaming (requires user gesture)
+      try {
+        await audioPlayer.initialize();
+        console.log('[SessionPlayer] Web Audio API player initialized for TTS streaming');
+      } catch (err) {
+        console.warn('[SessionPlayer] Web Audio API init failed, falling back to HTMLAudioElement:', err);
       }
 
       setStatus('READY');

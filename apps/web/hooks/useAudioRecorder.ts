@@ -26,6 +26,7 @@ interface UseAudioRecorderOptions {
   onSpeechEnd?: () => void; // Called when silence is detected
   onError?: (error: Error) => void;
   onChunkAck?: (chunkId: string, status: string) => void; // Phase 1.6.1: ACK callback
+  onBargeIn?: () => void; // Called when user speaks during AI response (barge-in)
   mimeType?: string;
   enableRealtime?: boolean; // Enable real-time chunk sending (default: true)
   silenceThreshold?: number; // Silence detection threshold (0-1, default: 0.05)
@@ -65,6 +66,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     onSpeechEnd,
     onError,
     onChunkAck, // Phase 1.6.1: ACK callback
+    onBargeIn,
     mimeType = 'audio/webm;codecs=opus',
     enableRealtime = true,
     silenceThreshold = 0.15, // Raised from 0.05 to avoid false positives from ambient noise
@@ -510,16 +512,20 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
               // keep running silently until the user's real speech is confirmed post-AI.
               const isAiResponding = isAiRespondingRef?.current ?? false;
               if (isAiResponding) {
-                logger.debug(
+                logger.info(
                   LogPhase.RECORDING,
-                  'Confirmed speech during AI response — suppressing restart (echo from speakers)',
+                  'Confirmed speech during AI response — triggering barge-in',
                   {
                     level: normalizedLevel.toFixed(3),
                     speechDuration,
                     currentSequence: sequenceNumberRef.current,
                   }
                 );
-                // Reset so we re-confirm 800ms of speech AFTER the AI finishes
+                // Notify caller to stop AI audio playback (barge-in)
+                onBargeIn?.();
+                // Restart recorder immediately to capture user's barge-in speech
+                restartRecording();
+                speechEndSentRef.current = false; // enable chunk transmission
                 speechStartTimeRef.current = null;
               } else {
                 // Confirmed real speech - RESTART to get fresh EBML header
@@ -571,7 +577,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     }
 
     animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
-  }, [enableRealtime, silenceThreshold, silenceDuration, onSpeechEnd, restartRecording, logger]);
+  }, [enableRealtime, silenceThreshold, silenceDuration, onSpeechEnd, onBargeIn, restartRecording, logger]);
 
   const startRecording = useCallback(async () => {
     try {
