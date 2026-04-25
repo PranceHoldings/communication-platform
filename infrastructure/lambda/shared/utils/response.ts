@@ -11,17 +11,35 @@ import {
   StandardSuccessResponse,
   validateResponseStructure,
 } from '../types/api-response';
+import { getCorsAllowedOrigins, getFrontendUrl } from './env-validator';
+
+// credentials: true のリクエストにはワイルドカード不可 — Originをエコーバック
+export function getAllowOriginHeader(requestOrigin?: string): string {
+  const allowedOrigins = getCorsAllowedOrigins();
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+  return getFrontendUrl(); // デフォルトはFRONTEND_URLの値
+}
+
+// Lambda event の origin ヘッダーをスレッドローカル的に渡す仕組み
+let _currentOrigin: string | undefined;
+export function setRequestOrigin(origin: string | undefined): void {
+  _currentOrigin = origin;
+}
 
 /**
- * 共通ヘッダー
+ * 共通ヘッダー生成
  */
-const DEFAULT_HEADERS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Credentials': 'true',
-  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-  'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-};
+function getDefaultHeaders(): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': getAllowOriginHeader(_currentOrigin),
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+  };
+}
 
 /**
  * 成功レスポンスを生成
@@ -42,7 +60,7 @@ export const successResponse = <T>(data: T, statusCode = 200): StandardLambdaRes
 
   return {
     statusCode,
-    headers: DEFAULT_HEADERS,
+    headers: getDefaultHeaders(),
     body: JSON.stringify(response),
   };
 };
@@ -126,7 +144,7 @@ export function errorResponse(
 
   return {
     statusCode: finalStatusCode,
-    headers: DEFAULT_HEADERS,
+    headers: getDefaultHeaders(),
     body: JSON.stringify(response),
   };
 }
@@ -173,7 +191,7 @@ export const deletedResponse = (): APIResponse => {
 export const corsResponse = (): APIResponse => {
   return {
     statusCode: 200,
-    headers: DEFAULT_HEADERS,
+    headers: getDefaultHeaders(),
     body: '',
   };
 };

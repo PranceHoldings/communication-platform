@@ -12,6 +12,7 @@ import { generateAndUploadReport } from '../report/generator';
 import { ReportData } from '../report/types';
 import { verifyToken } from '../shared/auth/jwt';
 import { generateAISuggestions } from '../report/ai-suggestions';
+import { getAllowOriginHeader, setRequestOrigin } from '../shared/utils/response';
 
 const prisma = new PrismaClient();
 
@@ -222,6 +223,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     method: event.httpMethod,
     pathParameters: event.pathParameters,
   });
+  setRequestOrigin(event?.headers?.Origin || event?.headers?.origin);
 
   try {
     // Verify authentication
@@ -231,7 +233,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
         statusCode: 401,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
         },
         body: JSON.stringify({ error: 'Unauthorized' }),
       };
@@ -243,7 +245,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
         statusCode: 401,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
         },
         body: JSON.stringify({ error: 'Invalid token' }),
       };
@@ -256,7 +258,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
         statusCode: 400,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
         },
         body: JSON.stringify({ error: 'Session ID is required' }),
       };
@@ -273,7 +275,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
         statusCode: 404,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
         },
         body: JSON.stringify({ error: 'Session not found' }),
       };
@@ -289,7 +291,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
         statusCode: 403,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
         },
         body: JSON.stringify({ error: 'Forbidden' }),
       };
@@ -322,7 +324,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
       },
       body: JSON.stringify({
         success: true,
@@ -341,7 +343,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
       },
       body: JSON.stringify({
         error: 'Failed to generate report',

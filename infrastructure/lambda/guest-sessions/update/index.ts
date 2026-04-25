@@ -12,6 +12,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PrismaClient, GuestSessionStatus } from '@prisma/client';
 import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
+import { getAllowOriginHeader, setRequestOrigin } from '../../shared/utils/response';
 
 const prisma = new PrismaClient();
 
@@ -40,6 +41,7 @@ interface UpdateGuestSessionResponse {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   console.log('[UpdateGuestSession] Event:', JSON.stringify(event, null, 2));
+  setRequestOrigin(event?.headers?.Origin || event?.headers?.origin);
 
   try {
     // 1. Authentication check
@@ -109,7 +111,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         statusCode: 404,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
         },
         body: JSON.stringify({ error: 'Guest session not found' }),
       };
@@ -120,7 +122,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         statusCode: 403,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
         },
         body: JSON.stringify({ error: 'Guest session does not belong to your organization' }),
       };
@@ -262,7 +264,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
       },
       body: JSON.stringify(response),
     };
@@ -273,7 +275,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
       },
       body: JSON.stringify({ error: 'Internal server error' }),
     };

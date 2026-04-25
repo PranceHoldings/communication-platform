@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
-import { successResponse, errorResponse } from '../../shared/utils/response';
+import { successResponse, errorResponse, setRequestOrigin } from '../../shared/utils/response';
 
 /**
  * GET /api/v1/sessions/{id}/analysis
@@ -12,6 +12,7 @@ export const handler: APIGatewayProxyHandler = async event => {
   console.log('[GetAnalysis] Request:', JSON.stringify(event, null, 2));
 
   try {
+    setRequestOrigin(event.headers?.Origin || event.headers?.origin);
     // Get authenticated user
     const user = getUserFromEvent(event);
     if (!user) {

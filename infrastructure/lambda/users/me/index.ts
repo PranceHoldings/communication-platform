@@ -5,7 +5,7 @@
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
-import { successResponse, errorResponse } from '../../shared/utils/response';
+import { successResponse, errorResponse, setRequestOrigin, getAllowOriginHeader } from '../../shared/utils/response';
 import { getUserFromEvent } from '../../shared/auth/jwt';
 import { AuthenticationError, NotFoundError } from '../../shared/types';
 
@@ -19,18 +19,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   });
 
   try {
-    // CORSプリフライト対応
-    if (event.httpMethod === 'OPTIONS') {
-      return {
-        statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-          'Access-Control-Allow-Methods': 'GET,OPTIONS',
-        },
-        body: '',
-      };
-    }
+    setRequestOrigin(event.headers?.Origin || event.headers?.origin);
 
     // JWT認証情報から現在のユーザーIDを取得
     const currentUser = getUserFromEvent(event);

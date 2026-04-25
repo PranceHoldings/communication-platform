@@ -3,6 +3,8 @@
  * Enhanced error logging for CloudWatch Logs monitoring
  */
 
+import { getAllowOriginHeader } from './response';
+
 export interface ErrorContext {
   functionName?: string;
   requestId?: string;
@@ -105,7 +107,7 @@ export function createErrorResponse(
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': getAllowOriginHeader(undefined),
     },
     body: JSON.stringify({
       error: {

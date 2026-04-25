@@ -10,6 +10,7 @@ import { prisma } from '../../shared/database/prisma';
 import { verifyToken, JWTPayload } from '../../shared/utils/jwt';
 import { setCacheValue } from '../../shared/utils/elasticache-client';
 import { clearMemoryCache } from '../../shared/utils/runtime-config-loader';
+import { getAllowOriginHeader, setRequestOrigin } from '../../../shared/utils/response';
 
 interface RollbackRequest {
   historyId: string;
@@ -20,6 +21,7 @@ export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   console.log('POST /api/v1/admin/runtime-config/:key/rollback - event:', JSON.stringify(event));
+  setRequestOrigin(event?.headers?.Origin || event?.headers?.origin);
 
   try {
     // Extract user from API Gateway Lambda Authorizer context
@@ -29,7 +31,7 @@ export const handler = async (
     } catch (error) {
       return {
         statusCode: 401,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({ error: 'Unauthorized' }),
       };
     }
@@ -38,7 +40,7 @@ export const handler = async (
     if (payload.role !== 'SUPER_ADMIN' && payload.role !== 'CLIENT_ADMIN') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Insufficient permissions. Only SUPER_ADMIN and CLIENT_ADMIN can rollback runtime configuration.',
         }),
@@ -50,7 +52,7 @@ export const handler = async (
     if (!key) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({ error: 'Missing configuration key' }),
       };
     }
@@ -60,7 +62,7 @@ export const handler = async (
     if (!body.historyId) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({ error: 'Missing historyId in request body' }),
       };
     }
@@ -81,7 +83,7 @@ export const handler = async (
     if (!historyRecord) {
       return {
         statusCode: 404,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'History record not found',
           historyId: body.historyId,
@@ -93,7 +95,7 @@ export const handler = async (
     if (historyRecord.key !== key) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'History record does not match configuration key',
           expected: key,
@@ -115,7 +117,7 @@ export const handler = async (
     if (!currentConfig) {
       return {
         statusCode: 404,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Configuration not found',
           key,
@@ -127,7 +129,7 @@ export const handler = async (
     if (currentConfig.accessLevel === 'DEVELOPER_ONLY') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Access denied. This configuration is for developers only.',
         }),
@@ -137,7 +139,7 @@ export const handler = async (
     if (currentConfig.accessLevel === 'SUPER_ADMIN_READ_ONLY') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Access denied. This configuration is read-only for security reasons.',
         }),
@@ -147,7 +149,7 @@ export const handler = async (
     if (currentConfig.accessLevel === 'SUPER_ADMIN_READ_WRITE' && payload.role !== 'SUPER_ADMIN') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Access denied. Only SUPER_ADMIN can rollback this configuration.',
         }),
@@ -157,7 +159,7 @@ export const handler = async (
     if (currentConfig.accessLevel === 'CLIENT_ADMIN_READ_ONLY') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Access denied. This configuration is read-only.',
         }),
@@ -216,7 +218,7 @@ export const handler = async (
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
       body: JSON.stringify({
         data: updatedConfig,
         message: 'Runtime configuration rolled back successfully',
@@ -232,7 +234,7 @@ export const handler = async (
 
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
       body: JSON.stringify({
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error',

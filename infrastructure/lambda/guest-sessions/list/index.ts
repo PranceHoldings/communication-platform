@@ -12,7 +12,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PrismaClient, GuestSessionStatus } from '@prisma/client';
 import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
-import { successResponse, errorResponse } from '../../shared/utils/response';
+import { successResponse, errorResponse, setRequestOrigin } from '../../shared/utils/response';
 
 const prisma = new PrismaClient();
 
@@ -72,6 +72,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   console.log('[ListGuestSessions] Event:', JSON.stringify(event, null, 2));
 
   try {
+    setRequestOrigin(event.headers?.Origin || event.headers?.origin);
     // 1. Authentication check
     const authHeader = event.headers.Authorization || event.headers.authorization;
     if (!authHeader) {

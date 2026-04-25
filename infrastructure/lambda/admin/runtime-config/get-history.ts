@@ -8,11 +8,13 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { verifyToken, JWTPayload } from '../../shared/utils/jwt';
+import { getAllowOriginHeader, setRequestOrigin } from '../../../shared/utils/response';
 
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   console.log('GET /api/v1/admin/runtime-config/:key/history - event:', JSON.stringify(event));
+  setRequestOrigin(event?.headers?.Origin || event?.headers?.origin);
 
   try {
     // Extract user from API Gateway Lambda Authorizer context
@@ -22,7 +24,7 @@ export const handler = async (
     } catch (error) {
       return {
         statusCode: 401,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({ error: 'Unauthorized' }),
       };
     }
@@ -31,7 +33,7 @@ export const handler = async (
     if (payload.role !== 'SUPER_ADMIN' && payload.role !== 'CLIENT_ADMIN') {
       return {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({
           error: 'Insufficient permissions',
         }),
@@ -43,7 +45,7 @@ export const handler = async (
     if (!key) {
       return {
         statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
         body: JSON.stringify({ error: 'Missing configuration key' }),
       };
     }
@@ -77,7 +79,7 @@ export const handler = async (
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
       body: JSON.stringify({
         data: {
           history,
@@ -95,7 +97,7 @@ export const handler = async (
 
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin), 'Access-Control-Allow-Credentials': 'true' },
       body: JSON.stringify({
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error',

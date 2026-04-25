@@ -7,7 +7,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { verifyPassword } from '../../shared/auth/password';
 import { generateTokenPair } from '../../shared/auth/jwt';
-import { successResponse, errorResponse } from '../../shared/utils/response';
+import { successResponse, errorResponse, setRequestOrigin } from '../../shared/utils/response';
 import {
   validateRequestBody,
   validateEmail,
@@ -33,18 +33,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   });
 
   try {
-    // CORSプリフライト対応
-    if (event.httpMethod === 'OPTIONS') {
-      return {
-        statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-          'Access-Control-Allow-Methods': 'POST,OPTIONS',
-        },
-        body: '',
-      };
-    }
+    setRequestOrigin(event.headers?.Origin || event.headers?.origin);
 
     // リクエストボディの検証
     console.log('[DEBUG] Raw event.body:', event.body);

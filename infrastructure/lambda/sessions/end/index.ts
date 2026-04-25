@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
-import { successResponse, errorResponse } from '../../shared/utils/response';
+import { successResponse, errorResponse, setRequestOrigin } from '../../shared/utils/response';
 
 /**
  * PUT /api/v1/sessions/{id}/end
@@ -14,6 +14,7 @@ export const handler: APIGatewayProxyHandler = async event => {
   console.log('End session request:', JSON.stringify(event, null, 2));
 
   try {
+    setRequestOrigin(event.headers?.Origin || event.headers?.origin);
     const user = getUserFromEvent(event);
     if (!user) {
       return errorResponse(401, 'Unauthorized');

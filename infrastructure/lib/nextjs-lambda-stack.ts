@@ -55,8 +55,8 @@ export class NextJsLambdaStack extends cdk.Stack {
         NEXT_PUBLIC_WS_URL: `wss://ws.${config.domain.fullDomain}`,
         NEXT_PUBLIC_CLOUDFRONT_DOMAIN: cdk.Fn.importValue(`${config.environment}-CDNDomainName`),
       },
-      // Cold start optimization
-      reservedConcurrentExecutions: 5, // Keep 5 instances warm
+      // reservedConcurrentExecutions を設定しない = アカウントの並列実行数上限内で自由にスケール
+      // (reservedConcurrentExecutions: 5 は "warm 維持" ではなく "同時5リクエストで打ち切り" になるため削除)
     });
 
     // API Gateway HTTP API

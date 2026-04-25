@@ -2,7 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
-import { successResponse, errorResponse } from '../../shared/utils/response';
+import { successResponse, errorResponse, setRequestOrigin } from '../../shared/utils/response';
 import { getAnalysisLambdaFunctionName } from '../../shared/utils/env-validator';
 import { getAwsRegion } from '../../shared/config';
 
@@ -22,6 +22,7 @@ export const handler: APIGatewayProxyHandler = async event => {
   console.log('[TriggerAnalysis] Request:', JSON.stringify(event, null, 2));
 
   try {
+    setRequestOrigin(event.headers?.Origin || event.headers?.origin);
     // Get authenticated user
     const user = getUserFromEvent(event);
     if (!user) {

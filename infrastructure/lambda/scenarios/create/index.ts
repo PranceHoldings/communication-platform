@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { getUserFromEvent } from '../../shared/auth/jwt';
-import { successResponse, errorResponse } from '../../shared/utils/response';
+import { successResponse, errorResponse, setRequestOrigin } from '../../shared/utils/response';
 import { LANGUAGE_DEFAULTS } from '../../shared/config/defaults';
 
 /**
@@ -22,6 +22,7 @@ export const handler: APIGatewayProxyHandler = async event => {
   console.log('Create scenario request:', JSON.stringify(event, null, 2));
 
   try {
+    setRequestOrigin(event.headers?.Origin || event.headers?.origin);
     // Get authenticated user
     const user = getUserFromEvent(event);
     if (!user) {
