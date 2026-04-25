@@ -15,7 +15,7 @@ import { prisma } from '../../shared/database/prisma';
 import { verifyToken, JWTPayload } from '../../shared/utils/jwt';
 import { setCacheValue, deleteCacheValue } from '../../shared/utils/elasticache-client';
 import { clearMemoryCache } from '../../shared/utils/runtime-config-loader';
-import { getAllowOriginHeader, setRequestOrigin } from '../../../shared/utils/response';
+import { getAllowOriginHeader, setRequestOrigin } from '../../shared/utils/response';
 
 interface UpdateRuntimeConfigRequest {
   value: any;

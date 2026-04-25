@@ -8,7 +8,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { prisma } from '../../shared/database/prisma';
 import { verifyToken, JWTPayload } from '../../shared/utils/jwt';
-import { getAllowOriginHeader, setRequestOrigin } from '../../../shared/utils/response';
+import { getAllowOriginHeader, setRequestOrigin } from '../../shared/utils/response';
 
 export const handler = async (
   event: APIGatewayProxyEvent
