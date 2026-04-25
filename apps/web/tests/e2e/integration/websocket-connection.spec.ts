@@ -138,7 +138,6 @@ test.describe('WebSocket Connection - Dev Environment Integration', () => {
     // Filter out Next.js HMR connections
     const appWsConnections = wsConnections.filter((conn: any) =>
       !conn.url.includes('webpack-hmr') &&
-      !conn.url.includes('localhost:3000') &&
       (conn.url.includes('wss://') || conn.url.includes('ws://'))
     );
 

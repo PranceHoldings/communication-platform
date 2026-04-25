@@ -125,9 +125,18 @@ export default function LoginPage() {
             </div>
 
             <div className="text-sm">
-              <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">
+              <button
+                type="button"
+                onClick={() =>
+                  setToast({
+                    message: t('auth.login.forgotPasswordNotice'),
+                    type: 'info',
+                  })
+                }
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
                 {t('auth.login.forgotPassword')}
-              </a>
+              </button>
             </div>
           </div>
 

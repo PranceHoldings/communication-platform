@@ -8,7 +8,7 @@
 import type { StandardAPIResponse } from '@prance/shared';
 import { isSuccessResponse } from '@prance/shared';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 // デバッグ: API URL確認（開発環境のみ）
 if (process.env.NODE_ENV === 'development') {

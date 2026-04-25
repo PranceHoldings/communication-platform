@@ -294,7 +294,7 @@ test.describe('Multi-language Support', () => {
       {
         name: 'NEXT_LOCALE',
         value: 'ja',
-        domain: 'localhost',
+        domain: 'dev.app.prance.jp',
         path: '/',
       },
     ]);
@@ -333,7 +333,7 @@ test.describe('Multi-language Support', () => {
       {
         name: 'NEXT_LOCALE',
         value: 'en',
-        domain: 'localhost',
+        domain: 'dev.app.prance.jp',
         path: '/',
       },
     ]);

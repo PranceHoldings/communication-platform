@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-// Load environment variables from .env.local (root directory)
-dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
+// Load E2E environment variables (.env.e2e is gitignored; copy from .env.e2e.example)
+dotenv.config({ path: path.resolve(__dirname, '.env.e2e') });
 
 /**
  * Playwright Configuration for Prance Session Player E2E Tests
@@ -32,7 +32,7 @@ export default defineConfig({
 
   // Global test configuration
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL || 'https://dev.app.prance.jp',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -40,25 +40,16 @@ export default defineConfig({
     // Grant permissions for microphone/camera (Stage 3 tests)
     permissions: ['microphone', 'camera'],
 
-    // Increase timeout for WebSocket connections
+    // Increase timeout for remote dev environment (network latency)
     actionTimeout: 15000,
-    navigationTimeout: 30000,
+    navigationTimeout: 60000,
   },
 
   // Test timeout configuration
-  timeout: 60000, // 1 minute per test
+  timeout: 90000, // 1.5 minutes per test (remote env)
   expect: {
-    timeout: 10000, // 10 seconds for assertions
+    timeout: 15000, // 15 seconds for assertions
   },
-
-  // Web server configuration (auto-start Next.js dev server)
-  // Disabled: Start dev server manually with 'npm run dev' in a separate terminal
-  // webServer: {
-  //   command: 'npm run dev',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  //   timeout: 120000, // 2 minutes to start
-  // },
 
   // Browser configurations
   projects: [

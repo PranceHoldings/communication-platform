@@ -31,7 +31,7 @@ export async function generateReport(sessionId: string): Promise<ReportResponse>
     throw new Error('Authentication required');
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/sessions/${sessionId}/report`, {
+  const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/report`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

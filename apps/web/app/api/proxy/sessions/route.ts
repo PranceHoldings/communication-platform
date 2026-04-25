@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ffypxkomg1.execute-api.us-east-1.amazonaws.com/dev/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export async function GET(request: NextRequest) {
   try {

@@ -51,8 +51,11 @@ export class NextJsLambdaStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       environment: {
         NODE_ENV: 'production',
-        NEXT_PUBLIC_API_URL: `https://api.${config.domain.fullDomain}`,
-        NEXT_PUBLIC_WS_URL: `wss://ws.${config.domain.fullDomain}`,
+        // NOTE: NEXT_PUBLIC_* are baked into the bundle at build time — these Lambda env vars
+        // are informational only and do NOT override what's in the bundle.
+        // The authoritative values are set in deploy.sh before the Next.js build.
+        NEXT_PUBLIC_API_URL: `https://api.${config.domain.fullDomain}/api/v1`,
+        NEXT_PUBLIC_WS_ENDPOINT: `wss://ws.${config.domain.fullDomain}`,
         NEXT_PUBLIC_CLOUDFRONT_DOMAIN: cdk.Fn.importValue(`${config.environment}-CDNDomainName`),
       },
       // reservedConcurrentExecutions を設定しない = アカウントの並列実行数上限内で自由にスケール

@@ -76,15 +76,21 @@ if [ "$SKIP_NEXTJS" = false ]; then
   echo -e "\n${YELLOW}🖥️  Step 2: Next.js フロントエンドビルド中...${NC}"
   echo -e "${BLUE}   (変更がない場合でも再ビルドすることで BUILD_ID を最新化します)${NC}"
 
-  # 本番ビルド時は NEXT_PUBLIC_* を本番 URL で上書き
-  # NEXT_PUBLIC_* はビルド時に静的に焼き込まれるため、Lambda 環境変数では反映されない
+  # NEXT_PUBLIC_* はビルド時に静的に焼き込まれるため、環境ごとに上書きが必須
   if [ "$ENVIRONMENT" = "production" ]; then
     echo -e "${BLUE}   本番用 NEXT_PUBLIC_* を設定中...${NC}"
-    export NEXT_PUBLIC_API_URL="https://api.app.prance.jp"
+    export NEXT_PUBLIC_API_URL="https://api.app.prance.jp/api/v1"
     export NEXT_PUBLIC_WS_ENDPOINT="wss://ws.app.prance.jp"
-    echo -e "${GREEN}   ✅ NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL${NC}"
-    echo -e "${GREEN}   ✅ NEXT_PUBLIC_WS_ENDPOINT=$NEXT_PUBLIC_WS_ENDPOINT${NC}"
+  elif [ "$ENVIRONMENT" = "dev" ]; then
+    echo -e "${BLUE}   Dev用 NEXT_PUBLIC_* を設定中...${NC}"
+    export NEXT_PUBLIC_API_URL="https://api.dev.app.prance.jp/api/v1"
+    export NEXT_PUBLIC_WS_ENDPOINT="wss://ws.dev.app.prance.jp"
   fi
+  # Always disable speech bypass in deployed bundles (.env.local has =true for Playwright)
+  export NEXT_PUBLIC_BYPASS_SPEECH_DETECTION=false
+  echo -e "${GREEN}   ✅ NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL${NC}"
+  echo -e "${GREEN}   ✅ NEXT_PUBLIC_WS_ENDPOINT=$NEXT_PUBLIC_WS_ENDPOINT${NC}"
+  echo -e "${GREEN}   ✅ NEXT_PUBLIC_BYPASS_SPEECH_DETECTION=$NEXT_PUBLIC_BYPASS_SPEECH_DETECTION${NC}"
 
   cd "$PROJECT_ROOT"
   bash scripts/build-nextjs-standalone.sh
