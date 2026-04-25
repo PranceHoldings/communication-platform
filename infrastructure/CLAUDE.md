@@ -143,6 +143,37 @@ aws lambda invoke --function-name prance-sessions-get-dev \
 - [ ] データベースマイグレーション実行済み？
 - [ ] 動作確認済み？
 
+### Rule 3-NextJs: Next.js フロントエンドデプロイ原則（2026-04-25追加）🆕
+
+**🔴 最重要: `pnpm run deploy:production` だけでフロントエンドは更新される。個別コマンド不要。**
+
+**必ず理解すべき3点:**
+
+1. **`NEXT_PUBLIC_*` はビルド時に焼き込まれる** — Lambda 環境変数を後から変えても無意味。API URL を変えたら再ビルド必須。
+2. **フロントエンドは Lambda にバンドルされる** — S3 ではなく `prance-nextjs-production` Lambda が静的ファイルも配信する。
+3. **静的ファイルが 404 = パッケージに含まれていない** — `package-nextjs-lambda.sh` を実行し忘れると起きる。
+
+**正しいデプロイコマンド:**
+
+```bash
+# 通常（Lambda + フロントエンド両方更新）
+cd infrastructure && pnpm run deploy:production
+
+# フロントエンドのみ更新
+pnpm run deploy:nextjs-production
+
+# デプロイ後検証（静的ファイル・API URL・BUILD_ID を確認）
+pnpm run validate:nextjs-production
+```
+
+**❌ 禁止:**
+```bash
+# Lambda スタックだけ deploy しても Next.js は更新されない
+bash scripts/cdk-wrapper.sh deploy Prance-production-ApiLambda  # フロントエンド更新されない
+```
+
+> 詳細: [docs/07-development/NEXTJS_DEPLOYMENT_GUIDE.md](../docs/07-development/NEXTJS_DEPLOYMENT_GUIDE.md)
+
 ### Rule 3: 環境変数管理
 
 **🔴 最重要: このプロジェクトはAWS RDS Aurora Serverless v2専用です**

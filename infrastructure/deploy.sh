@@ -1,98 +1,128 @@
 #!/bin/bash
-# deploy.sh - フルデプロイ（ビルド + デプロイ）
-# 使用方法: ./deploy.sh [環境名] [--skip-build]
+# deploy.sh - フルデプロイ（Lambda + Next.js フロントエンド）
+# 使用方法: ./deploy.sh [環境名] [オプション]
 # 例: ./deploy.sh dev
+#     ./deploy.sh production
 #     ./deploy.sh dev --skip-build
+#     ./deploy.sh production --skip-nextjs   # Next.js のみスキップ（Lambda だけ更新）
 
 set -e
 
-# 色付き出力
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+RED='\033[0;31m'
+NC='\033[0m'
 
 echo -e "${BLUE}🚀 Prance Platform - フルデプロイ${NC}"
 echo "=============================================="
 
-# 環境名とオプションの解析
 ENVIRONMENT="${1:-dev}"
 SKIP_BUILD=false
+SKIP_NEXTJS=false
 
 for arg in "$@"; do
   case $arg in
-    --skip-build)
-      SKIP_BUILD=true
-      shift
-      ;;
+    --skip-build)  SKIP_BUILD=true ;;
+    --skip-nextjs) SKIP_NEXTJS=true ;;
   esac
 done
 
 echo -e "${BLUE}📍 環境: ${ENVIRONMENT}${NC}"
-if [ "$SKIP_BUILD" = true ]; then
-  echo -e "${YELLOW}⚠️  ビルドスキップモード${NC}"
-fi
+[ "$SKIP_BUILD"  = true ] && echo -e "${YELLOW}⚠️  ビルドスキップモード${NC}"
+[ "$SKIP_NEXTJS" = true ] && echo -e "${YELLOW}⚠️  Next.js スキップモード${NC}"
 echo ""
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Step 1: ビルド準備（スキップ可能）
+# ─── Step 1: ビルド準備 ───────────────────────────────────────────────────────
+
 if [ "$SKIP_BUILD" = false ]; then
   echo -e "${YELLOW}📦 Step 1: ビルド準備実行中...${NC}"
 
-  # 環境変数同期
-  echo -e "${BLUE}   環境変数ファイルを同期中...${NC}"
   ENV_LOCAL="${PROJECT_ROOT}/.env.local"
   ENV_INFRA="${SCRIPT_DIR}/.env"
-
   if [ ! -f "$ENV_LOCAL" ]; then
     echo -e "${RED}❌ エラー: .env.local が見つかりません${NC}"
     exit 1
   fi
-
   cp "$ENV_LOCAL" "$ENV_INFRA"
   echo -e "${GREEN}   ✅ 環境変数同期完了${NC}"
 
-  # Lambda auto-generated files cleanup (CRITICAL - prevents stale code deployment)
-  echo -e "${BLUE}   Lambda自動生成ファイルをクリーンアップ中...${NC}"
   if [ -f "$SCRIPT_DIR/scripts/pre-deploy-clean.sh" ]; then
     bash "$SCRIPT_DIR/scripts/pre-deploy-clean.sh"
-    echo -e "${GREEN}   ✅ Lambda自動生成ファイルクリーンアップ完了${NC}"
-  else
-    echo -e "${RED}   ⚠️  警告: scripts/pre-deploy-clean.sh が見つかりません${NC}"
+    echo -e "${GREEN}   ✅ Lambda 自動生成ファイルクリーンアップ完了${NC}"
   fi
 
-  # 依存関係インストール
-  echo -e "${BLUE}   依存関係をインストール中...${NC}"
   cd "$PROJECT_ROOT"
   pnpm install --ignore-scripts
   echo -e "${GREEN}   ✅ 依存関係インストール完了${NC}"
 
-  # Prisma Client生成
-  echo -e "${BLUE}   Prisma Client生成中...${NC}"
-  cd "$PROJECT_ROOT"
-
-  # Generate Prisma Client from root directory
   npx prisma generate --schema=packages/database/prisma/schema.prisma
-  echo -e "${GREEN}   ✅ Prisma Client生成完了${NC}"
+  echo -e "${GREEN}   ✅ Prisma Client 生成完了${NC}"
 
-  # TypeScriptビルド
-  echo -e "${BLUE}   TypeScriptをビルド中...${NC}"
-  cd "$PROJECT_ROOT"
+  # infrastructure TypeScript のみビルド（Next.js は別ステップ）
+  cd "$SCRIPT_DIR"
   pnpm run build
-  echo -e "${GREEN}   ✅ ビルド完了${NC}"
+  echo -e "${GREEN}   ✅ Infrastructure ビルド完了${NC}"
 else
   echo -e "${YELLOW}📦 Step 1: ビルドスキップ${NC}"
-  echo -e "${BLUE}   既存のビルド成果物を使用します${NC}"
 fi
 
-# Step 2: デプロイ
-echo -e "\n${YELLOW}🚢 Step 2: デプロイ実行中...${NC}"
+# ─── Step 2: Next.js フロントエンドビルド ──────────────────────────────────
+
+if [ "$SKIP_NEXTJS" = false ]; then
+  echo -e "\n${YELLOW}🖥️  Step 2: Next.js フロントエンドビルド中...${NC}"
+  echo -e "${BLUE}   (変更がない場合でも再ビルドすることで BUILD_ID を最新化します)${NC}"
+
+  # 本番ビルド時は NEXT_PUBLIC_* を本番 URL で上書き
+  # NEXT_PUBLIC_* はビルド時に静的に焼き込まれるため、Lambda 環境変数では反映されない
+  if [ "$ENVIRONMENT" = "production" ]; then
+    echo -e "${BLUE}   本番用 NEXT_PUBLIC_* を設定中...${NC}"
+    export NEXT_PUBLIC_API_URL="https://api.app.prance.jp"
+    export NEXT_PUBLIC_WS_ENDPOINT="wss://ws.app.prance.jp"
+    echo -e "${GREEN}   ✅ NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL${NC}"
+    echo -e "${GREEN}   ✅ NEXT_PUBLIC_WS_ENDPOINT=$NEXT_PUBLIC_WS_ENDPOINT${NC}"
+  fi
+
+  cd "$PROJECT_ROOT"
+  bash scripts/build-nextjs-standalone.sh
+  echo -e "${GREEN}   ✅ Next.js ビルド完了${NC}"
+
+  bash scripts/package-nextjs-lambda.sh
+  echo -e "${GREEN}   ✅ Next.js Lambda パッケージ作成完了${NC}"
+else
+  echo -e "\n${YELLOW}🖥️  Step 2: Next.js スキップ${NC}"
+  # スキップ時は既存パッケージが必要
+  if [ ! -d "/tmp/nextjs-lambda-package" ]; then
+    echo -e "${RED}❌ /tmp/nextjs-lambda-package が存在しません${NC}"
+    echo -e "${YELLOW}   --skip-nextjs を外して再実行してください${NC}"
+    exit 1
+  fi
+fi
+
+# ─── Step 3: CDK デプロイ ────────────────────────────────────────────────────
+
+echo -e "\n${YELLOW}🚢 Step 3: CDK デプロイ実行中...${NC}"
 "$SCRIPT_DIR/deploy-simple.sh" "$ENVIRONMENT"
+
+# ─── Step 4: デプロイ後検証 ─────────────────────────────────────────────────
+
+echo -e "\n${YELLOW}🔍 Step 4: デプロイ後検証...${NC}"
+if [ -f "$PROJECT_ROOT/scripts/validate-nextjs-deployment.sh" ]; then
+  bash "$PROJECT_ROOT/scripts/validate-nextjs-deployment.sh" "$ENVIRONMENT" || {
+    echo -e "${RED}⚠️  検証で問題が検出されました。上記のエラーを確認してください。${NC}"
+    # 検証失敗でもデプロイ自体は完了しているため exit 1 しない
+  }
+fi
 
 echo -e "\n${GREEN}✅ フルデプロイ完了！${NC}"
 echo -e "${BLUE}=============================================="
 echo -e "🎉 Prance Platform が正常にデプロイされました"
+echo -e "   環境: ${ENVIRONMENT}"
+if [ "$ENVIRONMENT" = "production" ]; then
+  echo -e "   URL: https://app.prance.jp"
+fi
 echo -e "=============================================="
 echo -e "${NC}"
