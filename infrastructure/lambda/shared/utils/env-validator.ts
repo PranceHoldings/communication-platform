@@ -227,16 +227,10 @@ export function getEnvironmentName(): string {
 
 /**
  * Get allowed CORS origins from FRONTEND_URL env var.
- * Always includes the primary FRONTEND_URL; dev environment also includes localhost.
+ * Uses FRONTEND_URL as the single source of truth for each environment.
  */
 export function getCorsAllowedOrigins(): string[] {
-  const frontendUrl = getFrontendUrl();
-  const origins = [frontendUrl];
-  // dev環境はlocalhostも許可
-  if (!isProduction() && !origins.includes('http://localhost:3000')) {
-    origins.push('http://localhost:3000');
-  }
-  return origins;
+  return [getFrontendUrl()];
 }
 
 /**

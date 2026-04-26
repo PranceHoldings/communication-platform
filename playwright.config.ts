@@ -1,5 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// E2E tests run against deployed environments only (dev.app.prance.jp or app.prance.jp).
+// Set BASE_URL in .env.e2e or as an environment variable before running tests.
+if (!process.env.BASE_URL) {
+  throw new Error('BASE_URL must be set. E2E tests run against deployed environments only.');
+}
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
@@ -12,7 +18,7 @@ export default defineConfig({
     ['json', { outputFile: 'test-results/results.json' }],
   ],
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -24,11 +30,4 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: true,
-    timeout: 120000,
-    cwd: './apps/web',
-  },
 });

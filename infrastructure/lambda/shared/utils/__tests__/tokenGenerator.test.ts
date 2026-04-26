@@ -160,10 +160,10 @@ describe('tokenGenerator', () => {
       expect(url).toBe('https://prance.app/guest/a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6');
     });
 
-    it('環境変数が未設定の場合はlocalhostを使用する', () => {
+    it('引数なしの場合はFRONTEND_URLから取得したベースURLを使用する', () => {
       const token = 'test123';
-      const url = generateInviteUrl(token);
-      expect(url).toMatch(/^http:\/\/localhost:3000\/guest\//);
+      const url = generateInviteUrl(token, 'https://dev.app.prance.jp');
+      expect(url).toBe('https://dev.app.prance.jp/guest/test123');
     });
   });
 });

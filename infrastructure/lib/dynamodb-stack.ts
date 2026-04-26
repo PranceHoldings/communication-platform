@@ -13,6 +13,7 @@ export class DynamoDBStack extends cdk.Stack {
   public readonly userSessionHistoryTable: dynamodb.Table; // Phase 4: User session history for growth tracking
   public readonly apiRateLimitTable: dynamodb.Table;
   public readonly sessionRateLimitTable: dynamodb.Table; // Phase 1.6: Token Bucket rate limiting
+  public readonly scenarioCacheTable: dynamodb.Table; // Phase 1.6.1: Scenario cache
 
   constructor(scope: Construct, id: string, props: DynamoDBStackProps) {
     super(scope, id, props);
@@ -149,6 +150,18 @@ export class DynamoDBStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       timeToLiveAttribute: 'ttl',
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Rate limit data is temporary
+    });
+
+    // シナリオキャッシュテーブル (Phase 1.6.1: Scenario cache for session start)
+    this.scenarioCacheTable = new dynamodb.Table(this, 'ScenarioCacheTable', {
+      tableName: `prance-scenario-cache-${props.environment}`,
+      partitionKey: {
+        name: 'scenarioId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      timeToLiveAttribute: 'ttl',
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Outputs

@@ -13,8 +13,6 @@
     "dev": "turbo run dev",
     "dev:frontend": "turbo run dev --filter=@prance/web...",
     "dev:infra": "turbo run dev --filter=infrastructure...",
-    "dev:start": "bash scripts/start-dev-server.sh",
-    "dev:stop": "bash scripts/stop-dev-server.sh",
     "prebuild": "bash scripts/validate-i18n-keys.sh --warn && mkdir -p packages/database/node_modules && cp -r node_modules/@prisma packages/database/node_modules/ 2>/dev/null || true && pnpm run db:generate",
     "build": "turbo run build",
     "build:infra": "pnpm run build --workspace=infrastructure",

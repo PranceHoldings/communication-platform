@@ -17,7 +17,7 @@ source "$SCRIPT_DIR/lib/common.sh"
 # ==============================================================================
 
 # Default values
-URL="${URL:-http://localhost:3000}"
+URL="${URL:-https://dev.app.prance.jp}"
 OUTPUT_FILE="${OUTPUT_FILE:-/tmp/verify-rendering.png}"
 BROWSER="${BROWSER:-chromium}"
 TIMEOUT="${TIMEOUT:-30000}"
@@ -130,7 +130,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  -h, --help             Show this help message"
-      echo "  --url URL              URL to verify (default: http://localhost:3000)"
+      echo "  --url URL              URL to verify (default: https://dev.app.prance.jp)"
       echo "  --output FILE          Screenshot output path (default: /tmp/verify-rendering.png)"
       echo "  --browser BROWSER      Browser to use (chromium/firefox/webkit, default: chromium)"
       echo "  --timeout MS           Page load timeout in ms (default: 30000)"

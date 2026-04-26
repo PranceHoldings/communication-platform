@@ -27,11 +27,10 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // REST API（デプロイは手動で制御 - Lambda統合後に実行）
-    // CORS設定: Dev環境ではlocalhost:3000を許可、Production環境では特定ドメインのみ
     const allowedOrigins =
       props.environment === 'production'
         ? ['https://app.prance.jp']
-        : ['http://localhost:3000', 'https://app.prance.jp'];
+        : ['https://dev.app.prance.jp'];
 
     this.restApi = new apigateway.RestApi(this, 'RestApi', {
       restApiName: `prance-api-${props.environment}`,

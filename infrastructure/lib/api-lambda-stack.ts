@@ -24,6 +24,7 @@ export interface ApiLambdaStackProps extends cdk.StackProps {
   recordingsBucket: s3.Bucket;
   guestRateLimitTable: dynamodb.Table;
   sessionRateLimitTable: dynamodb.Table; // Phase 1.6: Token Bucket rate limiting
+  scenarioCacheTable: dynamodb.Table; // Phase 1.6.1: Scenario cache
   benchmarkCacheTable: dynamodb.Table; // Phase 4: Benchmark cache
   userSessionHistoryTable: dynamodb.Table; // Phase 4: User session history for growth tracking
   elasticacheEndpoint: string; // Phase 5: Runtime Configuration Management
@@ -154,11 +155,10 @@ export class ApiLambdaStack extends cdk.Stack {
         }),
       },
       defaultCorsPreflightOptions: {
-        // CORS設定: Dev環境ではlocalhost:3000とdev.app.prance.jpを許可、Production環境では特定ドメインのみ
         allowOrigins:
           props.environment === 'production'
             ? ['https://app.prance.jp']
-            : ['http://localhost:3000', 'https://dev.app.prance.jp', 'https://app.prance.jp'],
+            : ['https://dev.app.prance.jp'],
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: ['Content-Type', 'Authorization', 'X-Api-Key'],
         allowCredentials: true,
@@ -172,7 +172,7 @@ export class ApiLambdaStack extends cdk.Stack {
     const allowedOrigins =
       props.environment === 'production'
         ? ['https://app.prance.jp']
-        : ['http://localhost:3000', 'https://dev.app.prance.jp', 'https://app.prance.jp'];
+        : ['https://dev.app.prance.jp'];
 
     this.restApi.addGatewayResponse('Unauthorized', {
       type: apigateway.ResponseType.UNAUTHORIZED,
@@ -260,9 +260,12 @@ export class ApiLambdaStack extends cdk.Stack {
       DATABASE_URL,
       JWT_SECRET: jwtSecret.secretValueFromJson('secret').unsafeUnwrap(),
       FRONTEND_URL: `https://${config.domain.fullDomain}`,
-      GUEST_RATE_LIMIT_TABLE_NAME: props.guestRateLimitTable.tableName,
+      GUEST_RATE_LIMIT_TABLE: props.guestRateLimitTable.tableName,
       BEDROCK_REGION: this.region,
       S3_BUCKET: props.recordingsBucket.bucketName,
+      // Phase 1.6.1: Scenario cache
+      DYNAMODB_SCENARIO_CACHE_TABLE: props.scenarioCacheTable.tableName,
+      SCENARIO_CACHE_TTL_DAYS: process.env.SCENARIO_CACHE_TTL_DAYS!,
       // Phase 4: Benchmark System
       DYNAMODB_BENCHMARK_CACHE_TABLE: props.benchmarkCacheTable.tableName,
       DYNAMODB_USER_SESSION_HISTORY_TABLE: props.userSessionHistoryTable.tableName,
@@ -1639,6 +1642,11 @@ export class ApiLambdaStack extends cdk.Stack {
         },
       }
     );
+
+    // DynamoDB permissions for Scenario cache (Phase 1.6.1)
+    props.scenarioCacheTable.grantReadWriteData(this.getScenarioFunction);
+    props.scenarioCacheTable.grantReadWriteData(this.updateScenarioFunction);
+    props.scenarioCacheTable.grantReadWriteData(this.deleteScenarioFunction);
 
     // DynamoDB permissions for Benchmark functions
     props.benchmarkCacheTable.grantReadData(this.getBenchmarkFunction);

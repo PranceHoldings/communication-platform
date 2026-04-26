@@ -77,8 +77,6 @@ async function initNextApp() {
     const config = require('./.next/required-server-files.json').config;
 
     app = new NextServer({
-      hostname: 'localhost',
-      port: 3000,
       dir: __dirname,
       dev: false,
       customServer: true,

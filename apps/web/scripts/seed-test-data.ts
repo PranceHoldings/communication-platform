@@ -190,9 +190,9 @@ Start by calling the support line and explaining your issue with the product.`,
   console.log(`- Avatars: ${[avatar1.name, avatar2.name].join(', ')}`);
   console.log(`- Scenarios: ${[scenario1.title, scenario2.title].join(', ')}`);
   console.log('\nYou can now:');
-  console.log('1. Login at: http://localhost:3000/login');
-  console.log('2. View avatars at: http://localhost:3000/dashboard/avatars');
-  console.log('3. Create a session at: http://localhost:3000/dashboard/sessions/new');
+  console.log('1. Login at: https://dev.app.prance.jp/login');
+  console.log('2. View avatars at: https://dev.app.prance.jp/dashboard/avatars');
+  console.log('3. Create a session at: https://dev.app.prance.jp/dashboard/sessions/new');
 }
 
 main()

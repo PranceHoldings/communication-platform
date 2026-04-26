@@ -821,7 +821,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
           case 'SecurityError':
             errorCode = 'MICROPHONE_SECURITY_ERROR';
             errorMessage =
-              'Microphone access is not allowed due to security restrictions. Please use HTTPS or localhost.';
+              'Microphone access is not allowed due to security restrictions. Please use HTTPS.';
             break;
           default:
             errorMessage = err.message || errorMessage;

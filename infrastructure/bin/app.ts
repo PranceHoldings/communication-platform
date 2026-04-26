@@ -149,6 +149,7 @@ const apiLambdaStack = new ApiLambdaStack(app, `${stackPrefix}-ApiLambda`, {
   recordingsBucket: storageStack.recordingsBucket,
   guestRateLimitTable: guestRateLimitStack.table,
   sessionRateLimitTable: dynamoDBStack.sessionRateLimitTable, // Phase 1.6: Token Bucket rate limiting
+  scenarioCacheTable: dynamoDBStack.scenarioCacheTable, // Phase 1.6.1: Scenario cache
   benchmarkCacheTable: dynamoDBStack.benchmarkCacheTable, // Phase 4: Benchmark cache
   userSessionHistoryTable: dynamoDBStack.userSessionHistoryTable, // Phase 4: User session history
   elasticacheEndpoint: elastiCacheStack.cacheEndpoint, // Phase 5: Runtime Configuration Management

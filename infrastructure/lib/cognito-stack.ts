@@ -69,11 +69,9 @@ export class CognitoStack extends cdk.Stack {
         scopes: [cognito.OAuthScope.EMAIL, cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE],
         callbackUrls: [
           `https://${config.domain.fullDomain}/auth/callback`,
-          'http://localhost:3000/auth/callback', // 開発用
         ],
         logoutUrls: [
           `https://${config.domain.fullDomain}/auth/logout`,
-          'http://localhost:3000/auth/logout', // 開発用
         ],
       },
       preventUserExistenceErrors: true,

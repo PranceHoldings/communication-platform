@@ -80,7 +80,7 @@ echo ""
 # Step 4: サーバー起動待機
 log_step 4 "サーバー起動を待機中..."
 for i in {1..15}; do
-  if curl -s http://localhost:3000 > /dev/null 2>&1; then
+  if curl -s https://dev.app.prance.jp > /dev/null 2>&1; then
     log_success "開発サーバーが正常に起動しました ($i秒)"
     break
   fi
@@ -97,7 +97,7 @@ echo ""
 log_section "準備完了！Phase 1.5 テストを開始してください"
 
 echo "🌐 ブラウザでアクセス:"
-echo "   http://localhost:3000/dashboard/scenarios"
+echo "   https://dev.app.prance.jp/dashboard/scenarios"
 echo ""
 echo "📝 テスト手順:"
 echo "   1. 「面接練習 - 基本編 - 追加」を選択"

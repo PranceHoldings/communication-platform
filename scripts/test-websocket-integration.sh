@@ -19,11 +19,11 @@ echo ""
 
 # Step 2: Check if dev server is running
 log_step 2 "Checking dev server..."
-if ! curl -s http://localhost:3000 > /dev/null; then
-  log_error "Dev server is not running. Please start it with 'pnpm run dev'"
+if ! curl -sf https://dev.app.prance.jp > /dev/null 2>&1; then
+  log_error "Dev environment is not reachable: https://dev.app.prance.jp"
   exit 1
 fi
-log_success "Dev server is running"
+log_success "Dev environment is reachable"
 echo ""
 
 # Step 3: Run WebSocket integration tests
