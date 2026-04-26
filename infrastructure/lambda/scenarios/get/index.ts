@@ -77,20 +77,41 @@ export const handler: APIGatewayProxyHandler = async event => {
         title: dbScenario.title,
         systemPrompt,
         language: dbScenario.language,
+        visibility: dbScenario.visibility,
         initialGreeting: dbScenario.initialGreeting || undefined,
         variables,
         conversationFlow,
+        showSilenceTimer: dbScenario.showSilenceTimer ?? null,
+        enableSilencePrompt: dbScenario.enableSilencePrompt ?? null,
+        silenceTimeout: dbScenario.silenceTimeout ?? null,
+        silencePromptTimeout: dbScenario.silencePromptTimeout ?? null,
+        silenceThreshold: dbScenario.silenceThreshold ?? null,
+        minSilenceDuration: dbScenario.minSilenceDuration ?? null,
         cachedAt: Date.now(),
         ttl: 0, // Will be set by cache.ts
       };
     });
 
-    // Re-fetch from database for access control check
+    // Fetch full scenario from DB for access control and complete frontend response
     const dbScenario = await prisma.scenario.findUnique({
       where: { id: scenarioId },
       select: {
-        orgId: true,
+        id: true,
+        title: true,
+        category: true,
+        language: true,
         visibility: true,
+        configJson: true,
+        createdAt: true,
+        userId: true,
+        orgId: true,
+        initialGreeting: true,
+        silenceTimeout: true,
+        silencePromptTimeout: true,
+        enableSilencePrompt: true,
+        showSilenceTimer: true,
+        silenceThreshold: true,
+        minSilenceDuration: true,
       },
     });
 
@@ -106,9 +127,11 @@ export const handler: APIGatewayProxyHandler = async event => {
       return errorResponse(403, 'Access denied to this scenario');
     }
 
-    console.log(`Scenario retrieved (cached): ${scenario.scenarioId}`);
+    console.log(`Scenario retrieved: ${scenario.scenarioId}`);
 
-    return successResponse(scenario);
+    // Return full DB record for the frontend (Scenario shape)
+    // The cache (CachedScenario) is used only by the WebSocket/AI pipeline
+    return successResponse(dbScenario);
   } catch (error) {
     console.error('Error getting scenario:', error);
     return errorResponse(

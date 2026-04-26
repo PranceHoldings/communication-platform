@@ -298,6 +298,8 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
             const authInitialGreeting = authMessage.initialGreeting;
             const authWsAckTimeoutMs = authMessage.wsAckTimeoutMs;
             const authWsMaxRetries = authMessage.wsMaxRetries;
+            // Clear any lingering connection error — session is now fully authenticated
+            setError(null);
             console.log('[useWebSocket] authSessionId:', authSessionId);
             console.log('[useWebSocket] authInitialGreeting:', authInitialGreeting);
             console.log('[useWebSocket] onAuthenticatedRef.current exists:', !!onAuthenticatedRef.current);

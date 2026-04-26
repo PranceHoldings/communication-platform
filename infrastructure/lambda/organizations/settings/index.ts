@@ -139,17 +139,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         throw new AuthorizationError('Organization not found');
       }
 
-      // 🔴 CRITICAL: Return raw DB values WITHOUT merging with defaults
-      // Frontend/SessionPlayer will handle hierarchical resolution: Org → DEFAULT_SETTINGS
       const savedSettings = (organization.settings as OrganizationSettings) || {};
+      const mergedSettings: OrganizationSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
 
       console.log('Settings retrieved successfully:', {
         orgId: organization.id,
-        savedSettings,
+        mergedSettings,
         timestamp: new Date().toISOString(),
       });
 
-      return successResponse(savedSettings);
+      return successResponse(mergedSettings);
     }
 
     // PUT/PATCHリクエスト: 設定更新

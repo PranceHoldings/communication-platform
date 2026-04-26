@@ -441,11 +441,29 @@ export const handler = async (event: WebSocketEvent | Record<string, unknown>): 
             language: scenarioLanguage,
           });
 
+          // Save initial greeting to transcript DB
+          const greetingTimestamp = Date.now();
+          try {
+            await prisma.transcript.create({
+              data: {
+                sessionId,
+                speaker: 'AI',
+                text: initialGreeting,
+                timestampStart: greetingTimestamp,
+                timestampEnd: greetingTimestamp,
+                confidence: 1.0,
+              },
+            });
+            console.log('[authenticate] Initial greeting transcript saved to database');
+          } catch (dbError) {
+            console.error('[authenticate] Failed to save initial greeting transcript:', dbError);
+          }
+
           // Send text transcript FIRST — text display must not wait for TTS
           await sendToConnection(connectionId, {
             type: 'avatar_response_final',
             text: initialGreeting,
-            timestamp: Date.now(),
+            timestamp: greetingTimestamp,
           });
 
           try {
@@ -1523,6 +1541,11 @@ export const handler = async (event: WebSocketEvent | Record<string, unknown>): 
         // Process video chunks if any
         if (connectionData?.videoChunksCount && connectionData.videoChunksCount > 0) {
           console.log(`Processing ${connectionData.videoChunksCount} video chunks from S3`);
+
+          // Brief wait to let any in-flight S3 uploads from the client complete before listing.
+          // The client sends video chunks asynchronously; session_end can arrive before the last
+          // chunks finish uploading. 3 seconds covers typical network latency.
+          await new Promise(resolve => setTimeout(resolve, 3000));
 
           const { getRecordingKey } = await import('../../shared/config/s3-paths');
           const { getVideoChunksPrefix } = await import('../../shared/config/s3-paths');

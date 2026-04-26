@@ -27,9 +27,17 @@ export interface CachedScenario {
   title: string;
   systemPrompt: string;
   language: string;
+  visibility?: string;
   initialGreeting?: string;
   variables?: Record<string, VariableDefinition>;
   conversationFlow?: unknown;
+  // Scenario-level silence overrides (null = use org default)
+  showSilenceTimer?: boolean | null;
+  enableSilencePrompt?: boolean | null;
+  silenceTimeout?: number | null;
+  silencePromptTimeout?: number | null;
+  silenceThreshold?: number | null;
+  minSilenceDuration?: number | null;
   cachedAt: number;
   ttl: number;
 }

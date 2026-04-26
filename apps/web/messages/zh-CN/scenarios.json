@@ -87,7 +87,8 @@
     "questions": "Questions",
     "questionCategory": "Category",
     "otherConfig": "Other Configuration",
-    "orgDefault": "Org Default"
+    "orgDefault": "Org Default",
+    "readOnly": "This is a public scenario from another organization. You can use it but cannot edit it."
   },
   "edit": {
     "title": "Edit Scenario",

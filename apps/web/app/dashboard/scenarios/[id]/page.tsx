@@ -26,10 +26,11 @@ export default function ScenarioDetailPage() {
 
   const scenarioId = params.id as string;
   const currentUser = authApi.getCurrentUser();
-  const canDelete =
+  const canEdit =
     currentUser &&
     scenario &&
     (scenario.orgId === currentUser.orgId || currentUser.role === 'SUPER_ADMIN');
+  const canDelete = canEdit;
 
   // シナリオ読み込み（scenarioId が変わったときのみ）
   useEffect(() => {
@@ -373,12 +374,14 @@ export default function ScenarioDetailPage() {
         <h2 className="text-xl font-semibold mb-4">{t('scenarios.detail.actions')}</h2>
         <div className="space-y-4">
           <div className="flex gap-4">
-            <Link
-              href={`/dashboard/scenarios/${scenarioId}/edit`}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-block"
-            >
-              {t('scenarios.detail.edit')}
-            </Link>
+            {canEdit && (
+              <Link
+                href={`/dashboard/scenarios/${scenarioId}/edit`}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-block"
+              >
+                {t('scenarios.detail.edit')}
+              </Link>
+            )}
             {canDelete && (
               <button
                 className="px-6 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -389,9 +392,9 @@ export default function ScenarioDetailPage() {
               </button>
             )}
           </div>
-          {!canDelete && scenario.orgId !== currentUser?.orgId && (
+          {!canEdit && scenario.orgId !== currentUser?.orgId && (
             <p className="text-sm text-gray-500">
-              Note: You can only delete scenarios from your organization
+              {t('scenarios.detail.readOnly')}
             </p>
           )}
         </div>

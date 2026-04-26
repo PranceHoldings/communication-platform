@@ -11,6 +11,7 @@ import type { Visibility } from '@prance/shared';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { QuestionEditor, type Question } from '@/components/scenario-editor/QuestionEditor';
+import { authApi } from '@/lib/api/auth';
 
 export default function EditScenarioPage() {
   const router = useRouter();
@@ -50,6 +51,15 @@ export default function EditScenarioPage() {
     const loadScenario = async () => {
       try {
         const scenario = await getScenario(scenarioId);
+
+        // Access control: only the owner org (or SUPER_ADMIN) can edit
+        const currentUser = authApi.getCurrentUser();
+        if (currentUser && scenario.orgId !== currentUser.orgId && currentUser.role !== 'SUPER_ADMIN') {
+          toast.error(t('scenarios.detail.readOnly'));
+          router.push(`/dashboard/scenarios/${scenarioId}`);
+          return;
+        }
+
         setTitle(scenario.title);
         setCategory(scenario.category);
         setLanguage(scenario.language);

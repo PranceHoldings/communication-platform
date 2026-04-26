@@ -84,6 +84,7 @@ const messages: Record<string, Record<string, any>> = {
     navigation: navigationEn,
     analysis: analysisEn,
     admin: adminEn,
+    languages: (commonEn as any).languagesNative,
   },
   ja: {
     common: commonJa,
@@ -100,6 +101,7 @@ const messages: Record<string, Record<string, any>> = {
     navigation: navigationJa,
     analysis: analysisJa,
     admin: adminJa,
+    languages: (commonJa as any).languagesNative,
   },
   'zh-CN': {
     common: commonZhCN,
@@ -117,6 +119,7 @@ const messages: Record<string, Record<string, any>> = {
     navigation: navigationEn,
     analysis: analysisEn,
     admin: adminEn,
+    languages: (commonZhCN as any).languagesNative,
   },
   'zh-TW': {
     common: commonZhTW,
@@ -133,6 +136,7 @@ const messages: Record<string, Record<string, any>> = {
     navigation: navigationEn,
     analysis: analysisEn,
     admin: adminEn,
+    languages: (commonZhTW as any).languagesNative,
   },
   ko: {
     common: commonKo,
@@ -149,6 +153,7 @@ const messages: Record<string, Record<string, any>> = {
     navigation: navigationEn,
     analysis: analysisEn,
     admin: adminEn,
+    languages: (commonKo as any).languagesNative,
   },
   es: {
     common: commonEs,
@@ -165,6 +170,7 @@ const messages: Record<string, Record<string, any>> = {
     navigation: navigationEn,
     analysis: analysisEn,
     admin: adminEn,
+    languages: (commonEs as any).languagesNative,
   },
   pt: {
     common: commonPt,
@@ -181,6 +187,7 @@ const messages: Record<string, Record<string, any>> = {
     navigation: navigationEn,
     analysis: analysisEn,
     admin: adminEn,
+    languages: (commonPt as any).languagesNative,
   },
   fr: {
     common: commonFr,
@@ -197,6 +204,7 @@ const messages: Record<string, Record<string, any>> = {
     navigation: navigationEn,
     analysis: analysisEn,
     admin: adminEn,
+    languages: (commonFr as any).languagesNative,
   },
   de: {
     common: commonDe,
@@ -213,6 +221,7 @@ const messages: Record<string, Record<string, any>> = {
     navigation: navigationEn,
     analysis: analysisEn,
     admin: adminEn,
+    languages: (commonDe as any).languagesNative,
   },
   it: {
     common: commonIt,
@@ -229,6 +238,7 @@ const messages: Record<string, Record<string, any>> = {
     navigation: navigationEn,
     analysis: analysisEn,
     admin: adminEn,
+    languages: (commonIt as any).languagesNative,
   },
 };
 

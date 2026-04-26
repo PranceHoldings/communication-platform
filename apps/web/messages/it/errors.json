@@ -14,7 +14,7 @@
     "notReadable": "Microphone is already in use by another application. Please close other apps using the microphone.",
     "constraintsError": "Unable to satisfy audio constraints. Please try a different microphone.",
     "abortError": "Microphone access was aborted. Please try again.",
-    "securityError": "Microphone access is not allowed due to security restrictions. Please use HTTPS or localhost.",
+    "securityError": "Microphone access is not allowed due to security restrictions. Please use HTTPS.",
     "notSupported": "Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Safari.",
     "lowVolume": "Your microphone volume is very low. Please speak louder or adjust your microphone settings.",
     "noAudio": "No audio detected. Please check your microphone.",

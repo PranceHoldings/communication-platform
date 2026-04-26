@@ -12,7 +12,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
 import { verifyToken, extractTokenFromHeader } from '../../shared/auth/jwt';
-import { getAllowOriginHeader, setRequestOrigin } from '../../shared/utils/response';
+import { getAllowOriginHeader, setRequestOrigin, successResponse } from '../../shared/utils/response';
 
 const prisma = new PrismaClient();
 
@@ -273,14 +273,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       })),
     };
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': getAllowOriginHeader(event?.headers?.Origin || event?.headers?.origin),
-      },
-      body: JSON.stringify(response),
-    };
+    return successResponse({ guestSession: response });
   } catch (error) {
     console.error('[GetGuestSession] Error:', error);
 

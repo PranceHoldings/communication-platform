@@ -87,7 +87,8 @@
     "questions": "質問",
     "questionCategory": "カテゴリ",
     "otherConfig": "その他の設定",
-    "orgDefault": "組織デフォルト"
+    "orgDefault": "組織デフォルト",
+    "readOnly": "これは別の組織のパブリックシナリオです。使用はできますが、編集はできません。"
   },
   "edit": {
     "title": "シナリオを編集",

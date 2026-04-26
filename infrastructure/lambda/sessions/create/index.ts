@@ -121,7 +121,6 @@ export const handler: APIGatewayProxyHandler = async event => {
         endedAt: session.endedAt,
         durationSec: session.durationSec,
         metadataJson: session.metadataJson,
-        startedAt: session.startedAt
       },
       201
     );
