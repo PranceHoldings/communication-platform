@@ -1,120 +1,207 @@
-Prance
-Dashboard
-Sessions
-Avatars
-Scenarios
-Guest Sessions
-Reports
-Settings
-Admin
-Runtime Configuration
-P
-Platform Administrator
-
-admin@prance.com
-
-
-Sessions
-
-🇺🇸 English
-Dashboard
-Sessions
-Session 33b68dfb...
-Transcribing speech...
-面接練習 - 基本編 - 追加
-Avatar: サチコ（アニメ風） • Category: interview
-
-
-Keyboard Shortcuts
-Recording
-Audio:
-136/69
-Video:
-0/0
-In Progress
-1:13
-Avatar View
-サチコ（アニメ風）
-Microphone:
-Recording
-Audio Level:
-5%
-Camera:
-On
-Speaker:
-Inactive
-Recording:
-Recording
-Duration
-Conversation Transcript
-🤖 サチコ（アニメ風）
-29590011224:54
-こんにちは。面接へようこそ。準備は良いですか
-
-🤖 サチコ（アニメ風）
-29590011494:41
-では、まず簡単に自己紹介をしていただけますか？これまでのご経験やスキルについてお聞かせください。
-
-🤖 サチコ（アニメ風）
-29590012160:53
-どうぞ、お気軽にお話しください。ご自身のペースで構いませんよ。
-
-Connected
-Send Test Message
-Pause
-Stop
-🎤 Listening... Speak clearly into your microphone
-
-Session Information
-Session ID
-
-33b68dfb-b0e6-445b-a2b9-41225b648e7d
-
-Scenario
-
-面接練習 - 基本編 - 追加
-
-Language
-
-JA
-
-Created
-
-4/5/2026
-
-
-3/3
-
-Next.js 15.5.14 (outdated)
-Webpack
-Console Error
-
-
-Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
-
-components/providers.tsx (21:11) @ Providers
-
-
-  19 |         <AuthProvider>
-  20 |           {children}
-> 21 |           <Toaster position="top-right" richColors />
-     |           ^
-  22 |         </AuthProvider>
-  23 |       </I18nProvider>
-  24 |     </QueryProvider>
-Call Stack
-25
-
-Show 22 ignore-listed frame(s)
-li
-<anonymous>
-Providers
-components/providers.tsx (21:11)
-RootLayout
-app/layout.tsx (39:9)
-1
-2
-Was this helpful?
-
-
-
+page-a7086e0818ba1eae.js:1 [ScenarioDetail] Loading organization settings... {timestamp: '2026-04-25T13:38:26.864Z', pathname: '/dashboard/scenarios/8e0a92e8-ae0b-46e0-8901-8631937d7d72'}
+page-a7086e0818ba1eae.js:1 [ScenarioDetail] Organization settings loaded: {showSilenceTimer: true, enableSilencePrompt: true, silenceTimeout: 10, timestamp: '2026-04-25T13:38:27.304Z'}
+page-a7086e0818ba1eae.js:1 [ScenarioDetail] Loaded scenario data: {minSilenceDuration: 500, visibility: 'PUBLIC', ttl: 1777729038, enableSilencePrompt: true, silenceTimeout: 10, …}
+page-a7086e0818ba1eae.js:1 [ScenarioDetail] showSilenceTimer: false type: boolean
+page-a7086e0818ba1eae.js:1 [ScenarioDetail] enableSilencePrompt: true type: boolean
+page-a7086e0818ba1eae.js:1 [ScenarioDetail] silenceTimeout: 10 type: number
+page-5776279e027e0609.js:1 [ScenarioEdit] Organization settings loaded: {showSilenceTimer: true, enableSilencePrompt: true, silenceTimeout: 10}
+installHook.js:1 [i18n] Translation missing: languages.en (fallback locale: en)
+overrideMethod @ installHook.js:1
+t @ 6504-16afd1d38bcbb204.js:1
+(anonymous) @ page-5776279e027e0609.js:1
+x @ page-5776279e027e0609.js:1
+l9 @ 87c73c54-09e1ba5c70e60a51.js:1
+o_ @ 87c73c54-09e1ba5c70e60a51.js:1
+oq @ 87c73c54-09e1ba5c70e60a51.js:1
+ik @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+ib @ 87c73c54-09e1ba5c70e60a51.js:1
+iu @ 87c73c54-09e1ba5c70e60a51.js:1
+iX @ 87c73c54-09e1ba5c70e60a51.js:1
+w @ 18-8baa6663f0fef7f9.js:1
+postMessage
+l @ 18-8baa6663f0fef7f9.js:1
+t.unstable_scheduleCallback @ 18-8baa6663f0fef7f9.js:1
+iY @ 87c73c54-09e1ba5c70e60a51.js:1
+iK @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+installHook.js:1 [i18n] Translation missing: languages.ja (fallback locale: en)
+overrideMethod @ installHook.js:1
+t @ 6504-16afd1d38bcbb204.js:1
+(anonymous) @ page-5776279e027e0609.js:1
+x @ page-5776279e027e0609.js:1
+l9 @ 87c73c54-09e1ba5c70e60a51.js:1
+o_ @ 87c73c54-09e1ba5c70e60a51.js:1
+oq @ 87c73c54-09e1ba5c70e60a51.js:1
+ik @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+ib @ 87c73c54-09e1ba5c70e60a51.js:1
+iu @ 87c73c54-09e1ba5c70e60a51.js:1
+iX @ 87c73c54-09e1ba5c70e60a51.js:1
+w @ 18-8baa6663f0fef7f9.js:1
+postMessage
+l @ 18-8baa6663f0fef7f9.js:1
+t.unstable_scheduleCallback @ 18-8baa6663f0fef7f9.js:1
+iY @ 87c73c54-09e1ba5c70e60a51.js:1
+iK @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+installHook.js:1 [i18n] Translation missing: languages.zh-CN (fallback locale: en)
+overrideMethod @ installHook.js:1
+t @ 6504-16afd1d38bcbb204.js:1
+(anonymous) @ page-5776279e027e0609.js:1
+x @ page-5776279e027e0609.js:1
+l9 @ 87c73c54-09e1ba5c70e60a51.js:1
+o_ @ 87c73c54-09e1ba5c70e60a51.js:1
+oq @ 87c73c54-09e1ba5c70e60a51.js:1
+ik @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+ib @ 87c73c54-09e1ba5c70e60a51.js:1
+iu @ 87c73c54-09e1ba5c70e60a51.js:1
+iX @ 87c73c54-09e1ba5c70e60a51.js:1
+w @ 18-8baa6663f0fef7f9.js:1
+postMessage
+l @ 18-8baa6663f0fef7f9.js:1
+t.unstable_scheduleCallback @ 18-8baa6663f0fef7f9.js:1
+iY @ 87c73c54-09e1ba5c70e60a51.js:1
+iK @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+installHook.js:1 [i18n] Translation missing: languages.zh-TW (fallback locale: en)
+overrideMethod @ installHook.js:1
+t @ 6504-16afd1d38bcbb204.js:1
+(anonymous) @ page-5776279e027e0609.js:1
+x @ page-5776279e027e0609.js:1
+l9 @ 87c73c54-09e1ba5c70e60a51.js:1
+o_ @ 87c73c54-09e1ba5c70e60a51.js:1
+oq @ 87c73c54-09e1ba5c70e60a51.js:1
+ik @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+ib @ 87c73c54-09e1ba5c70e60a51.js:1
+iu @ 87c73c54-09e1ba5c70e60a51.js:1
+iX @ 87c73c54-09e1ba5c70e60a51.js:1
+w @ 18-8baa6663f0fef7f9.js:1
+postMessage
+l @ 18-8baa6663f0fef7f9.js:1
+t.unstable_scheduleCallback @ 18-8baa6663f0fef7f9.js:1
+iY @ 87c73c54-09e1ba5c70e60a51.js:1
+iK @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+installHook.js:1 [i18n] Translation missing: languages.ko (fallback locale: en)
+overrideMethod @ installHook.js:1
+t @ 6504-16afd1d38bcbb204.js:1
+(anonymous) @ page-5776279e027e0609.js:1
+x @ page-5776279e027e0609.js:1
+l9 @ 87c73c54-09e1ba5c70e60a51.js:1
+o_ @ 87c73c54-09e1ba5c70e60a51.js:1
+oq @ 87c73c54-09e1ba5c70e60a51.js:1
+ik @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+ib @ 87c73c54-09e1ba5c70e60a51.js:1
+iu @ 87c73c54-09e1ba5c70e60a51.js:1
+iX @ 87c73c54-09e1ba5c70e60a51.js:1
+w @ 18-8baa6663f0fef7f9.js:1
+postMessage
+l @ 18-8baa6663f0fef7f9.js:1
+t.unstable_scheduleCallback @ 18-8baa6663f0fef7f9.js:1
+iY @ 87c73c54-09e1ba5c70e60a51.js:1
+iK @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+installHook.js:1 [i18n] Translation missing: languages.es (fallback locale: en)
+overrideMethod @ installHook.js:1
+t @ 6504-16afd1d38bcbb204.js:1
+(anonymous) @ page-5776279e027e0609.js:1
+x @ page-5776279e027e0609.js:1
+l9 @ 87c73c54-09e1ba5c70e60a51.js:1
+o_ @ 87c73c54-09e1ba5c70e60a51.js:1
+oq @ 87c73c54-09e1ba5c70e60a51.js:1
+ik @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+ib @ 87c73c54-09e1ba5c70e60a51.js:1
+iu @ 87c73c54-09e1ba5c70e60a51.js:1
+iX @ 87c73c54-09e1ba5c70e60a51.js:1
+w @ 18-8baa6663f0fef7f9.js:1
+postMessage
+l @ 18-8baa6663f0fef7f9.js:1
+t.unstable_scheduleCallback @ 18-8baa6663f0fef7f9.js:1
+iY @ 87c73c54-09e1ba5c70e60a51.js:1
+iK @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+installHook.js:1 [i18n] Translation missing: languages.pt (fallback locale: en)
+overrideMethod @ installHook.js:1
+t @ 6504-16afd1d38bcbb204.js:1
+(anonymous) @ page-5776279e027e0609.js:1
+x @ page-5776279e027e0609.js:1
+l9 @ 87c73c54-09e1ba5c70e60a51.js:1
+o_ @ 87c73c54-09e1ba5c70e60a51.js:1
+oq @ 87c73c54-09e1ba5c70e60a51.js:1
+ik @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+ib @ 87c73c54-09e1ba5c70e60a51.js:1
+iu @ 87c73c54-09e1ba5c70e60a51.js:1
+iX @ 87c73c54-09e1ba5c70e60a51.js:1
+w @ 18-8baa6663f0fef7f9.js:1
+postMessage
+l @ 18-8baa6663f0fef7f9.js:1
+t.unstable_scheduleCallback @ 18-8baa6663f0fef7f9.js:1
+iY @ 87c73c54-09e1ba5c70e60a51.js:1
+iK @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+installHook.js:1 [i18n] Translation missing: languages.fr (fallback locale: en)
+overrideMethod @ installHook.js:1
+t @ 6504-16afd1d38bcbb204.js:1
+(anonymous) @ page-5776279e027e0609.js:1
+x @ page-5776279e027e0609.js:1
+l9 @ 87c73c54-09e1ba5c70e60a51.js:1
+o_ @ 87c73c54-09e1ba5c70e60a51.js:1
+oq @ 87c73c54-09e1ba5c70e60a51.js:1
+ik @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+ib @ 87c73c54-09e1ba5c70e60a51.js:1
+iu @ 87c73c54-09e1ba5c70e60a51.js:1
+iX @ 87c73c54-09e1ba5c70e60a51.js:1
+w @ 18-8baa6663f0fef7f9.js:1
+postMessage
+l @ 18-8baa6663f0fef7f9.js:1
+t.unstable_scheduleCallback @ 18-8baa6663f0fef7f9.js:1
+iY @ 87c73c54-09e1ba5c70e60a51.js:1
+iK @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+installHook.js:1 [i18n] Translation missing: languages.de (fallback locale: en)
+overrideMethod @ installHook.js:1
+t @ 6504-16afd1d38bcbb204.js:1
+(anonymous) @ page-5776279e027e0609.js:1
+x @ page-5776279e027e0609.js:1
+l9 @ 87c73c54-09e1ba5c70e60a51.js:1
+o_ @ 87c73c54-09e1ba5c70e60a51.js:1
+oq @ 87c73c54-09e1ba5c70e60a51.js:1
+ik @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+ib @ 87c73c54-09e1ba5c70e60a51.js:1
+iu @ 87c73c54-09e1ba5c70e60a51.js:1
+iX @ 87c73c54-09e1ba5c70e60a51.js:1
+w @ 18-8baa6663f0fef7f9.js:1
+postMessage
+l @ 18-8baa6663f0fef7f9.js:1
+t.unstable_scheduleCallback @ 18-8baa6663f0fef7f9.js:1
+iY @ 87c73c54-09e1ba5c70e60a51.js:1
+iK @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+installHook.js:1 [i18n] Translation missing: languages.it (fallback locale: en)
+overrideMethod @ installHook.js:1
+t @ 6504-16afd1d38bcbb204.js:1
+(anonymous) @ page-5776279e027e0609.js:1
+x @ page-5776279e027e0609.js:1
+l9 @ 87c73c54-09e1ba5c70e60a51.js:1
+o_ @ 87c73c54-09e1ba5c70e60a51.js:1
+oq @ 87c73c54-09e1ba5c70e60a51.js:1
+ik @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
+ib @ 87c73c54-09e1ba5c70e60a51.js:1
+iu @ 87c73c54-09e1ba5c70e60a51.js:1
+iX @ 87c73c54-09e1ba5c70e60a51.js:1
+w @ 18-8baa6663f0fef7f9.js:1
+postMessage
+l @ 18-8baa6663f0fef7f9.js:1
+t.unstable_scheduleCallback @ 18-8baa6663f0fef7f9.js:1
+iY @ 87c73c54-09e1ba5c70e60a51.js:1
+iK @ 87c73c54-09e1ba5c70e60a51.js:1
+(anonymous) @ 87c73c54-09e1ba5c70e60a51.js:1
