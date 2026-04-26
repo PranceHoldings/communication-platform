@@ -1,10 +1,10 @@
 # 次回セッション開始手順
 
-**最終更新:** 2026-04-26 (Day 53 - バグ修正5件・デプロイ設定整備)
+**最終更新:** 2026-04-26 (Day 54 - WebSocket再接続復元 + S3ポーリング)
 **現在の Phase:** 全Phase（1-5）完了 🎉 → 商用品質改善中
 **次のアクション:** Staging環境デプロイ → Production展開
 **ステータス:** dev ブランチ、全修正コミット・プッシュ済み ✅
-**最新コミット:** f0dc728 "chore: remove localhost references and clean up dev tooling"
+**最新コミット:** 8a0090c "feat(websocket): restore conversationHistory on reconnect + poll S3 for video chunks"
 **開発環境:** https://dev.app.prance.jp
 
 ---
@@ -67,10 +67,10 @@ pnpm run test:e2e -- --grep="stage3"
 2. Phase 2 (50%): 12-24時間監視、Error rate > 0.3%でロールバック
 3. Phase 3 (100%): 継続監視
 
-### 3. 未解決の技術的課題（中優先度）
+### 3. 未解決の技術的課題
 
-- **WebSocket再接続後の conversationHistory 復元**: 再接続時にDynamoDBの既存 `connectionData` を `sessionId` で検索し、`conversationHistory` / `turnCount` を復元する仕組みが未実装。詳細: [SESSION_2026-04-26_Bug_Investigation_Report.md](docs/09-progress/archives/SESSION_2026-04-26_Bug_Investigation_Report.md)
-- **ビデオチャンク数のポーリング確認**: 現状3秒固定待機 → S3実績値と `videoChunksCount` 照合に改善すると確実
+~~**WebSocket再接続後の conversationHistory 復元**~~ ✅ Day 54 完了  
+~~**ビデオチャンク数のポーリング確認**~~ ✅ Day 54 完了
 
 ---
 
@@ -88,35 +88,24 @@ pnpm run test:e2e -- --grep="stage3"
 
 詳細: [docs/09-progress/SESSION_HISTORY.md](docs/09-progress/SESSION_HISTORY.md)
 
-### 🎯 最新達成 (Day 53 - 2026-04-26) - バグ修正5件・デプロイ設定整備
+### 🎯 最新達成 (Day 54 - 2026-04-26) - WebSocket再接続復元 + S3ポーリング
 
 **ブランチ:** dev
+**コミット:** 8a0090c（プッシュ済み）
+**Lambda:** `prance-websocket-default-dev` v1.2.0 デプロイ済み
+
+1. **✅ 再接続後の conversationHistory 復元** — `authenticate` 時に DynamoDB Scan で旧接続レコードを検索し `conversationHistory` / `turnCount` を復元
+2. **✅ S3 ビデオチャンクポーリング** — 3秒固定待機 → 500ms 間隔ポーリング（最大10秒）に置き換え、チャンクが揃い次第即 `combineChunks()`
+
+### 🎯 前回達成 (Day 53 - 2026-04-26) - バグ修正5件・デプロイ設定整備
+
 **コミット:** 8717ca4, f0dc728（プッシュ済み）
-**Lambda:** `prance-websocket-default-dev` 更新済み
-**Next.js BUILD_ID:** `nTT4-Kz15OePJ49fjleF0`
 
-**修正済みバグ:**
-
-1. **✅ セッション録画が空（12KB/2秒）** — `session_end` がS3チャンクアップロード完了前に到着するレースコンディション。`combineChunks()` 前に3秒待機を追加
-2. **✅ 文字起こしが1ターンのみ** — `initialGreeting` がWebSocket送信のみでDB未保存だった。`prisma.transcript.create` 追加
-3. **✅ "Connection Error" 表示が消えない** — `authenticated` メッセージ受信時に `setError(null)` を追加
-4. **✅ シナリオAPI型不整合** — `scenarios/get` が `CachedScenario`（狭い型）を返していた → `dbScenario`（フル形状）に修正
-5. **✅ シナリオ編集ページのアクセス制御欠如** — 他組織のシナリオ編集URL直接アクセスを防ぐリダイレクト追加
-
-**デプロイ設定整備（Day 53後半）:**
-- localhost参照を全廃（CORS・Cognito OAuth・CDK・スクリプト）
-- `start-dev-server.sh` / `stop-dev-server.sh` 削除
-- E2EテストをデプロイされたDev環境のみ対象に変更
-- `scenarioCacheTable` CDKスタック配線追加
-
-### 🎯 前回達成 (Day 52 - 2026-04-24) - 商用品質音声改善
-
-**コミット:** 538cfc7, 5e44362（Lambda v1.2.0デプロイ済み）
-
-1. **✅ TTSストリーミングリアルタイム再生** — `audio_response` URL待ちなしで即時再生
-2. **✅ バージイン** — AI発話中のユーザー割り込みでAI音声を即座に停止
-3. **✅ ElevenLabs真のストリーミング** — queue+Promiseパターンで到着順即座yield
-4. **✅ AI→TTSセンテンスレベルパイプライン** — 最初の音声レイテンシ〜1-3s削減
+1. **✅ セッション録画が空（12KB/2秒）** — `session_end` がS3チャンクアップロード完了前に到着するレースコンディション修正
+2. **✅ 文字起こしが1ターンのみ** — `initialGreeting` DB未保存を修正
+3. **✅ "Connection Error" 表示が消えない** — `authenticated` 受信時に `setError(null)` 追加
+4. **✅ シナリオAPI型不整合** — `CachedScenario` → `dbScenario` フル形状に修正
+5. **✅ シナリオ編集ページのアクセス制御欠如** — 他組織URL直接アクセスにリダイレクト追加
 
 ---
 

@@ -1,7 +1,43 @@
 # Prance Alpha開発 - セッション進捗まとめ
 
 **最終更新:** 2026-04-26
-**セッション:** Day 53 - バグ修正5件・デプロイ設定整備
+**セッション:** Day 54 - WebSocket再接続復元 + S3ポーリング
+
+---
+
+## ✅ Day 54: WebSocket再接続 conversationHistory 復元 + S3 ビデオチャンクポーリング（2026-04-26）
+
+### セッション概要
+
+- **実施内容:** START_HERE.md の未解決技術課題2件を実装・デプロイ
+- **コミット:** `8a0090c` → `dev` プッシュ済み
+- **Lambda:** `prance-websocket-default-dev` v1.2.0 デプロイ完了
+- **状態:** ✅ **デプロイ完了**
+
+### 実施作業
+
+**課題1: 再接続後の conversationHistory 復元**
+
+- **問題:** WebSocket切断→再接続時、Lambda側の `connectionData` が新規作成されるため `conversationHistory` / `turnCount` が空にリセットされ、AI がそれ以前の会話コンテキストを失っていた
+- **修正:** `authenticate` ハンドラーで `ScanCommand + FilterExpression` により同じ `sessionId` の旧接続レコードを DynamoDB から検索し、`conversationHistory` と `turnCount` を復元
+- **詳細:**
+  - 旧接続レコードが複数ある場合は `turnCount` が最大のもの（最も新しいデータ）を採用
+  - 再接続の場合は `initialGreeting` を会話履歴に重複追加しない
+  - スキャン失敗時はセッションを中断せず warn のみ（graceful degradation）
+- **ファイル:** `infrastructure/lambda/websocket/default/index.ts` (authenticate ハンドラー)
+
+**課題2: S3 ビデオチャンク数ポーリング（固定3秒待機を置き換え）**
+
+- **問題:** `session_end` 受信後に 3秒固定待機してから `combineChunks()` を呼んでいたが、ネットワーク遅延が大きい場合は不十分でチャンクが揃わないことがあった
+- **修正:** S3 `ListObjectsV2` で実際のチャンク数を 500ms 間隔でポーリングし、`videoChunksCount` と一致した時点で即座に `combineChunks()` を開始（最大10秒でタイムアウト）
+- **効果:** 通常時は 3秒未満で処理開始（チャンクが揃い次第）、遅延が大きくても最大10秒で対処
+- **ファイル:** `infrastructure/lambda/websocket/default/index.ts` (session_end ハンドラー)
+
+### 変更ファイル
+
+| ファイル | 変更内容 |
+|---------|---------|
+| `infrastructure/lambda/websocket/default/index.ts` | ScanCommand追加、authenticate での復元ロジック、session_end のS3ポーリング |
 
 ---
 
