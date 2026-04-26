@@ -16,6 +16,7 @@ import {
   UpdateCommand,
   PutCommand,
   DeleteCommand,
+  ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 import {
   S3Client,
@@ -44,9 +45,9 @@ import { getAwsRegion, getBedrockRegion, getSttAutoDetectLanguages, getEnableAut
 import { LANGUAGE_DEFAULTS, DYNAMODB_DEFAULTS } from '../../shared/config/defaults';
 
 // Lambda function version
-const LAMBDA_VERSION = '1.1.5'; // fix: audio realtime chunk filename {timestamp}-{seq}.webm (matches sort function)
+const LAMBDA_VERSION = '1.2.0'; // feat: reconnect conversationHistory restore + S3 video chunk polling
 const LAMBDA_NAME = 'websocket-default-handler';
-const BUILD_TIMESTAMP = '2026-04-09T22:30:00Z'; // fix: audio chunk key uses timestamp-seq format
+const BUILD_TIMESTAMP = '2026-04-26T12:00:00Z'; // feat: reconnect restore + S3 poll
 const FORCE_REBUILD_FLAG = true; // Day 36: Prisma Client initialization fix
 
 // Build identifier - unique filename format
@@ -376,11 +377,45 @@ export const handler = async (event: WebSocketEvent | Record<string, unknown>): 
           };
         }
 
-        // Initialize conversation history
-        const initialConversationHistory: any[] = [];
+        // Restore conversationHistory from a prior connection for the same sessionId (reconnect case).
+        // On disconnect, the old connection record stays in DynamoDB until TTL expires.
+        // We scan for it here so the AI context is not lost after a network interruption.
+        let restoredHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+        let restoredTurnCount = 0;
+        try {
+          const scanResult = await ddb.send(
+            new ScanCommand({
+              TableName: CONNECTIONS_TABLE,
+              FilterExpression: 'sessionId = :sid AND connection_id <> :cid',
+              ExpressionAttributeValues: {
+                ':sid': sessionId,
+                ':cid': connectionId,
+              },
+              ProjectionExpression: 'conversationHistory, turnCount',
+            })
+          );
+          if (scanResult.Items && scanResult.Items.length > 0) {
+            // Take the item with the most turns (most recent session data)
+            const best = scanResult.Items.reduce((prev, curr) =>
+              ((curr.turnCount as number) || 0) > ((prev.turnCount as number) || 0) ? curr : prev
+            );
+            restoredHistory = (best.conversationHistory as typeof restoredHistory) || [];
+            restoredTurnCount = (best.turnCount as number) || 0;
+            console.log('[authenticate] Restored conversation history from prior connection:', {
+              turns: restoredHistory.length,
+              turnCount: restoredTurnCount,
+            });
+          }
+        } catch (scanError) {
+          console.warn('[authenticate] Failed to restore conversation history:', scanError);
+        }
 
-        // If initial greeting is provided, add to conversation history
-        if (initialGreeting) {
+        // Build initial conversation history: use restored history, then append initialGreeting if present
+        const initialConversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> =
+          restoredHistory.length > 0 ? [...restoredHistory] : [];
+
+        if (initialGreeting && restoredHistory.length === 0) {
+          // Only add the greeting to history on the first connection (not reconnects)
           initialConversationHistory.push({
             role: 'assistant',
             content: initialGreeting,
@@ -398,7 +433,7 @@ export const handler = async (event: WebSocketEvent | Record<string, unknown>): 
           enableSilencePrompt, // Store silence prompt flag
           initialSilenceTimeout, // Store Azure STT initial silence timeout
           // Phase 1.6.1 Day 35: Session state tracking
-          turnCount: 0, // Initialize turn counter
+          turnCount: restoredTurnCount, // Restore turn counter from prior connection
           sessionStartTime: Date.now(), // Record session start time
           errorAttemptCount: 0, // Initialize error counter
         });
@@ -1542,14 +1577,29 @@ export const handler = async (event: WebSocketEvent | Record<string, unknown>): 
         if (connectionData?.videoChunksCount && connectionData.videoChunksCount > 0) {
           console.log(`Processing ${connectionData.videoChunksCount} video chunks from S3`);
 
-          // Brief wait to let any in-flight S3 uploads from the client complete before listing.
-          // The client sends video chunks asynchronously; session_end can arrive before the last
-          // chunks finish uploading. 3 seconds covers typical network latency.
-          await new Promise(resolve => setTimeout(resolve, 3000));
-
           const { getRecordingKey } = await import('../../shared/config/s3-paths');
           const { getVideoChunksPrefix } = await import('../../shared/config/s3-paths');
           const videoSessionId = connectionData.sessionId || 'unknown';
+
+          // Poll S3 until the expected number of chunks have landed, or until the timeout elapses.
+          // The client uploads chunks in parallel with sending session_end, so some may still be
+          // in-flight. Polling is more reliable than a fixed sleep.
+          const expectedChunks = connectionData.videoChunksCount;
+          const pollIntervalMs = 500;
+          const pollTimeoutMs = 10_000;
+          const pollStart = Date.now();
+          const chunksPrefix = getVideoChunksPrefix(videoSessionId);
+          let s3ChunkCount = 0;
+          while (Date.now() - pollStart < pollTimeoutMs) {
+            const listRes = await s3Client.send(
+              new ListObjectsV2Command({ Bucket: S3_BUCKET, Prefix: chunksPrefix })
+            );
+            s3ChunkCount = (listRes.Contents || []).filter(o => o.Key && o.Key.endsWith('.webm')).length;
+            if (s3ChunkCount >= expectedChunks) break;
+            console.log(`[session_end] Waiting for S3 chunks: ${s3ChunkCount}/${expectedChunks}`);
+            await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+          }
+          console.log(`[session_end] S3 poll done: ${s3ChunkCount}/${expectedChunks} chunks present (waited ${Date.now() - pollStart}ms)`);
 
           // Create recording record with PROCESSING status BEFORE combining video.
           // This ensures the record always exists in DB even if combining fails.
